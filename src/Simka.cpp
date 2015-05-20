@@ -38,33 +38,26 @@ Simka::Simka()  : Tool ("Simka")
     //setParser (parser);
 }
 
+struct Parameter
+{
+    Parameter (Simka& simka, IProperties* props) : simka(simka), props(props) {}
+    Simka&       simka;
+    IProperties* props;
+};
 
-
-template<size_t span>
-static void executeAlgorithm (Simka& simka, IProperties* props){
-	SimkaAlgorithm<span> simkaAlgorithm(props);
+template<size_t span> struct Functor  {  void operator ()  (Parameter parameter)
+{
+	SimkaAlgorithm<span> simkaAlgorithm (parameter.props);
 	simkaAlgorithm.execute();
-}
+}};
 
-void Simka::execute (){
-
-
+void Simka::execute ()
+{
     /** we get the kmer size chosen by the end user. */
     size_t kmerSize = getInput()->getInt (STR_KMER_SIZE);
 
-    //executeAlgorithm<KSIZE_1>(*this, getInput());
-
-
-         if (kmerSize < KSIZE_1)  { executeAlgorithm <KSIZE_1>  (*this, getInput());  }
-    else if (kmerSize < KSIZE_2)  { executeAlgorithm <KSIZE_2>  (*this, getInput());  }
-    else if (kmerSize < KSIZE_3)  { executeAlgorithm <KSIZE_3>  (*this, getInput());  }
-    else if (kmerSize < KSIZE_4)  { executeAlgorithm <KSIZE_4>  (*this, getInput());  }
-    else  { throw Exception ("unsupported kmer size %d", kmerSize);  }
-
-
-
-
-
+    /** We launch the tool with the correct Integer implementation according to the choosen kmer size. */
+    Integer::apply<Functor,Parameter> (kmerSize, Parameter (*this, getInput()));
 }
 
 

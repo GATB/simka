@@ -41,10 +41,18 @@ endif()
 #       - from project source 
 #       - from GATB-CORE source
 #       - from dsk source 
-include_directories (include ${gatb-core-includes})
+include_directories (include ${gatb-core-includes} ${PROJECT_SOURCE_DIR}/src)
+
+# we generate one file per template specialization
+FOREACH (KSIZE ${gatb-core-klist})
+    configure_file (
+        ${PROJECT_SOURCE_DIR}/src/SimkaAlgorithmTemplate.cpp.in
+        ${PROJECT_BINARY_DIR}/src/template/SimkaAlgorithmTemplate_${KSIZE}.cpp
+    )
+ENDFOREACH ()
 
 # we define the files to be compiled
-file (GLOB_RECURSE  ProjectFiles  src/*)
+file (GLOB_RECURSE  ProjectFiles  src/*  ${PROJECT_BINARY_DIR}/src/template/*.cpp)
 
 # we define the artifact to be built: the project binary
 add_executable        (${PROJECT_NAME}  src/main.cpp ${ProjectFiles})

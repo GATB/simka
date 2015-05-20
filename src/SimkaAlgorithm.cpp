@@ -7,29 +7,6 @@
 
 #include "SimkaAlgorithm.hpp"
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 template<size_t span>
 SimkaCountProcessor<span>::SimkaCountProcessor (size_t nbBanks, const pair<size_t, size_t>& abundanceThreshold){
 	// We configure the vector for the N.(N+1)/2 possible pairs
@@ -513,31 +490,3 @@ void SimkaAlgorithm<span>::clear(){
 	//_banks->remove();
 	//delete _processor;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-template class SimkaAlgorithm <KSIZE_1>;
-template class SimkaAlgorithm <KSIZE_2>;
-template class SimkaAlgorithm <KSIZE_3>;
-template class SimkaAlgorithm <KSIZE_4>;
-//template class SimkaAlgorithm<KSIZE_1>;
-
-
-
-
