@@ -373,7 +373,7 @@ void SimkaAlgorithm<span>::count(){
 	// We create a custom count processor and give it to the sorting count algorithm
 	_processor = new SimkaCountProcessor<span> (_nbBanks, _abundanceThreshold);
 	_processor->use();
-	sortingCount.setProcessor (_processor);
+	sortingCount.addProcessor (_processor);
 
 	// We launch the algorithm
 	sortingCount.execute();
