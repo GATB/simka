@@ -205,6 +205,7 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 template<size_t span>
 void SimkaCountProcessor<span>::print(){
 
+	cout.precision(4);
     cout << endl << endl;
 
     //return;
@@ -213,25 +214,49 @@ void SimkaCountProcessor<span>::print(){
     for(int i=0; i<_nbKmersAbundanceSharedByBanksThreshold.size(); i++)
     	solidAbundance += _nbKmersAbundanceSharedByBanksThreshold[i];
 
-    cout << "Nb kmers: " << _nbKmers << "    " << _nbKmers / 1000000 << " M" << "    " << _nbKmers / 1000000000 << " G" << endl;
+    cout << "Statistics on kmer intersections:" << endl;
+    cout << "\tNb kmers: " << _nbKmers << "    " << _nbKmers / 1000000 << " M" << "    " << _nbKmers / 1000000000 << " G" << endl;
     cout << endl;
 
-    cout << "Nb distinct kmers: " << _nbDistinctKmers << "    " << _nbDistinctKmers / 1000000 << " M" << "    " << _nbDistinctKmers / 1000000000 << " G" << "    " << (100*_nbDistinctKmers)/(float)_nbKmers << "%" << endl;
-    cout << "Nb solid kmers: " << _nbSolidKmers << "    " << _nbSolidKmers / 1000000 << " M" << "    " << _nbSolidKmers / 1000000000 << " G" << "    " << (100*_nbSolidKmers)/(float)_nbDistinctKmers << "% distinct" << "       " << (100*solidAbundance) / (double)_nbKmers << "% abundance" << endl << endl;
-    for(int i=0; i<_nbBanks; i++){
+    cout << "\tNb distinct kmers: " << _nbDistinctKmers << "    " << _nbDistinctKmers / 1000000 << " M" << "    " << _nbDistinctKmers / 1000000000 << " G" << "    " << (100*_nbDistinctKmers)/(float)_nbKmers << "%" << endl;
+    cout << "\tNb solid kmers: " << _nbSolidKmers << "    " << _nbSolidKmers / 1000000 << " M" << "    " << _nbSolidKmers / 1000000000 << " G" << "    " << (100*_nbSolidKmers)/(float)_nbDistinctKmers << "% distinct" << "       " << (100*solidAbundance) / (double)_nbKmers << "% abundance" << endl;
+    //for(int i=0; i<_nbBanks; i++){
 	    //cout << "Nb kmers (M) " << i <<  ": " << _nbSolidKmersPerBank[i] << endl << endl;
-    }
+    //}
 
     cout << endl;
-    cout << "Nb erroneous kmers: " << _nbErroneousKmers << "    " << _nbErroneousKmers / 1000000 << " M" << "    " << _nbErroneousKmers / 1000000000 << " G" << "    " << (100*_nbErroneousKmers)/(float)_nbDistinctKmers << "% distinct" << "      " << (100*_nbErroneousKmers)/(float)_nbKmers << "% abundance" << endl << endl;
+    cout << "\tPotentially erroneous (Kmers appearing only one time in a single bank): " << endl;
+    cout << "\t\t" << _nbErroneousKmers << "    " << _nbErroneousKmers / 1000000 << " M" << "    " << _nbErroneousKmers / 1000000000 << " G" << "    " << (100*_nbErroneousKmers)/(float)_nbDistinctKmers << "% distinct" << "      " << (100*_nbErroneousKmers)/(float)_nbKmers << "% abundance" << endl;
 
     cout << endl;
-    cout << "Kmer shared by T banks :" << endl;
+    cout << "\tKmer shared by T banks :" << endl;
+
     for(int i=0; i<_nbBanks; i++){
-	    cout << "\tShared by " << i+1 <<  " banks: " << _nbKmersSharedByBanksThreshold[i] << "    " << (_nbKmersSharedByBanksThreshold[i]*100) / (float)_nbSolidKmers << "%         "
-	    		 << _nbKmersAbundanceSharedByBanksThreshold[i] << "    " << (_nbKmersAbundanceSharedByBanksThreshold[i]*100) / (float)solidAbundance << "%"
-				 << "    " << _nbKmersAbundanceSharedByBanksThreshold[i] / _nbKmersSharedByBanksThreshold[i] / (float) _nbBanks
-	    		<< endl;
+	    cout << "\t\tShared by " << i+1 <<  " banks:";
+
+	    cout << endl;
+	    cout << "\t\t\tDistinct:    " << _nbKmersSharedByBanksThreshold[i] << "    ";
+	    if(_nbSolidKmers > 0){
+		    cout << (_nbKmersSharedByBanksThreshold[i]*100) / (float)_nbSolidKmers << "%";
+	    }
+	    else{
+	    	cout << "0%";
+	    }
+
+	    cout << endl;
+	    cout << "\t\t\tAbundance:    " << _nbKmersAbundanceSharedByBanksThreshold[i] << "    ";
+	    if(solidAbundance > 0){
+	    	cout << (_nbKmersAbundanceSharedByBanksThreshold[i]*100) / (float)solidAbundance << "%";
+	    }
+	    else{
+	    	cout << "0%";
+	    }
+	    if(_nbKmersSharedByBanksThreshold[i] > 0){
+	    	cout << endl;
+		    cout << "\t\t\tMean abundance per bank: " << _nbKmersAbundanceSharedByBanksThreshold[i] / _nbKmersSharedByBanksThreshold[i] / (float) _nbBanks;
+	    }
+
+	    cout << endl;
     }
 
     //cout << endl;
@@ -317,8 +342,12 @@ void SimkaAlgorithm<span>::execute() {
 	layoutInputFilename();
 	_banks = Bank::open(_banksInputFilename);
 	count();
-    _processor->print();
+
+	if(_options->getInt(STR_VERBOSE) > 0)
+	    _processor->print();
+
 	outputMatrix();
+	outputHeatmap();
 	clear();
 
 }
@@ -429,12 +458,6 @@ void SimkaAlgorithm<span>::outputMatrix(){
 
     for(int i=0; i<_nbBanks; i++){
 	    for(int j=0; j<_nbBanks; j++){
-
-	    	if(i == j){
-	    		cout << _processor->_matrixSharedAbundanceKmers[i][j] + _processor->_matrixSharedAbundanceKmers[j][i] << "          " << _processor->_nbSolidKmersPerBankAbundance[i] + _processor->_nbSolidKmersPerBankAbundance[j] << endl;
-	    		cout << _processor->_matrixSharedKmers[i][j] + _processor->_matrixSharedKmers[j][i] << "    " << _processor->_nbSolidKmersPerBank[i] + _processor->_nbSolidKmersPerBank[j] << endl;
-	    	}
-
 	    	matrixNormalized[i][j] = (100.0 * (_processor->_matrixSharedKmers[i][j] + _processor->_matrixSharedKmers[j][i])) / (_processor->_nbSolidKmersPerBank[i] + _processor->_nbSolidKmersPerBank[j]);
 	    	matrixPercentage[i][j] = (100.0 * (_processor->_matrixSharedKmers[i][j])) / (_processor->_nbSolidKmersPerBank[i]);
 	    	matrixAbundanceNormalized[i][j] = (100.0 * (_processor->_matrixSharedAbundanceKmers[i][j] + _processor->_matrixSharedAbundanceKmers[j][i])) / (_processor->_nbSolidKmersPerBankAbundance[i] + _processor->_nbSolidKmersPerBankAbundance[j]);
@@ -459,10 +482,15 @@ void SimkaAlgorithm<span>::outputMatrix(){
 	snprintf(buffer,200,"%llu",_abundanceThreshold.first);
 	strAbMin += string(buffer);
 
-    dumpMatrix("mat_ks_norm" + strKmerSize + strAbMin + strAbMax + ".csv", matrixNormalized);
-    dumpMatrix("mat_ks_perc" + strKmerSize + strAbMin + strAbMax + ".csv", matrixPercentage);
-    dumpMatrix("mat_aks_norm" + strKmerSize + strAbMin + strAbMax + ".csv", matrixAbundanceNormalized);
-    dumpMatrix("mat_aks_perc" + strKmerSize + strAbMin + strAbMax + ".csv", matrixAbundancePercentage);
+	_matDksNormFilename = "mat_dks_norm" + strKmerSize + strAbMin + strAbMax + ".csv";
+	_matDksPercFilename = "mat_dks_perc" + strKmerSize + strAbMin + strAbMax + ".csv";
+	_matAksNormFilename = "mat_aks_norm" + strKmerSize + strAbMin + strAbMax + ".csv";
+	_matAksPercFilename = "mat_aks_perc" + strKmerSize + strAbMin + strAbMax + ".csv";
+
+    dumpMatrix(_matDksNormFilename, matrixNormalized);
+    dumpMatrix(_matDksPercFilename, matrixPercentage);
+    dumpMatrix(_matAksNormFilename, matrixAbundanceNormalized);
+    dumpMatrix(_matAksPercFilename, matrixAbundancePercentage);
 
 }
 
@@ -504,6 +532,50 @@ void SimkaAlgorithm<span>::dumpMatrix(const string& outputFilename, vector<vecto
 
 }
 
+template<size_t span>
+void SimkaAlgorithm<span>::outputHeatmap(){
+	__outputHeatmap(_matDksPercFilename, _matDksNormFilename);
+	__outputHeatmap(_matAksPercFilename, _matAksNormFilename);
+}
+
+
+template<size_t span>
+void SimkaAlgorithm<span>::__outputHeatmap(const string& matrixPercFilename, const string& matrixNormFilename){
+
+	string filename = matrixPercFilename.substr(0, matrixPercFilename.size()-4); //remove mat extension .csv
+	vector<string> linePartList;
+	string outputFilename = "heatmap";
+	string part;
+	//string linePart;
+	//vector<string> linePartList;
+	stringstream stream(filename);
+
+	while(getline(stream, part, '_')){
+		//cout << part << endl;
+		linePartList.push_back(part);
+	}
+	linePartList.erase(linePartList.begin() + 0); //Remove 'mat' prefix
+	linePartList.erase(linePartList.begin() + 1); //Remove 'norm' or 'perc'
+
+	for(size_t i=0; i<linePartList.size(); i++){
+		outputFilename += "_" + linePartList[i];
+	}
+	outputFilename += ".png";
+
+	string command = "Rscript ./Rscripts/heatmap.r " + _outputDir + "/" + matrixPercFilename + " " + _outputDir + "/" + matrixPercFilename + " " + _outputDir + "/" + outputFilename;
+	//cout << command << endl;
+
+    try
+    {
+    	system(command.c_str());
+    }
+    catch (Exception& e)
+    {
+        std::cout << "EXCEPTION: " << e.getMessage() << std::endl;
+        //return EXIT_FAILURE;
+    }
+
+}
 
 template<size_t span>
 void SimkaAlgorithm<span>::clear(){

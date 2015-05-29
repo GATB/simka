@@ -9,7 +9,7 @@
 #define TOOLS_SIMKA_SRC_SIMKAALGORITHM_HPP_
 
 #include <gatb/gatb_core.hpp>
-
+#include<stdio.h>
 
 
 
@@ -91,6 +91,8 @@ private:
 	void count();
 	void outputMatrix();
 	void dumpMatrix(const string& outputFilename, vector<vector<float> >& matrix);
+	void outputHeatmap();
+	void __outputHeatmap(const string& matrixPercFilename, const string& matrixNormFilename);
 	void clear();
 
 	string _outputDir;
@@ -106,6 +108,11 @@ private:
 
 	SimkaCountProcessor<span>* _processor;
 	vector<string> _bankNames;
+
+	string _matDksNormFilename;
+	string _matDksPercFilename;
+	string _matAksNormFilename;
+	string _matAksPercFilename;
 };
 
 

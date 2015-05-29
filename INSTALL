@@ -1,0 +1,18 @@
+#CMake is required to compile sitka (http://www.cmake.org/cmake/resources/software.html)
+#you can install sitka by executing this file:  sh INSTALL
+# Prepare directories:
+mkdir  build
+# Go in the 'build' directory
+cd build
+# Prepare the makefile
+cmake -DMAJOR=1 -DMINOR=0 -DPATCH=0 ..
+# Run the newly created makefile:
+make
+# Copy the created binaries in directory:
+cp simka ../
+# Go back at the installation root directory
+cd ..
+#toy example
+./simka -in example/simka_input -out example/
+
+ 

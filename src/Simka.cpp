@@ -25,6 +25,7 @@ Simka::Simka()  : Tool ("Simka")
 	parser->getParser (STR_MINIMIZER_TYPE)->setVisible (false);
 	parser->getParser (STR_MINIMIZER_SIZE)->setVisible (false);
 	parser->getParser (STR_REPARTITION_TYPE)->setVisible (false);
+    if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_KMER_ABUNDANCE_MIN)))  {  p->setDefaultValue ("0"); }
 	/*
     parser->push_back (new OptionOneParam (STR_URI_INPUT,         "reads file", true ));
     parser->push_back (new OptionOneParam (STR_KMER_SIZE,         "size of a kmer",                           false,  "31"    ));

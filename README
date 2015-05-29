@@ -1,0 +1,83 @@
+Simka: Fast kmer-based method for estimating the similarity between numerous metagenomic datasets
+Gaetan Benoit, Pierre Perterlongo, Dominique Lavenier, Claire Lemaitre	  		  
+May 2015
+
+
+LICENSE
+	TODO
+	see the LICENSE file
+	
+INSTALL
+	CMake is required to compile sitka (http://www.cmake.org/cmake/resources/software.html)
+	See the INSTALL file.
+	NOTE: If you retrieved a source archive, you can compile the project with 'sh INSTALL’
+
+	compilation was tested with gcc and g++ version>=4.5 and clang version>=4.1
+	
+CHANGELOG
+
+-version 0.1  May 28, 2015  
+ initial public release
+
+
+MANUAL	 
+								
+1/ Description
+	Simka estimates the similarity of two datasets based on their shared kmers.
+	To scale on N large datasets, the multi-bank kmer counter DSK is used.
+	Simka provides similarity matrix for two similarity functions:
+		- DKS: Distinct Kmer Similarity.
+			Similarity function based on the amount of distinct kmers
+			shared by two datasets.
+		- AKS: Abundance Kmer Similarity.
+			Add a quantitative information which is the abundance of
+			the kmers. This function usually gives better results than DKS.
+
+
+2/ Input
+	The input file (-in) lists the datasets filename and their name.
+	One dataset per line. A dataset is defined as an ID and its filename separated by space(s).
+	You can see an example in the folder «example»
+	Ex:
+		dataset_1_name /path/to/dataset1
+		dataset_2_name ../path/to/dataset2
+		…
+		dataset_N_name ~/path/to/datasetN
+
+
+3/ Output
+
+	Two matrix per similarity functions (asymmetrical and normalized version):
+	The asymmetrical matrix is useful to visualize global similarity (heatmap colors)
+	The normalized matrix is useful to visualize relative similarity (heatmap dundogram/clustering)
+
+
+4/ Usage for simka
+
+	Mandatory options:
+    		-in                      (1 arg) :    input file (see section 2/)
+
+	Simka options:	
+		-kmer-size               (1 arg) :    size of a kmer  [default '31']
+		-abundance-min           (1 arg) :    min abundance threshold for solid kmers [default ‘0’]
+		-abundance-max           (1 arg) :    max abundance threshold for solid kmers  [default '4294967295']
+		-solidity-kind           (1 arg) :    TODO  [default 'sum']
+		-out                     (1 arg) :    output directory for result files  [default '']
+
+	Core options:
+		-nb-cores                (1 arg) :    number of cores  [default '0']
+		-verbose                 (1 arg) :    verbosity level  [default '1']
+		-max-memory              (1 arg) :    max memory (in MBytes)  [default '2000']
+		-max-disk                (1 arg) :    max disk   (in MBytes)  [default '0']
+		-out-dir                 (1 arg) :    output directory for temporary files  [default '.']
+
+
+Examples:
+	Run the toy example:
+		./simka -in example/simka_input -out example/
+	Filtering uniq kmers (potentially erroneous) and very high abundance kmers (potentially contaminants):
+		./simka -in example/simka_input -out example/ -abundance-min 2 -abundance-max 200
+	Allowing more memory and cores improve the execution time:
+		./simka -in example/simka_input -out example/ -max-memory 60000 -nb-cores 8
+
+ 
