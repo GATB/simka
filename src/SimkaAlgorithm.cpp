@@ -1,19 +1,35 @@
-/*
- * SimkaAlgorithm.cpp
+/*****************************************************************************
+ *   Simka: Fast kmer-based method for estimating the similarity between numerous metagenomic datasets
+ *   A tool from the GATB (Genome Assembly Tool Box)
+ *   Copyright (C) 2015  INRIA
+ *   Authors: G.Benoit, C.Lemaitre, P.Peterlongo
  *
- *  Created on: 18 mai 2015
- *      Author: gbenoit
- */
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *****************************************************************************/
 
 #include "SimkaAlgorithm.hpp"
 
+
 template<size_t span>
-SimkaCountProcessor<span>::SimkaCountProcessor (size_t nbBanks, const pair<size_t, size_t>& abundanceThreshold){
+SimkaCountProcessor<span>::SimkaCountProcessor (size_t nbBanks, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle){
 	// We configure the vector for the N.(N+1)/2 possible pairs
 	//_countTotal.resize (_nbBanks*(_nbBanks+1)/2);
 
 	_nbBanks = nbBanks;
 	_abundanceThreshold = abundanceThreshold;
+	_solidKind = solidKind;
+	_soliditySingle = soliditySingle;
 
 	_nbKmers = 0;
 	_nbDistinctKmers = 0;
@@ -85,16 +101,19 @@ void SimkaCountProcessor<span>::finishClone(SimkaCountProcessor<span>* clone){
 }
 
 template<size_t span>
-bool SimkaCountProcessor<span>::isSolid(const CountVector& counts){
+bool SimkaCountProcessor<span>::isSolidVector(const CountVector& counts){
 
-	bool isSolid = false;
+	//if(_solidKind == SIMKA_SOLID_KIND::RANGE){
+	//}
+
+	//bool isSolid_ = false;
 
 	for(size_t i=0; i<counts.size(); i++){
 
 		CountNumber abundance = counts[i];
 		if(abundance == 0) continue;
 
-		if(abundance >= _abundanceThreshold.first && abundance <= _abundanceThreshold.second){
+		if(isSolid(abundance)){
 			return true;
 		}
 
@@ -109,6 +128,13 @@ bool SimkaCountProcessor<span>::isSolid(const CountVector& counts){
 
 }
 
+
+template<size_t span>
+bool SimkaCountProcessor<span>::isSolid(CountNumber count){
+	return count >= _abundanceThreshold.first && count <= _abundanceThreshold.second;
+}
+
+
 template<size_t span>
 bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const CountVector& counts, CountNumber sum){
 
@@ -120,48 +146,70 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 	}
 
 
-	if(isSolid(counts))
+	if(isSolidVector(counts))
 		_nbSolidKmers += 1;
 	else
 		return false;
 
+	/*
+	CountVector counts2;
+	for(int i=0; i<counts.size(); i++){
+		if(counts[i] < _abundanceThreshold.first)
+			counts2.push_back(0);
+		else
+			counts2.push_back(counts[i]);
+	}*/
+
+	if(_soliditySingle){
+		CountVector counts2(counts);
+		for(int i=0; i<counts.size(); i++){
+			if(!isSolid(counts[i]))
+				counts2[i] = 0;
+		}
+		computeStats(counts2);
+	}
+	else{
+		computeStats(counts);
+	}
+
+
+	return true;
+}
+
+
+template<size_t span>
+void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 
 	int nbBanksThatHaveKmer = 0;
-	//vector<bool> hasBankKmer(counts.size(), false);
 	u_int64_t totalAbundance = 0;
 
-	//pair<u_int32_t, u_int32_t> kmerInBankCoupleAbundance(-1, -1);
+
 
 	for(size_t i=0; i<counts.size(); i++){
 
-		CountNumber abundance = counts[i];
+		CountNumber abundanceI = counts[i];
 		//if(abundance < _abundanceMin) continue;
 
-		if(abundance != 0){
-			totalAbundance += abundance;
+		if(abundanceI != 0){
+			totalAbundance += abundanceI;
 			nbBanksThatHaveKmer += 1;
 			_nbSolidKmersPerBank[i] += 1;
-			_nbSolidKmersPerBankAbundance[i] += abundance;
+			_nbSolidKmersPerBankAbundance[i] += abundanceI;
 			//hasBankKmer[i] = true;
 
 			//if(kmerInBankCoupleAbundance.first == -1)
 			//	kmerInBankCoupleAbundance.first = abundance;
 			//else if(kmerInBankCoupleAbundance.second == -1)
 			//	kmerInBankCoupleAbundance.second = abundance;
-		}
+			for(size_t j=0; j<counts.size(); j++){
+				if(counts[j]){
+					_matrixSharedAbundanceKmers[i][j] += abundanceI;
+					_matrixSharedKmers[i][j] += 1;
+				}
 
-
-	}
-
-
-	for(size_t i=0; i<counts.size(); i++){
-		for(size_t j=0; j<counts.size(); j++){
-			if(counts[i] && counts[j]){
-				_matrixSharedAbundanceKmers[i][j] += counts[i];
-				_matrixSharedKmers[i][j] += 1;
 			}
-
 		}
+
 	}
 
 	_nbKmersSharedByBanksThreshold[nbBanksThatHaveKmer-1] += 1;
@@ -176,18 +224,19 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 	//}
 
 
-	return true;
 }
 
 template<size_t span>
 void SimkaCountProcessor<span>::print(){
 
-	cout.precision(4);
+	//cout.precision(4);
     cout << endl << endl;
 
     //return;
 
     u_int64_t solidAbundance = 0;
+    //for(int i=0; i<_nbSolidKmersPerBankAbundance.size(); i++)
+    //	solidAbundance += _nbSolidKmersPerBankAbundance[i];
     for(int i=0; i<_nbKmersAbundanceSharedByBanksThreshold.size(); i++)
     	solidAbundance += _nbKmersAbundanceSharedByBanksThreshold[i];
 
@@ -286,8 +335,20 @@ SimkaAlgorithm<span>::SimkaAlgorithm(IProperties* options) {
 	_outputDir = _options->get(STR_URI_OUTPUT) ? _options->getStr(STR_URI_OUTPUT) : "./";
 	_kmerSize = _options->getInt(STR_KMER_SIZE);
 	_abundanceThreshold.first = _options->getInt(STR_KMER_ABUNDANCE_MIN);
-	_abundanceThreshold.second =  _options->getInt(STR_KMER_ABUNDANCE_MAX);
+	_abundanceThreshold.second = _options->getInt(STR_KMER_ABUNDANCE_MAX);
+	_soliditySingle = _options->get(STR_SOLIDITY_PER_DATASET);
 
+	//cout << _soliditySingle << endl;
+	/*
+	string solidKindStr = _options->getStr(STR_SOLIDITY_KIND);
+	if(solidKindStr == "range"){
+		_solidKind = SIMKA_SOLID_KIND::RANGE;
+	}
+	else if(solidKindStr == "sum"){
+		_solidKind = SIMKA_SOLID_KIND::SUM;
+	}
+
+	cout << solidKindStr << " " << solidKindStr << endl;*/
 	//_kmerSize = _options->get(STR_KMER_SIZE) ? _options->getInt(STR_KMER_SIZE) : 31;
 	//_abundanceMin = _options->get(STR_KMER_ABUNDANCE_MIN) ? _options->getInt(STR_KMER_ABUNDANCE_MIN) : 0;
 	//_maxMemory = props->get(STR_MAX_MEMORY) ? props->getInt(STR_MAX_MEMORY) : 2000;
@@ -303,7 +364,7 @@ SimkaAlgorithm<span>::SimkaAlgorithm(IProperties* options) {
 	//cout << "Output filename: " << _outputFilename << endl;
 
 
-	_banksInputFilename = _inputFilename + ".dsk_banks.____temp";
+	_banksInputFilename = _inputFilename + "_dsk_dataset_temp__";
 
 
 }
@@ -318,14 +379,36 @@ void SimkaAlgorithm<span>::execute() {
 
 	layoutInputFilename();
 	_banks = Bank::open(_banksInputFilename);
-	count();
 
-	if(_options->getInt(STR_VERBOSE) > 0)
-	    _processor->print();
+	count();
 
 	outputMatrix();
 	outputHeatmap();
+	printHelp();
+
 	clear();
+}
+
+
+template<size_t span>
+void SimkaAlgorithm<span>::printHelp(){
+
+	if(_options->getInt(STR_VERBOSE) == 0) return;
+
+	_processor->print();
+
+	cout << "Similarity matrix:" << endl;
+	cout << "\t" << "DKS (presence/absence)" << endl;
+	cout << "\t\t" << "asym: " << _outputDir + "/" + _matDksPercFilename << endl;
+	cout << "\t\t" << "norm: " << _outputDir + "/" + _matDksNormFilename << endl;
+	cout << "\t" << "AKS (abundance)" << endl;
+	cout << "\t\t" << "asym: " << _outputDir + "/" + _matAksPercFilename << endl;
+	cout << "\t\t" << "norm: " << _outputDir + "/" + _matAksNormFilename << endl;
+
+	cout << "Heatmaps:" << endl;
+	cout << "\t" << "DKS (presence/absence):" << _outputDir + "/" + _heatmapDksFilename << endl;
+	cout << "\t" << "AKS (abundance):" << _outputDir + "/" + _heatmapAksFilename << endl;
+
 
 }
 
@@ -349,12 +432,15 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 
 	string bankFileContents = "";
 
+	u_int64_t lineIndex = 0;
+
 	while(getline(fileContentsStream, line)){
+
+		if(line == "") continue;
 
 		stringstream lineStream(line);
 		linePartList.clear();
-
-		//stringstream test(fileContents);
+		//vector<string> filenames;
 
 		while(getline(lineStream, linePart, ' ')){
 
@@ -363,22 +449,36 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 			}
 		}
 
+		//cout << linePartList.size() << endl;
+		//Bank id
 		string bankId = linePartList[0];
-		string bankFilename = linePartList[1];
-
 		_bankNames.push_back(bankId);
-		bankFileContents += bankFilename + "\n";
 
-		//cout << bankId << "            "  << bankFilename << endl;
-		//string nbReadsOrCoverage = linePartList[2];
+		 //ID and one filename
+		if(linePartList.size() == 2){
+			bankFileContents += linePartList[1] + "\n";
+		}
+		//ID and list of filename (paired files for example)
+		else{
+			char buffer[200];
+			snprintf(buffer,200,"%llu", lineIndex);
+			string subBankFilename = _banksInputFilename + "_" + string(buffer);
+			_tempFilenamesToDelete.push_back(subBankFilename);
+			IFile* subBankFile = System::file().newFile(subBankFilename, "wb");
+			string subBankContents = "";
 
-		//map<string, string> genomeInfos;
-		//genomeInfos["filename"] = filename;
-		//genomeInfos["nbReadsOrCoverage"] = nbReadsOrCoverage;
+			for(size_t i=1; i<linePartList.size(); i++){
+				subBankContents += linePartList[i] + "\n";
+			}
+			subBankContents.pop_back(); // "remove last /n
+			subBankFile->fwrite(subBankContents.c_str(), subBankContents.size(), 1);
+			subBankFile->flush();
+			delete subBankFile;
 
-		//_genomeInfos[genomeId] = genomeInfos;
-		//cout << genomeId << endl;
+			bankFileContents += System::file().getBaseName(subBankFilename) + "\n";
+		}
 
+		lineIndex += 1;
 	}
 
 	bankFileContents.pop_back(); // "remove last /n
@@ -400,7 +500,7 @@ void SimkaAlgorithm<span>::count(){
 	SortingCountAlgorithm<span> sortingCount (_banks, _options);
 
 	// We create a custom count processor and give it to the sorting count algorithm
-	_processor = new SimkaCountProcessor<span> (_nbBanks, _abundanceThreshold);
+	_processor = new SimkaCountProcessor<span> (_nbBanks, _abundanceThreshold, _solidKind, _soliditySingle);
 	_processor->use();
 	sortingCount.addProcessor (_processor);
 
@@ -460,9 +560,9 @@ void SimkaAlgorithm<span>::outputMatrix(){
 	strAbMin += string(buffer);
 
 	_matDksNormFilename = "mat_dks_norm" + strKmerSize + strAbMin + strAbMax + ".csv";
-	_matDksPercFilename = "mat_dks_perc" + strKmerSize + strAbMin + strAbMax + ".csv";
+	_matDksPercFilename = "mat_dks_asym" + strKmerSize + strAbMin + strAbMax + ".csv";
 	_matAksNormFilename = "mat_aks_norm" + strKmerSize + strAbMin + strAbMax + ".csv";
-	_matAksPercFilename = "mat_aks_perc" + strKmerSize + strAbMin + strAbMax + ".csv";
+	_matAksPercFilename = "mat_aks_asym" + strKmerSize + strAbMin + strAbMax + ".csv";
 
     dumpMatrix(_matDksNormFilename, matrixNormalized);
     dumpMatrix(_matDksPercFilename, matrixPercentage);
@@ -552,6 +652,11 @@ void SimkaAlgorithm<span>::__outputHeatmap(const string& matrixPercFilename, con
         //return EXIT_FAILURE;
     }
 
+    if(linePartList[0] == "dks")
+    	_heatmapDksFilename = outputFilename;
+    else
+    	_heatmapAksFilename = outputFilename;
+
 }
 
 template<size_t span>
@@ -559,6 +664,10 @@ void SimkaAlgorithm<span>::clear(){
 
 	System::file().remove(_banksInputFilename);
     _processor->forget();
+
+    for(size_t i=0; i<_tempFilenamesToDelete.size(); i++){
+    	System::file().remove(_tempFilenamesToDelete[i]);
+    }
 	//_banks->remove();
 	//delete _processor;
 }

@@ -1,6 +1,8 @@
 /*****************************************************************************
- *   GATB : Genome Assembly Tool Box
- *   Copyright (C) 2014  INRIA
+ *   Simka: Fast kmer-based method for estimating the similarity between numerous metagenomic datasets
+ *   A tool from the GATB (Genome Assembly Tool Box)
+ *   Copyright (C) 2015  INRIA
+ *   Authors: G.Benoit, C.Lemaitre, P.Peterlongo
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -14,7 +16,8 @@
  *
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*****************************************************************************/
+ *****************************************************************************/
+
 
 // We include the header file for the tool
 #include "Simka.hpp"

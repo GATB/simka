@@ -1,5 +1,4 @@
 A A.fasta
 B B.fasta
 C C.fasta
-D D.fasta
-E E.fasta
+D D_paired_1.fasta D_paired_2.fasta

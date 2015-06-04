@@ -4,7 +4,8 @@ May 2015
 
 
 LICENSE
-	TODO
+	*  GNU AFFERO GENERAL PUBLIC LICENSE
+	*  Copyright (C) 2015 INRIA
 	see the LICENSE file
 	
 INSTALL
@@ -25,32 +26,38 @@ MANUAL
 1/ Description
 	Simka estimates the similarity of two datasets based on their shared kmers.
 	To scale on N large datasets, the multi-bank kmer counter DSK is used.
-	Simka provides similarity matrix for two similarity functions:
-		- DKS: Distinct Kmer Similarity.
-			Similarity function based on the amount of distinct kmers
-			shared by two datasets.
-		- AKS: Abundance Kmer Similarity.
-			Add a quantitative information which is the abundance of
-			the kmers. This function usually gives better results than DKS.
-
 
 2/ Input
-	The input file (-in) lists the datasets filename and their name.
-	One dataset per line. A dataset is defined as an ID and its filename separated by space(s).
+	The input file (-in) lists the datasets.
+	One dataset per line:
+		A dataset is defined as an ID and one or more filenames separated by space(s).
+		If a dataset contains more than one filename, the multiple filenames are processed as a single file.
 	You can see an example in the folder «example»
 	Ex:
 		dataset_1_name /path/to/dataset1
 		dataset_2_name ../path/to/dataset2
+		paired_dataset /path/to/dataset_1 /path/to/dataset_2
+		n_dataset /path/to/dataset_1 /path/to/dataset_2 /path/to/dataset_3 /path/to/dataset_N
 		…
-		dataset_N_name ~/path/to/datasetN
+		dataset_N_name ./path/to/datasetN
 
 
 3/ Output
-
-	Two matrix per similarity functions (asymmetrical and normalized version):
-	The asymmetrical matrix is useful to visualize global similarity (heatmap colors)
-	The normalized matrix is useful to visualize relative similarity (heatmap dundogram/clustering)
-
+	Simka provides similarity matrix for two similarity functions:
+		- DKS: Distinct Kmer Similarity.
+			Similarity function based on the amount of distinct kmers shared by two datasets.
+			Informed about presence/abscence of species.
+		- AKS: Abundance Kmer Similarity.
+			Add a quantitative information which is the abundance of the distinct kmers.
+			Informed about abundance of species.
+	Two matrix per similarity functions are provided:
+		- asymmetrical (asym): Useful to visualize global similarity (heatmap colors)
+		- normalized (norm): Useful to visualize relative similarity (heatmap dundogram/clustering)
+	Heatmaps:
+		Required R and gplots package
+		The folder «Rscripts» must be at the same level of your simka executable.
+		Two heatmaps (DKS and AKS) are automatically generated.
+		
 
 4/ Usage for simka
 
@@ -62,6 +69,7 @@ MANUAL
 		-abundance-min           (1 arg) :    min abundance threshold for solid kmers [default ‘0’]
 		-abundance-max           (1 arg) :    max abundance threshold for solid kmers  [default '4294967295']
 		-solidity-kind           (1 arg) :    TODO  [default 'sum']
+		-solidity-single	TODO
 		-out                     (1 arg) :    output directory for result files  [default '']
 
 	Core options:

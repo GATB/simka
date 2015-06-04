@@ -1,7 +1,27 @@
-
+/*****************************************************************************
+ *   Simka: Fast kmer-based method for estimating the similarity between numerous metagenomic datasets
+ *   A tool from the GATB (Genome Assembly Tool Box)
+ *   Copyright (C) 2015  INRIA
+ *   Authors: G.Benoit, C.Lemaitre, P.Peterlongo
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *****************************************************************************/
 
 #include "Simka.hpp"
 #include "SimkaAlgorithm.hpp"
+
+
 
 Simka::Simka()  : Tool ("Simka")
 {
@@ -26,6 +46,9 @@ Simka::Simka()  : Tool ("Simka")
 	parser->getParser (STR_MINIMIZER_SIZE)->setVisible (false);
 	parser->getParser (STR_REPARTITION_TYPE)->setVisible (false);
     if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_KMER_ABUNDANCE_MIN)))  {  p->setDefaultValue ("0"); }
+
+    parser->push_back (new OptionNoParam (STR_SOLIDITY_PER_DATASET.c_str(), "Do not take into consideration multi-counting when determining solidity of kmers", false ));
+
 	/*
     parser->push_back (new OptionOneParam (STR_URI_INPUT,         "reads file", true ));
     parser->push_back (new OptionOneParam (STR_KMER_SIZE,         "size of a kmer",                           false,  "31"    ));
@@ -41,24 +64,45 @@ Simka::Simka()  : Tool ("Simka")
 
 struct Parameter
 {
-    Parameter (Simka& simka, IProperties* props) : simka(simka), props(props) {}
-    Simka&       simka;
-    IProperties* props;
+    //Parameter (Simka& simka, IProperties* props) : props(props) {}
+    Parameter (IProperties* props) : _props(props) {}
+    //Simka& _simka;
+    IProperties* _props;
+    /*
+    string _inputFilename;
+    string _outputDir;
+    size_t _kmerSize;
+    pair<size_t, size_t> _abundanceThreshold;
+    bool _soliditySingle;*/
 };
 
-template<size_t span> struct Functor  {  void operator ()  (Parameter parameter)
+template<size_t span> struct Functor  {  void operator ()  (Parameter p)
 {
-	SimkaAlgorithm<span> simkaAlgorithm (parameter.props);
+	SimkaAlgorithm<span> simkaAlgorithm (p._props);
 	simkaAlgorithm.execute();
 }};
 
 void Simka::execute ()
 {
-    /** we get the kmer size chosen by the end user. */
-    size_t kmerSize = getInput()->getInt (STR_KMER_SIZE);
+	IProperties* input = getInput();
+	//Parameter params(*this, getInput());
+	Parameter params(input);
+
+	size_t kmerSize = getInput()->getInt (STR_KMER_SIZE);
+	/*
+	params._kmerSize = getInput()->getInt (STR_KMER_SIZE);
+	params._inputFilename = input->getStr(STR_URI_INPUT);
+	params._outputDir = input->get(STR_URI_OUTPUT) ? input->getStr(STR_URI_OUTPUT) : "./";
+	params._abundanceThreshold.first = input->getInt(STR_KMER_ABUNDANCE_MIN);
+	params._abundanceThreshold.second = input->getInt(STR_KMER_ABUNDANCE_MAX);
+	params._soliditySingle = input->get(Simka::STR_SOLIDITY_PER_DATASET);
+
+	cout << params._soliditySingle << endl;
+*/
+
 
     /** We launch the tool with the correct Integer implementation according to the choosen kmer size. */
-    Integer::apply<Functor,Parameter> (kmerSize, Parameter (*this, getInput()));
+    Integer::apply<Functor,Parameter> (kmerSize, params);
 }
 
 
