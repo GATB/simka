@@ -25,6 +25,7 @@
 #include<stdio.h>
 
 const string STR_SOLIDITY_PER_DATASET = "-solidity-single";
+const string STR_MAX_READS = "-max-reads";
 
 enum SIMKA_SOLID_KIND{
 	RANGE,
@@ -109,6 +110,7 @@ public:
 private:
 
 	void layoutInputFilename();
+	void createBank();
 	void count();
 	void outputMatrix();
 	void dumpMatrix(const string& outputFilename, vector<vector<float> >& matrix);
@@ -124,6 +126,7 @@ private:
 	pair<size_t, size_t> _abundanceThreshold;
 	SIMKA_SOLID_KIND _solidKind;
 	bool _soliditySingle;
+	size_t _maxNbReads;
 	//size_t _nbCores;
 
 	string _banksInputFilename;
@@ -140,6 +143,59 @@ private:
 	string _matAksPercFilename;
 	string _heatmapDksFilename;
 	string _heatmapAksFilename;
+
+	struct SequenceFilterFunctor
+	{
+		u_int64_t _maxNbReads;
+		u_int64_t _nbReadProcessed;
+
+	    SequenceFilterFunctor(u_int64_t maxNbReads){
+	    	//cout << "create" << endl;
+	    	_maxNbReads = maxNbReads;
+	    	//cout << "create" << endl;
+	    	_nbReadProcessed = 0;
+	    }
+
+	    /*
+	    SequenceFilterFunctor(SequenceFilterFunctor& copy){
+	    	//cout << "create" << endl;
+	    	//_maxNbReads = maxNbReads;
+	    	cout << "create copy" << endl;
+	    	_nbReadProcessed = 0;
+	    }*/
+
+	    bool operator() (Sequence& seq){
+
+	    	//cout << this << endl;
+	    	//cout << _maxNbReads << endl;
+	    	//cout << _nbReadProcessed << endl;
+	    	//if(seq.getIndex() == 0)
+	    	//	reset();
+
+	    	if(_nbReadProcessed >= _maxNbReads)
+	    		return false;
+
+	    	if(!isShannonIndexValid(seq))
+	    		return false;
+
+	    	//cout << this << "    " << seq.getIndex() << "    " << _nbReadProcessed << "  " <<  _maxNbReads << endl;
+
+	    	//cout << "reset" << endl;
+	    	_nbReadProcessed += 1;
+    		return true;
+	    }
+
+	    void reset(){
+	    	//cout << "resoto" << endl;
+	    	_nbReadProcessed = 0;
+	    }
+
+	    bool isShannonIndexValid(Sequence& seq){
+	    	return true;
+	    }
+
+	};
+
 
 };
 

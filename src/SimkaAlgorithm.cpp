@@ -111,6 +111,7 @@ bool SimkaCountProcessor<span>::isSolidVector(const CountVector& counts){
 	for(size_t i=0; i<counts.size(); i++){
 
 		CountNumber abundance = counts[i];
+
 		if(abundance == 0) continue;
 
 		if(isSolid(abundance)){
@@ -337,7 +338,11 @@ SimkaAlgorithm<span>::SimkaAlgorithm(IProperties* options) {
 	_abundanceThreshold.first = _options->getInt(STR_KMER_ABUNDANCE_MIN);
 	_abundanceThreshold.second = _options->getInt(STR_KMER_ABUNDANCE_MAX);
 	_soliditySingle = _options->get(STR_SOLIDITY_PER_DATASET);
+	_maxNbReads = _options->getInt(STR_MAX_READS);
+	if(_maxNbReads == 0)
+		_maxNbReads = -1;
 
+	//cout << _maxNbReads << endl;
 	//cout << _soliditySingle << endl;
 	/*
 	string solidKindStr = _options->getStr(STR_SOLIDITY_KIND);
@@ -378,7 +383,7 @@ template<size_t span>
 void SimkaAlgorithm<span>::execute() {
 
 	layoutInputFilename();
-	_banks = Bank::open(_banksInputFilename);
+	createBank();
 
 	count();
 
@@ -389,28 +394,6 @@ void SimkaAlgorithm<span>::execute() {
 	clear();
 }
 
-
-template<size_t span>
-void SimkaAlgorithm<span>::printHelp(){
-
-	if(_options->getInt(STR_VERBOSE) == 0) return;
-
-	_processor->print();
-
-	cout << "Similarity matrix:" << endl;
-	cout << "\t" << "DKS (presence/absence)" << endl;
-	cout << "\t\t" << "asym: " << _outputDir + "/" + _matDksPercFilename << endl;
-	cout << "\t\t" << "norm: " << _outputDir + "/" + _matDksNormFilename << endl;
-	cout << "\t" << "AKS (abundance)" << endl;
-	cout << "\t\t" << "asym: " << _outputDir + "/" + _matAksPercFilename << endl;
-	cout << "\t\t" << "norm: " << _outputDir + "/" + _matAksNormFilename << endl;
-
-	cout << "Heatmaps:" << endl;
-	cout << "\t" << "DKS (presence/absence):" << _outputDir + "/" + _heatmapDksFilename << endl;
-	cout << "\t" << "AKS (abundance):" << _outputDir + "/" + _heatmapAksFilename << endl;
-
-
-}
 
 template<size_t span>
 void SimkaAlgorithm<span>::layoutInputFilename(){
@@ -489,13 +472,29 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 	bankFile->flush();
 	delete bankFile;
 
+
+	if(_options->getInt(STR_VERBOSE) != 0){
+		cout << "Nb input datasets: " << _bankNames.size() << endl;
+	}
 }
 
 
 template<size_t span>
+void SimkaAlgorithm<span>::createBank(){
+
+	IBank* bank = Bank::open(_banksInputFilename);
+
+	_nbBanks = bank->getCompositionNb();
+
+	SequenceFilterFunctor sequenceFilter(_maxNbReads);
+
+	_banks = new BankFiltered<SequenceFilterFunctor>(bank, sequenceFilter);
+
+}
+
+template<size_t span>
 void SimkaAlgorithm<span>::count(){
 
-	_nbBanks = _banks->getCompositionNb();
 
 	SortingCountAlgorithm<span> sortingCount (_banks, _options);
 
@@ -513,7 +512,6 @@ void SimkaAlgorithm<span>::count(){
 
 template<size_t span>
 void SimkaAlgorithm<span>::outputMatrix(){
-
 
 
     vector<vector<float> > matrixNormalized;
@@ -656,6 +654,29 @@ void SimkaAlgorithm<span>::__outputHeatmap(const string& matrixPercFilename, con
     	_heatmapDksFilename = outputFilename;
     else
     	_heatmapAksFilename = outputFilename;
+
+}
+
+
+template<size_t span>
+void SimkaAlgorithm<span>::printHelp(){
+
+	if(_options->getInt(STR_VERBOSE) == 0) return;
+
+	_processor->print();
+
+	cout << "Similarity matrix:" << endl;
+	cout << "\t" << "DKS (presence/absence)" << endl;
+	cout << "\t\t" << "asym: " << _outputDir + "/" + _matDksPercFilename << endl;
+	cout << "\t\t" << "norm: " << _outputDir + "/" + _matDksNormFilename << endl;
+	cout << "\t" << "AKS (abundance)" << endl;
+	cout << "\t\t" << "asym: " << _outputDir + "/" + _matAksPercFilename << endl;
+	cout << "\t\t" << "norm: " << _outputDir + "/" + _matAksNormFilename << endl;
+
+	cout << "Heatmaps:" << endl;
+	cout << "\t" << "DKS (presence/absence):" << _outputDir + "/" + _heatmapDksFilename << endl;
+	cout << "\t" << "AKS (abundance):" << _outputDir + "/" + _heatmapAksFilename << endl;
+
 
 }
 

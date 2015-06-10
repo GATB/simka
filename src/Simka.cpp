@@ -26,14 +26,59 @@
 Simka::Simka()  : Tool ("Simka")
 {
 
+
 	IOptionsParser* parser = getParser();
-
 	IOptionsParser* dskParser = SortingCountAlgorithm<>::getOptionsParser();
+	parser->push_back(dskParser);
+	dskParser->setVisible(false);
+	parser->getParser(STR_NB_CORES)->setVisible(false);
 
-    //if (IOptionsParser* input = dskParser->getParser (STR_KMER_ABUNDANCE_MIN_THRESHOLD))  {  input->setVisible (false);  }
+	//Main parser
+	parser->push_front(dskParser->getParser (STR_URI_OUTPUT_DIR));
+	parser->getParser (STR_URI_OUTPUT_DIR)->setHelp("output directory for temporary files");
+	parser->push_front(dskParser->getParser (STR_URI_OUTPUT));
+	parser->getParser (STR_URI_OUTPUT)->setHelp("output directory for result files (similarity matrix, heatmaps)");
+	parser->push_front(dskParser->getParser (STR_URI_INPUT));
+	parser->getParser(STR_URI_INPUT)->setHelp("input file of datasets and their id. One dataset per line: dataset_id dataset_filename");
 
-	//dskParser->
+
+	//Kmer parser
+    IOptionsParser* kmerParser = new OptionsParser ("kmer");
+    kmerParser->push_back(dskParser->getParser (STR_KMER_SIZE));
+    kmerParser->push_back(dskParser->getParser (STR_KMER_ABUNDANCE_MIN));
+    if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_KMER_ABUNDANCE_MIN)))  {  p->setDefaultValue ("0"); }
+    kmerParser->push_back(dskParser->getParser (STR_KMER_ABUNDANCE_MAX));
+    kmerParser->push_back(dskParser->getParser (STR_SOLIDITY_KIND));
+    kmerParser->getParser (STR_SOLIDITY_KIND)->setHelp("TODO");
+    kmerParser->push_back (new OptionNoParam (STR_SOLIDITY_PER_DATASET.c_str(), "do not take into consideration multi-counting when determining solid kmers", false ));
+
+
+    //Read filter parser
+    IOptionsParser* readParser = new OptionsParser ("read");
+    readParser->push_back (new OptionOneParam (STR_MAX_READS.c_str(), "maximum number of reads per dataset to process", false, "0" ));
+
+    //Core parser
+    IOptionsParser* coreParser = new OptionsParser ("core");
+    coreParser->push_back(new OptionOneParam(parser->getParser(STR_NB_CORES)->getName(), parser->getParser(STR_NB_CORES)->getHelp(), false, "0"));
+    coreParser->push_back(dskParser->getParser (STR_MAX_MEMORY));
+    coreParser->push_back(dskParser->getParser (STR_MAX_DISK));
+    //coreParser->push_back(parser->getParser(STR_VERBOSE));
+
+
+	//coreParser->getParser(STR_NB_CORES)->setVisible(true);;
+
+	parser->push_back(kmerParser);
+	parser->push_back(readParser);
+	parser->push_back(coreParser);
+
+	//if (IOptionsParser* input = dskParser->getParser (STR_KMER_ABUNDANCE_MIN_THRESHOLD))  {  input->setVisible (false);  }
+
+	/*
+	IOptionsParser* parser = getParser();
+	IOptionsParser* dskParser = SortingCountAlgorithm<>::getOptionsParser();
 	parser->push_back (dskParser, 1);
+	parser->push_back(dskParser);
+
 
 	parser->getParser (STR_URI_INPUT)->setHelp("input file of datasets and their id. One dataset per line: dataset_id dataset_filename");
 	parser->getParser (STR_KMER_ABUNDANCE_MIN_THRESHOLD)->setVisible (false);
@@ -48,7 +93,7 @@ Simka::Simka()  : Tool ("Simka")
     if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_KMER_ABUNDANCE_MIN)))  {  p->setDefaultValue ("0"); }
 
     parser->push_back (new OptionNoParam (STR_SOLIDITY_PER_DATASET.c_str(), "Do not take into consideration multi-counting when determining solidity of kmers", false ));
-
+	*/
 	/*
     parser->push_back (new OptionOneParam (STR_URI_INPUT,         "reads file", true ));
     parser->push_back (new OptionOneParam (STR_KMER_SIZE,         "size of a kmer",                           false,  "31"    ));
