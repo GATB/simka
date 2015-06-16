@@ -39,7 +39,7 @@ Simka::Simka()  : Tool ("Simka")
 	parser->push_front(dskParser->getParser (STR_URI_OUTPUT));
 	parser->getParser (STR_URI_OUTPUT)->setHelp("output directory for result files (similarity matrix, heatmaps)");
 	parser->push_front(dskParser->getParser (STR_URI_INPUT));
-	parser->getParser(STR_URI_INPUT)->setHelp("input file of datasets and their id. One dataset per line: dataset_id dataset_filename");
+	parser->getParser(STR_URI_INPUT)->setHelp("input file of datasets. One dataset per line: id filename1 filename2...");
 
 
 	//Kmer parser
@@ -50,12 +50,14 @@ Simka::Simka()  : Tool ("Simka")
     kmerParser->push_back(dskParser->getParser (STR_KMER_ABUNDANCE_MAX));
     kmerParser->push_back(dskParser->getParser (STR_SOLIDITY_KIND));
     kmerParser->getParser (STR_SOLIDITY_KIND)->setHelp("TODO");
-    kmerParser->push_back (new OptionNoParam (STR_SOLIDITY_PER_DATASET.c_str(), "do not take into consideration multi-counting when determining solid kmers", false ));
+    kmerParser->push_back (new OptionNoParam (STR_SIMKA_SOLIDITY_PER_DATASET.c_str(), "do not take into consideration multi-counting when determining solid kmers", false ));
 
 
     //Read filter parser
     IOptionsParser* readParser = new OptionsParser ("read");
-    readParser->push_back (new OptionOneParam (STR_MAX_READS.c_str(), "maximum number of reads per dataset to process", false, "0" ));
+    readParser->push_back (new OptionOneParam (STR_SIMKA_MAX_READS.c_str(), "maximum number of reads per dataset to process", false, "0" ));
+    readParser->push_back (new OptionOneParam (STR_SIMKA_MIN_READ_SIZE.c_str(), "minimal size a read should have to be kept", false, "0" ));
+    readParser->push_back (new OptionOneParam (STR_SIMKA_MIN_SHANNON_INDEX.c_str(), "minimal Shannon index a read should have to be kept. Float in [0,2]", false, "0" ));
 
     //Core parser
     IOptionsParser* coreParser = new OptionsParser ("core");

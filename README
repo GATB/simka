@@ -29,10 +29,14 @@ MANUAL
 
 2/ Input
 	The input file (-in) lists the datasets.
-	One dataset per line:
-		A dataset is defined as an ID and one or more filenames separated by space(s).
-		If a dataset contains more than one filename, the multiple filenames are processed as a single file.
-	You can see an example in the folder «example»
+	One dataset per line with the following syntax:
+		ID filename
+		ID filename1 filename2 filename3 ...
+	If multiple filenames are defined, the dataset is the concatenation of each file. Except if
+	-max-reads option is used, we get maxReads/N reads in each files (where N is the number
+	of filenames).
+
+	You can see an input example in the folder «example»
 	Ex:
 		dataset_1_name /path/to/dataset1
 		dataset_2_name ../path/to/dataset2
@@ -50,9 +54,11 @@ MANUAL
 		- AKS: Abundance Kmer Similarity.
 			Add a quantitative information which is the abundance of the distinct kmers.
 			Informed about abundance of species.
+
 	Two matrix per similarity functions are provided:
 		- asymmetrical (asym): Useful to visualize global similarity (heatmap colors)
-		- normalized (norm): Useful to visualize relative similarity (heatmap dundogram/clustering)
+		- normalized (norm): Useful to visualize relative similarity (heatmap dendrogram/clustering)
+
 	Heatmaps:
 		Required R and gplots package
 		The folder «Rscripts» must be at the same level of your simka executable.

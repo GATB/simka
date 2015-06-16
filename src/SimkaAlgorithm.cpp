@@ -337,10 +337,24 @@ SimkaAlgorithm<span>::SimkaAlgorithm(IProperties* options) {
 	_kmerSize = _options->getInt(STR_KMER_SIZE);
 	_abundanceThreshold.first = _options->getInt(STR_KMER_ABUNDANCE_MIN);
 	_abundanceThreshold.second = _options->getInt(STR_KMER_ABUNDANCE_MAX);
-	_soliditySingle = _options->get(STR_SOLIDITY_PER_DATASET);
-	_maxNbReads = _options->getInt(STR_MAX_READS);
-	if(_maxNbReads == 0)
-		_maxNbReads = -1;
+	_soliditySingle = _options->get(STR_SIMKA_SOLIDITY_PER_DATASET);
+
+	//read filter
+	_maxNbReads = _options->getInt(STR_SIMKA_MAX_READS);
+	_minReadSize = _options->getInt(STR_SIMKA_MIN_READ_SIZE);
+	_minShannonIndex = _options->getDouble(STR_SIMKA_MIN_SHANNON_INDEX);
+	_minShannonIndex = std::max(_minShannonIndex, 0.0);
+	_minShannonIndex = std::min(_minShannonIndex, 2.0);
+
+	/*
+	if(_options->getInt(STR_VERBOSE) != 0){
+		cout << "Filter options" << endl;
+		cout << "\tMax reads per dataset:  " <<  _maxNbReads << endl;
+		cout << "\tMin read size:  " <<  _minReadSize << endl;
+		cout << "\tMin Shannon index:  " <<  _minShannonIndex << endl;
+	}*/
+	//if(_maxNbReads == 0)
+	//	_maxNbReads = -1;
 
 	//cout << _maxNbReads << endl;
 	//cout << _soliditySingle << endl;
@@ -440,6 +454,7 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 		 //ID and one filename
 		if(linePartList.size() == 2){
 			bankFileContents += linePartList[1] + "\n";
+			_nbReadsPerDataset.push_back(_maxNbReads);
 		}
 		//ID and list of filename (paired files for example)
 		else{
@@ -459,6 +474,7 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 			delete subBankFile;
 
 			bankFileContents += System::file().getBaseName(subBankFilename) + "\n";
+			_nbReadsPerDataset.push_back(ceil(_maxNbReads / (float)(linePartList.size() - 1))); //linePartList.size() - 1 = nb sub banks
 		}
 
 		lineIndex += 1;
@@ -472,6 +488,9 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 	bankFile->flush();
 	delete bankFile;
 
+	//for(int i=0; i<_nbBanksOfDataset.size(); i++){
+	//	cout << i << "   "  << _nbBanksOfDataset[i] << endl;
+	//}
 
 	if(_options->getInt(STR_VERBOSE) != 0){
 		cout << "Nb input datasets: " << _bankNames.size() << endl;
@@ -486,9 +505,11 @@ void SimkaAlgorithm<span>::createBank(){
 
 	_nbBanks = bank->getCompositionNb();
 
-	SequenceFilterFunctor sequenceFilter(_maxNbReads);
+	_datasetIndex = 0;
+	_bankIndex = -1;
+	SimkaSequenceFilter sequenceFilter(_minReadSize, _minShannonIndex);
 
-	_banks = new BankFiltered<SequenceFilterFunctor>(bank, sequenceFilter);
+	_banks = new SimkaBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, _nbReadsPerDataset);
 
 }
 
