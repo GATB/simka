@@ -22,6 +22,7 @@
 #define TOOLS_SIMKA_SRC_SIMKAALGORITHM_HPP_
 
 #include <gatb/gatb_core.hpp>
+#include "SimkaDistance.hpp"
 #include<stdio.h>
 
 const string STR_SIMKA_SOLIDITY_PER_DATASET = "-solidity-single";
@@ -36,6 +37,7 @@ enum SIMKA_SOLID_KIND{
 
 
 
+
 /*********************************************************************
 * ** SimkaCountProcessor
 *********************************************************************/
@@ -47,49 +49,32 @@ public:
     typedef typename Kmer<span>::Type  Type;
     //typedef typename Kmer<span>::Count Count;
 
-	SimkaCountProcessor(size_t nbBanks, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle);
+	SimkaCountProcessor(SimkaStatistics& stats, size_t nbBanks, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle);
 	~SimkaCountProcessor();
-    CountProcessorAbstract<span>* clone ()  {  return new SimkaCountProcessor (_nbBanks, _abundanceThreshold, _solidKind, _soliditySingle);  }
+    CountProcessorAbstract<span>* clone ()  {  return new SimkaCountProcessor (_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle);  }
 	//CountProcessorAbstract<span>* clone ();
 	void finishClones (vector<ICountProcessor<span>*>& clones);
 	void finishClone(SimkaCountProcessor<span>* clone);
 	virtual bool process (size_t partId, const typename Kmer<span>::Type& kmer, const CountVector& count, CountNumber sum);
+
 	void computeStats(const CountVector& counts);
+	void updateBrayCurtis(int bank1, CountNumber abundance1, int bank2, CountNumber abundance2);
 
 	bool isSolidVector(const CountVector& counts);
 	bool isSolid(CountNumber count);
-	void print();
 
-	vector<u_int64_t> _nbSolidKmersPerBank;
-	vector<u_int64_t> _nbSolidKmersPerBankAbundance;
-
-	vector<u_int64_t> _nbKmersSharedByBanksThreshold;
-	vector<u_int64_t> _nbKmersAbundanceSharedByBanksThreshold;
-
-	vector<vector<u_int64_t> > _matrixSharedKmers;
-	vector<vector<u_int64_t> > _matrixSharedAbundanceKmers;
 
 private:
 
     size_t         _nbBanks;
+	pair<size_t, size_t> _abundanceThreshold;
     SIMKA_SOLID_KIND _solidKind;
     bool _soliditySingle;
     //vector<size_t> _countTotal;
 
 	//u_int64_t _nbBanks;
-	pair<size_t, size_t> _abundanceThreshold;
-	//string _outputDir;
-
-	u_int64_t _nbKmers;
-	vector<u_int64_t> _nbKmersPerBank;
-	u_int64_t _nbErroneousKmers;
-
-	u_int64_t _nbDistinctKmers;
-	u_int64_t _nbSolidKmers;
-
-	//u_int64_t _nbKmersInCoupleBankSupRatio;
-
-	//unordered_map<string, histo_t> _histos;
+    SimkaStatistics* _localStats;
+    SimkaStatistics& _stats;
 
 };
 
@@ -123,6 +108,11 @@ struct SimkaSequenceFilter
 		return seq.getDataSize() >= _minReadSize;
 	}
 
+	bool isShannonIndexValid(Sequence& seq){
+		if(_minShannonIndex == 0) return true;
+		return getShannonIndex(seq) >= _minShannonIndex;
+	}
+
 	float getShannonIndex(Sequence& seq){
 		float index = 0;
 		//float freq [5];
@@ -143,11 +133,6 @@ struct SimkaSequenceFilter
 		}
 		return abs(index);
 
-	}
-
-	bool isShannonIndexValid(Sequence& seq){
-		if(_minShannonIndex == 0) return true;
-		return getShannonIndex(seq) >= _minShannonIndex;
 	}
 
 	size_t _minReadSize;
@@ -255,6 +240,7 @@ public:
 	SimkaAlgorithm(IProperties* options);
 	~SimkaAlgorithm();
 	void execute();
+	void print();
 
 
 private:
@@ -262,11 +248,13 @@ private:
 	void layoutInputFilename();
 	void createBank();
 	void count();
+
 	void outputMatrix();
-	void dumpMatrix(const string& outputFilename, vector<vector<float> >& matrix);
+
+	void dumpMatrix(const string& outputFilename, const vector<vector<float> >& matrix);
 	void outputHeatmap();
-	void __outputHeatmap(const string& matrixPercFilename, const string& matrixNormFilename);
-	void printHelp();
+	void __outputHeatmap(const string& outputFilenamePrefix, const string& matrixPercFilename, const string& matrixNormFilename);
+
 	void clear();
 
 	string _outputDir;
@@ -281,8 +269,8 @@ private:
 	double _minShannonIndex;
 	//size_t _nbCores;
 
-	int _datasetIndex;
-	int _bankIndex;
+	SimkaStatistics* _stats;
+	SimkaDistance* _simkaDistance;
 
 	string _banksInputFilename;
 	vector<string> _tempFilenamesToDelete;
@@ -293,14 +281,14 @@ private:
 	vector<string> _bankNames;
 	vector<u_int64_t> _nbReadsPerDataset;
 
-	string _matDksNormFilename;
-	string _matDksPercFilename;
-	string _matAksNormFilename;
-	string _matAksPercFilename;
-	string _heatmapDksFilename;
-	string _heatmapAksFilename;
+	string _outputFilenameSuffix;
 
-
+	//string _matDksNormFilename;
+	//string _matDksPercFilename;
+	//string _matAksNormFilename;
+	//string _matAksPercFilename;
+	//string _heatmapDksFilename;
+	//string _heatmapAksFilename;
 
 };
 

@@ -22,7 +22,9 @@
 
 
 template<size_t span>
-SimkaCountProcessor<span>::SimkaCountProcessor (size_t nbBanks, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle){
+SimkaCountProcessor<span>::SimkaCountProcessor (SimkaStatistics& stats, size_t nbBanks, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle) :
+_stats(stats)
+{
 	// We configure the vector for the N.(N+1)/2 possible pairs
 	//_countTotal.resize (_nbBanks*(_nbBanks+1)/2);
 
@@ -31,34 +33,12 @@ SimkaCountProcessor<span>::SimkaCountProcessor (size_t nbBanks, const pair<size_
 	_solidKind = solidKind;
 	_soliditySingle = soliditySingle;
 
-	_nbKmers = 0;
-	_nbDistinctKmers = 0;
-	_nbSolidKmers = 0;
-	_nbErroneousKmers = 0;
-
-	//_abundanceMin = abundanceMin;
-	//_mutex = mutex;
-	//_outputDir = outputDir;
-
-	_nbSolidKmersPerBank.resize(_nbBanks, 0);
-	_nbSolidKmersPerBankAbundance.resize(_nbBanks, 0);
-	_nbKmersPerBank.resize(_nbBanks, 0);
-
-	_nbKmersSharedByBanksThreshold.resize(_nbBanks, 0);
-	_nbKmersAbundanceSharedByBanksThreshold.resize(_nbBanks, 0);
-
-	_matrixSharedKmers.resize(_nbBanks);
-	_matrixSharedAbundanceKmers.resize(_nbBanks);
-	for(int i=0; i<_nbBanks; i++){
-		_matrixSharedKmers[i].resize(nbBanks, 0);
-		_matrixSharedAbundanceKmers[i].resize(nbBanks, 0);
-	}
-
+	_localStats = new SimkaStatistics(_nbBanks);
 }
 
 template<size_t span>
 SimkaCountProcessor<span>::~SimkaCountProcessor () {
-
+	delete _localStats;
 }
 
 
@@ -76,28 +56,8 @@ void SimkaCountProcessor<span>::finishClones (std::vector<ICountProcessor<span>*
 
 template<size_t span>
 void SimkaCountProcessor<span>::finishClone(SimkaCountProcessor<span>* clone){
-
-	_nbKmers += clone->_nbKmers;
-	_nbDistinctKmers += clone->_nbDistinctKmers;
-	_nbSolidKmers += clone->_nbSolidKmers;
-	_nbErroneousKmers += clone->_nbErroneousKmers;
-
-	for(size_t i=0; i<_nbBanks; i++){
-		_nbKmersPerBank[i] += clone->_nbKmersPerBank[i];
-		_nbSolidKmersPerBank[i] += clone->_nbSolidKmersPerBank[i];
-		_nbSolidKmersPerBankAbundance[i] += clone->_nbSolidKmersPerBankAbundance[i];
-		_nbKmersSharedByBanksThreshold[i] += clone->_nbKmersSharedByBanksThreshold[i];
-		_nbKmersAbundanceSharedByBanksThreshold[i] += clone->_nbKmersAbundanceSharedByBanksThreshold[i];
-	}
-
-
-	for(size_t i=0; i<_nbBanks; i++){
-		for(size_t j=0; j<_nbBanks; j++){
-			_matrixSharedKmers[i][j] += clone->_matrixSharedKmers[i][j];
-			_matrixSharedAbundanceKmers[i][j] += clone->_matrixSharedAbundanceKmers[i][j];
-		}
-	}
-
+	//cout << _stats << "   " << &clone->_stats << endl;
+	_stats += *clone->_localStats;
 }
 
 template<size_t span>
@@ -139,16 +99,16 @@ bool SimkaCountProcessor<span>::isSolid(CountNumber count){
 template<size_t span>
 bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const CountVector& counts, CountNumber sum){
 
-	_nbDistinctKmers += 1;
+	_localStats->_nbDistinctKmers += 1;
 
 	for(size_t i=0; i<counts.size(); i++){
-		_nbKmers += counts[i];
-		_nbKmersPerBank[i] += counts[i];
+		_localStats->_nbKmers += counts[i];
+		_localStats->_nbKmersPerBank[i] += counts[i];
 	}
 
 
 	if(isSolidVector(counts))
-		_nbSolidKmers += 1;
+		_localStats->_nbSolidKmers += 1;
 	else
 		return false;
 
@@ -191,11 +151,11 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 		CountNumber abundanceI = counts[i];
 		//if(abundance < _abundanceMin) continue;
 
-		if(abundanceI != 0){
+		if(abundanceI){
 			totalAbundance += abundanceI;
 			nbBanksThatHaveKmer += 1;
-			_nbSolidKmersPerBank[i] += 1;
-			_nbSolidKmersPerBankAbundance[i] += abundanceI;
+			_localStats->_nbSolidDistinctKmersPerBank[i] += 1;
+			_localStats->_nbSolidKmersPerBank[i] += abundanceI;
 			//hasBankKmer[i] = true;
 
 			//if(kmerInBankCoupleAbundance.first == -1)
@@ -203,9 +163,13 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 			//else if(kmerInBankCoupleAbundance.second == -1)
 			//	kmerInBankCoupleAbundance.second = abundance;
 			for(size_t j=0; j<counts.size(); j++){
-				if(counts[j]){
-					_matrixSharedAbundanceKmers[i][j] += abundanceI;
-					_matrixSharedKmers[i][j] += 1;
+
+				CountNumber abundanceJ = counts[j];
+
+				if(abundanceJ){
+					_localStats->_matrixNbSharedKmers[i][j] += abundanceI;
+					_localStats->_matrixNbDistinctSharedKmers[i][j] += 1;
+					updateBrayCurtis(i, abundanceI, j, abundanceJ);
 				}
 
 			}
@@ -213,12 +177,12 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 
 	}
 
-	_nbKmersSharedByBanksThreshold[nbBanksThatHaveKmer-1] += 1;
-	_nbKmersAbundanceSharedByBanksThreshold[nbBanksThatHaveKmer-1] += totalAbundance;
+	_localStats->_nbDistinctKmersSharedByBanksThreshold[nbBanksThatHaveKmer-1] += 1;
+	_localStats->_nbKmersSharedByBanksThreshold[nbBanksThatHaveKmer-1] += totalAbundance;
 
 	if(totalAbundance == 1){
 		//if( == 1){
-			_nbErroneousKmers += 1;
+		_localStats->_nbErroneousKmers += 1;
 		//}
 	}
 	//else if(nbBanksThatHaveKmer == counter.size()){
@@ -227,71 +191,12 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 
 }
 
+
 template<size_t span>
-void SimkaCountProcessor<span>::print(){
-
-	//cout.precision(4);
-    cout << endl << endl;
-
-    //return;
-
-    u_int64_t solidAbundance = 0;
-    //for(int i=0; i<_nbSolidKmersPerBankAbundance.size(); i++)
-    //	solidAbundance += _nbSolidKmersPerBankAbundance[i];
-    for(int i=0; i<_nbKmersAbundanceSharedByBanksThreshold.size(); i++)
-    	solidAbundance += _nbKmersAbundanceSharedByBanksThreshold[i];
-
-    cout << "Statistics on kmer intersections:" << endl;
-    cout << "\tNb kmers: " << _nbKmers << "    " << _nbKmers / 1000000 << " M" << "    " << _nbKmers / 1000000000 << " G" << endl;
-    cout << endl;
-
-    cout << "\tNb distinct kmers: " << _nbDistinctKmers << "    " << _nbDistinctKmers / 1000000 << " M" << "    " << _nbDistinctKmers / 1000000000 << " G" << "    " << (100*_nbDistinctKmers)/(float)_nbKmers << "%" << endl;
-    cout << "\tNb solid kmers: " << _nbSolidKmers << "    " << _nbSolidKmers / 1000000 << " M" << "    " << _nbSolidKmers / 1000000000 << " G" << "    " << (100*_nbSolidKmers)/(float)_nbDistinctKmers << "% distinct" << "       " << (100*solidAbundance) / (double)_nbKmers << "% abundance" << endl;
-    //for(int i=0; i<_nbBanks; i++){
-	    //cout << "Nb kmers (M) " << i <<  ": " << _nbSolidKmersPerBank[i] << endl << endl;
-    //}
-
-    cout << endl;
-    cout << "\tPotentially erroneous (Kmers appearing only one time in a single bank): " << endl;
-    cout << "\t\t" << _nbErroneousKmers << "    " << _nbErroneousKmers / 1000000 << " M" << "    " << _nbErroneousKmers / 1000000000 << " G" << "    " << (100*_nbErroneousKmers)/(float)_nbDistinctKmers << "% distinct" << "      " << (100*_nbErroneousKmers)/(float)_nbKmers << "% abundance" << endl;
-
-    cout << endl;
-    cout << "\tKmer shared by T banks :" << endl;
-
-    for(int i=0; i<_nbBanks; i++){
-	    cout << "\t\tShared by " << i+1 <<  " banks:";
-
-	    cout << endl;
-	    cout << "\t\t\tDistinct:    " << _nbKmersSharedByBanksThreshold[i] << "    ";
-	    if(_nbSolidKmers > 0){
-		    cout << (_nbKmersSharedByBanksThreshold[i]*100) / (float)_nbSolidKmers << "%";
-	    }
-	    else{
-	    	cout << "0%";
-	    }
-
-	    cout << endl;
-	    cout << "\t\t\tAbundance:    " << _nbKmersAbundanceSharedByBanksThreshold[i] << "    ";
-	    if(solidAbundance > 0){
-	    	cout << (_nbKmersAbundanceSharedByBanksThreshold[i]*100) / (float)solidAbundance << "%";
-	    }
-	    else{
-	    	cout << "0%";
-	    }
-	    if(_nbKmersSharedByBanksThreshold[i] > 0){
-	    	cout << endl;
-		    cout << "\t\t\tMean abundance per bank: " << _nbKmersAbundanceSharedByBanksThreshold[i] / _nbKmersSharedByBanksThreshold[i] / (float) _nbBanks;
-	    }
-
-	    cout << endl;
-    }
-
-    //cout << endl;
-    //cout << "Nb kmers in all banks (max/min > 10): " << _nbKmersInCoupleBankSupRatio << "    " << (_nbKmersInCoupleBankSupRatio*100) / (float)_nbSolidKmers << "%" <<  endl;
-
-
-   cout << endl << endl;
+void SimkaCountProcessor<span>::updateBrayCurtis(int bank1, CountNumber abundance1, int bank2, CountNumber abundance2){
+	_localStats->_brayCurtisNumerator[bank1][bank2] += min(abundance1, abundance2);
 }
+
 
 
 
@@ -403,7 +308,11 @@ void SimkaAlgorithm<span>::execute() {
 
 	outputMatrix();
 	outputHeatmap();
-	printHelp();
+
+	if(_options->getInt(STR_VERBOSE) != 0){
+		_stats->print();
+		print();
+	}
 
 	clear();
 }
@@ -505,8 +414,6 @@ void SimkaAlgorithm<span>::createBank(){
 
 	_nbBanks = bank->getCompositionNb();
 
-	_datasetIndex = 0;
-	_bankIndex = -1;
 	SimkaSequenceFilter sequenceFilter(_minReadSize, _minShannonIndex);
 
 	_banks = new SimkaBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, _nbReadsPerDataset);
@@ -516,11 +423,12 @@ void SimkaAlgorithm<span>::createBank(){
 template<size_t span>
 void SimkaAlgorithm<span>::count(){
 
+	_stats = new SimkaStatistics(_nbBanks);
 
 	SortingCountAlgorithm<span> sortingCount (_banks, _options);
 
 	// We create a custom count processor and give it to the sorting count algorithm
-	_processor = new SimkaCountProcessor<span> (_nbBanks, _abundanceThreshold, _solidKind, _soliditySingle);
+	_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle);
 	_processor->use();
 	sortingCount.addProcessor (_processor);
 
@@ -530,73 +438,56 @@ void SimkaAlgorithm<span>::count(){
 
 }
 
-
 template<size_t span>
 void SimkaAlgorithm<span>::outputMatrix(){
 
+	_simkaDistance = new SimkaDistance(*_stats);
 
-    vector<vector<float> > matrixNormalized;
-    vector<vector<float> > matrixPercentage;
-    vector<vector<float> > matrixAbundanceNormalized;
-    vector<vector<float> > matrixAbundancePercentage;
-
-    matrixNormalized.resize(_nbBanks);
-    matrixPercentage.resize(_nbBanks);
-    matrixAbundanceNormalized.resize(_nbBanks);
-    matrixAbundancePercentage.resize(_nbBanks);
-    for(int i=0; i<_nbBanks; i++){
-    	matrixNormalized[i].resize(_nbBanks, 0);
-    	matrixPercentage[i].resize(_nbBanks, 0);
-    	matrixAbundanceNormalized[i].resize(_nbBanks, 0);
-    	matrixAbundancePercentage[i].resize(_nbBanks, 0);
-    }
-
-
-    for(int i=0; i<_nbBanks; i++){
-	    for(int j=0; j<_nbBanks; j++){
-	    	matrixNormalized[i][j] = (100.0 * (_processor->_matrixSharedKmers[i][j] + _processor->_matrixSharedKmers[j][i])) / (_processor->_nbSolidKmersPerBank[i] + _processor->_nbSolidKmersPerBank[j]);
-	    	matrixPercentage[i][j] = (100.0 * (_processor->_matrixSharedKmers[i][j])) / (_processor->_nbSolidKmersPerBank[i]);
-	    	matrixAbundanceNormalized[i][j] = (100.0 * (_processor->_matrixSharedAbundanceKmers[i][j] + _processor->_matrixSharedAbundanceKmers[j][i])) / (_processor->_nbSolidKmersPerBankAbundance[i] + _processor->_nbSolidKmersPerBankAbundance[j]);
-	    	matrixAbundancePercentage[i][j] = (100.0 * (_processor->_matrixSharedAbundanceKmers[i][j])) / (_processor->_nbSolidKmersPerBankAbundance[i]);
-	    }
-    }
-
+	_outputFilenameSuffix = "";
 
 	char buffer[200];
 
 	string strKmerSize = "_k";
 	snprintf(buffer,200,"%llu",_kmerSize);
 	strKmerSize += string(buffer);
+	_outputFilenameSuffix += strKmerSize;
 
     string strAbMax = "";
     if(_abundanceThreshold.second < 1000000){
     	snprintf(buffer,200,"%llu",_abundanceThreshold.second);
     	strAbMax += "_max" + string(buffer);
     }
+    _outputFilenameSuffix += strAbMax;
 
 	string strAbMin = "_min";
 	snprintf(buffer,200,"%llu",_abundanceThreshold.first);
 	strAbMin += string(buffer);
+	_outputFilenameSuffix += strAbMin;
 
-	_matDksNormFilename = "mat_dks_norm" + strKmerSize + strAbMin + strAbMax + ".csv";
-	_matDksPercFilename = "mat_dks_asym" + strKmerSize + strAbMin + strAbMax + ".csv";
-	_matAksNormFilename = "mat_aks_norm" + strKmerSize + strAbMin + strAbMax + ".csv";
-	_matAksPercFilename = "mat_aks_asym" + strKmerSize + strAbMin + strAbMax + ".csv";
 
-    dumpMatrix(_matDksNormFilename, matrixNormalized);
-    dumpMatrix(_matDksPercFilename, matrixPercentage);
-    dumpMatrix(_matAksNormFilename, matrixAbundanceNormalized);
-    dumpMatrix(_matAksPercFilename, matrixAbundancePercentage);
+	//_matDksNormFilename = "mat_dks_norm" + filenameSuffix + ".csv";
+	//_matDksPercFilename = "mat_dks_asym" + filenameSuffix + ".csv";
+	//_matAksNormFilename = "mat_aks_norm" + filenameSuffix + ".csv";
+	//_matAksPercFilename = "mat_aks_asym" + filenameSuffix + ".csv";
+
+
+
+    dumpMatrix("mat_presenceAbsence_asym", _simkaDistance->getMatrixDKS(SIMKA_MATRIX_TYPE::ASYMETRICAL));
+    dumpMatrix("mat_presenceAbsence_norm", _simkaDistance->getMatrixDKS(SIMKA_MATRIX_TYPE::NORMALIZED));
+    dumpMatrix("mat_abundance_asym", _simkaDistance->getMatrixAKS(SIMKA_MATRIX_TYPE::ASYMETRICAL));
+    dumpMatrix("mat_abundance_norm", _simkaDistance->getMatrixAKS(SIMKA_MATRIX_TYPE::NORMALIZED));
+    dumpMatrix("mat_brayCurtis", _simkaDistance->getMatrixBrayCurtis());
 
 }
 
+
 template<size_t span>
-void SimkaAlgorithm<span>::dumpMatrix(const string& outputFilename, vector<vector<float> >& matrix){
+void SimkaAlgorithm<span>::dumpMatrix(const string& outputFilename, const vector<vector<float> >& matrix){
 
 	char buffer[200];
 	string str;
 
-	for(int i=0; i<_nbBanks; i++){
+	for(int i=0; i<matrix.size(); i++){
 		str += ";" + _bankNames[i];
 		//str += ";" + datasetInfos[i]._name;
 	}
@@ -621,7 +512,7 @@ void SimkaAlgorithm<span>::dumpMatrix(const string& outputFilename, vector<vecto
 	}
 
 
-	gatb::core::system::IFile* file = gatb::core::system::impl::System::file().newFile(_outputDir + "/" + outputFilename, "wb");
+	gatb::core::system::IFile* file = gatb::core::system::impl::System::file().newFile(_outputDir + "/" + outputFilename + _outputFilenameSuffix + ".csv", "wb");
 	file->fwrite(str.c_str(), str.size(), 1);
 	file->flush();
 	delete file;
@@ -630,14 +521,16 @@ void SimkaAlgorithm<span>::dumpMatrix(const string& outputFilename, vector<vecto
 
 template<size_t span>
 void SimkaAlgorithm<span>::outputHeatmap(){
-	__outputHeatmap(_matDksPercFilename, _matDksNormFilename);
-	__outputHeatmap(_matAksPercFilename, _matAksNormFilename);
+	__outputHeatmap("heatmap_presenceAbsence", "mat_presenceAbsence_asym", "mat_presenceAbsence_norm");
+	__outputHeatmap("heatmap_abundance", "mat_abundance_asym", "mat_abundance_norm");
+	__outputHeatmap("heatmap_brayCurtis", "mat_brayCurtis", "mat_brayCurtis");
 }
 
 
 template<size_t span>
-void SimkaAlgorithm<span>::__outputHeatmap(const string& matrixPercFilename, const string& matrixNormFilename){
+void SimkaAlgorithm<span>::__outputHeatmap(const string& outputFilenamePrefix, const string& matrixAsymFilename, const string& matrixNormFilename){
 
+	/*
 	string filename = matrixPercFilename.substr(0, matrixPercFilename.size()-4); //remove mat extension .csv
 	vector<string> linePartList;
 	string outputFilename = "heatmap";
@@ -657,8 +550,14 @@ void SimkaAlgorithm<span>::__outputHeatmap(const string& matrixPercFilename, con
 		outputFilename += "_" + linePartList[i];
 	}
 	outputFilename += ".png";
+	*/
 
-	string command = "Rscript ./Rscripts/heatmap.r " + _outputDir + "/" + matrixPercFilename + " " + _outputDir + "/" + matrixPercFilename + " " + _outputDir + "/" + outputFilename;
+	string asymFilename = matrixAsymFilename + _outputFilenameSuffix + ".csv";
+	string normFilename = matrixNormFilename + _outputFilenameSuffix + ".csv";
+	string outputFilename = outputFilenamePrefix + _outputFilenameSuffix + ".png";
+
+
+	string command = "Rscript ./Rscripts/heatmap.r " + _outputDir + "/" + asymFilename + " " + _outputDir + "/" + normFilename + " " + _outputDir + "/" + outputFilename;
 	//cout << command << endl;
 
     try
@@ -671,21 +570,20 @@ void SimkaAlgorithm<span>::__outputHeatmap(const string& matrixPercFilename, con
         //return EXIT_FAILURE;
     }
 
-    if(linePartList[0] == "dks")
-    	_heatmapDksFilename = outputFilename;
-    else
-    	_heatmapAksFilename = outputFilename;
+    //if(linePartList[0] == "dks")
+    //	_heatmapDksFilename = outputFilename;
+    //else
+    //	_heatmapAksFilename = outputFilename;
 
 }
 
 
 template<size_t span>
-void SimkaAlgorithm<span>::printHelp(){
+void SimkaAlgorithm<span>::print(){
 
-	if(_options->getInt(STR_VERBOSE) == 0) return;
+	cout << "Output folder:   " << _outputDir << endl;
 
-	_processor->print();
-
+	/*
 	cout << "Similarity matrix:" << endl;
 	cout << "\t" << "DKS (presence/absence)" << endl;
 	cout << "\t\t" << "asym: " << _outputDir + "/" + _matDksPercFilename << endl;
@@ -696,10 +594,11 @@ void SimkaAlgorithm<span>::printHelp(){
 
 	cout << "Heatmaps:" << endl;
 	cout << "\t" << "DKS (presence/absence):" << _outputDir + "/" + _heatmapDksFilename << endl;
-	cout << "\t" << "AKS (abundance):" << _outputDir + "/" + _heatmapAksFilename << endl;
+	cout << "\t" << "AKS (abundance):" << _outputDir + "/" + _heatmapAksFilename << endl;*/
 
 
 }
+
 
 template<size_t span>
 void SimkaAlgorithm<span>::clear(){
@@ -710,6 +609,9 @@ void SimkaAlgorithm<span>::clear(){
     for(size_t i=0; i<_tempFilenamesToDelete.size(); i++){
     	System::file().remove(_tempFilenamesToDelete[i]);
     }
+
+    delete _stats;
+    delete _simkaDistance;
 	//_banks->remove();
 	//delete _processor;
 }
