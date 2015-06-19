@@ -224,22 +224,44 @@ vector<vector<float> > SimkaDistance::createSquaredMatrix(int n){
 
 }
 
-//Presence absence
-vector<vector<float> > SimkaDistance::getMatrixDKS(SIMKA_MATRIX_TYPE type){
+//Presence/absence Sorensen 2c/(S1+S2)
+vector<vector<float> > SimkaDistance::getMatrixSorensen(SIMKA_MATRIX_TYPE type){
 
     vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
 
     if(type == SIMKA_MATRIX_TYPE::ASYMETRICAL){
-        for(int i=0; i<_nbBanks; i++)
+    	for(int i=0; i<_nbBanks; i++)
     	    for(int j=0; j<_nbBanks; j++)
     	    	matrix[i][j] = (100.0 * (_stats._matrixNbDistinctSharedKmers[i][j])) / (_stats._nbSolidDistinctKmersPerBank[i]);
     }
     else if(type == SIMKA_MATRIX_TYPE::NORMALIZED){
-
         for(int i=0; i<_nbBanks; i++)
     	    for(int j=0; j<_nbBanks; j++)
     	    	matrix[i][j] = (100.0 * (2*_stats._matrixNbDistinctSharedKmers[i][j])) / (_stats._nbSolidDistinctKmersPerBank[i] + _stats._nbSolidDistinctKmersPerBank[j]);
     }
+
+    return matrix;
+}
+
+//Presence/absence Jaccard |AnB| / |AuB|
+vector<vector<float> > SimkaDistance::getMatrixJaccard(){
+
+    vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+
+    //if(type == SIMKA_MATRIX_TYPE::ASYMETRICAL){
+    //    for(int i=0; i<_nbBanks; i++)
+    //	    for(int j=0; j<_nbBanks; j++)
+    //	    	matrix[i][j] = (100.0 * (_stats._matrixNbDistinctSharedKmers[i][j])) / (_stats._nbSolidDistinctKmersPerBank[i]);
+    //}
+    //else if(type == SIMKA_MATRIX_TYPE::NORMALIZED){
+
+        for(int i=0; i<_nbBanks; i++){
+    	    for(int j=0; j<_nbBanks; j++){
+    	    	u_int64_t intersection_ = _stats._matrixNbDistinctSharedKmers[i][j];
+    	    	u_int64_t union_ = _stats._nbSolidDistinctKmersPerBank[i] + _stats._nbSolidDistinctKmersPerBank[j] - _stats._matrixNbDistinctSharedKmers[i][j];
+    	    	matrix[i][j] = (100.0 * intersection_) / union_;
+    	    }
+		}
 
     return matrix;
 }

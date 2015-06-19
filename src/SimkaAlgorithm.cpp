@@ -470,10 +470,9 @@ void SimkaAlgorithm<span>::outputMatrix(){
 	//_matAksNormFilename = "mat_aks_norm" + filenameSuffix + ".csv";
 	//_matAksPercFilename = "mat_aks_asym" + filenameSuffix + ".csv";
 
-
-
-    dumpMatrix("mat_presenceAbsence_asym", _simkaDistance->getMatrixDKS(SIMKA_MATRIX_TYPE::ASYMETRICAL));
-    dumpMatrix("mat_presenceAbsence_norm", _simkaDistance->getMatrixDKS(SIMKA_MATRIX_TYPE::NORMALIZED));
+    dumpMatrix("mat_presenceAbsence_sorensen_asym", _simkaDistance->getMatrixSorensen(SIMKA_MATRIX_TYPE::ASYMETRICAL));
+    dumpMatrix("mat_presenceAbsence_sorensen", _simkaDistance->getMatrixSorensen(SIMKA_MATRIX_TYPE::NORMALIZED));
+    dumpMatrix("mat_presenceAbsence_jaccard", _simkaDistance->getMatrixJaccard());
     dumpMatrix("mat_abundance_asym", _simkaDistance->getMatrixAKS(SIMKA_MATRIX_TYPE::ASYMETRICAL));
     dumpMatrix("mat_abundance_norm", _simkaDistance->getMatrixAKS(SIMKA_MATRIX_TYPE::NORMALIZED));
     dumpMatrix("mat_brayCurtis", _simkaDistance->getMatrixBrayCurtis());
@@ -521,7 +520,8 @@ void SimkaAlgorithm<span>::dumpMatrix(const string& outputFilename, const vector
 
 template<size_t span>
 void SimkaAlgorithm<span>::outputHeatmap(){
-	__outputHeatmap("heatmap_presenceAbsence", "mat_presenceAbsence_asym", "mat_presenceAbsence_norm");
+	__outputHeatmap("heatmap_presenceAbsence_sorensen", "mat_presenceAbsence_sorensen_asym", "mat_presenceAbsence_sorensen");
+	__outputHeatmap("heatmap_presenceAbsence_jaccard", "mat_presenceAbsence_jaccard", "mat_presenceAbsence_jaccard");
 	__outputHeatmap("heatmap_abundance", "mat_abundance_asym", "mat_abundance_norm");
 	__outputHeatmap("heatmap_brayCurtis", "mat_brayCurtis", "mat_brayCurtis");
 }

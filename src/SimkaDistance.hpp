@@ -59,7 +59,8 @@ public:
 	SimkaDistance(SimkaStatistics& stats);
 	//virtual ~SimkaDistance();
 
-	vector<vector<float> > getMatrixDKS(SIMKA_MATRIX_TYPE type);
+	vector<vector<float> > getMatrixSorensen(SIMKA_MATRIX_TYPE type);
+	vector<vector<float> > getMatrixJaccard();
 	vector<vector<float> > getMatrixAKS(SIMKA_MATRIX_TYPE type);
 	vector<vector<float> > getMatrixBrayCurtis();
 
