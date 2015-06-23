@@ -878,10 +878,15 @@ public:
 
 
     void operator() (Sequence& sequence){
+
+    	//cout << sequence.toString() << endl;
+
+    	if(sequence.getDataSize() < _kmerSize) return;
+
 		std::vector<KmerType> kmers;
 		_model.build(sequence.getData(), kmers);
 
-		std::vector<KmerType> minimizers(_nbMinimizers);
+		std::vector<KmerType> minimizers;
 		minHash(_nbMinimizers, kmers, minimizers);
 
 
@@ -936,7 +941,7 @@ private:
     size_t _nbMinimizers;
     size_t _kmerSize;
     ModelCanonical _model;
-    Hash16<Type, u_int8_t>* _counter;
+    //Hash16<Type, u_int8_t>* _counter;
 
     /** Shared resources (must support concurrent accesses). */
     PartitionCache <Type> _partition;

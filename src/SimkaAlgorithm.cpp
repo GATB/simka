@@ -360,7 +360,7 @@ void SimkaAlgorithm<span>::executeSimkamin() {
 	//_processor->use();
 
 
-	_nbPartitions = 100;
+	_nbPartitions = 200;
 	_nbKmerPerPartitions.resize(_nbPartitions, 0);
 	_nbk_per_radix_per_part.resize(256);
     for(size_t ii=0; ii<256; ii++)
