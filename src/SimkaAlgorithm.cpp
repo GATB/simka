@@ -101,11 +101,13 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 
 	_localStats->_nbDistinctKmers += 1;
 
+	//cout << kmer.toString(31) << endl;
 	for(size_t i=0; i<counts.size(); i++){
+		//cout << counts[i] << " ";
 		_localStats->_nbKmers += counts[i];
 		_localStats->_nbKmersPerBank[i] += counts[i];
 	}
-
+	//cout << endl;
 
 	if(isSolidVector(counts))
 		_localStats->_nbSolidKmers += 1;
@@ -232,13 +234,20 @@ void SimkaCountProcessor<span>::updateBrayCurtis(int bank1, CountNumber abundanc
 
 
 template<size_t span>
-SimkaAlgorithm<span>::SimkaAlgorithm(IProperties* options) {
+SimkaAlgorithm<span>::SimkaAlgorithm(IProperties* options)
+:
+Algorithm("simka", -1, options),
+_tmpPartitionsStorage(0), _tmpPartitions(0)
+{
 
 	_options = options;
 
 
+	_maxMemory = getInput()->getInt(STR_MAX_MEMORY);
+    _nbCores = getInput()->getInt(STR_NB_CORES);
 	_inputFilename = _options->getStr(STR_URI_INPUT);
 	_outputDir = _options->get(STR_URI_OUTPUT) ? _options->getStr(STR_URI_OUTPUT) : "./";
+	_outputDirTemp = _options->get(STR_URI_OUTPUT_DIR) ? _options->getStr(STR_URI_OUTPUT_DIR) : "./";
 	_kmerSize = _options->getInt(STR_KMER_SIZE);
 	_abundanceThreshold.first = _options->getInt(STR_KMER_ABUNDANCE_MIN);
 	_abundanceThreshold.second = _options->getInt(STR_KMER_ABUNDANCE_MAX);
@@ -317,6 +326,217 @@ void SimkaAlgorithm<span>::execute() {
 	clear();
 }
 
+template<size_t span>
+std::vector<size_t> SimkaAlgorithm<span>::getNbCoresList()
+{
+    std::vector<size_t> result;
+
+    for (size_t p=0; p<_nbPartitions; )
+    {
+        u_int64_t ram_total = 0;
+        size_t i=0;
+        for (i=0; i< _nbCores && p<_nbPartitions
+            && (ram_total ==0  || ((ram_total+(_nbKmerPerPartitions[p]*getSizeofPerItem()))  <= _maxMemory*MBYTE)) ; i++, p++)
+        {
+            ram_total += _nbKmerPerPartitions[p]*getSizeofPerItem();
+        }
+
+        result.push_back (i);
+    }
+
+    return result;
+}
+
+template<size_t span>
+void SimkaAlgorithm<span>::executeSimkamin() {
+
+	layoutInputFilename();
+	createBank();
+
+
+	//_stats = new SimkaStatistics(_nbBanks);
+	//SortingCountAlgorithm<span> sortingCount (_banks, _options);
+	//_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle);
+	//_processor->use();
+
+
+	_nbPartitions = 100;
+	_nbKmerPerPartitions.resize(_nbPartitions, 0);
+	_nbk_per_radix_per_part.resize(256);
+    for(size_t ii=0; ii<256; ii++)
+	{
+		_nbk_per_radix_per_part[ii].resize(_nbPartitions, 0);
+	}
+
+    string tmpStorageName = _outputDirTemp + "/" + System::file().getTemporaryFilename("dsk_partitions");
+    /** We create the partition files for the current pass. */
+    setPartitionsStorage (StorageFactory(STORAGE_FILE).create (tmpStorageName, true, false));
+    setPartitions        (0); // close the partitions first, otherwise new files are opened before  closing parti from previous pass
+    setPartitions        ( & (*_tmpPartitionsStorage)().getPartition<Type> ("parts", _nbPartitions));
+
+
+    cout << "Tmp storage: " << tmpStorageName << endl;
+
+
+    vector<Iterator<Sequence>*> itBanks =  _banks->iterator()->getComposition();
+
+    int total = 0;
+
+    for (size_t i=0; i<itBanks.size(); i++){
+
+    	cout << i << endl;
+
+        getDispatcher()->iterate (itBanks[i], FillPartitions<span> (_nbPartitions, _kmerSize, _maxNbReads, _tmpPartitions, _nbk_per_radix_per_part), 1000, true);
+
+
+        _tmpPartitions->flush();
+        vector<size_t> nbItems;
+        for (size_t p=0; p<_nbPartitions; p++)
+        {
+        	u_int64_t nbItem = (*_tmpPartitions)[p].getNbItems();
+            nbItems.push_back (nbItem);
+            _nbKmerPerPartitions[p] += nbItem;
+            total += nbItem;
+        }
+        _nbKmersPerPartitionPerBank.push_back (nbItems);
+
+		//GR: close the input bank here with call to finalize
+		itBanks[i]->finalize();
+    }
+
+    cout << total << endl;
+
+
+
+    //_nbCores = 1;
+
+
+
+
+
+
+
+
+    vector<size_t> coreList = getNbCoresList();
+
+    cout << "Nb cores list:  ";
+    for(size_t cores : coreList){
+    	cout << cores << " ";
+    }
+    cout << endl;
+
+	_stats = new SimkaStatistics(_nbBanks);
+    _processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle);
+    _processor->use();
+
+    MemAllocator pool (_nbCores);
+
+    size_t p = 0;
+    for (size_t i=0; i<coreList.size(); i++)
+    {
+        vector<ICommand*> cmds;
+
+        vector<ICountProcessor<span>*> clones;
+
+        size_t currentNbCores = coreList[i];
+
+        u_int64_t mem = (_maxMemory*MBYTE)/currentNbCores;
+
+
+        size_t cacheSize = min ((u_int64_t)(200*1000), mem/(50*sizeof(Count)));
+
+        /** We build a list of 'currentNbCores' commands to be dispatched each one in one thread. */
+        for (size_t j=0; j<currentNbCores; j++, p++)
+        {
+            ISynchronizer* synchro = System::thread().newSynchronizer();
+            LOCAL (synchro);
+
+            ICountProcessor<span>* processorClone = _processor->clone ();
+
+            processorClone->use();
+            clones.push_back (processorClone);
+
+
+            uint64_t memoryPartition = (_nbKmerPerPartitions[p]*getSizeofPerItem()); //in bytes
+
+
+            ICommand* cmd = 0;
+
+			u_int64_t memoryPoolSize = _maxMemory*MBYTE;
+
+			if (memoryPartition >= memoryPoolSize)
+			{
+				static const int EXCEED_FACTOR = 2;
+
+				if (memoryPartition  < EXCEED_FACTOR*memoryPoolSize)
+				{
+					memoryPoolSize = memoryPartition;
+				}
+				else
+				{
+					unsigned long system_mem = System::info().getMemoryPhysicalTotal();
+					memoryPoolSize = memoryPartition;
+
+					if (memoryPoolSize > system_mem*0.95)
+					{
+						throw Exception ("memory issue: %lld bytes required, %lld bytes set by command-line limit, %lld bytes in system memory",
+							memoryPartition, memoryPoolSize, system_mem
+						);
+					}
+					else
+						cout << "Warning: forced to allocate extra memory: " << memoryPoolSize / MBYTE << " MB" << endl;
+
+				}
+			}
+
+		   //if capa pool ==0, reserve max memo , pass pool to partibyvec, will be used  for vec kmers
+			if (pool.getCapacity() == 0)  {  pool.reserve (memoryPoolSize); }
+			else if (memoryPoolSize > pool.getCapacity()) { pool.reserve(0); pool.reserve (memoryPoolSize); }
+
+
+			vector<size_t> nbItemsPerBankPerPart;
+			for (size_t i=0; i<_nbKmersPerPartitionPerBank.size(); i++)
+			{
+				nbItemsPerBankPerPart.push_back (_nbKmersPerPartitionPerBank[i][p] - (i==0 ? 0 : _nbKmersPerPartitionPerBank[i-1][p]) );
+			}
+
+			//cmd = new PartitionsByVectorCommand<span> (
+			//	(*_tmpPartitions)[p], processorClone, cacheSize, _progress, _fillTimeInfo,
+			//	pInfo, pass, p, _config._nbCores_per_partition, _config._kmerSize, pool, nbItemsPerBankPerPart
+			//);
+			int nbCore = 1;
+			cmd = new PartitionCommand<span> (
+				(*_tmpPartitions)[p], processorClone, cacheSize, 0, p, nbCore, _kmerSize, pool, nbItemsPerBankPerPart, _nbKmerPerPartitions, _nbk_per_radix_per_part
+			);
+
+            cmds.push_back (cmd);
+
+        }
+
+        getDispatcher()->dispatchCommands (cmds, 0);
+
+        _processor->finishClones (clones);
+        for (size_t i=0; i<clones.size(); i++)  { clones[i]->forget(); }  clones.clear();
+
+        pool.free_all();
+    }
+
+
+
+
+
+    _tmpPartitions->remove();
+    //return;
+	outputMatrix();
+	outputHeatmap();
+
+	if(_options->getInt(STR_VERBOSE) != 0){
+		_stats->print();
+		print();
+	}
+
+	clear();
+}
 
 template<size_t span>
 void SimkaAlgorithm<span>::layoutInputFilename(){

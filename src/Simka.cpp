@@ -126,7 +126,8 @@ struct Parameter
 template<size_t span> struct Functor  {  void operator ()  (Parameter p)
 {
 	SimkaAlgorithm<span> simkaAlgorithm (p._props);
-	simkaAlgorithm.execute();
+	simkaAlgorithm.executeSimkamin();
+	//simkaAlgorithm.execute();
 }};
 
 void Simka::execute ()
