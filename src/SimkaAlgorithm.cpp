@@ -99,13 +99,17 @@ bool SimkaCountProcessor<span>::isSolid(CountNumber count){
 template<size_t span>
 bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const CountVector& counts, CountNumber sum){
 
+	_totalAbundance = 0;
 	_localStats->_nbDistinctKmers += 1;
 
 	//cout << kmer.toString(31) << endl;
 	for(size_t i=0; i<counts.size(); i++){
+
+		CountNumber abundance = counts[i];
 		//cout << counts[i] << " ";
-		_localStats->_nbKmers += counts[i];
-		_localStats->_nbKmersPerBank[i] += counts[i];
+		_localStats->_nbKmers += abundance;
+		_localStats->_nbKmersPerBank[i] += abundance;
+		_totalAbundance += abundance;
 	}
 	//cout << endl;
 
@@ -144,7 +148,7 @@ template<size_t span>
 void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 
 	int nbBanksThatHaveKmer = 0;
-	u_int64_t totalAbundance = 0;
+	//u_int64_t totalAbundance = 0;
 
 
 
@@ -154,7 +158,7 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 		//if(abundance < _abundanceMin) continue;
 
 		if(abundanceI){
-			totalAbundance += abundanceI;
+			//totalAbundance += abundanceI;
 			nbBanksThatHaveKmer += 1;
 			_localStats->_nbSolidDistinctKmersPerBank[i] += 1;
 			_localStats->_nbSolidKmersPerBank[i] += abundanceI;
@@ -172,6 +176,7 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 					_localStats->_matrixNbSharedKmers[i][j] += abundanceI;
 					_localStats->_matrixNbDistinctSharedKmers[i][j] += 1;
 					updateBrayCurtis(i, abundanceI, j, abundanceJ);
+					//updateKullbackLeibler(i, abundanceI, j, abundanceJ);
 				}
 
 			}
@@ -180,9 +185,9 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 	}
 
 	_localStats->_nbDistinctKmersSharedByBanksThreshold[nbBanksThatHaveKmer-1] += 1;
-	_localStats->_nbKmersSharedByBanksThreshold[nbBanksThatHaveKmer-1] += totalAbundance;
+	_localStats->_nbKmersSharedByBanksThreshold[nbBanksThatHaveKmer-1] += _totalAbundance;
 
-	if(totalAbundance == 1){
+	if(_totalAbundance == 1){
 		//if( == 1){
 		_localStats->_nbErroneousKmers += 1;
 		//}
@@ -196,11 +201,35 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 
 template<size_t span>
 void SimkaCountProcessor<span>::updateBrayCurtis(int bank1, CountNumber abundance1, int bank2, CountNumber abundance2){
+	/*
+    //n = len(X)
+    bc_num = 0
+    bc_den = 0
+    for i in range(n):
+        if (X[i] + Y[i] > 0):
+            bc_num += abs(abundance1-abundance2)
+            bc_den += abundance1 + abundance2
+    bc = bc_num/bc_den
+    #
+    return bc*/
+
+
+	//_localStats->_brayCurtisNumerator[bank1][bank2] += abs(abundance1-abundance2) / (float)(abundance1 + abundance2);
 	_localStats->_brayCurtisNumerator[bank1][bank2] += min(abundance1, abundance2);
 }
 
+template<size_t span>
+void SimkaCountProcessor<span>::updateKullbackLeibler(int bank1, CountNumber abundance1, int bank2, CountNumber abundance2){
+	//float xi = abundance1/(float)_totalAbundance;
+	//float yi = _totalAbundance/(float)20861;
+	//_localStats->_kullbackLeibler[bank1][bank2] += xi * log(xi/yi);
+    float kl_x = abundance1*log(abundance1/ (float)((abundance1+abundance2) / 2.0));
+    float kl_y = abundance2*log(abundance2/ (float)((abundance1+abundance2) / 2.0));
+    //kl = kl + kl_x+ kl_y
 
-
+	//_localStats->_kullbackLeibler[bank1][bank2] += xi * log(xi/(float)yi);
+    _localStats->_kullbackLeibler[bank1][bank2] += kl_x + kl_y;
+}
 
 
 
@@ -252,13 +281,17 @@ _tmpPartitionsStorage(0), _tmpPartitions(0)
 	_abundanceThreshold.first = _options->getInt(STR_KMER_ABUNDANCE_MIN);
 	_abundanceThreshold.second = _options->getInt(STR_KMER_ABUNDANCE_MAX);
 	_soliditySingle = _options->get(STR_SIMKA_SOLIDITY_PER_DATASET);
+	_nbMinimizers = getInput()->getInt(STR_KMER_PER_READ);
 
 	//read filter
 	_maxNbReads = _options->getInt(STR_SIMKA_MAX_READS);
 	_minReadSize = _options->getInt(STR_SIMKA_MIN_READ_SIZE);
-	_minShannonIndex = _options->getDouble(STR_SIMKA_MIN_SHANNON_INDEX);
-	_minShannonIndex = std::max(_minShannonIndex, 0.0);
-	_minShannonIndex = std::min(_minShannonIndex, 2.0);
+	_minReadShannonIndex = _options->getDouble(STR_SIMKA_MIN_READ_SHANNON_INDEX);
+	_minReadShannonIndex = std::max(_minReadShannonIndex, 0.0);
+	_minReadShannonIndex = std::min(_minReadShannonIndex, 2.0);
+	_minKmerShannonIndex = _options->getDouble(STR_SIMKA_MIN_KMER_SHANNON_INDEX);
+	_minKmerShannonIndex = std::max(_minKmerShannonIndex, 0.0);
+	_minKmerShannonIndex = std::min(_minKmerShannonIndex, 2.0);
 
 	/*
 	if(_options->getInt(STR_VERBOSE) != 0){
@@ -386,7 +419,7 @@ void SimkaAlgorithm<span>::executeSimkamin() {
 
     	cout << i << endl;
 
-        getDispatcher()->iterate (itBanks[i], FillPartitions<span> (_nbPartitions, _kmerSize, _maxNbReads, _tmpPartitions, _nbk_per_radix_per_part), 1000, true);
+        getDispatcher()->iterate (itBanks[i], FillPartitions<span> (_nbMinimizers, _nbPartitions, _kmerSize, _maxNbReads, _tmpPartitions, _nbk_per_radix_per_part, _minKmerShannonIndex), 1000, true);
 
 
         _tmpPartitions->flush();
@@ -634,7 +667,7 @@ void SimkaAlgorithm<span>::createBank(){
 
 	_nbBanks = bank->getCompositionNb();
 
-	SimkaSequenceFilter sequenceFilter(_minReadSize, _minShannonIndex);
+	SimkaSequenceFilter sequenceFilter(_minReadSize, _minReadShannonIndex);
 
 	_banks = new SimkaBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, _nbReadsPerDataset);
 
@@ -696,6 +729,7 @@ void SimkaAlgorithm<span>::outputMatrix(){
     dumpMatrix("mat_abundance_asym", _simkaDistance->getMatrixAKS(SIMKA_MATRIX_TYPE::ASYMETRICAL));
     dumpMatrix("mat_abundance_norm", _simkaDistance->getMatrixAKS(SIMKA_MATRIX_TYPE::NORMALIZED));
     dumpMatrix("mat_brayCurtis", _simkaDistance->getMatrixBrayCurtis());
+    //dumpMatrix("mat_kullbackLeibler", _simkaDistance->getMatrixKullbackLeibler());
 
 }
 

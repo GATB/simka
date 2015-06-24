@@ -35,6 +35,7 @@ public:
 	vector<vector<u_int64_t> > _matrixNbSharedKmers;
 
 	vector<vector<u_int64_t> > _brayCurtisNumerator;
+	vector<vector<double> > _kullbackLeibler;
 
 
 	//string _outputDir;
@@ -63,6 +64,7 @@ public:
 	vector<vector<float> > getMatrixJaccard();
 	vector<vector<float> > getMatrixAKS(SIMKA_MATRIX_TYPE type);
 	vector<vector<float> > getMatrixBrayCurtis();
+	vector<vector<float> > getMatrixKullbackLeibler();
 
 
 private:

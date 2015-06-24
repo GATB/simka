@@ -28,7 +28,9 @@
 const string STR_SIMKA_SOLIDITY_PER_DATASET = "-solidity-single";
 const string STR_SIMKA_MAX_READS = "-max-reads";
 const string STR_SIMKA_MIN_READ_SIZE = "-min-read-size";
-const string STR_SIMKA_MIN_SHANNON_INDEX = "-min-shannon-index";
+const string STR_SIMKA_MIN_READ_SHANNON_INDEX = "-read-shannon-index";
+const string STR_SIMKA_MIN_KMER_SHANNON_INDEX = "-kmer-shannon-index";
+const string STR_KMER_PER_READ = "-kmer-per-read";
 
 enum SIMKA_SOLID_KIND{
 	RANGE,
@@ -833,10 +835,9 @@ public:
     typedef typename Kmer<span>::ModelCanonical                             ModelCanonical;
     typedef typename ModelCanonical::Kmer                                   KmerType;
 
-    FillPartitions (size_t nbPartitions, size_t kmerSize, u_int64_t estimateNbSequences, Partition<Type>* partition, vector<vector<u_int64_t> >& nbk_per_radix_per_part) :
-    	_nbk_per_radix_per_part(nbk_per_radix_per_part), _nbPartitions(nbPartitions), _kmerSize(kmerSize), _model(_kmerSize), _partition (*partition,1<<12,0)
+    FillPartitions (size_t nbMinimizers, size_t nbPartitions, size_t kmerSize, u_int64_t estimateNbSequences, Partition<Type>* partition, vector<vector<u_int64_t> >& nbk_per_radix_per_part, double minKmerShannonIndex) :
+    	_nbk_per_radix_per_part(nbk_per_radix_per_part), _nbPartitions(nbPartitions), _nbMinimizers(nbMinimizers), _kmerSize(kmerSize), _model(_kmerSize), _partition (*partition,1<<12,0), _minKmerShannonIndex(minKmerShannonIndex)
     {
-    	_nbMinimizers = 1;
         _mask_radix = (int64_t) 255 ;
         _mask_radix = _mask_radix << ((this->_kmerSize - 4)*2); //get first 4 nt  of the kmers (heavy weight)
     	//u_int64_t nbEntries = estimateNbSequences * _nbMinimizers;
@@ -886,13 +887,32 @@ public:
 		std::vector<KmerType> kmers;
 		_model.build(sequence.getData(), kmers);
 
+
+		if(_minKmerShannonIndex != 0){
+			for(size_t i=0; i<kmers.size();){
+
+				float shannonIndex = getShannonIndex(kmers[i].value());
+
+				if(shannonIndex < _minKmerShannonIndex){
+					kmers.erase(kmers.begin() + i);
+				}
+				else{
+					i += _kmerSize/3;
+				}
+			}
+		}
+
+		if(kmers.size() <= 0) return;
+
+		size_t nbMinimizer = min(_nbMinimizers, kmers.size()) ;
 		std::vector<KmerType> minimizers;
-		minHash(_nbMinimizers, kmers, minimizers);
+		minHash(nbMinimizer, kmers, minimizers);
 
 
 
-		for(KmerType& minimizer : minimizers){
+		for(size_t i=0; i<minimizers.size(); i++){
 
+			KmerType& minimizer = minimizers[i];
 			size_t p = oahash(minimizer.value()) % _nbPartitions;
 			this->_partition[p].insert(minimizer.value());
 
@@ -932,6 +952,42 @@ public:
         _nbk_per_radix_per_part_local[radix][numpart] += val; // contains number of kx mer per part per radix per x
     }
 
+	//bool isShannonIndexValid(const Type&  kmer){
+    //	float shannon = getShannonIndex(kmer);
+		//if(shannon < 1){
+		//	cout << kmer.toString(_kmerSize) << endl;
+		//}
+		//if(_minShannonIndex == 0) return true;
+    //	return shannon > 1.8;
+    //}
+
+	float getShannonIndex(const Type&  kmer){
+		float index = 0;
+		//float freq [5];
+
+		vector<float> _freqs(4, 0);
+
+		//char* seqStr = seq.getDataBuffer();
+
+        for (size_t i=0; i<_kmerSize; i++){
+        	_freqs[kmer[i]] += 1.0;
+        	//seq[sizeKmer-i-1] = bin2NT [(*this)[i]];
+        }
+
+		// Frequency of each letter (A, C, G, T or N)
+		//for(size_t i=0; i < seq.size(); i++)
+		//	_freqs[nt2binTab[(unsigned char)seq[i]]] += 1.0;
+
+		// Shannon index calculation
+		for (size_t i=0; i<_freqs.size(); i++){
+			_freqs[i] /= (float) _kmerSize;
+			if (_freqs[i] != 0)
+				index += _freqs[i] * log (_freqs[i]) / log(2);
+		}
+		return abs(index);
+
+	}
+
 private:
 
     vector<vector<u_int64_t> >& _nbk_per_radix_per_part;//number of kxmer per parti per rad
@@ -945,6 +1001,7 @@ private:
 
     /** Shared resources (must support concurrent accesses). */
     PartitionCache <Type> _partition;
+    double _minKmerShannonIndex;
     //PartitionCacheType <Type> _partition;
 
     //size_t        _kx;
@@ -1030,6 +1087,7 @@ public:
 
 	void computeStats(const CountVector& counts);
 	void updateBrayCurtis(int bank1, CountNumber abundance1, int bank2, CountNumber abundance2);
+	void updateKullbackLeibler(int bank1, CountNumber abundance1, int bank2, CountNumber abundance2);
 
 	bool isSolidVector(const CountVector& counts);
 	bool isSolid(CountNumber count);
@@ -1046,7 +1104,7 @@ private:
 	//u_int64_t _nbBanks;
     SimkaStatistics* _localStats;
     SimkaStatistics& _stats;
-
+    u_int64_t _totalAbundance;
 };
 
 struct SimkaSequenceFilter
@@ -1248,7 +1306,9 @@ private:
 	bool _soliditySingle;
 	size_t _maxNbReads;
 	size_t _minReadSize;
-	double _minShannonIndex;
+	double _minReadShannonIndex;
+	double _minKmerShannonIndex;
+	size_t _nbMinimizers;
 	//size_t _nbCores;
 
 	SimkaStatistics* _stats;

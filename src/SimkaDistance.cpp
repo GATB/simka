@@ -34,10 +34,12 @@ SimkaStatistics::SimkaStatistics(size_t nbBanks){
 	_matrixNbDistinctSharedKmers.resize(_nbBanks);
 	_matrixNbSharedKmers.resize(_nbBanks);
 	_brayCurtisNumerator.resize(_nbBanks);
+	_kullbackLeibler.resize(_nbBanks);
 	for(int i=0; i<_nbBanks; i++){
 		_matrixNbDistinctSharedKmers[i].resize(nbBanks, 0);
 		_matrixNbSharedKmers[i].resize(nbBanks, 0);
 		_brayCurtisNumerator[i].resize(nbBanks, 0);
+		_kullbackLeibler[i].resize(nbBanks, 0);
 	}
 
 }
@@ -63,6 +65,7 @@ SimkaStatistics& SimkaStatistics::operator+=  (const SimkaStatistics& other){
 			_matrixNbDistinctSharedKmers[i][j] += other._matrixNbDistinctSharedKmers[i][j];
 			_matrixNbSharedKmers[i][j] += other._matrixNbSharedKmers[i][j];
 			_brayCurtisNumerator[i][j] += other._brayCurtisNumerator[i][j];
+			_kullbackLeibler[i][j] += other._kullbackLeibler[i][j];
 		}
 	}
 
@@ -269,7 +272,6 @@ vector<vector<float> > SimkaDistance::getMatrixJaccard(){
 //abundance
 vector<vector<float> > SimkaDistance::getMatrixAKS(SIMKA_MATRIX_TYPE type){
 
-
     vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
 
     if(type == SIMKA_MATRIX_TYPE::ASYMETRICAL){
@@ -287,15 +289,26 @@ vector<vector<float> > SimkaDistance::getMatrixAKS(SIMKA_MATRIX_TYPE type){
     return matrix;
 }
 
-//bray curtis
+//Abundance: bray curtis
 vector<vector<float> > SimkaDistance::getMatrixBrayCurtis(){
-
 
     vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
 
 	for(int i=0; i<_nbBanks; i++)
 		for(int j=0; j<_nbBanks; j++)
 			matrix[i][j] = (100.0 * (2*_stats._brayCurtisNumerator[i][j])) / (_stats._nbSolidKmersPerBank[i]+_stats._nbSolidKmersPerBank[j]);
+
+    return matrix;
+}
+
+//Abundance: Kullback Leibler
+vector<vector<float> > SimkaDistance::getMatrixKullbackLeibler(){
+
+    vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+
+	for(int i=0; i<_nbBanks; i++)
+		for(int j=0; j<_nbBanks; j++)
+			matrix[i][j] = _stats._kullbackLeibler[i][j];// / (_stats._nbSolidKmersPerBank[i]); // (100.0 * (2*_stats._kullbackLeibler[i][j])) / (_stats._nbSolidKmersPerBank[i]+_stats._nbSolidKmersPerBank[j]);
 
     return matrix;
 }

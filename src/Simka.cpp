@@ -45,19 +45,21 @@ Simka::Simka()  : Tool ("Simka")
 	//Kmer parser
     IOptionsParser* kmerParser = new OptionsParser ("kmer");
     kmerParser->push_back(dskParser->getParser (STR_KMER_SIZE));
+    kmerParser->push_back(new OptionOneParam (STR_KMER_PER_READ.c_str(), "number of selected kmers per read", false, "1"));
     kmerParser->push_back(dskParser->getParser (STR_KMER_ABUNDANCE_MIN));
     if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_KMER_ABUNDANCE_MIN)))  {  p->setDefaultValue ("0"); }
     kmerParser->push_back(dskParser->getParser (STR_KMER_ABUNDANCE_MAX));
     kmerParser->push_back(dskParser->getParser (STR_SOLIDITY_KIND));
     kmerParser->getParser (STR_SOLIDITY_KIND)->setHelp("TODO");
     kmerParser->push_back (new OptionNoParam (STR_SIMKA_SOLIDITY_PER_DATASET.c_str(), "do not take into consideration multi-counting when determining solid kmers", false ));
+    kmerParser->push_back (new OptionOneParam (STR_SIMKA_MIN_KMER_SHANNON_INDEX.c_str(), "minimal Shannon index a kmer should have to be kept. Float in [0,2]", false, "0" ));
 
 
     //Read filter parser
     IOptionsParser* readParser = new OptionsParser ("read");
     readParser->push_back (new OptionOneParam (STR_SIMKA_MAX_READS.c_str(), "maximum number of reads per dataset to process", false, "0" ));
     readParser->push_back (new OptionOneParam (STR_SIMKA_MIN_READ_SIZE.c_str(), "minimal size a read should have to be kept", false, "0" ));
-    readParser->push_back (new OptionOneParam (STR_SIMKA_MIN_SHANNON_INDEX.c_str(), "minimal Shannon index a read should have to be kept. Float in [0,2]", false, "0" ));
+    readParser->push_back (new OptionOneParam (STR_SIMKA_MIN_READ_SHANNON_INDEX.c_str(), "minimal Shannon index a read should have to be kept. Float in [0,2]", false, "0" ));
 
     //Core parser
     IOptionsParser* coreParser = new OptionsParser ("core");
