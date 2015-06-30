@@ -22,8 +22,10 @@
 #define TOOLS_SIMKA_SRC_SIMKAALGORITHM_HPP_
 
 #include <gatb/gatb_core.hpp>
-#include "SimkaDistance.hpp"
 #include<stdio.h>
+
+
+#include "SimkaDistance.hpp"
 
 const string STR_SIMKA_SOLIDITY_PER_DATASET = "-solidity-single";
 const string STR_SIMKA_MAX_READS = "-max-reads";
@@ -36,7 +38,6 @@ enum SIMKA_SOLID_KIND{
 	RANGE,
 	SUM,
 };
-
 
 
 
@@ -835,9 +836,14 @@ public:
     typedef typename Kmer<span>::ModelCanonical                             ModelCanonical;
     typedef typename ModelCanonical::Kmer                                   KmerType;
 
-    FillPartitions (size_t nbMinimizers, size_t nbPartitions, size_t kmerSize, u_int64_t estimateNbSequences, Partition<Type>* partition, vector<vector<u_int64_t> >& nbk_per_radix_per_part, double minKmerShannonIndex) :
-    	_nbk_per_radix_per_part(nbk_per_radix_per_part), _nbPartitions(nbPartitions), _nbMinimizers(nbMinimizers), _kmerSize(kmerSize), _model(_kmerSize), _partition (*partition,1<<12,0), _minKmerShannonIndex(minKmerShannonIndex)
+    IteratorListener* _progress;
+
+    FillPartitions (IteratorListener* progress, size_t nbMinimizers, size_t nbPartitions, size_t kmerSize, u_int64_t estimateNbSequences, Partition<Type>* partition, vector<vector<u_int64_t> >& nbk_per_radix_per_part, double minKmerShannonIndex) :
+    	_progress(progress), _nbk_per_radix_per_part(nbk_per_radix_per_part), _nbPartitions(nbPartitions), _nbMinimizers(nbMinimizers), _kmerSize(kmerSize), _model(_kmerSize), _partition (*partition,1<<12,0),
+		_minKmerShannonIndex(minKmerShannonIndex)
     {
+    	_progressReadProcessed = 0;
+
         _mask_radix = (int64_t) 255 ;
         _mask_radix = _mask_radix << ((this->_kmerSize - 4)*2); //get first 4 nt  of the kmers (heavy weight)
     	//u_int64_t nbEntries = estimateNbSequences * _nbMinimizers;
@@ -860,6 +866,11 @@ public:
         for(size_t i=0; i<256; i++)
         	for(size_t j=0; j<_nbPartitions; j++)
         		_nbk_per_radix_per_part[i][j] += _nbk_per_radix_per_part_local[i][j];
+
+    	if(_progressReadProcessed > 0){
+    		_progress->inc(_progressReadProcessed);
+    		_progressReadProcessed = 0;
+    	}
     }
 
     /*:   //Sequence2SuperKmer<span> (model, nbPasses, currentPass, nbPartitions, progress, bankStats),
@@ -880,6 +891,11 @@ public:
 
     void operator() (Sequence& sequence){
 
+    	_progressReadProcessed += 1;
+    	if(_progressReadProcessed > 500000){
+    		_progress->inc(_progressReadProcessed);
+    		_progressReadProcessed = 0;
+    	}
     	//cout << sequence.toString() << endl;
 
     	if(sequence.getDataSize() < _kmerSize) return;
@@ -909,7 +925,7 @@ public:
 		minHash(nbMinimizer, kmers, minimizers);
 
 
-
+		//cout << minimizers.size() << endl;
 		for(size_t i=0; i<minimizers.size(); i++){
 
 			KmerType& minimizer = minimizers[i];
@@ -989,6 +1005,10 @@ public:
 	}
 
 private:
+
+	//u_int64_t _progressReadToProcess;
+	u_int64_t _progressReadProcessed;
+	//u_int64_t _progressUpdateStep;
 
     vector<vector<u_int64_t> >& _nbk_per_radix_per_part;//number of kxmer per parti per rad
     vector<vector<u_int64_t> > _nbk_per_radix_per_part_local;
@@ -1077,9 +1097,9 @@ public:
     typedef typename Kmer<span>::Type  Type;
     //typedef typename Kmer<span>::Count Count;
 
-	SimkaCountProcessor(SimkaStatistics& stats, size_t nbBanks, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle);
+	SimkaCountProcessor(SimkaStatistics& stats, size_t nbBanks, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, IteratorListener* progress);
 	~SimkaCountProcessor();
-    CountProcessorAbstract<span>* clone ()  {  return new SimkaCountProcessor (_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle);  }
+    CountProcessorAbstract<span>* clone ()  {  return new SimkaCountProcessor (_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle, _progress);  }
 	//CountProcessorAbstract<span>* clone ();
 	void finishClones (vector<ICountProcessor<span>*>& clones);
 	void finishClone(SimkaCountProcessor<span>* clone);
@@ -1087,7 +1107,6 @@ public:
 
 	void computeStats(const CountVector& counts);
 	void updateBrayCurtis(int bank1, CountNumber abundance1, int bank2, CountNumber abundance2);
-	void updateKullbackLeibler(int bank1, CountNumber abundance1, int bank2, CountNumber abundance2);
 
 	bool isSolidVector(const CountVector& counts);
 	bool isSolid(CountNumber count);
@@ -1099,12 +1118,16 @@ private:
 	pair<size_t, size_t> _abundanceThreshold;
     SIMKA_SOLID_KIND _solidKind;
     bool _soliditySingle;
+    IteratorListener* _progress;
     //vector<size_t> _countTotal;
 
 	//u_int64_t _nbBanks;
     SimkaStatistics* _localStats;
     SimkaStatistics& _stats;
     u_int64_t _totalAbundance;
+
+    u_int64_t _nbKmerCounted;
+
 };
 
 struct SimkaSequenceFilter
@@ -1325,12 +1348,16 @@ private:
 
 	string _outputFilenameSuffix;
 
+	u_int64_t _totalKmers;
 	//string _matDksNormFilename;
 	//string _matDksPercFilename;
 	//string _matAksNormFilename;
 	//string _matAksPercFilename;
 	//string _heatmapDksFilename;
 	//string _heatmapAksFilename;
+
+    gatb::core::tools::dp::IteratorListener* _progress;
+    void setProgress (gatb::core::tools::dp::IteratorListener* progress)  { SP_SETATTR(progress); }
 
 
 	size_t _nbPartitions;
@@ -1349,6 +1376,8 @@ private:
     int getSizeofPerItem () const { return Type::getSize()/8 + sizeof(bankIdType); }
     std::vector<size_t> getNbCoresList();
     //this->_local_pInfo.incKmer_and_rad (p, radix_kxmer.getVal(), kx_size); //nb of superkmer per x per parti per radix
+
+    //vector<SpeciesAbundanceVectorType > _speciesAbundancePerDataset;
 };
 
 

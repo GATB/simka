@@ -10,9 +10,16 @@
 
 #include <gatb/gatb_core.hpp>
 
+typedef vector<u_int16_t> SpeciesAbundanceVectorType;
+
 enum SIMKA_MATRIX_TYPE{
-	NORMALIZED,
-	ASYMETRICAL
+	SYMETRICAL,
+	ASYMETRICAL,
+};
+
+enum SIMKA_PRESENCE_ABUNDANCE{
+	PRESENCE_ABSENCE,
+	ABUNDANCE,
 };
 
 class SimkaStatistics{
@@ -35,7 +42,7 @@ public:
 	vector<vector<u_int64_t> > _matrixNbSharedKmers;
 
 	vector<vector<u_int64_t> > _brayCurtisNumerator;
-	vector<vector<double> > _kullbackLeibler;
+	//vector<vector<double> > _kullbackLeibler;
 
 
 	//string _outputDir;
@@ -47,6 +54,7 @@ public:
 	u_int64_t _nbDistinctKmers;
 	u_int64_t _nbSolidKmers;
 
+    vector<SpeciesAbundanceVectorType > _speciesAbundancePerDataset;
 	//u_int64_t _nbKmersInCoupleBankSupRatio;
 
 	//unordered_map<string, histo_t> _histos;
@@ -60,17 +68,31 @@ public:
 	SimkaDistance(SimkaStatistics& stats);
 	//virtual ~SimkaDistance();
 
-	vector<vector<float> > getMatrixSorensen(SIMKA_MATRIX_TYPE type);
-	vector<vector<float> > getMatrixJaccard();
-	vector<vector<float> > getMatrixAKS(SIMKA_MATRIX_TYPE type);
-	vector<vector<float> > getMatrixBrayCurtis();
-	vector<vector<float> > getMatrixKullbackLeibler();
+	//vector<vector<float> > getMatrixSorensen(SIMKA_MATRIX_TYPE type);
+	//vector<vector<float> > getMatrixJaccard();
+	//vector<vector<float> > getMatrixAKS(SIMKA_MATRIX_TYPE type);
+	//vector<vector<float> > getMatrixBrayCurtis();
+	//vector<vector<float> > getMatrixKullbackLeibler();
 
+    vector<vector<float> > _matrixSymJaccardPresenceAbsence;
+    vector<vector<float> > _matrixAsymJaccardPresenceAbsence;
+    vector<vector<float> > _matrixSymJaccardAbundance;
+    vector<vector<float> > _matrixAsymJaccardAbundance;
+    vector<vector<float> > _matrixSymSorensen;
+    vector<vector<float> > _matrixAsymSorensen;
+    vector<vector<float> > _matrixBrayCurtis;
+    //vector<vector<float> > _matrixKullbackLeibler;
 
 private:
 
 
 	vector<vector<float> > createSquaredMatrix(int n);
+	void get_abc(size_t bank1, size_t bank2, u_int64_t& a, u_int64_t& b, u_int64_t& c);
+    //void get_abc(SpeciesAbundanceVectorType& X, SpeciesAbundanceVectorType& Y, u_int64_t& a, u_int64_t& b, u_int64_t& c);
+    double jaccardSimilarity(size_t i, size_t j, SIMKA_MATRIX_TYPE type, SIMKA_PRESENCE_ABUNDANCE presenceOrAbundance);
+    double sorensenSimilarity(u_int64_t& a, u_int64_t& b, u_int64_t& c, size_t i, size_t j, SIMKA_MATRIX_TYPE type);
+    double brayCurtisSimilarity(size_t bank1, size_t bank2);
+    //double kullbackLeibler(SpeciesAbundanceVectorType& X, SpeciesAbundanceVectorType& Y);
 	//void outputMatrix();
 
 

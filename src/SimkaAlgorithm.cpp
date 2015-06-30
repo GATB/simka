@@ -20,10 +20,13 @@
 
 #include "SimkaAlgorithm.hpp"
 
+static const char* strProgressPartitionning = "Simka: Step 1: partitioning    ";
+static const char* strProgressCounting =      "Simka: Step 2: counting kmers  ";
+
 
 template<size_t span>
-SimkaCountProcessor<span>::SimkaCountProcessor (SimkaStatistics& stats, size_t nbBanks, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle) :
-_stats(stats)
+SimkaCountProcessor<span>::SimkaCountProcessor (SimkaStatistics& stats, size_t nbBanks, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, IteratorListener* progress) :
+_progress(progress), _stats(stats)
 {
 	// We configure the vector for the N.(N+1)/2 possible pairs
 	//_countTotal.resize (_nbBanks*(_nbBanks+1)/2);
@@ -34,10 +37,16 @@ _stats(stats)
 	_soliditySingle = soliditySingle;
 
 	_localStats = new SimkaStatistics(_nbBanks);
+
+	_nbKmerCounted = 0;
 }
 
 template<size_t span>
 SimkaCountProcessor<span>::~SimkaCountProcessor () {
+	if(_nbKmerCounted > 0){
+		_progress->inc(_nbKmerCounted);
+		_nbKmerCounted = 0;
+	}
 	delete _localStats;
 }
 
@@ -99,24 +108,38 @@ bool SimkaCountProcessor<span>::isSolid(CountNumber count){
 template<size_t span>
 bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const CountVector& counts, CountNumber sum){
 
+
+	if(_nbKmerCounted > 500000){
+		_progress->inc(_nbKmerCounted);
+		_nbKmerCounted = 0;
+	}
+
+	//return false;
+
 	_totalAbundance = 0;
 	_localStats->_nbDistinctKmers += 1;
+	_localStats->_nbSolidKmers += 1;
 
+	/*
 	//cout << kmer.toString(31) << endl;
 	for(size_t i=0; i<counts.size(); i++){
 
 		CountNumber abundance = counts[i];
+		_nbKmerCounted += abundance;
+		//_stats._speciesAbundancePerDataset[i].push_back(abundance);
+
 		//cout << counts[i] << " ";
 		_localStats->_nbKmers += abundance;
 		_localStats->_nbKmersPerBank[i] += abundance;
 		_totalAbundance += abundance;
-	}
+	}*/
+
+
 	//cout << endl;
 
-	if(isSolidVector(counts))
-		_localStats->_nbSolidKmers += 1;
-	else
-		return false;
+	//if(isSolidVector(counts))
+		//else
+		//return false;
 
 	/*
 	CountVector counts2;
@@ -127,6 +150,9 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 			counts2.push_back(counts[i]);
 	}*/
 
+	computeStats(counts);
+
+	/*
 	if(_soliditySingle){
 		CountVector counts2(counts);
 		for(int i=0; i<counts.size(); i++){
@@ -137,7 +163,7 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 	}
 	else{
 		computeStats(counts);
-	}
+	}*/
 
 
 	return true;
@@ -155,7 +181,22 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 	for(size_t i=0; i<counts.size(); i++){
 
 		CountNumber abundanceI = counts[i];
+
+
+
+		_nbKmerCounted += abundanceI;
+		_localStats->_nbKmers += abundanceI;
+		_localStats->_nbKmersPerBank[i] += abundanceI;
+		_totalAbundance += abundanceI;
+
+
 		//if(abundance < _abundanceMin) continue;
+
+		for(size_t j=0; j<counts.size(); j++){
+			CountNumber abundanceJ = counts[j];
+			updateBrayCurtis(i, abundanceI, j, abundanceJ);
+		}
+
 
 		if(abundanceI){
 			//totalAbundance += abundanceI;
@@ -175,7 +216,6 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 				if(abundanceJ){
 					_localStats->_matrixNbSharedKmers[i][j] += abundanceI;
 					_localStats->_matrixNbDistinctSharedKmers[i][j] += 1;
-					updateBrayCurtis(i, abundanceI, j, abundanceJ);
 					//updateKullbackLeibler(i, abundanceI, j, abundanceJ);
 				}
 
@@ -214,21 +254,8 @@ void SimkaCountProcessor<span>::updateBrayCurtis(int bank1, CountNumber abundanc
     return bc*/
 
 
-	//_localStats->_brayCurtisNumerator[bank1][bank2] += abs(abundance1-abundance2) / (float)(abundance1 + abundance2);
+	//_localStats->_brayCurtisNumerator[bank1][bank2] += abs(abundance1-abundance2);
 	_localStats->_brayCurtisNumerator[bank1][bank2] += min(abundance1, abundance2);
-}
-
-template<size_t span>
-void SimkaCountProcessor<span>::updateKullbackLeibler(int bank1, CountNumber abundance1, int bank2, CountNumber abundance2){
-	//float xi = abundance1/(float)_totalAbundance;
-	//float yi = _totalAbundance/(float)20861;
-	//_localStats->_kullbackLeibler[bank1][bank2] += xi * log(xi/yi);
-    float kl_x = abundance1*log(abundance1/ (float)((abundance1+abundance2) / 2.0));
-    float kl_y = abundance2*log(abundance2/ (float)((abundance1+abundance2) / 2.0));
-    //kl = kl + kl_x+ kl_y
-
-	//_localStats->_kullbackLeibler[bank1][bank2] += xi * log(xi/(float)yi);
-    _localStats->_kullbackLeibler[bank1][bank2] += kl_x + kl_y;
 }
 
 
@@ -266,7 +293,7 @@ template<size_t span>
 SimkaAlgorithm<span>::SimkaAlgorithm(IProperties* options)
 :
 Algorithm("simka", -1, options),
-_tmpPartitionsStorage(0), _tmpPartitions(0)
+_progress (0), _tmpPartitionsStorage(0), _tmpPartitions(0)
 {
 
 	_options = options;
@@ -293,6 +320,8 @@ _tmpPartitionsStorage(0), _tmpPartitions(0)
 	_minKmerShannonIndex = std::max(_minKmerShannonIndex, 0.0);
 	_minKmerShannonIndex = std::min(_minKmerShannonIndex, 2.0);
 
+
+	_totalKmers = 0;
 	/*
 	if(_options->getInt(STR_VERBOSE) != 0){
 		cout << "Filter options" << endl;
@@ -380,6 +409,7 @@ std::vector<size_t> SimkaAlgorithm<span>::getNbCoresList()
     return result;
 }
 
+
 template<size_t span>
 void SimkaAlgorithm<span>::executeSimkamin() {
 
@@ -391,9 +421,34 @@ void SimkaAlgorithm<span>::executeSimkamin() {
 	//SortingCountAlgorithm<span> sortingCount (_banks, _options);
 	//_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle);
 	//_processor->use();
+	u_int64_t nbReadToProcess = _maxNbReads * _nbBanks;
+	u_int64_t maxNbKmers = nbReadToProcess * _nbMinimizers;
+	size_t memoryB = _maxMemory * 1000000;
+	size_t perfectOpenFiles = 0;
+	size_t max_open_files = System::file().getMaxFilesNumber() / 1.1;
+
+	//cout << maxNbKmers << endl;
+	if(maxNbKmers < memoryB){
+		perfectOpenFiles = _nbCores;
+	}
+	else{
+		size_t memoryPerCoreB = memoryB / _nbCores;
+		memoryPerCoreB /= 1.1;
+		perfectOpenFiles = maxNbKmers / memoryPerCoreB;
+	}
+
+	if(perfectOpenFiles > max_open_files){
+		perfectOpenFiles = max_open_files;
+	}
+	perfectOpenFiles = min(perfectOpenFiles, (size_t)2000);
+	perfectOpenFiles = max(perfectOpenFiles, _nbCores);
+
+	//cout << perfectOpenFiles << endl;
+	//cout << max_open_files << endl;
+	_nbPartitions = perfectOpenFiles;
+	cout << "Nb partitions: " << _nbPartitions << endl;
 
 
-	_nbPartitions = 200;
 	_nbKmerPerPartitions.resize(_nbPartitions, 0);
 	_nbk_per_radix_per_part.resize(256);
     for(size_t ii=0; ii<256; ii++)
@@ -413,13 +468,22 @@ void SimkaAlgorithm<span>::executeSimkamin() {
 
     vector<Iterator<Sequence>*> itBanks =  _banks->iterator()->getComposition();
 
-    int total = 0;
+    //int total = 0;
+	//u_int64_t progressUpdateStep = nbReadToProcess / 100;
+	//progressUpdateStep = max(progressUpdateStep, (u_int64_t)10000);
+	//cout << progressUpdateStep << endl;
+    //size_t nbIterations = (1 + _processors.size()) * _config._volume * MBYTE / sizeof(Type);
+    setProgress (new ProgressSynchro (
+        createIteratorListener (nbReadToProcess, strProgressPartitionning),
+        System::thread().newSynchronizer())
+    );
+    _progress->init ();
 
     for (size_t i=0; i<itBanks.size(); i++){
 
-    	cout << i << endl;
+    	//cout << i << endl;
 
-        getDispatcher()->iterate (itBanks[i], FillPartitions<span> (_nbMinimizers, _nbPartitions, _kmerSize, _maxNbReads, _tmpPartitions, _nbk_per_radix_per_part, _minKmerShannonIndex), 1000, true);
+        getDispatcher()->iterate (itBanks[i], FillPartitions<span> (_progress, _nbMinimizers, _nbPartitions, _kmerSize, _maxNbReads, _tmpPartitions, _nbk_per_radix_per_part, _minKmerShannonIndex), 1000, true);
 
 
         _tmpPartitions->flush();
@@ -428,16 +492,24 @@ void SimkaAlgorithm<span>::executeSimkamin() {
         {
         	u_int64_t nbItem = (*_tmpPartitions)[p].getNbItems();
             nbItems.push_back (nbItem);
-            _nbKmerPerPartitions[p] += nbItem;
-            total += nbItem;
+            //_nbKmerPerPartitions[p] += nbItem;
+            //total += nbItem;
         }
         _nbKmersPerPartitionPerBank.push_back (nbItems);
 
 		//GR: close the input bank here with call to finalize
-		itBanks[i]->finalize();
+		itBanks[i]->forget(); //->finalize();
     }
 
-    cout << total << endl;
+
+    _totalKmers = 0;
+    for (size_t p=0; p<_nbPartitions; p++){
+    	u_int64_t nbItem = (*_tmpPartitions)[p].getNbItems();
+    	_nbKmerPerPartitions[p] = nbItem;
+        _totalKmers += nbItem;
+    }
+    //cout << _totalKmers << endl;
+    //cout << total << endl;
 
 
 
@@ -452,14 +524,22 @@ void SimkaAlgorithm<span>::executeSimkamin() {
 
     vector<size_t> coreList = getNbCoresList();
 
-    cout << "Nb cores list:  ";
+    cout << endl << "Nb cores list:  ";
     for(size_t cores : coreList){
     	cout << cores << " ";
     }
     cout << endl;
 
+
+    setProgress (new ProgressSynchro (
+        createIteratorListener (_totalKmers, strProgressCounting),
+        System::thread().newSynchronizer())
+    );
+    _progress->init ();
+
+
 	_stats = new SimkaStatistics(_nbBanks);
-    _processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle);
+    _processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle, _progress);
     _processor->use();
 
     MemAllocator pool (_nbCores);
@@ -491,7 +571,7 @@ void SimkaAlgorithm<span>::executeSimkamin() {
 
 
             uint64_t memoryPartition = (_nbKmerPerPartitions[p]*getSizeofPerItem()); //in bytes
-
+            //cout << memoryPartition << endl;
 
             ICommand* cmd = 0;
 
@@ -549,7 +629,7 @@ void SimkaAlgorithm<span>::executeSimkamin() {
         getDispatcher()->dispatchCommands (cmds, 0);
 
         _processor->finishClones (clones);
-        for (size_t i=0; i<clones.size(); i++)  { clones[i]->forget(); }  clones.clear();
+        for (size_t i=0; i<clones.size(); i++)  { delete clones[i]; }  clones.clear();
 
         pool.free_all();
     }
@@ -671,6 +751,9 @@ void SimkaAlgorithm<span>::createBank(){
 
 	_banks = new SimkaBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, _nbReadsPerDataset);
 
+
+
+
 }
 
 template<size_t span>
@@ -681,7 +764,7 @@ void SimkaAlgorithm<span>::count(){
 	SortingCountAlgorithm<span> sortingCount (_banks, _options);
 
 	// We create a custom count processor and give it to the sorting count algorithm
-	_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle);
+	_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle, _progress);
 	_processor->use();
 	sortingCount.addProcessor (_processor);
 
@@ -705,6 +788,7 @@ void SimkaAlgorithm<span>::outputMatrix(){
 	strKmerSize += string(buffer);
 	_outputFilenameSuffix += strKmerSize;
 
+	/*
     string strAbMax = "";
     if(_abundanceThreshold.second < 1000000){
     	snprintf(buffer,200,"%llu",_abundanceThreshold.second);
@@ -715,7 +799,7 @@ void SimkaAlgorithm<span>::outputMatrix(){
 	string strAbMin = "_min";
 	snprintf(buffer,200,"%llu",_abundanceThreshold.first);
 	strAbMin += string(buffer);
-	_outputFilenameSuffix += strAbMin;
+	_outputFilenameSuffix += strAbMin;*/
 
 
 	//_matDksNormFilename = "mat_dks_norm" + filenameSuffix + ".csv";
@@ -723,15 +807,20 @@ void SimkaAlgorithm<span>::outputMatrix(){
 	//_matAksNormFilename = "mat_aks_norm" + filenameSuffix + ".csv";
 	//_matAksPercFilename = "mat_aks_asym" + filenameSuffix + ".csv";
 
-    dumpMatrix("mat_presenceAbsence_sorensen_asym", _simkaDistance->getMatrixSorensen(SIMKA_MATRIX_TYPE::ASYMETRICAL));
-    dumpMatrix("mat_presenceAbsence_sorensen", _simkaDistance->getMatrixSorensen(SIMKA_MATRIX_TYPE::NORMALIZED));
-    dumpMatrix("mat_presenceAbsence_jaccard", _simkaDistance->getMatrixJaccard());
-    dumpMatrix("mat_abundance_asym", _simkaDistance->getMatrixAKS(SIMKA_MATRIX_TYPE::ASYMETRICAL));
-    dumpMatrix("mat_abundance_norm", _simkaDistance->getMatrixAKS(SIMKA_MATRIX_TYPE::NORMALIZED));
-    dumpMatrix("mat_brayCurtis", _simkaDistance->getMatrixBrayCurtis());
+    dumpMatrix("mat_presenceAbsence_sorensen", _simkaDistance->_matrixSymSorensen);
+    //dumpMatrix("mat_presenceAbsence_sorensen_asym", _simkaDistance->_matrixAsymSorensen);
+
+    dumpMatrix("mat_presenceAbsence_jaccard", _simkaDistance->_matrixSymJaccardPresenceAbsence);
+    dumpMatrix("mat_presenceAbsence_jaccard_asym", _simkaDistance->_matrixAsymJaccardPresenceAbsence);
+
+    dumpMatrix("mat_abundance_jaccard", _simkaDistance->_matrixSymJaccardAbundance);
+    dumpMatrix("mat_abundance_jaccard_asym", _simkaDistance->_matrixAsymJaccardAbundance);
+
+    dumpMatrix("mat_abundance_brayCurtis", _simkaDistance->_matrixBrayCurtis);
     //dumpMatrix("mat_kullbackLeibler", _simkaDistance->getMatrixKullbackLeibler());
 
 }
+
 
 
 template<size_t span>
@@ -774,10 +863,11 @@ void SimkaAlgorithm<span>::dumpMatrix(const string& outputFilename, const vector
 
 template<size_t span>
 void SimkaAlgorithm<span>::outputHeatmap(){
-	__outputHeatmap("heatmap_presenceAbsence_sorensen", "mat_presenceAbsence_sorensen_asym", "mat_presenceAbsence_sorensen");
-	__outputHeatmap("heatmap_presenceAbsence_jaccard", "mat_presenceAbsence_jaccard", "mat_presenceAbsence_jaccard");
-	__outputHeatmap("heatmap_abundance", "mat_abundance_asym", "mat_abundance_norm");
-	__outputHeatmap("heatmap_brayCurtis", "mat_brayCurtis", "mat_brayCurtis");
+	cout << endl << endl;
+	__outputHeatmap("heatmap_presenceAbsence_sorensen", "mat_presenceAbsence_sorensen", "mat_presenceAbsence_sorensen");
+	__outputHeatmap("heatmap_presenceAbsence_jaccard", "mat_presenceAbsence_jaccard_asym", "mat_presenceAbsence_jaccard");
+	__outputHeatmap("heatmap_abundance_jaccard", "mat_abundance_jaccard_asym", "mat_abundance_jaccard");
+	__outputHeatmap("heatmap_abundance_brayCurtis", "mat_abundance_brayCurtis", "mat_abundance_brayCurtis");
 }
 
 
