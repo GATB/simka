@@ -457,18 +457,19 @@ void SimkaAlgorithm<span>::executeSimkamin() {
 	//_processor->use();
 	u_int64_t nbReadToProcess = _maxNbReads * _nbBanks;
 	u_int64_t maxNbKmers = nbReadToProcess * _nbMinimizers;
-	size_t memoryB = _maxMemory * 1000000;
+	u_int64_t maxNbKmersMemoryB = maxNbKmers * getSizeofPerItem();
+	size_t memoryB = _maxMemory * MBYTE;
 	size_t perfectOpenFiles = 0;
 	size_t max_open_files = System::file().getMaxFilesNumber() / 1.1;
 
 	//cout << maxNbKmers << endl;
-	if(maxNbKmers < memoryB){
+	if(maxNbKmersMemoryB < memoryB){
 		perfectOpenFiles = _nbCores;
 	}
 	else{
 		size_t memoryPerCoreB = memoryB / _nbCores;
 		memoryPerCoreB /= 1.1;
-		perfectOpenFiles = maxNbKmers / memoryPerCoreB;
+		perfectOpenFiles = maxNbKmersMemoryB / memoryPerCoreB;
 	}
 
 	if(perfectOpenFiles > max_open_files){
@@ -542,8 +543,7 @@ void SimkaAlgorithm<span>::executeSimkamin() {
     	_nbKmerPerPartitions[p] = nbItem;
         _totalKmers += nbItem;
     }
-    //cout << _totalKmers << endl;
-    //cout << total << endl;
+    cout << endl << "Total kmers: "  << _totalKmers << endl;
 
 
 
@@ -577,6 +577,7 @@ void SimkaAlgorithm<span>::executeSimkamin() {
     _processor->use();
 
     MemAllocator pool (_nbCores);
+	u_int64_t memoryPoolSize = _maxMemory*MBYTE;
 
     size_t p = 0;
     for (size_t i=0; i<coreList.size(); i++)
@@ -588,7 +589,6 @@ void SimkaAlgorithm<span>::executeSimkamin() {
         size_t currentNbCores = coreList[i];
 
         u_int64_t mem = (_maxMemory*MBYTE)/currentNbCores;
-
 
         size_t cacheSize = min ((u_int64_t)(200*1000), mem/(50*sizeof(Count)));
 
@@ -605,11 +605,12 @@ void SimkaAlgorithm<span>::executeSimkamin() {
 
 
             uint64_t memoryPartition = (_nbKmerPerPartitions[p]*getSizeofPerItem()); //in bytes
-            //cout << memoryPartition << endl;
+            //cout << _nbKmerPerPartitions[p] << endl;
+            //cout << "\t" << getSizeofPerItem() << endl;
+            //cout << "\t" << memoryPartition << endl;
 
             ICommand* cmd = 0;
 
-			u_int64_t memoryPoolSize = _maxMemory*MBYTE;
 
 			if (memoryPartition >= memoryPoolSize)
 			{
@@ -665,6 +666,8 @@ void SimkaAlgorithm<span>::executeSimkamin() {
         _processor->finishClones (clones);
         for (size_t i=0; i<clones.size(); i++)  { delete clones[i]; }  clones.clear();
 
+        //cout << pool.getCapacity()/(double)MBYTE << " " << pool.getUsedSpace()/(double)MBYTE << " " << (pool.getUsedSpace()*100) / (double)pool.getCapacity() << endl;
+
         pool.free_all();
     }
 
@@ -687,6 +690,10 @@ void SimkaAlgorithm<span>::executeSimkamin() {
 
 template<size_t span>
 void SimkaAlgorithm<span>::layoutInputFilename(){
+
+	if(_options->getInt(STR_VERBOSE) != 0){
+		cout << endl << "Creating input" << endl;
+	}
 
 	IFile* inputFile = System::file().newFile(_inputFilename, "rb");
 	IFile* bankFile = System::file().newFile(_banksInputFilename, "wb");
@@ -722,10 +729,26 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 			}
 		}
 
+		bool valid = true;
 		//cout << linePartList.size() << endl;
 		//Bank id
 		string bankId = linePartList[0];
+		for(size_t i=1; i<linePartList.size(); i++){
+			string filename = linePartList[1];
+			//cout << filename << endl;
+			if( ! System::file().doesExist(filename)){
+				cout << "\tFilename does not exist: " << linePartList[1] << endl;
+				valid = false;
+				//break;
+			}
+		}
+
+		if(!valid){
+			continue;
+		}
+
 		_bankNames.push_back(bankId);
+
 
 		 //ID and one filename
 		if(linePartList.size() == 2){
@@ -771,8 +794,10 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 	//}
 
 	if(_options->getInt(STR_VERBOSE) != 0){
-		cout << "Nb input datasets: " << _bankNames.size() << endl;
+		cout << "\tNb input datasets: " << _bankNames.size() << endl;
 	}
+
+	cout << endl;
 }
 
 
