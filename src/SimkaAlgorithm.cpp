@@ -559,8 +559,8 @@ void SimkaAlgorithm<span>::executeSimkamin() {
     vector<size_t> coreList = getNbCoresList();
 
     cout << endl << "Nb cores list:  ";
-    for(size_t cores : coreList){
-    	cout << cores << " ";
+    for(size_t i=0; i<coreList.size(); i++){
+    	cout << coreList[i] << " ";
     }
     cout << endl;
 
@@ -744,7 +744,8 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 			for(size_t i=1; i<linePartList.size(); i++){
 				subBankContents += linePartList[i] + "\n";
 			}
-			subBankContents.pop_back(); // "remove last /n
+			subBankContents.erase(subBankContents.size()-1);
+			//subBankContents.pop_back(); // "remove last /n
 			subBankFile->fwrite(subBankContents.c_str(), subBankContents.size(), 1);
 			subBankFile->flush();
 			delete subBankFile;
@@ -756,7 +757,8 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 		lineIndex += 1;
 	}
 
-	bankFileContents.pop_back(); // "remove last /n
+	bankFileContents.erase(bankFileContents.size()-1);
+	//bankFileContents.pop_back(); // "remove last /n
 
 	bankFile->fwrite(bankFileContents.c_str(), bankFileContents.size(), 1);
 
@@ -874,17 +876,17 @@ void SimkaAlgorithm<span>::dumpMatrix(const string& outputFilename, const vector
 	char buffer[200];
 	string str;
 
-	for(int i=0; i<matrix.size(); i++){
+	for(size_t i=0; i<matrix.size(); i++){
 		str += ";" + _bankNames[i];
 		//str += ";" + datasetInfos[i]._name;
 	}
 	str += '\n';
 
-	for(int i=0; i<matrix.size(); i++){
+	for(size_t i=0; i<matrix.size(); i++){
 
 		str += _bankNames[i] + ";";
 		//str += datasetInfos[i]._name + ";";
-		for(int j=0; j<matrix.size(); j++){
+		for(size_t j=0; j<matrix.size(); j++){
 
 			//snprintf(buffer,200,"%.2f", matrix[i][j]);
 			snprintf(buffer,200,"%f", matrix[i][j]);
@@ -894,7 +896,8 @@ void SimkaAlgorithm<span>::dumpMatrix(const string& outputFilename, const vector
 		}
 
 		//matrixNormalizedStr.erase(matrixNormalizedStr.end()-1);
-		str.pop_back(); //remove ; at the end of the line
+		str.erase(str.size()-1);
+		//str.pop_back(); //remove ; at the end of the line
 		str += '\n';
 	}
 
