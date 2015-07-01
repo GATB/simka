@@ -35,7 +35,7 @@ SimkaStatistics::SimkaStatistics(size_t nbBanks){
 	_matrixNbSharedKmers.resize(_nbBanks);
 	_brayCurtisNumerator.resize(_nbBanks);
 	//_kullbackLeibler.resize(_nbBanks);
-	for(int i=0; i<_nbBanks; i++){
+	for(size_t i=0; i<_nbBanks; i++){
 		_matrixNbDistinctSharedKmers[i].resize(nbBanks, 0);
 		_matrixNbSharedKmers[i].resize(nbBanks, 0);
 		_brayCurtisNumerator[i].resize(nbBanks, 0);
@@ -83,7 +83,7 @@ void SimkaStatistics::print(){
     u_int64_t solidAbundance = 0;
     //for(int i=0; i<_nbSolidKmersPerBankAbundance.size(); i++)
     //	solidAbundance += _nbSolidKmersPerBankAbundance[i];
-    for(int i=0; i<_nbKmersSharedByBanksThreshold.size(); i++)
+    for(size_t i=0; i<_nbKmersSharedByBanksThreshold.size(); i++)
     	solidAbundance += _nbKmersSharedByBanksThreshold[i];
 
     cout << "Statistics on kmer intersections:" << endl;
@@ -326,7 +326,7 @@ vector<vector<float> > SimkaDistance::createSquaredMatrix(int n){
     vector<vector<float> > matrix;
 
     matrix.resize(n);
-    for(int i=0; i<n; i++)
+    for(size_t i=0; i<n; i++)
     	matrix[i].resize(n, 100);
 
     return matrix;
@@ -341,12 +341,12 @@ vector<vector<float> > SimkaDistance::getMatrixSorensen(SIMKA_MATRIX_TYPE type){
 
     vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
 
-    if(type == SIMKA_MATRIX_TYPE::ASYMETRICAL){
+    if(type == ASYMETRICAL){
     	for(int i=0; i<_nbBanks; i++)
     	    for(int j=0; j<_nbBanks; j++)
     	    	matrix[i][j] = (100.0 * (_stats._matrixNbDistinctSharedKmers[i][j])) / (_stats._nbSolidDistinctKmersPerBank[i]);
     }
-    else if(type == SIMKA_MATRIX_TYPE::NORMALIZED){
+    else if(type == NORMALIZED){
         for(int i=0; i<_nbBanks; i++)
     	    for(int j=0; j<_nbBanks; j++)
     	    	matrix[i][j] = (100.0 * (2*_stats._matrixNbDistinctSharedKmers[i][j])) / (_stats._nbSolidDistinctKmersPerBank[i] + _stats._nbSolidDistinctKmersPerBank[j]);
@@ -362,12 +362,12 @@ vector<vector<float> > SimkaDistance::getMatrixJaccard(){
 	return _matrixSymJaccard;
     vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
 
-    //if(type == SIMKA_MATRIX_TYPE::ASYMETRICAL){
+    //if(type == ASYMETRICAL){
     //    for(int i=0; i<_nbBanks; i++)
     //	    for(int j=0; j<_nbBanks; j++)
     //	    	matrix[i][j] = (100.0 * (_stats._matrixNbDistinctSharedKmers[i][j])) / (_stats._nbSolidDistinctKmersPerBank[i]);
     //}
-    //else if(type == SIMKA_MATRIX_TYPE::NORMALIZED){
+    //else if(type == NORMALIZED){
 
         for(int i=0; i<_nbBanks; i++){
     	    for(int j=0; j<_nbBanks; j++){
@@ -386,12 +386,12 @@ vector<vector<float> > SimkaDistance::getMatrixAKS(SIMKA_MATRIX_TYPE type){
 
     vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
 
-    if(type == SIMKA_MATRIX_TYPE::ASYMETRICAL){
+    if(type == ASYMETRICAL){
         for(int i=0; i<_nbBanks; i++)
     	    for(int j=0; j<_nbBanks; j++)
     	    	matrix[i][j] = (100.0 * (_stats._matrixNbSharedKmers[i][j])) / (_stats._nbSolidKmersPerBank[i]);
     }
-    else if(type == SIMKA_MATRIX_TYPE::SYMETRICAL){
+    else if(type == SYMETRICAL){
 
         for(int i=0; i<_nbBanks; i++)
     	    for(int j=0; j<_nbBanks; j++)
@@ -533,22 +533,22 @@ double SimkaDistance::jaccardSimilarity(size_t i, size_t j, SIMKA_MATRIX_TYPE ty
 
 	if(presenceOrAbundance == SIMKA_PRESENCE_ABUNDANCE::PRESENCE_ABSENCE){
 
-	    if(type == SIMKA_MATRIX_TYPE::SYMETRICAL){
+	    if(type == SYMETRICAL){
 	    	intersectionSize = _stats._matrixNbDistinctSharedKmers[i][j];
 	    	unionSize = _stats._nbSolidDistinctKmersPerBank[i] + _stats._nbSolidDistinctKmersPerBank[j] - intersectionSize;
 	    }
-	    else if(type == SIMKA_MATRIX_TYPE::ASYMETRICAL){
+	    else if(type == ASYMETRICAL){
 	    	intersectionSize = _stats._matrixNbDistinctSharedKmers[i][j];
 	    	unionSize = _stats._nbSolidDistinctKmersPerBank[i];
 	    }
 	}
 	else if(presenceOrAbundance == SIMKA_PRESENCE_ABUNDANCE::ABUNDANCE){
 
-	    if(type == SIMKA_MATRIX_TYPE::SYMETRICAL){
+	    if(type == SYMETRICAL){
 	    	intersectionSize = _stats._matrixNbSharedKmers[i][j] + _stats._matrixNbSharedKmers[j][i];
 	    	unionSize = _stats._nbSolidKmersPerBank[i] + _stats._nbSolidKmersPerBank[j];
 	    }
-	    else if(type == SIMKA_MATRIX_TYPE::ASYMETRICAL){
+	    else if(type == ASYMETRICAL){
 	    	intersectionSize = _stats._matrixNbSharedKmers[i][j];
 	    	unionSize = _stats._nbSolidKmersPerBank[i];
 	    }
@@ -581,11 +581,11 @@ double SimkaDistance::sorensenSimilarity(u_int64_t& a, u_int64_t& b, u_int64_t& 
 	double intersectionSize = 0;
 	double unionSize = 0;
 
-    if(type == SIMKA_MATRIX_TYPE::SYMETRICAL){
+    if(type == SYMETRICAL){
     	intersectionSize = 2*a; //_stats._matrixNbDistinctSharedKmers[i][j];
     	unionSize = 2*a + b + c;//_stats._nbSolidDistinctKmersPerBank[i] + _stats._nbSolidDistinctKmersPerBank[j] - intersectionSize;
     }
-    else if(type == SIMKA_MATRIX_TYPE::ASYMETRICAL){
+    else if(type == ASYMETRICAL){
     	intersectionSize = 2*a; // _stats._matrixNbDistinctSharedKmers[i][j];
     	unionSize = 2*a + b + c; //_stats._nbSolidDistinctKmersPerBank[i];
     }
