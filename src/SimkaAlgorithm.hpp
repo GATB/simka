@@ -1052,7 +1052,8 @@ private:
     		hashValue = oahash(kmer.value());
     	}
 
-    	for(KmerType& kmer : kmers){
+    	for(size_t i=0; i<kmers.size(); i++){
+    		KmerType& kmer = kmers[i];
     		hashValue = oahash(kmer.value());
 
     		for(int j = 0; j < minimizerCount; ++j){
