@@ -190,13 +190,37 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 		_totalAbundance += abundanceI;
 
 
-		//if(abundance < _abundanceMin) continue;
-
-		for(size_t j=0; j<counts.size(); j++){
+		/*
+		for(size_t j=i+1; j<counts.size(); j++){
 			CountNumber abundanceJ = counts[j];
 			updateBrayCurtis(i, abundanceI, j, abundanceJ);
+		}*/
+
+		if(abundanceI){
+			nbBanksThatHaveKmer += 1;
+			_localStats->_nbSolidDistinctKmersPerBank[i] += 1;
+			_localStats->_nbSolidKmersPerBank[i] += abundanceI;
 		}
 
+		//if(abundance < _abundanceMin) continue;
+		//bool done = false;
+
+		for(size_t j=i+1; j<counts.size(); j++){
+			CountNumber abundanceJ = counts[j];
+			updateBrayCurtis(i, abundanceI, j, abundanceJ);
+
+
+			if(abundanceI && abundanceJ){
+				_localStats->_matrixNbSharedKmers[i][j] += abundanceI;
+				_localStats->_matrixNbSharedKmers[j][i] += abundanceJ;
+				_localStats->_matrixNbDistinctSharedKmers[i][j] += 1;
+				_localStats->_matrixNbDistinctSharedKmers[j][i] += 1;
+				//updateKullbackLeibler(i, abundanceI, j, abundanceJ);
+			}
+
+		}
+
+		/*
 
 		if(abundanceI){
 			//totalAbundance += abundanceI;
@@ -220,7 +244,7 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 				}
 
 			}
-		}
+		}*/
 
 	}
 
@@ -256,6 +280,7 @@ void SimkaCountProcessor<span>::updateBrayCurtis(int bank1, CountNumber abundanc
 
 	//_localStats->_brayCurtisNumerator[bank1][bank2] += abs(abundance1-abundance2);
 	_localStats->_brayCurtisNumerator[bank1][bank2] += min(abundance1, abundance2);
+	_localStats->_brayCurtisNumerator[bank2][bank1] += min(abundance1, abundance2);
 }
 
 
@@ -415,6 +440,15 @@ void SimkaAlgorithm<span>::executeSimkamin() {
 
 	layoutInputFilename();
 	createBank();
+
+
+
+
+
+
+
+
+
 
 
 	//_stats = new SimkaStatistics(_nbBanks);
@@ -745,6 +779,8 @@ void SimkaAlgorithm<span>::createBank(){
 
 	IBank* bank = Bank::open(_banksInputFilename);
 
+
+
 	_nbBanks = bank->getCompositionNb();
 
 	SimkaSequenceFilter sequenceFilter(_minReadSize, _minReadShannonIndex);
@@ -752,6 +788,15 @@ void SimkaAlgorithm<span>::createBank(){
 	_banks = new SimkaBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, _nbReadsPerDataset);
 
 
+	if(_maxNbReads == 0){
+		if(_options->getInt(STR_VERBOSE) != 0)
+			cout << "-maxNbReads is not defined. Simka will estimating it..." << endl;
+		_maxNbReads = bank->estimateNbItems() / _nbBanks;
+		_maxNbReads -= (_maxNbReads/10);
+		if(_options->getInt(STR_VERBOSE) != 0)
+			cout << "Max nb reads: " << _maxNbReads << endl;
+	}
+	//cout << bank->estimateNbItems() << endl;
 
 
 }

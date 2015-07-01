@@ -180,7 +180,7 @@ SimkaDistance::SimkaDistance(SimkaStatistics& stats) : _stats(stats){
 	for(size_t i=0; i<_nbBanks; i++){
 		//SpeciesAbundanceVectorType& X_i = _stats._speciesAbundancePerDataset[i];
 
-		for(size_t j=i; j<_nbBanks; j++){
+		for(size_t j=i+1; j<_nbBanks; j++){
 			//SpeciesAbundanceVectorType& X_j = _stats._speciesAbundancePerDataset[j];
 
 			get_abc(i, j, a, b ,c);
@@ -327,7 +327,7 @@ vector<vector<float> > SimkaDistance::createSquaredMatrix(int n){
 
     matrix.resize(n);
     for(int i=0; i<n; i++)
-    	matrix[i].resize(n, 0);
+    	matrix[i].resize(n, 100);
 
     return matrix;
 
@@ -514,6 +514,13 @@ double SimkaDistance::brayCurtisSimilarity(size_t i, size_t j){
 	//cout << _stats._nbSolidKmersPerBank[i] + _stats._nbSolidKmersPerBank[j] << endl;
 	double intersectionSize = _stats._brayCurtisNumerator[i][j];
 	double unionSize = _stats._nbSolidKmersPerBank[i] + _stats._nbSolidKmersPerBank[j];
+
+	/*
+	cout << endl;
+	cout << _stats._brayCurtisNumerator[i][j] << endl;
+	cout << _stats._nbSolidKmersPerBank[i] << endl;
+	cout << _stats._nbSolidKmersPerBank[j] << endl;
+	cout << endl;*/
 
 	return 100 * ((2*intersectionSize) / unionSize);
 }
