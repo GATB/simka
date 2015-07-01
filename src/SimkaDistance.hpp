@@ -86,7 +86,7 @@ public:
 private:
 
 
-	vector<vector<float> > createSquaredMatrix(int n);
+	vector<vector<float> > createSquaredMatrix(size_t n);
 	void get_abc(size_t bank1, size_t bank2, u_int64_t& a, u_int64_t& b, u_int64_t& c);
     //void get_abc(SpeciesAbundanceVectorType& X, SpeciesAbundanceVectorType& Y, u_int64_t& a, u_int64_t& b, u_int64_t& c);
     double jaccardSimilarity(size_t i, size_t j, SIMKA_MATRIX_TYPE type, SIMKA_PRESENCE_ABUNDANCE presenceOrAbundance);

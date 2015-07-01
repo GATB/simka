@@ -103,7 +103,7 @@ void SimkaStatistics::print(){
     cout << endl;
     cout << "\tKmer shared by T banks :" << endl;
 
-    for(int i=0; i<_nbBanks; i++){
+    for(size_t i=0; i<_nbBanks; i++){
 	    cout << "\t\tShared by " << i+1 <<  " banks:";
 
 	    cout << endl;
@@ -322,7 +322,7 @@ void SimkaDistance::outputMatrix(){
 }
 */
 
-vector<vector<float> > SimkaDistance::createSquaredMatrix(int n){
+vector<vector<float> > SimkaDistance::createSquaredMatrix(size_t n){
     vector<vector<float> > matrix;
 
     matrix.resize(n);
@@ -531,7 +531,7 @@ double SimkaDistance::jaccardSimilarity(size_t i, size_t j, SIMKA_MATRIX_TYPE ty
 	double intersectionSize = 0;
 	double unionSize = 0;
 
-	if(presenceOrAbundance == SIMKA_PRESENCE_ABUNDANCE::PRESENCE_ABSENCE){
+	if(presenceOrAbundance == PRESENCE_ABSENCE){
 
 	    if(type == SYMETRICAL){
 	    	intersectionSize = _stats._matrixNbDistinctSharedKmers[i][j];
@@ -542,7 +542,7 @@ double SimkaDistance::jaccardSimilarity(size_t i, size_t j, SIMKA_MATRIX_TYPE ty
 	    	unionSize = _stats._nbSolidDistinctKmersPerBank[i];
 	    }
 	}
-	else if(presenceOrAbundance == SIMKA_PRESENCE_ABUNDANCE::ABUNDANCE){
+	else if(presenceOrAbundance == ABUNDANCE){
 
 	    if(type == SYMETRICAL){
 	    	intersectionSize = _stats._matrixNbSharedKmers[i][j] + _stats._matrixNbSharedKmers[j][i];
