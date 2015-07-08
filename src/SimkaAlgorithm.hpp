@@ -896,6 +896,7 @@ public:
     		_progress->inc(_progressReadProcessed);
     		_progressReadProcessed = 0;
     	}
+
     	//cout << sequence.toString() << endl;
 
     	if(sequence.getDataSize() < _kmerSize) return;
@@ -924,39 +925,47 @@ public:
 		//size_t nbMinimizer = min(_nbMinimizers, kmers.size()) ;
 		size_t nbMinimizer = ceil(kmers.size() /(float) _kmerSize);
 
-		std::vector<KmerType> minimizers;
+		//std::vector<KmerType> minimizers;
 		//minHash(nbMinimizer, kmers, minimizers);
 
 		//minimizers.push_back(getMinimizer(kmers, 0, kmers.size()-1));
 		size_t step = ceil(kmers.size() / (float)nbMinimizer);
 		size_t begin = 0;
 		size_t end = -1;
+		KmerType minimizer;
 
 		for(size_t i=0; i<nbMinimizer; i++){
 			begin = end+1;
 			end = (i+1)*step;
 			end = min(end, kmers.size());
+
+			if(begin >= end) return;
 			//cout << begin << " " << end << "        " << kmers.size() << "    " << endl;
-			minimizers.push_back(getMinimizer(kmers, begin, end));
+			//minimizers.push_back();
+			minimizer = getMinimizer(kmers, begin, end);
+			size_t p = oahash(minimizer.value()) % _nbPartitions;
+			this->_partition[p].insert(minimizer.value());
+			incKmer_and_rad(p, getHeavyWeight(minimizer.value()).getVal());
 		}
 
+		/*
 		//cout << minimizers.size() << endl;
-		for(size_t i=0; i<minimizers.size(); i++){
+		//for(size_t i=0; i<minimizers.size(); i++){
 
-			KmerType& minimizer = minimizers[i];
+			//KmerType& minimizer = minimizers[i];
 			size_t p = oahash(minimizer.value()) % _nbPartitions;
 			this->_partition[p].insert(minimizer.value());
 
 			incKmer_and_rad(p, getHeavyWeight(minimizer.value()).getVal());
 			//cout << getHeavyWeight(minimizer.value()).getVal() << endl;
 			//_counter->insert(minimizer.value());
-			/*
+
 	        u_int64_t h = minimizer.minimizer().value().getVal();
 			superKmer.minimizer    = h;
 	        superKmer.addKmer(minimizer);
 	        processSuperkmer (superKmer);
-			superKmer.reset();*/
-		}
+			superKmer.reset();
+		//}*/
 
 		/*
         if(prev_which)
@@ -1061,10 +1070,10 @@ private:
     	//std::vector<u_int64_t> sketch(minimizerCount);
     	 //hashValue;
 
-    	KmerType& kmer = kmers[begin];
-    	uint64_t hashValue = oahash(kmer.value());
+    	KmerType minimizer = kmers[begin];
+    	uint64_t hashValue = oahash(minimizer.value());
     	u_int64_t sketchValue = hashValue;
-    	KmerType minimizer = kmer;
+
     	//for(size_t j=0; j < minimizerCount; ++j){
     		//sketchValue = hashValue;
     		//minimizer = kmer;
@@ -1072,7 +1081,7 @@ private:
     		//hashValue = oahash(kmer.value());
     	//}
 
-    	for(size_t i=begin; i<end; i++){
+    	for(size_t i=begin; i<end; i++){ //begin+1 gb
     		KmerType& kmer = kmers[i];
     		hashValue = oahash(kmer.value());
 
