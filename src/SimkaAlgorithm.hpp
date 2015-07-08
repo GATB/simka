@@ -24,7 +24,7 @@
 #include <gatb/gatb_core.hpp>
 #include<stdio.h>
 
-
+#define SIMKA_MIN
 #include "SimkaDistance.hpp"
 
 const string STR_SIMKA_SOLIDITY_PER_DATASET = "-solidity-single";
@@ -126,7 +126,7 @@ private :
 
 
 template<size_t span>
-class PartitionsCommand : public gatb::core::tools::dp::ICommand, public SmartPointer
+class SimkaPartitionsCommand : public gatb::core::tools::dp::ICommand, public SmartPointer
 {
 public:
 
@@ -136,7 +136,7 @@ public:
     typedef ICountProcessor<span> CountProcessor;
 
     /** Constructor. */
-    PartitionsCommand (
+    SimkaPartitionsCommand (
         gatb::core::tools::collections::Iterable<Type>& partition,
         CountProcessor*                                 processor,
         size_t                                          cacheSize,
@@ -166,7 +166,7 @@ public:
 	}
 
     /** Destructor. */
-    ~PartitionsCommand(){
+    ~SimkaPartitionsCommand(){
 
     }
 
@@ -442,14 +442,14 @@ private :
 
 
 
-class CounterBuilder
+class SimkaCounterBuilder
 {
 public:
 
     /** Constructor.
      * \param[in] nbBanks : number of banks parsed during kmer counting.
      */
-    CounterBuilder (size_t nbBanks=1)  :  _abundancePerBank(nbBanks)  {}
+    SimkaCounterBuilder (size_t nbBanks=1)  :  _abundancePerBank(nbBanks)  {}
 
     /** Get the number of banks.
      * \return the number of banks. */
@@ -488,7 +488,7 @@ private:
 /********************************************************************************/
 /** */
 template<size_t span>
-class PartitionCommand : public PartitionsCommand<span>
+class PartitionCommand : public SimkaPartitionsCommand<span>
 {
 public:
 
@@ -522,7 +522,7 @@ public:
 		vector<u_int64_t>& nbKmerPerPartitions,
 		vector<vector<u_int64_t> >& nbk_per_radix_per_part
     ):
-    	PartitionsCommand<span>(partition, processor, cacheSize, passi, parti, nbCores, kmerSize, pool),
+    	SimkaPartitionsCommand<span>(partition, processor, cacheSize, passi, parti, nbCores, kmerSize, pool),
         _radix_kmers (0), _bankIdMatrix(0), _radix_sizes(0), _r_idx(0), _nbItemsPerBankPerPart(offsets), _nbKmerPerPartitions(nbKmerPerPartitions),
 		_nbk_per_radix_per_part(nbk_per_radix_per_part)
 	{
@@ -682,7 +682,7 @@ public:
     void executeDump ()
     {
 
-        CounterBuilder solidCounter (_nbItemsPerBankPerPart.size());
+        SimkaCounterBuilder solidCounter (_nbItemsPerBankPerPart.size());
 
     	//cout << "\n\n\n" << endl;
     	KxmerPointer<span>* pointer = new KxmerPointer<span> (_radix_kmers+ IX(0) ,0,0,0,255,this->_kmerSize, _radix_sizes + IX(0), _bankIdMatrix);
@@ -920,10 +920,23 @@ public:
 
 		if(kmers.size() <= 0) return;
 
-		size_t nbMinimizer = min(_nbMinimizers, kmers.size()) ;
-		std::vector<KmerType> minimizers;
-		minHash(nbMinimizer, kmers, minimizers);
 
+		//size_t nbMinimizer = min(_nbMinimizers, kmers.size()) ;
+		size_t nbMinimizer = sequence.getDataSize() / _kmerSize;
+
+		std::vector<KmerType> minimizers;
+		//minHash(nbMinimizer, kmers, minimizers);
+
+		//minimizers.push_back(getMinimizer(kmers, 0, kmers.size()-1));
+		size_t step = ceil(sequence.getDataSize() / (float)nbMinimizer);
+
+		for(size_t i=0; i<nbMinimizer; i++){
+			size_t begin = i*step;
+			size_t end = (i+1)*step;
+			end = min(end, kmers.size()-1);
+			//cout << begin << " " << endl;
+			minimizers.push_back(getMinimizer(kmers, begin, end));
+		}
 
 		//cout << minimizers.size() << endl;
 		for(size_t i=0; i<minimizers.size(); i++){
@@ -1037,6 +1050,42 @@ private:
     	return x * UINT64_C(2685821657736338717);
     }*/
 
+
+    KmerType getMinimizer(std::vector<KmerType>& kmers, size_t begin, size_t end){
+
+    	//static size_t minimizerCount = 1;
+
+    	//result.resize(minimizerCount);
+    	//std::vector<u_int64_t> sketch(minimizerCount);
+    	 //hashValue;
+
+    	KmerType& kmer = kmers[begin];
+    	uint64_t hashValue = oahash(kmer.value());
+    	u_int64_t sketchValue = hashValue;
+    	KmerType minimizer = kmer;
+    	//for(size_t j=0; j < minimizerCount; ++j){
+    		//sketchValue = hashValue;
+    		//minimizer = kmer;
+    		//result[j] = kmer;
+    		//hashValue = oahash(kmer.value());
+    	//}
+
+    	for(size_t i=begin; i<=end; i++){
+    		KmerType& kmer = kmers[i];
+    		hashValue = oahash(kmer.value());
+
+    		//for(size_t j = 0; j < minimizerCount; ++j){
+    			if(hashValue < sketchValue){
+    				sketchValue = hashValue;
+    				minimizer = kmer;
+    				//result[j] = kmer;
+    			}
+    			//hashValue = oahash(kmer.value());
+    		//}
+    	}
+
+    	return minimizer;
+    }
 
     void minHash(int minimizerCount, std::vector<KmerType>& kmers, std::vector<KmerType>& result){
     	result.resize(minimizerCount);

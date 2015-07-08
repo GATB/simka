@@ -43,10 +43,12 @@ _progress(progress), _stats(stats)
 
 template<size_t span>
 SimkaCountProcessor<span>::~SimkaCountProcessor () {
+#ifdef SIMKA_MIN
 	if(_nbKmerCounted > 0){
 		_progress->inc(_nbKmerCounted);
 		_nbKmerCounted = 0;
 	}
+#endif
 	delete _localStats;
 }
 
@@ -109,10 +111,12 @@ template<size_t span>
 bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const CountVector& counts, CountNumber sum){
 
 
-	if(_nbKmerCounted > 500000){
-		_progress->inc(_nbKmerCounted);
-		_nbKmerCounted = 0;
-	}
+#ifdef SIMKA_MIN
+		if(_nbKmerCounted > 500000){
+			_progress->inc(_nbKmerCounted);
+			_nbKmerCounted = 0;
+		}
+#endif
 
 	//return false;
 
@@ -821,7 +825,7 @@ void SimkaAlgorithm<span>::createBank(){
 		_maxNbReads = bank->estimateNbItems() / _nbBanks;
 		_maxNbReads -= (_maxNbReads/10);
 		if(_options->getInt(STR_VERBOSE) != 0)
-			cout << "Max nb reads: " << _maxNbReads << endl;
+			cout << "Max nb reads: " << _maxNbReads << endl << endl;
 	}
 	//cout << bank->estimateNbItems() << endl;
 
