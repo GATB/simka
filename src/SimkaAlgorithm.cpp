@@ -507,6 +507,7 @@ void SimkaAlgorithm<span>::executeSimkamin() {
 
     vector<Iterator<Sequence>*> itBanks =  _banks->iterator()->getComposition();
 
+    cout << endl;
     //int total = 0;
 	//u_int64_t progressUpdateStep = nbReadToProcess / 100;
 	//progressUpdateStep = max(progressUpdateStep, (u_int64_t)10000);

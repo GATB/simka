@@ -922,19 +922,21 @@ public:
 
 
 		//size_t nbMinimizer = min(_nbMinimizers, kmers.size()) ;
-		size_t nbMinimizer = sequence.getDataSize() / _kmerSize;
+		size_t nbMinimizer = ceil(kmers.size() /(float) _kmerSize);
 
 		std::vector<KmerType> minimizers;
 		//minHash(nbMinimizer, kmers, minimizers);
 
 		//minimizers.push_back(getMinimizer(kmers, 0, kmers.size()-1));
-		size_t step = ceil(sequence.getDataSize() / (float)nbMinimizer);
+		size_t step = ceil(kmers.size() / (float)nbMinimizer);
+		size_t begin = 0;
+		size_t end = -1;
 
 		for(size_t i=0; i<nbMinimizer; i++){
-			size_t begin = i*step;
-			size_t end = (i+1)*step;
-			end = min(end, kmers.size()-1);
-			//cout << begin << " " << endl;
+			begin = end+1;
+			end = (i+1)*step;
+			end = min(end, kmers.size());
+			//cout << begin << " " << end << "        " << kmers.size() << "    " << endl;
 			minimizers.push_back(getMinimizer(kmers, begin, end));
 		}
 
@@ -1070,7 +1072,7 @@ private:
     		//hashValue = oahash(kmer.value());
     	//}
 
-    	for(size_t i=begin; i<=end; i++){
+    	for(size_t i=begin; i<end; i++){
     		KmerType& kmer = kmers[i];
     		hashValue = oahash(kmer.value());
 
