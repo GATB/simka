@@ -338,6 +338,7 @@ _progress (0), _tmpPartitionsStorage(0), _tmpPartitions(0)
 	_abundanceThreshold.second = _options->getInt(STR_KMER_ABUNDANCE_MAX);
 	_soliditySingle = _options->get(STR_SIMKA_SOLIDITY_PER_DATASET);
 	_nbMinimizers = getInput()->getInt(STR_KMER_PER_READ);
+	//_maxDisk = getInput()->getInt(STR_MAX_DISK);
 
 	//read filter
 	_maxNbReads = _options->getInt(STR_SIMKA_MAX_READS);
@@ -349,6 +350,14 @@ _progress (0), _tmpPartitionsStorage(0), _tmpPartitions(0)
 	_minKmerShannonIndex = std::max(_minKmerShannonIndex, 0.0);
 	_minKmerShannonIndex = std::min(_minKmerShannonIndex, 2.0);
 
+	//string maxDisk = "";
+	//if(_options->get(STR_MAX_DISK)){
+	//	maxDisk = _options->getStr(STR_MAX_DISK);
+	//	cout << maxDisk << endl;
+	//}
+	_multiStorage = new MultiDiskStorage<Type>(_options->getStr(STR_URI_OUTPUT_DIR), _options->getStr(STR_MAX_DISK));
+
+	   // vector<string> _tempDirMaxDisk
 
 	_totalKmers = 0;
 	/*
@@ -495,14 +504,10 @@ void SimkaAlgorithm<span>::executeSimkamin() {
 		_nbk_per_radix_per_part[ii].resize(_nbPartitions, 0);
 	}
 
-    string tmpStorageName = _outputDirTemp + "/" + System::file().getTemporaryFilename("dsk_partitions");
-    /** We create the partition files for the current pass. */
-    setPartitionsStorage (StorageFactory(STORAGE_FILE).create (tmpStorageName, true, false));
-    setPartitions        (0); // close the partitions first, otherwise new files are opened before  closing parti from previous pass
-    setPartitions        ( & (*_tmpPartitionsStorage)().getPartition<Type> ("parts", _nbPartitions));
+    _multiStorage->createRepartition(_nbPartitions, maxNbKmersMemoryB/_nbPartitions);
+    _multiStorage->createStorages();
 
 
-    cout << "Tmp storage: " << tmpStorageName << endl;
 
 
     vector<Iterator<Sequence>*> itBanks =  _banks->iterator()->getComposition();
@@ -523,14 +528,23 @@ void SimkaAlgorithm<span>::executeSimkamin() {
 
     	//cout << i << endl;
 
-        getDispatcher()->iterate (itBanks[i], FillPartitions<span> (_progress, _nbMinimizers, _nbPartitions, _kmerSize, _maxNbReads, _tmpPartitions, _nbk_per_radix_per_part, _minKmerShannonIndex), 1000, true);
+        getDispatcher()->iterate (itBanks[i], FillPartitions<span> (_progress, _nbMinimizers, _nbPartitions, _kmerSize, _maxNbReads, _multiStorage, _nbk_per_radix_per_part, _minKmerShannonIndex), 1000, true);
 
-
+#ifdef MULTI_DISK
+        _multiStorage->flush();
+#else
         _tmpPartitions->flush();
+#endif
+
         vector<size_t> nbItems;
         for (size_t p=0; p<_nbPartitions; p++)
         {
-        	u_int64_t nbItem = (*_tmpPartitions)[p].getNbItems();
+#ifdef MULTI_DISK
+        u_int64_t nbItem = _multiStorage->getPartition(p).getNbItems();
+#else
+        u_int64_t nbItem = (*_tmpPartitions)[p].getNbItems();
+#endif
+
             nbItems.push_back (nbItem);
             //_nbKmerPerPartitions[p] += nbItem;
             //total += nbItem;
@@ -544,7 +558,12 @@ void SimkaAlgorithm<span>::executeSimkamin() {
 
     _totalKmers = 0;
     for (size_t p=0; p<_nbPartitions; p++){
-    	u_int64_t nbItem = (*_tmpPartitions)[p].getNbItems();
+#ifdef MULTI_DISK
+    	u_int64_t nbItem = _multiStorage->getPartition(p).getNbItems();
+#else
+        u_int64_t nbItem = (*_tmpPartitions)[p].getNbItems();
+#endif
+
     	_nbKmerPerPartitions[p] = nbItem;
         _totalKmers += nbItem;
     }
@@ -659,7 +678,9 @@ void SimkaAlgorithm<span>::executeSimkamin() {
 			//);
 			int nbCore = 1;
 			cmd = new PartitionCommand<span> (
-				(*_tmpPartitions)[p], processorClone, cacheSize, 0, p, nbCore, _kmerSize, pool, nbItemsPerBankPerPart, _nbKmerPerPartitions, _nbk_per_radix_per_part
+					_multiStorage->getPartition(p), processorClone, cacheSize, 0, p, nbCore, _kmerSize, pool, nbItemsPerBankPerPart, _nbKmerPerPartitions, _nbk_per_radix_per_part
+
+				//(*_tmpPartitions)[p], processorClone, cacheSize, 0, p, nbCore, _kmerSize, pool, nbItemsPerBankPerPart, _nbKmerPerPartitions, _nbk_per_radix_per_part
 			);
 
             cmds.push_back (cmd);
@@ -679,8 +700,8 @@ void SimkaAlgorithm<span>::executeSimkamin() {
 
 
 
-
-    _tmpPartitions->remove();
+    _multiStorage->remove();
+    //_tmpPartitions->remove();
     //return;
 	outputMatrix();
 	outputHeatmap();

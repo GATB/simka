@@ -24,6 +24,7 @@
 #include <gatb/gatb_core.hpp>
 #include<stdio.h>
 
+#define MULTI_DISK
 #define SIMKA_MIN
 #include "SimkaDistance.hpp"
 
@@ -45,6 +46,265 @@ typedef u_int16_t bankIdType;
 //#define IX(rad) ((rad)+(256))
 #define IX(rad) ((rad))
 
+
+template<typename Type>
+class Disk{
+
+public:
+
+	Disk(string filename, u_int64_t maxDiskGB) :
+	_tmpPartitionsStorage(0), _tmpPartitions(0)
+	{
+		_filename = filename;
+		_maxDiskGB = maxDiskGB;
+
+		_writeTime = 0;
+		_nbPartitions = 0;
+		_timer = 0;
+		_partitionOffset = 0;
+	}
+
+	void createPartitions(){
+	    string tmpStorageName = _filename + "/" + System::file().getTemporaryFilename("dsk_partitions");
+	    setPartitionsStorage (StorageFactory(STORAGE_FILE).create (tmpStorageName, true, false));
+	    setPartitions        (0); // close the partitions first, otherwise new files are opened before  closing parti from previous pass
+	    setPartitions        ( & (*_tmpPartitionsStorage)().getPartition<Type> ("parts", _nbPartitions));
+	    cout << "Tmp storage: " << tmpStorageName << endl;
+	}
+
+	string _filename;
+	u_int64_t _maxDiskGB;
+
+	size_t _nbPartitions;
+	double _writeTime;
+	double _timer;
+
+    /** Temporary partitions management. */
+    Storage* _tmpPartitionsStorage;
+    void setPartitionsStorage (Storage* tmpPartitionsStorage)  {  SP_SETATTR(tmpPartitionsStorage);  }
+
+    /** Temporary partitions management. */
+    Partition<Type>* _tmpPartitions;
+    void setPartitions (Partition<Type>* tmpPartitions)  {  SP_SETATTR(tmpPartitions);  }
+
+    size_t _partitionOffset;
+};
+
+template<typename Type>
+class MultiDiskStorage{
+
+public:
+
+	MultiDiskStorage(const string& dirs, const string& maxDisks){
+
+		/*
+		double time = 0.5;
+		for(size_t i=0; i<3; i++){
+			Disk disk ("lala", 1000);
+			disk._writeTime = time;
+			_disks.push_back(disk);
+			time *= 3;
+		}*/
+		readArg(dirs, maxDisks);
+
+		for(size_t i=0; i<_disks.size(); i++){
+			cout << _disks[i]._filename << "    " << _disks[i]._maxDiskGB << endl;
+		}
+
+		testDiskSpeed();
+
+
+
+	}
+
+	~MultiDiskStorage(){
+
+		for(size_t j=0; j<_partitionHandles.size(); j++){
+			delete _partitionHandles[j];
+		}
+	}
+
+	void readArg(const string& dirs, const string& maxDisks){
+
+		//vector<string> args;
+		string filename;
+		string maxDiskStr;
+		stringstream dirsStream(dirs);
+		stringstream maxDiskStream(maxDisks);
+
+		while(getline(dirsStream, filename, ',')){
+			//_tempDirs.push_back(dir);
+			//cout << dir << endl;
+			//cout << dir << endl;
+			u_int64_t maxDisk = 0;
+			if(getline(maxDiskStream, maxDiskStr, ',')){
+				maxDisk = stoul(maxDiskStr);
+			}
+
+			_disks.push_back(Disk<Type>(filename, maxDisk));
+		}
+		//return args;
+	}
+
+	struct sort_struct{
+		bool operator()(const Disk<Type>& pair1, const Disk<Type>& pair2){
+			return pair1._writeTime < pair2._writeTime;
+		}
+	};
+
+
+	void testDiskSpeed(){
+
+		struct timeval _time;
+
+		//clock_t _clock = clock();
+		//u_int64_t blockSize = 2000000000;
+		u_int64_t blockSize = 100000000;
+		string buffer;
+		for(size_t i=0; i<4096; i++){
+			buffer.push_back('1');
+		}
+		size_t pass = blockSize / buffer.size();
+
+		for(size_t i=0; i<_disks.size(); i++){
+
+			string filename = _disks[i]._filename + "/" + "test";
+			IFile* file = System::file().newFile(filename, "wb");
+
+			gettimeofday(&_time, NULL);
+			double timeBegin = _time.tv_sec +(_time.tv_usec/1000000.0);
+
+			for(size_t j=0; j<pass; j++){
+				file->fwrite(buffer.c_str(), buffer.size(), 1);
+			}
+
+			file->flush();
+
+			gettimeofday(&_time, NULL);
+			double timeEnd = _time.tv_sec +(_time.tv_usec/1000000.0);
+
+			System::file().remove(filename);
+			delete file;
+
+			_disks[i]._writeTime = timeEnd - timeBegin;
+			//cout << disks[i].first << "  " << disks[i].second << endl;
+		}
+
+		sort(_disks.begin(), _disks.end(), sort_struct());
+
+		for(size_t i=0; i<_disks.size(); i++){
+			cout << _disks[i]._filename << "  " << _disks[i]._writeTime << endl;
+		}
+	}
+
+	void createRepartition(size_t nbPartitions, u_int64_t partitionSizeByte){
+
+		_partitions.resize(nbPartitions);
+
+		vector<double> diskTimers(_disks.size(), 0);
+		//vector<int> nbPartitionPerDisk(_disks.size(), 0);
+
+		for(size_t i=0; i<nbPartitions; i++){
+
+
+			for(size_t j=0; j<_disks.size(); j++){
+
+				Disk<Type>& disk = _disks[j];
+
+				//last disk available in the list
+				if(j+1 >= _disks.size()){
+					disk._nbPartitions += 1;
+					disk._timer += disk._writeTime;
+					break;
+				}
+
+				Disk<Type>& nextDisk = _disks[j+1];
+
+				if(disk._timer + disk._writeTime < nextDisk._timer + nextDisk._writeTime){
+
+					if(disk._nbPartitions*(partitionSizeByte+1) < disk._maxDiskGB*GBYTE){
+
+						disk._nbPartitions += 1;
+						disk._timer += disk._writeTime;
+						break;
+					}
+				}
+
+			}
+		}
+
+		cout << endl << "Nb partitions per disks" << endl;
+		for(size_t j=0; j<_disks.size(); j++){
+
+			Disk<Type>& disk = _disks[j];
+			cout << "\t" << disk._filename << " (write speed: " << disk._writeTime << "): " << disk._nbPartitions << endl;
+		}
+		//cout << endl;
+	}
+
+	void createStorages(){
+
+		cout << endl;
+
+		size_t nbPart = 0;
+		size_t offset = 0;
+
+		for(size_t j=0; j<_disks.size(); j++){
+
+			//cout << j << endl;
+			Disk<Type>& disk = _disks[j];
+
+
+		    /** We create the partition files for the current pass. */
+		    disk.createPartitions();
+
+		    PartitionCache<Type>* partition = new PartitionCache<Type>(*disk._tmpPartitions,1<<12,0);
+		    _partitionHandles.push_back(partition);
+
+		    for(size_t j=0; j<disk._nbPartitions; j++){
+		    	_partitions[nbPart] = &(*partition)[j];
+		    	//_partitionToDisk[nbPart] = partition;
+		    	nbPart += 1;
+		    }
+
+		    disk._partitionOffset = offset;
+		    offset += disk._nbPartitions;
+		    //_partition (*partition,1<<12,0)
+		}
+
+
+
+	}
+
+	void flush(){
+		for(size_t i=0; i<_partitionHandles.size(); i++){
+			_partitionHandles[i]->flush();
+		}
+	}
+
+	void remove(){
+		for(size_t i=0; i<_partitionHandles.size(); i++){
+			_partitionHandles[i]->remove();
+		}
+	}
+
+	CollectionCache<Type>& getPartition(size_t p){
+		return *(_partitions[p]);
+		//return (*(_partitionToDisk[p]))[]
+	}
+
+	vector<Disk<Type> > _disks;
+	//vector<PartitionCache<Type>*> _partitionToDisk;
+	vector<CollectionCache<Type>*> _partitions;
+	vector<PartitionCache<Type>*> _partitionHandles;
+	//_partition (*partition,1<<12,0) partition
+	/*
+    vector<string> _tempDirs;
+    vector<u_int64_t> _tempDirMaxDisk;
+	vector<pair<string, double> > _sortedDisks;
+	vector<pair<string, double> > _sortedMaxDisks;*/
+
+};
 
 template<size_t span>
 class SortCommand : public ICommand, public SmartPointer
@@ -838,9 +1098,9 @@ public:
 
     IteratorListener* _progress;
 
-    FillPartitions (IteratorListener* progress, size_t nbMinimizers, size_t nbPartitions, size_t kmerSize, u_int64_t estimateNbSequences, Partition<Type>* partition, vector<vector<u_int64_t> >& nbk_per_radix_per_part, double minKmerShannonIndex) :
-    	_progress(progress), _nbk_per_radix_per_part(nbk_per_radix_per_part), _nbPartitions(nbPartitions), _nbMinimizers(nbMinimizers), _kmerSize(kmerSize), _model(_kmerSize), _partition (*partition,1<<12,0),
-		_minKmerShannonIndex(minKmerShannonIndex)
+    FillPartitions (IteratorListener* progress, size_t nbMinimizers, size_t nbPartitions, size_t kmerSize, u_int64_t estimateNbSequences, MultiDiskStorage<Type>* multiStorage, vector<vector<u_int64_t> >& nbk_per_radix_per_part, double minKmerShannonIndex) :
+    	_progress(progress), _nbk_per_radix_per_part(nbk_per_radix_per_part), _nbPartitions(nbPartitions), _nbMinimizers(nbMinimizers), _kmerSize(kmerSize), _model(_kmerSize),
+		_minKmerShannonIndex(minKmerShannonIndex), _multiStorage(multiStorage)
     {
     	_progressReadProcessed = 0;
 
@@ -920,8 +1180,16 @@ public:
 		}
 
 		if(kmers.size() <= 0) return;
+		if(kmers.size() < _nbMinimizers) return;
+		//size_t nbMinimizer = min(_nbMinimizers, kmers.size()) ;
 
+		_minimizers.clear();
+		_minimizers.resize(_nbMinimizers);
+		_sketch.clear();
+        _sketch.resize(_nbMinimizers);
 
+		minHash(kmers);
+		/*
 		//size_t nbMinimizer = min(_nbMinimizers, kmers.size()) ;
 		size_t nbMinimizer = ceil(kmers.size() /(float) _kmerSize);
 
@@ -946,26 +1214,26 @@ public:
 			size_t p = oahash(minimizer.value()) % _nbPartitions;
 			this->_partition[p].insert(minimizer.value());
 			incKmer_and_rad(p, getHeavyWeight(minimizer.value()).getVal());
-		}
+		}*/
 
-		/*
+
 		//cout << minimizers.size() << endl;
-		//for(size_t i=0; i<minimizers.size(); i++){
+		for(size_t i=0; i<_minimizers.size(); i++){
 
-			//KmerType& minimizer = minimizers[i];
+			KmerType& minimizer = _minimizers[i];
 			size_t p = oahash(minimizer.value()) % _nbPartitions;
-			this->_partition[p].insert(minimizer.value());
+			_multiStorage->getPartition(p).insert(minimizer.value());
 
 			incKmer_and_rad(p, getHeavyWeight(minimizer.value()).getVal());
 			//cout << getHeavyWeight(minimizer.value()).getVal() << endl;
 			//_counter->insert(minimizer.value());
 
-	        u_int64_t h = minimizer.minimizer().value().getVal();
-			superKmer.minimizer    = h;
-	        superKmer.addKmer(minimizer);
-	        processSuperkmer (superKmer);
-			superKmer.reset();
-		//}*/
+			//u_int64_t h = minimizer.minimizer().value().getVal();
+			//superKmer.minimizer    = h;
+			//superKmer.addKmer(minimizer);
+			//processSuperkmer (superKmer);
+			//superKmer.reset();
+		}
 
 		/*
         if(prev_which)
@@ -1031,6 +1299,10 @@ public:
 private:
 
 	//u_int64_t _progressReadToProcess;
+	vector<KmerType> _minimizers;
+	std::vector<u_int64_t> _sketch;
+	//result.resize(minimizerCount);
+
 	u_int64_t _progressReadProcessed;
 	//u_int64_t _progressUpdateStep;
 
@@ -1044,7 +1316,7 @@ private:
     //Hash16<Type, u_int8_t>* _counter;
 
     /** Shared resources (must support concurrent accesses). */
-    PartitionCache <Type> _partition;
+    //PartitionCache <Type> _partition;
     double _minKmerShannonIndex;
     //PartitionCacheType <Type> _partition;
 
@@ -1060,7 +1332,7 @@ private:
     	x ^= x >> 27;
     	return x * UINT64_C(2685821657736338717);
     }*/
-
+	MultiDiskStorage<Type>* _multiStorage;
 
     KmerType getMinimizer(std::vector<KmerType>& kmers, size_t begin, size_t end){
 
@@ -1098,17 +1370,16 @@ private:
     	return minimizer;
     }
 
-    void minHash(int minimizerCount, std::vector<KmerType>& kmers, std::vector<KmerType>& result){
-    	result.resize(minimizerCount);
-    	std::vector<u_int64_t> sketch(minimizerCount);
+    void minHash(std::vector<KmerType>& kmers){
+
     	uint64_t hashValue;
 
     	KmerType kmer = kmers[0];
     	hashValue = oahash(kmer.value());
 
-    	for(int j=0; j < minimizerCount; ++j){
-    		sketch[j] = hashValue;
-    		result[j] = kmer;
+    	for(int j=0; j < _nbMinimizers; ++j){
+    		_sketch[j] = hashValue;
+    		_minimizers[j] = kmer;
     		hashValue = oahash(kmer.value());
     	}
 
@@ -1116,10 +1387,10 @@ private:
     		KmerType& kmer = kmers[i];
     		hashValue = oahash(kmer.value());
 
-    		for(int j = 0; j < minimizerCount; ++j){
-    			if(hashValue < sketch[j]){
-    				sketch[j] = hashValue;
-    				result[j] = kmer;
+    		for(int j = 0; j < _nbMinimizers; ++j){
+    			if(hashValue < _sketch[j]){
+    				_sketch[j] = hashValue;
+    				_minimizers[j] = kmer;
     			}
     			hashValue = oahash(kmer.value());
     		}
@@ -1427,6 +1698,7 @@ private:
     std::vector <std::vector<size_t> > _nbKmersPerPartitionPerBank;
     vector<vector<u_int64_t> > _nbk_per_radix_per_part;//number of kxmer per parti per rad
 
+
     /** Temporary partitions management. */
     Storage* _tmpPartitionsStorage;
     void setPartitionsStorage (Storage* tmpPartitionsStorage)  {  SP_SETATTR(tmpPartitionsStorage);  }
@@ -1441,6 +1713,9 @@ private:
     //this->_local_pInfo.incKmer_and_rad (p, radix_kxmer.getVal(), kx_size); //nb of superkmer per x per parti per radix
 
     //vector<SpeciesAbundanceVectorType > _speciesAbundancePerDataset;
+
+    MultiDiskStorage<Type>* _multiStorage;
+    //u_int64_t _maxDisk;
 };
 
 
