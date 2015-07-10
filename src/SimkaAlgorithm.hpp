@@ -138,7 +138,7 @@ public:
 			//cout << dir << endl;
 			u_int64_t maxDisk = 0;
 			if(getline(maxDiskStream, maxDiskStr, ',')){
-				maxDisk = stoul(maxDiskStr);
+				maxDisk = strtoul(maxDiskStr.c_str(), NULL, 0);
 			}
 
 			_disks.push_back(Disk<Type>(filename, maxDisk));
@@ -158,8 +158,8 @@ public:
 		struct timeval _time;
 
 		//clock_t _clock = clock();
-		//u_int64_t blockSize = 2000000000;
-		u_int64_t blockSize = 100000000;
+		u_int64_t blockSize = 2000000000;
+		//u_int64_t blockSize = 100000000;
 		string buffer;
 		for(size_t i=0; i<4096; i++){
 			buffer.push_back('1');
