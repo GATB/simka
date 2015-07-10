@@ -24,7 +24,7 @@
 #include <gatb/gatb_core.hpp>
 #include<stdio.h>
 
-#define MULTI_DISK
+//#define MULTI_DISK
 //#define SIMKA_MIN
 #include "SimkaDistance.hpp"
 

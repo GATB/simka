@@ -355,7 +355,7 @@ _progress (0), _tmpPartitionsStorage(0), _tmpPartitions(0)
 	//	maxDisk = _options->getStr(STR_MAX_DISK);
 	//	cout << maxDisk << endl;
 	//}
-	_multiStorage = new MultiDiskStorage<Type>(_options->getStr(STR_URI_OUTPUT_DIR), _options->getStr(STR_MAX_DISK));
+	//_multiStorage = new MultiDiskStorage<Type>(_options->getStr(STR_URI_OUTPUT_DIR), _options->getStr(STR_MAX_DISK));
 
 	   // vector<string> _tempDirMaxDisk
 
