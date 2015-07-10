@@ -25,7 +25,7 @@
 #include<stdio.h>
 
 #define MULTI_DISK
-#define SIMKA_MIN
+//#define SIMKA_MIN
 #include "SimkaDistance.hpp"
 
 const string STR_SIMKA_SOLIDITY_PER_DATASET = "-solidity-single";
