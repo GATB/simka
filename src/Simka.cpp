@@ -34,8 +34,9 @@ Simka::Simka()  : Tool ("Simka")
 	parser->getParser(STR_NB_CORES)->setVisible(false);
 
 	//Main parser
-	parser->push_front(dskParser->getParser (STR_URI_OUTPUT_DIR));
-	parser->getParser (STR_URI_OUTPUT_DIR)->setHelp("output directory for temporary files");
+	parser->push_front(dskParser->getParser (STR_URI_OUTPUT_TMP));
+	//parser->push_front(dskParser->getParser (STR_URI_OUTPUT_DIR));
+	//parser->getParser (STR_URI_OUTPUT_DIR)->setHelp("output directory for temporary files");
 	parser->push_front(dskParser->getParser (STR_URI_OUTPUT));
 	parser->getParser (STR_URI_OUTPUT)->setHelp("output directory for result files (similarity matrix, heatmaps)");
 	parser->push_front(dskParser->getParser (STR_URI_INPUT));

@@ -322,7 +322,7 @@ public:
 		vector<size_t> idx;
 		vector<Tmp>    tmp;
 
-		for (int ii=_deb; ii <=_fin; ii++)
+		for (size_t ii=_deb; ii <=_fin; ii++)
 		{
 			if (_radix_sizes[ii] > 0)
 			{
@@ -852,7 +852,7 @@ public:
 
             //for (size_t xx=0; xx< (KX+1); xx++)
             //{
-                for (int ii=0; ii< 256; ii++)
+                for (size_t ii=0; ii< 256; ii++)
                 {
                     //size_t nbKmers = _nbKmerPerPartitions(this->_parti_num,ii,xx);
                     u_int64_t nbKmers = _nbk_per_radix_per_part[ii][this->_parti_num];
@@ -871,7 +871,7 @@ public:
 
             //if (_bankIdMatrix)
                 //{
-				for (int ii=0; ii< 256; ii++)
+				for (size_t ii=0; ii< 256; ii++)
 				{
 					//size_t nbKmers = this->_pInfo.getNbKmer(this->_parti_num,ii,xx);
 					u_int64_t nbKmers = _nbk_per_radix_per_part[ii][this->_parti_num];
@@ -1378,7 +1378,7 @@ private:
     	KmerType kmer = kmers[0];
     	hashValue = oahash(kmer.value());
 
-    	for(int j=0; j < _nbMinimizers; ++j){
+    	for(size_t j=0; j < _nbMinimizers; ++j){
     		_sketch[j] = hashValue;
     		_minimizers[j] = kmer;
     		hashValue = oahash(kmer.value());
@@ -1388,7 +1388,7 @@ private:
     		KmerType& kmer = kmers[i];
     		hashValue = oahash(kmer.value());
 
-    		for(int j = 0; j < _nbMinimizers; ++j){
+    		for(size_t j = 0; j < _nbMinimizers; ++j){
     			if(hashValue < _sketch[j]){
     				_sketch[j] = hashValue;
     				_minimizers[j] = kmer;

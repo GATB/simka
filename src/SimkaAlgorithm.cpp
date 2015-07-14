@@ -161,8 +161,9 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 
 		if(_soliditySingle){
 			CountVector counts2(counts);
-			for(int i=0; i<counts.size(); i++){
-				if(!isSolid(counts[i]))
+			for(size_t i=0; i<counts.size(); i++){
+				//if(!isSolid(counts[i]))
+				if(counts[i] < _abundanceThreshold.first)
 					counts2[i] = 0;
 			}
 			computeStats(counts2);
@@ -345,7 +346,7 @@ _progress (0), _tmpPartitionsStorage(0), _tmpPartitions(0)
     _nbCores = getInput()->getInt(STR_NB_CORES);
 	_inputFilename = _options->getStr(STR_URI_INPUT);
 	_outputDir = _options->get(STR_URI_OUTPUT) ? _options->getStr(STR_URI_OUTPUT) : "./";
-	_outputDirTemp = _options->get(STR_URI_OUTPUT_DIR) ? _options->getStr(STR_URI_OUTPUT_DIR) : "./";
+	_outputDirTemp = _options->get(STR_URI_OUTPUT_TMP) ? _options->getStr(STR_URI_OUTPUT_TMP) : "./";
 	_kmerSize = _options->getInt(STR_KMER_SIZE);
 	_abundanceThreshold.first = _options->getInt(STR_KMER_ABUNDANCE_MIN);
 	_abundanceThreshold.second = _options->getInt(STR_KMER_ABUNDANCE_MAX);
