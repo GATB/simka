@@ -22,12 +22,24 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-options(echo=TRUE) # if you want see commands in output file
 args <- commandArgs(trailingOnly = TRUE)
-png(file=args[2],width=800,height=800,res=100)
+#cr3 = as.matriread.table(file=args[1], sep="\t", header=TRUE, row.names=1))
 cr3 = as.matrix(read.table(file=args[1], sep=";", header=TRUE, row.names=1))
+#inv_cr3 = matri100, ncol=131, nrow=131) - cr3
 inv_cr3 = matrix(100, ncol=dim(cr3)[1], nrow=dim(cr3)[1]) - cr3
-Commet_distance = as.dist(inv_cr3)
-dendo_cr3 = hclust(Commet_distance)
-plot(dendo_cr3, main="Commet normalized analysis", sub = NA, xlab = paste("Complete clusterization of ",args[1]))
+cr3_dist = as.dist(inv_cr3)
+hc = hclust(cr3_dist, method="ward")
+pdf(file=args[2])
+plot(hc, main = "Clustering samples 0.8-5µm", cex = 0.2, xlab = "")
+dev.off()
+
+
+
+#options(echo=TRUE) # if you want see commands in output file
+#args <- commandArgs(trailingOnly = TRUE)
+#png(file=args[2],width=2000,height=800,res=100)
+#cr3 = as.matrix(read.table(file=args[1], sep=";", header=TRUE, row.names=1))
+#inv_cr3 = matrix(100, ncol=dim(cr3)[1], nrow=dim(cr3)[1]) - cr3
+#Commet_distance = as.dist(inv_cr3)
+#dendo_cr3 = hclust(Commet_distance)
+#plot(dendo_cr3, main="Commet normalized analysis", sub = NA, xlab = paste("Complete clusterization of ",args[1]))

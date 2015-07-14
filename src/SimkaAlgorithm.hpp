@@ -1098,9 +1098,9 @@ public:
 
     IteratorListener* _progress;
 
-    FillPartitions (IteratorListener* progress, size_t nbMinimizers, size_t nbPartitions, size_t kmerSize, u_int64_t estimateNbSequences, MultiDiskStorage<Type>* multiStorage, vector<vector<u_int64_t> >& nbk_per_radix_per_part, double minKmerShannonIndex) :
-    	_progress(progress), _nbk_per_radix_per_part(nbk_per_radix_per_part), _nbPartitions(nbPartitions), _nbMinimizers(nbMinimizers), _kmerSize(kmerSize), _model(_kmerSize),
-		_minKmerShannonIndex(minKmerShannonIndex), _multiStorage(multiStorage)
+    FillPartitions (IteratorListener* progress, size_t nbMinimizers, size_t nbPartitions, size_t kmerSize, u_int64_t estimateNbSequences, Partition<Type>*   partition, vector<vector<u_int64_t> >& nbk_per_radix_per_part, double minKmerShannonIndex) :
+    	_progress(progress), _nbk_per_radix_per_part(nbk_per_radix_per_part), _nbPartitions(nbPartitions), _nbMinimizers(nbMinimizers), _kmerSize(kmerSize), _model(_kmerSize), _partition (*partition,1<<12,0),
+		_minKmerShannonIndex(minKmerShannonIndex)//, _multiStorage(multiStorage)
     {
     	_progressReadProcessed = 0;
 
@@ -1222,7 +1222,8 @@ public:
 
 			KmerType& minimizer = _minimizers[i];
 			size_t p = oahash(minimizer.value()) % _nbPartitions;
-			_multiStorage->getPartition(p).insert(minimizer.value());
+			this->_partition[p].insert(minimizer.value());
+			//_multiStorage->getPartition(p).insert(minimizer.value());
 
 			incKmer_and_rad(p, getHeavyWeight(minimizer.value()).getVal());
 			//cout << getHeavyWeight(minimizer.value()).getVal() << endl;
@@ -1316,7 +1317,7 @@ private:
     //Hash16<Type, u_int8_t>* _counter;
 
     /** Shared resources (must support concurrent accesses). */
-    //PartitionCache <Type> _partition;
+    PartitionCache <Type> _partition;
     double _minKmerShannonIndex;
     //PartitionCacheType <Type> _partition;
 
@@ -1332,7 +1333,7 @@ private:
     	x ^= x >> 27;
     	return x * UINT64_C(2685821657736338717);
     }*/
-	MultiDiskStorage<Type>* _multiStorage;
+	//MultiDiskStorage<Type>* _multiStorage;
 
     KmerType getMinimizer(std::vector<KmerType>& kmers, size_t begin, size_t end){
 
@@ -1586,6 +1587,7 @@ public:
 
             	//cout << "\t\t" << _nbReadsPerDataset[i] << endl;
 
+
             	//Depending on the parameter -max-reads we truncate or not the reads iterator
             	if(_nbReadsPerDataset[i] == 0){
 
@@ -1596,6 +1598,7 @@ public:
             	else{
 
                 	//We create a truncated iterator that stop processing reads when _nbReadsPerDataset[i] is reached
+            		//cout << _nbReadsPerDataset[i] << endl;
             		SimkaTruncateIterator<Sequence>* truncIt = new SimkaTruncateIterator<Sequence>(iterators[i], _nbReadsPerDataset[i]);
                 	FilterIterator<Sequence,Filter>* filterIt = new FilterIterator<Sequence,Filter> (truncIt, _filter);
                 	iterators[i] = filterIt;
@@ -1710,11 +1713,13 @@ private:
     vector<u_int64_t> _nbKmerPerPartitions;
     int getSizeofPerItem () const { return Type::getSize()/8 + sizeof(bankIdType); }
     std::vector<size_t> getNbCoresList();
+
+    vector<size_t> _nbBankPerDataset;
     //this->_local_pInfo.incKmer_and_rad (p, radix_kxmer.getVal(), kx_size); //nb of superkmer per x per parti per radix
 
     //vector<SpeciesAbundanceVectorType > _speciesAbundancePerDataset;
 
-    MultiDiskStorage<Type>* _multiStorage;
+    //MultiDiskStorage<Type>* _multiStorage;
     //u_int64_t _maxDisk;
 };
 

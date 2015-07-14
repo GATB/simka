@@ -43,12 +43,14 @@ _progress(progress), _stats(stats)
 
 template<size_t span>
 SimkaCountProcessor<span>::~SimkaCountProcessor () {
-#ifdef SIMKA_MIN
-	if(_nbKmerCounted > 0){
-		_progress->inc(_nbKmerCounted);
-		_nbKmerCounted = 0;
+
+	if(_progress){ //Simka_min
+		if(_nbKmerCounted > 0){
+			_progress->inc(_nbKmerCounted);
+			_nbKmerCounted = 0;
+		}
 	}
-#endif
+
 	delete _localStats;
 }
 
@@ -81,13 +83,18 @@ bool SimkaCountProcessor<span>::isSolidVector(const CountVector& counts){
 
 	for(size_t i=0; i<counts.size(); i++){
 
+		//cout << counts[i] << " " << _abundanceThreshold.first << endl;
+		if(counts[i] >= _abundanceThreshold.first)
+			return true;
+
+		/*
 		CountNumber abundance = counts[i];
 
 		if(abundance == 0) continue;
 
 		if(isSolid(abundance)){
 			return true;
-		}
+		}*/
 
 		//nbBanks += 1;
 		//if(nbBanks > 1){
@@ -111,39 +118,60 @@ template<size_t span>
 bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const CountVector& counts, CountNumber sum){
 
 
-#ifdef SIMKA_MIN
+	if(_progress){ //Simka_min
 		if(_nbKmerCounted > 500000){
 			_progress->inc(_nbKmerCounted);
 			_nbKmerCounted = 0;
 		}
-#endif
+	}
 
 	//return false;
 
 	_totalAbundance = 0;
 	_localStats->_nbDistinctKmers += 1;
-	_localStats->_nbSolidKmers += 1;
 
-	/*
-	//cout << kmer.toString(31) << endl;
 	for(size_t i=0; i<counts.size(); i++){
 
 		CountNumber abundance = counts[i];
-		_nbKmerCounted += abundance;
+		//_nbKmerCounted += abundance;
 		//_stats._speciesAbundancePerDataset[i].push_back(abundance);
 
 		//cout << counts[i] << " ";
 		_localStats->_nbKmers += abundance;
 		_localStats->_nbKmersPerBank[i] += abundance;
 		_totalAbundance += abundance;
-	}*/
+	}
+
+	//cout << kmer.toString(31) << endl;
+
 
 
 	//cout << endl;
 
-	//if(isSolidVector(counts))
-		//else
-		//return false;
+	if(_progress){ //Simka_min
+		_localStats->_nbSolidKmers += 1;
+		computeStats(counts);
+	}
+	else{
+
+		if(!isSolidVector(counts))
+			return false;
+
+		_localStats->_nbSolidKmers += 1;
+
+		if(_soliditySingle){
+			CountVector counts2(counts);
+			for(int i=0; i<counts.size(); i++){
+				if(!isSolid(counts[i]))
+					counts2[i] = 0;
+			}
+			computeStats(counts2);
+		}
+		else{
+			computeStats(counts);
+		}
+
+	}
 
 	/*
 	CountVector counts2;
@@ -152,21 +180,6 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 			counts2.push_back(0);
 		else
 			counts2.push_back(counts[i]);
-	}*/
-
-	computeStats(counts);
-
-	/*
-	if(_soliditySingle){
-		CountVector counts2(counts);
-		for(int i=0; i<counts.size(); i++){
-			if(!isSolid(counts[i]))
-				counts2[i] = 0;
-		}
-		computeStats(counts2);
-	}
-	else{
-		computeStats(counts);
 	}*/
 
 
@@ -188,10 +201,10 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 
 
 
-		_nbKmerCounted += abundanceI;
-		_localStats->_nbKmers += abundanceI;
-		_localStats->_nbKmersPerBank[i] += abundanceI;
-		_totalAbundance += abundanceI;
+		//_nbKmerCounted += abundanceI;
+		//_localStats->_nbKmers += abundanceI;
+		//_localStats->_nbKmersPerBank[i] += abundanceI;
+		//_totalAbundance += abundanceI;
 
 
 		/*
@@ -407,8 +420,14 @@ SimkaAlgorithm<span>::~SimkaAlgorithm() {
 }
 
 
+
 template<size_t span>
 void SimkaAlgorithm<span>::execute() {
+
+	if(_nbMinimizers > 0){
+		executeSimkamin();
+		return;
+	}
 
 	layoutInputFilename();
 	createBank();
@@ -504,9 +523,14 @@ void SimkaAlgorithm<span>::executeSimkamin() {
 		_nbk_per_radix_per_part[ii].resize(_nbPartitions, 0);
 	}
 
-    _multiStorage->createRepartition(_nbPartitions, maxNbKmersMemoryB/_nbPartitions);
-    _multiStorage->createStorages();
+    //_multiStorage->createRepartition(_nbPartitions, maxNbKmersMemoryB/_nbPartitions);
+    //_multiStorage->createStorages();
 
+    string tmpStorageName = _outputDirTemp + "/" + System::file().getTemporaryFilename("dsk_partitions");
+    setPartitionsStorage (StorageFactory(STORAGE_FILE).create (tmpStorageName, true, false));
+    setPartitions        (0); // close the partitions first, otherwise new files are opened before  closing parti from previous pass
+    setPartitions        ( & (*_tmpPartitionsStorage)().getPartition<Type> ("parts", _nbPartitions));
+    cout << "Tmp storage: " << tmpStorageName << endl;
 
 
 
@@ -528,22 +552,22 @@ void SimkaAlgorithm<span>::executeSimkamin() {
 
     	//cout << i << endl;
 
-        getDispatcher()->iterate (itBanks[i], FillPartitions<span> (_progress, _nbMinimizers, _nbPartitions, _kmerSize, _maxNbReads, _multiStorage, _nbk_per_radix_per_part, _minKmerShannonIndex), 1000, true);
+        getDispatcher()->iterate (itBanks[i], FillPartitions<span> (_progress, _nbMinimizers, _nbPartitions, _kmerSize, _maxNbReads, _tmpPartitions, _nbk_per_radix_per_part, _minKmerShannonIndex), 1000, true);
 
-#ifdef MULTI_DISK
-        _multiStorage->flush();
-#else
+//#ifdef MULTI_DISK
+        //        _multiStorage->flush();
+        //#else
         _tmpPartitions->flush();
-#endif
+        //#endif
 
         vector<size_t> nbItems;
         for (size_t p=0; p<_nbPartitions; p++)
         {
-#ifdef MULTI_DISK
-        u_int64_t nbItem = _multiStorage->getPartition(p).getNbItems();
-#else
+        	//#ifdef MULTI_DISK
+        	//        u_int64_t nbItem = _multiStorage->getPartition(p).getNbItems();
+        	//#else
         u_int64_t nbItem = (*_tmpPartitions)[p].getNbItems();
-#endif
+        //#endif
 
             nbItems.push_back (nbItem);
             //_nbKmerPerPartitions[p] += nbItem;
@@ -558,11 +582,11 @@ void SimkaAlgorithm<span>::executeSimkamin() {
 
     _totalKmers = 0;
     for (size_t p=0; p<_nbPartitions; p++){
-#ifdef MULTI_DISK
-    	u_int64_t nbItem = _multiStorage->getPartition(p).getNbItems();
-#else
+    	//#ifdef MULTI_DISK
+    	//    	u_int64_t nbItem = _multiStorage->getPartition(p).getNbItems();
+    	//#else
         u_int64_t nbItem = (*_tmpPartitions)[p].getNbItems();
-#endif
+        //#endif
 
     	_nbKmerPerPartitions[p] = nbItem;
         _totalKmers += nbItem;
@@ -678,9 +702,8 @@ void SimkaAlgorithm<span>::executeSimkamin() {
 			//);
 			int nbCore = 1;
 			cmd = new PartitionCommand<span> (
-					_multiStorage->getPartition(p), processorClone, cacheSize, 0, p, nbCore, _kmerSize, pool, nbItemsPerBankPerPart, _nbKmerPerPartitions, _nbk_per_radix_per_part
-
-				//(*_tmpPartitions)[p], processorClone, cacheSize, 0, p, nbCore, _kmerSize, pool, nbItemsPerBankPerPart, _nbKmerPerPartitions, _nbk_per_radix_per_part
+					//_multiStorage->getPartition(p), processorClone, cacheSize, 0, p, nbCore, _kmerSize, pool, nbItemsPerBankPerPart, _nbKmerPerPartitions, _nbk_per_radix_per_part
+					(*_tmpPartitions)[p], processorClone, cacheSize, 0, p, nbCore, _kmerSize, pool, nbItemsPerBankPerPart, _nbKmerPerPartitions, _nbk_per_radix_per_part
 			);
 
             cmds.push_back (cmd);
@@ -700,8 +723,8 @@ void SimkaAlgorithm<span>::executeSimkamin() {
 
 
 
-    _multiStorage->remove();
-    //_tmpPartitions->remove();
+    //_multiStorage->remove();
+    _tmpPartitions->remove();
     //return;
 	outputMatrix();
 	outputHeatmap();
@@ -779,7 +802,7 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 		 //ID and one filename
 		if(linePartList.size() == 2){
 			bankFileContents += linePartList[1] + "\n";
-			_nbReadsPerDataset.push_back(_maxNbReads);
+			_nbBankPerDataset.push_back(1);
 		}
 		//ID and list of filename (paired files for example)
 		else{
@@ -800,7 +823,8 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 			delete subBankFile;
 
 			bankFileContents += System::file().getBaseName(subBankFilename) + "\n";
-			_nbReadsPerDataset.push_back(ceil(_maxNbReads / (float)(linePartList.size() - 1))); //linePartList.size() - 1 = nb sub banks
+			_nbBankPerDataset.push_back(linePartList.size() - 1); //linePartList.size() - 1 = nb sub banks
+			//_nbReadsPerDataset.push_back(ceil(_maxNbReads / (float)()));
 		}
 
 		lineIndex += 1;
@@ -831,15 +855,7 @@ template<size_t span>
 void SimkaAlgorithm<span>::createBank(){
 
 	IBank* bank = Bank::open(_banksInputFilename);
-
-
-
 	_nbBanks = bank->getCompositionNb();
-
-	SimkaSequenceFilter sequenceFilter(_minReadSize, _minReadShannonIndex);
-
-	_banks = new SimkaBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, _nbReadsPerDataset);
-
 
 	if(_maxNbReads == 0){
 		if(_options->getInt(STR_VERBOSE) != 0)
@@ -849,6 +865,19 @@ void SimkaAlgorithm<span>::createBank(){
 		if(_options->getInt(STR_VERBOSE) != 0)
 			cout << "Max nb reads: " << _maxNbReads << endl << endl;
 	}
+
+	for(size_t i=0; i<_nbBankPerDataset.size(); i++){
+		//cout << _maxNbReads << " " << _nbBankPerDataset[i] << endl;
+		_nbReadsPerDataset.push_back( ceil(_maxNbReads / (float)(_nbBankPerDataset[i])) );
+	}
+
+	SimkaSequenceFilter sequenceFilter(_minReadSize, _minReadShannonIndex);
+
+
+	_banks = new SimkaBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, _nbReadsPerDataset);
+
+
+
 	//cout << bank->estimateNbItems() << endl;
 
 

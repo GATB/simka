@@ -45,7 +45,7 @@ Simka::Simka()  : Tool ("Simka")
 	//Kmer parser
     IOptionsParser* kmerParser = new OptionsParser ("kmer");
     kmerParser->push_back(dskParser->getParser (STR_KMER_SIZE));
-    kmerParser->push_back(new OptionOneParam (STR_KMER_PER_READ.c_str(), "number of selected kmers per read", false, "1"));
+    kmerParser->push_back(new OptionOneParam (STR_KMER_PER_READ.c_str(), "number of selected kmers per read", false, "0"));
     kmerParser->push_back(dskParser->getParser (STR_KMER_ABUNDANCE_MIN));
     if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_KMER_ABUNDANCE_MIN)))  {  p->setDefaultValue ("0"); }
     kmerParser->push_back(dskParser->getParser (STR_KMER_ABUNDANCE_MAX));
@@ -128,12 +128,13 @@ struct Parameter
 template<size_t span> struct Functor  {  void operator ()  (Parameter p)
 {
 	SimkaAlgorithm<span> simkaAlgorithm (p._props);
+	simkaAlgorithm.execute();
 
+	/*
 #ifdef SIMKA_MIN
 	simkaAlgorithm.executeSimkamin();
 #else
-	simkaAlgorithm.execute();
-#endif
+#endif*/
 }};
 
 void Simka::execute ()
