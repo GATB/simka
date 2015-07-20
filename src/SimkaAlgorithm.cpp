@@ -779,15 +779,15 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 			}
 		}
 
+/*
 		bool valid = true;
 		//cout << linePartList.size() << endl;
 		//Bank id
-		string bankId = linePartList[0];
 		for(size_t i=1; i<linePartList.size(); i++){
 			string filename = linePartList[1];
 			//cout << filename << endl;
 			if( ! System::file().doesExist(filename)){
-				cout << "\tFilename does not exist: " << linePartList[1] << endl;
+				cout << "\tFilename does not exist: " << filename << endl;
 				valid = false;
 				//break;
 			}
@@ -795,8 +795,9 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 
 		if(!valid){
 			continue;
-		}
+		}*/
 
+		string bankId = linePartList[0];
 		_bankNames.push_back(bankId);
 
 

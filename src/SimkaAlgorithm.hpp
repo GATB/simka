@@ -24,6 +24,7 @@
 #include <gatb/gatb_core.hpp>
 #include<stdio.h>
 
+//#define MULTI_PROCESSUS
 //#define MULTI_DISK
 //#define SIMKA_MIN
 #include "SimkaDistance.hpp"
@@ -322,7 +323,7 @@ public:
 		vector<size_t> idx;
 		vector<Tmp>    tmp;
 
-		for (size_t ii=_deb; ii <=_fin; ii++)
+		for (int ii=_deb; ii <=_fin; ii++)
 		{
 			if (_radix_sizes[ii] > 0)
 			{
@@ -852,7 +853,7 @@ public:
 
             //for (size_t xx=0; xx< (KX+1); xx++)
             //{
-                for (size_t ii=0; ii< 256; ii++)
+                for (int ii=0; ii< 256; ii++)
                 {
                     //size_t nbKmers = _nbKmerPerPartitions(this->_parti_num,ii,xx);
                     u_int64_t nbKmers = _nbk_per_radix_per_part[ii][this->_parti_num];
@@ -871,7 +872,7 @@ public:
 
             //if (_bankIdMatrix)
                 //{
-				for (size_t ii=0; ii< 256; ii++)
+				for (int ii=0; ii< 256; ii++)
 				{
 					//size_t nbKmers = this->_pInfo.getNbKmer(this->_parti_num,ii,xx);
 					u_int64_t nbKmers = _nbk_per_radix_per_part[ii][this->_parti_num];
@@ -1465,19 +1466,30 @@ private:
 
 struct SimkaSequenceFilter
 {
-	//u_int64_t _maxNbReads;
+	u_int64_t _maxNbReads;
 	//u_int64_t _maxNbReadsPerBank;
-	//u_int64_t _nbReadProcessed;
+	u_int64_t _nbReadProcessed;
 	//int* _bankIndex;
 	//int* _datasetIndex;
 
 	SimkaSequenceFilter(size_t minReadSize, double minShannonIndex){
 
+		_nbReadProcessed = 0;
 		_minReadSize = minReadSize;
 		_minShannonIndex = minShannonIndex;
 	}
 
+	void setMaxReads(u_int64_t maxReads){
+		_maxNbReads = maxReads;
+	}
+
 	bool operator() (Sequence& seq){
+
+		if(_maxNbReads != 0){
+			if(_nbReadProcessed >= _maxNbReads){
+				return false;
+			}
+		}
 
 		if(!isReadSizeValid(seq))
 			return false;
@@ -1485,6 +1497,8 @@ struct SimkaSequenceFilter
 		if(!isShannonIndexValid(seq))
 			return false;
 
+		//cout << _nbReadProcessed << endl;
+		_nbReadProcessed += 1;
 		return true;
 	}
 
@@ -1592,15 +1606,17 @@ public:
             	if(_nbReadsPerDataset[i] == 0){
 
                 	//Max nb reads parameter is set to 0. All the reads of each dataset are processed
-                	iterators[i] = new FilterIterator<Sequence,Filter> (iterators[i], _filter); ;
+                	iterators[i] = new FilterIterator<Sequence,Filter> (iterators[i], _filter);
 
             	}
             	else{
 
                 	//We create a truncated iterator that stop processing reads when _nbReadsPerDataset[i] is reached
             		//cout << _nbReadsPerDataset[i] << endl;
-            		SimkaTruncateIterator<Sequence>* truncIt = new SimkaTruncateIterator<Sequence>(iterators[i], _nbReadsPerDataset[i]);
-                	FilterIterator<Sequence,Filter>* filterIt = new FilterIterator<Sequence,Filter> (truncIt, _filter);
+            		SimkaTruncateIterator<Sequence>* truncIt = new SimkaTruncateIterator<Sequence>(iterators[i], _nbReadsPerDataset[i] + _nbReadsPerDataset[i]/5);
+            		Filter filter(_filter);
+            		filter.setMaxReads(_nbReadsPerDataset[i]);
+                	FilterIterator<Sequence,Filter>* filterIt = new FilterIterator<Sequence,Filter> (truncIt, filter);
                 	iterators[i] = filterIt;
 
             	}
