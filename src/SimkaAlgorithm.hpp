@@ -1571,13 +1571,44 @@ template<typename Filter> class SimkaBankFiltered : public BankDelegate
 {
 public:
 
+	u_int64_t _numberRef;
+	u_int64_t _totalSizeRef;
+	u_int64_t _maxSizeRef;
     /** Constructor.
      * \param[in] ref : referred bank.
      * \param[in] filter : functor that filters sequence.
      */
-	SimkaBankFiltered (IBank* ref, const Filter& filter, const vector<u_int64_t>& nbReadsPerDataset) : BankDelegate (ref), _filter(filter)  {
+	SimkaBankFiltered (IBank* ref, const Filter& filter, const vector<u_int64_t>& nbReadsPerDataset, u_int64_t nbReadToProcess) : BankDelegate (ref), _filter(filter)  {
 		_nbReadsPerDataset = nbReadsPerDataset;
+		_nbReadToProcess = nbReadToProcess;
+
+		ref->estimate(_numberRef, _totalSizeRef, _maxSizeRef);
+
+    	cout << _numberRef << endl;
+    	cout << _totalSizeRef << endl;
+    	cout << _maxSizeRef << endl;
 	}
+
+
+    void estimate (u_int64_t& number, u_int64_t& totalSize, u_int64_t& maxSize){
+
+    	number = _nbReadToProcess;
+    	totalSize = (_totalSizeRef*_nbReadToProcess)/_numberRef;
+    	maxSize = _maxSizeRef;
+
+    	cout << number << endl;
+    	cout << totalSize << endl;
+    	cout << maxSize << endl;
+    	//cout << number2 << endl;
+
+    	//u_int64_t readSize = totalSize2 / number2;
+    	//cout << "lal:" << number2 << endl;
+    	//number = _maxReads;
+
+    	//number = _nbReadToProcess;
+    	//totalSize = _nbReadToProcess*readSize;
+    	//maxSize = readSize;
+    }
 
     /** \copydoc tools::collections::Iterable::iterator */
     Iterator<Sequence>* iterator ()
@@ -1630,6 +1661,7 @@ private:
 
 	vector<u_int64_t> _nbReadsPerDataset;
     Filter _filter;
+    u_int64_t _nbReadToProcess;
 };
 
 

@@ -876,7 +876,7 @@ void SimkaAlgorithm<span>::createBank(){
 	SimkaSequenceFilter sequenceFilter(_minReadSize, _minReadShannonIndex);
 
 
-	_banks = new SimkaBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, _nbReadsPerDataset);
+	_banks = new SimkaBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, _nbReadsPerDataset, _maxNbReads*_nbBanks);
 
 
 
