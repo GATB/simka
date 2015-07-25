@@ -1583,10 +1583,6 @@ public:
 		_nbReadToProcess = nbReadToProcess;
 
 		ref->estimate(_numberRef, _totalSizeRef, _maxSizeRef);
-
-    	cout << _numberRef << endl;
-    	cout << _totalSizeRef << endl;
-    	cout << _maxSizeRef << endl;
 	}
 
 
@@ -1596,9 +1592,6 @@ public:
     	totalSize = (_totalSizeRef*_nbReadToProcess)/_numberRef;
     	maxSize = _maxSizeRef;
 
-    	cout << number << endl;
-    	cout << totalSize << endl;
-    	cout << maxSize << endl;
     	//cout << number2 << endl;
 
     	//u_int64_t readSize = totalSize2 / number2;
