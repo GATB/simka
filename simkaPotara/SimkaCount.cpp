@@ -138,14 +138,17 @@ public:
 			IProperties* props = p.tool.getInput();
 
 			{
-				Storage* storage = StorageFactory(STORAGE_HDF5).load (p.outputDir + "/" + "config.h5");
-				LOCAL (storage);
 
 				Configuration config;
 				Repartitor* repartitor = new Repartitor();
-				config.load(storage->getGroup(""));
-				repartitor->load(storage->getGroup(""));
+				LOCAL(repartitor);
 
+				{
+					Storage* storage = StorageFactory(STORAGE_HDF5).load (p.outputDir + "/" + "config.h5");
+					LOCAL (storage);
+					config.load(storage->getGroup(""));
+					repartitor->load(storage->getGroup(""));
+				}
 				//delete storage;
 				/*
 				config._kmerSize = p.kmerSize;
