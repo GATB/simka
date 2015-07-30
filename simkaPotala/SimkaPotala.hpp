@@ -507,7 +507,7 @@ public:
 #ifndef SERIAL
 				//command += "nohup";
 #endif
-				command += " ./SimkaCount ";
+				command += " ./simkaCount ";
 				command += " " + string(STR_KMER_SIZE) + " " + _options->getStr(STR_KMER_SIZE);
 				command += " " + string("-out-tmp-simka") + " " + _outputDirTempFilter;
 				command += " " + string("-out-tmp") + " " + tempDir;
@@ -623,7 +623,7 @@ public:
 #ifndef SERIAL
 				//command += "nohup";
 #endif
-				command += " ./SimkaMerge ";
+				command += " ./simkaMerge ";
 				command += " " + string(STR_KMER_SIZE) + " " + _options->getStr(STR_KMER_SIZE);
 				command += " " + string(STR_URI_INPUT) + " " + _inputFilename;
 				command += " " + string("-out-tmp-simka") + " " + _outputDirTempFilter;
