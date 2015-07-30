@@ -13,12 +13,15 @@
 #include <KmerCountCompressor.hpp>
 #include <Simka.hpp>
 
+#define CLUSTER
 //#define SERIAL
 #define SLEEP_TIME_SEC 1
 
 
-const string STR_SIMKA_JOB_COMMAND_COUNT = "-cmd-job-count";
-const string STR_SIMKA_JOB_COMMAND_MERGE = "-cmd-job-merge";
+const string STR_SIMKA_JOB_COUNT_COMMAND = "-job-count-cmd";
+const string STR_SIMKA_JOB_MERGE_COMMAND = "-job-merge-cmd";
+const string STR_SIMKA_JOB_COUNT_FILENAME = "-job-count-file";
+const string STR_SIMKA_JOB_MERGE_FILENAME = "-job-merge-file";
 const string STR_SIMKA_NB_JOB_COUNT = "-max-job-count";
 const string STR_SIMKA_NB_JOB_MERGE = "-max-job-merge";
 
@@ -110,8 +113,10 @@ public:
 
 		_maxJobCount = _options->getInt(STR_SIMKA_NB_JOB_COUNT);
 		_maxJobMerge = _options->getInt(STR_SIMKA_NB_JOB_MERGE);
-		_cmdJobCount = _options->getStr(STR_SIMKA_JOB_COMMAND_COUNT);
-		_cmdJobMerge = _options->getStr(STR_SIMKA_JOB_COMMAND_MERGE);
+		_jobCountFilename = _options->getStr(STR_SIMKA_JOB_COUNT_FILENAME);
+		_jobMergeFilename = _options->getStr(STR_SIMKA_JOB_MERGE_FILENAME);
+		_jobCountCommand = _options->getStr(STR_SIMKA_JOB_COUNT_COMMAND);
+		_jobMergeCommand = _options->getStr(STR_SIMKA_JOB_MERGE_COMMAND);
 
 
 
@@ -434,7 +439,6 @@ public:
 
 	void createDirs(){
 
-		cout << "la" <<  _maxNbReads << endl;
 		string suffix = "";
 		suffix += "m" + _options->getStr(STR_SIMKA_MIN_READ_SIZE);
 		suffix += "_s" + _options->getStr(STR_SIMKA_MIN_READ_SHANNON_INDEX);
@@ -449,6 +453,28 @@ public:
 		System::file().mkdir(_outputDirTempFilter + "/count_synchro/", -1);
 		System::file().mkdir(_outputDirTempFilter + "/merge_synchro/", -1);
 		System::file().mkdir(_outputDirTempFilter + "/stats/", -1);
+		System::file().mkdir(_outputDirTempFilter + "/job_count/", -1);
+		System::file().mkdir(_outputDirTempFilter + "/job_merge/", -1);
+
+		IFile* inputFile = System::file().newFile(_jobCountFilename, "rb");
+		inputFile->seeko(0, SEEK_END);
+		u_int64_t size = inputFile->tell();
+		inputFile->seeko(0, SEEK_SET);
+		char buffer2[size];
+		inputFile->fread(buffer2, size, size);
+		string fileContents(buffer2, size);
+		_jobCountContents = fileContents;
+		delete inputFile;
+
+		inputFile = System::file().newFile(_jobMergeFilename, "rb");
+		inputFile->seeko(0, SEEK_END);
+		size = inputFile->tell();
+		inputFile->seeko(0, SEEK_SET);
+		char buffer3[size];
+		inputFile->fread(buffer3, size, size);
+		string fileContents2(buffer3, size);
+		_jobMergeContents = fileContents2;
+		delete inputFile;
 
 	}
 
@@ -507,7 +533,7 @@ public:
 #ifndef SERIAL
 				//command += "nohup";
 #endif
-				command += " ./simkaCount ";
+				command += "./simkaCount ";
 				command += " " + string(STR_KMER_SIZE) + " " + _options->getStr(STR_KMER_SIZE);
 				command += " " + string("-out-tmp-simka") + " " + _outputDirTempFilter;
 				command += " " + string("-out-tmp") + " " + tempDir;
@@ -520,14 +546,29 @@ public:
 				command += " " + string(STR_SIMKA_MIN_READ_SHANNON_INDEX) + " " + _options->getStr(STR_SIMKA_MIN_READ_SHANNON_INDEX);
 				command += " " + string(STR_SIMKA_MAX_READS) + " " + SimkaAlgorithm<>::toString(_nbReadsPerDataset[i]);
 #ifndef SERIAL
-				command += " &";
+				//command += " &";
 #endif
 
-				command = _cmdJobCount + " " + command;
+				//command = _cmdJobCount + " " + command;
 
+#ifdef CLUSTER
+				string jobFilename = _outputDirTempFilter + "/job_count/job_" + _bankNames[i] + ".bash";
+				IFile* jobFile = System::file().newFile(jobFilename.c_str(), "w");
+				string jobCommand = _jobCountContents + '\n' + '\n';
+				jobCommand += command;
+
+				cout << "\t" << jobCommand << endl;
+
+				jobFile->fwrite(jobCommand.c_str(), jobCommand.size(), 1);
+				jobFile->flush();
+				delete jobFile;
+
+				string submitCommand = _jobCountCommand + " " + jobFile->getPath();
+				system(submitCommand.c_str());
+#else
 				cout << "\t" << command << endl;
-
 				system(command.c_str());
+#endif
 				nbJobs += 1;
 			}
 
@@ -623,7 +664,7 @@ public:
 #ifndef SERIAL
 				//command += "nohup";
 #endif
-				command += " ./simkaMerge ";
+				command += "./simkaMerge ";
 				command += " " + string(STR_KMER_SIZE) + " " + _options->getStr(STR_KMER_SIZE);
 				command += " " + string(STR_URI_INPUT) + " " + _inputFilename;
 				command += " " + string("-out-tmp-simka") + " " + _outputDirTempFilter;
@@ -631,14 +672,28 @@ public:
 				command += " " + string(STR_MAX_MEMORY) + " " + _options->getStr(STR_MAX_MEMORY);
 				command += " " + string(STR_NB_CORES) + " " + _options->getStr(STR_NB_CORES);
 #ifndef SERIAL
-				command += " &";
+				//command += " &";
 #endif
 
-				command = _cmdJobMerge + " " + command;
+#ifdef CLUSTER
+				string jobFilename = _outputDirTempFilter + "/job_merge/job_" + _bankNames[i] + ".bash";
+				IFile* jobFile = System::file().newFile(jobFilename.c_str(), "w");
+				string jobCommand = _jobMergeContents + '\n' + '\n';
+				jobCommand += command;
 
+				cout << "\t" << jobCommand << endl;
+
+				jobFile->fwrite(jobCommand.c_str(), jobCommand.size(), 1);
+				jobFile->flush();
+				delete jobFile;
+
+				string submitCommand = _jobMergeCommand + " " + jobFile->getPath();
+				system(submitCommand.c_str());
+#else
 				cout << "\t" << command << endl;
-
 				system(command.c_str());
+#endif
+
 				nbJobs += 1;
 			//}
 
@@ -749,9 +804,13 @@ public:
 
 	size_t _maxJobCount;
 	size_t _maxJobMerge;
-	string _cmdJobCount;
-	string _cmdJobMerge;
+	string _jobCountFilename;
+	string _jobMergeFilename;
+	string _jobCountCommand;
+	string _jobMergeCommand;
 
+	string _jobCountContents;
+	string _jobMergeContents;
 };
 
 

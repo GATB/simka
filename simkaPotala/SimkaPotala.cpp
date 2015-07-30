@@ -10,10 +10,12 @@ SimkaPotala::SimkaPotala()  : Tool ("SimkaPotala")
 	//Kmer parser
     IOptionsParser* jobParser = new OptionsParser ("job");
 
+    jobParser->push_back (new OptionOneParam (STR_SIMKA_JOB_COUNT_COMMAND, "command to submit counting job", true ));
+    jobParser->push_back (new OptionOneParam (STR_SIMKA_JOB_MERGE_COMMAND, "command to submit merging job", true ));
+    jobParser->push_back (new OptionOneParam (STR_SIMKA_JOB_COUNT_FILENAME, "filename to the couting job", true ));
+    jobParser->push_back (new OptionOneParam (STR_SIMKA_JOB_MERGE_FILENAME, "filename to the merging job", true ));
     jobParser->push_back (new OptionOneParam (STR_SIMKA_NB_JOB_COUNT, "maximum number of simultaneous counting jobs", true ));
     jobParser->push_back (new OptionOneParam (STR_SIMKA_NB_JOB_MERGE, "maximum number of simultaneous merging jobs", true ));
-    jobParser->push_back (new OptionOneParam (STR_SIMKA_JOB_COMMAND_COUNT, "job command to use by couting job", true ));
-    jobParser->push_back (new OptionOneParam (STR_SIMKA_JOB_COMMAND_MERGE, "job command to use by merging job", true ));
 
 	getParser()->push_back(jobParser);
     //coreParser->push_back(new OptionOneParam(parser->getParser(STR_NB_CORES)->getName(), parser->getParser(STR_NB_CORES)->getHelp(), false, "0"));
