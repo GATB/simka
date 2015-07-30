@@ -187,8 +187,8 @@ public:
 				SimkaSequenceFilter sequenceFilter(p.minReadSize, p.minReadShannonIndex);
 				IBank* filteredBank = new SimkaPotaraBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, p.maxReads);
 				// = new SimkaPotaraBankFiltered(bank)
-				LOCAL(filteredBank);
-				LOCAL(bank);
+				//LOCAL(filteredBank);
+				//LOCAL(bank);
 
 				Storage* solidStorage = 0;
 
