@@ -1,8 +1,8 @@
 
-#include "SimkaPotala.hpp"
+#include "SimkaPotara.hpp"
 
 
-SimkaPotala::SimkaPotala()  : Tool ("SimkaPotala")
+SimkaPotara::SimkaPotara()  : Tool ("SimkaPotara")
 {
 
 	Simka::createOptionsParser(getParser());
@@ -91,7 +91,7 @@ template<size_t span> struct Functor  {  void operator ()  (Parameter p)
 #endif*/
 }};
 
-void SimkaPotala::execute ()
+void SimkaPotara::execute ()
 {
 	IProperties* input = getInput();
 	//Parameter params(*this, getInput());
@@ -111,7 +111,7 @@ int main (int argc, char* argv[])
     try
     {
         // We run the tool with the provided command line arguments.
-        SimkaPotala().run (argc, argv);
+        SimkaPotara().run (argc, argv);
     }
     catch (Exception& e)
     {

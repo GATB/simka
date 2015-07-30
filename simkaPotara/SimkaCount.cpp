@@ -9,11 +9,11 @@ using namespace std;
 
 
 
-template<typename Filter> class SimkaPotalaBankFiltered : public BankDelegate
+template<typename Filter> class SimkaPotaraBankFiltered : public BankDelegate
 {
 public:
 
-	SimkaPotalaBankFiltered (IBank* ref, const Filter& filter, u_int64_t maxReads) : BankDelegate (ref), _filter(filter)  {
+	SimkaPotaraBankFiltered (IBank* ref, const Filter& filter, u_int64_t maxReads) : BankDelegate (ref), _filter(filter)  {
 		//_nbReadsPerDataset = nbReadsPerDataset;
 		_maxReads = maxReads;
 	}
@@ -181,8 +181,8 @@ public:
 			IBank* bank = Bank::open(p.outputDir + "/input/" + p.bankName);
 
 			SimkaSequenceFilter sequenceFilter(p.minReadSize, p.minReadShannonIndex);
-			IBank* filteredBank = new SimkaPotalaBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, p.maxReads);
-			// = new SimkaPotalaBankFiltered(bank)
+			IBank* filteredBank = new SimkaPotaraBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, p.maxReads);
+			// = new SimkaPotaraBankFiltered(bank)
 
 			Storage* solidStorage = 0;
 

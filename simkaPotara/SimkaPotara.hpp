@@ -31,7 +31,8 @@ class SimkaBankSample : public BankDelegate
 public:
 
 
-	SimkaBankSample (IBank* ref) : BankDelegate (ref)  {
+	SimkaBankSample (IBank* ref, u_int64_t nbRead) : BankDelegate (ref)  {
+		_nbRead = nbRead;
 	}
 
     /** \copydoc tools::collections::Iterable::iterator */
@@ -42,12 +43,12 @@ public:
 
         std::vector<Iterator<Sequence>*> iterators = it->getComposition();
 
-    	TruncateIterator<Sequence>* truncIt = new TruncateIterator<Sequence>(*iterators[0], 10000);
+    	TruncateIterator<Sequence>* truncIt = new TruncateIterator<Sequence>(*iterators[0], _nbRead);
     	return truncIt;
     }
 
 private:
-
+    u_int64_t _nbRead;
 };
 
 
@@ -485,7 +486,7 @@ public:
 
         IBank* bank = Bank::open(_outputDirTempFilter + "/input/" + _bankNames[0]);
         bank->finalize();
-        IBank* sampleBank = new SimkaBankSample(bank);
+        IBank* sampleBank = new SimkaBankSample(bank, _maxNbReads/3);
 		SortingCountAlgorithm<span> sortingCount (sampleBank, _options);
 
 		SimkaNullProcessor<span>* proc = new SimkaNullProcessor<span>();
@@ -879,11 +880,11 @@ IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
 }*/
 
 
-class SimkaPotala : public Tool{
+class SimkaPotara : public Tool{
 
 public:
 
-	SimkaPotala();
+	SimkaPotara();
 	void execute();
 };
 
