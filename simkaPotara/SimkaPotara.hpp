@@ -13,7 +13,7 @@
 #include <KmerCountCompressor.hpp>
 #include <Simka.hpp>
 
-#define CLUSTER
+//#define CLUSTER
 //#define SERIAL
 #define SLEEP_TIME_SEC 1
 
@@ -532,7 +532,7 @@ public:
 				string tempDir = _outputDirTempFilter + "/temp/" + _bankNames[i];
 
 				string command = "";
-#ifndef SERIAL
+#ifndef CLUSTER
 				//command += "nohup";
 #endif
 				command += "./simkaCount ";
@@ -547,7 +547,7 @@ public:
 				command += " " + string(STR_SIMKA_MIN_READ_SIZE) + " " + _options->getStr(STR_SIMKA_MIN_READ_SIZE);
 				command += " " + string(STR_SIMKA_MIN_READ_SHANNON_INDEX) + " " + _options->getStr(STR_SIMKA_MIN_READ_SHANNON_INDEX);
 				command += " " + string(STR_SIMKA_MAX_READS) + " " + SimkaAlgorithm<>::toString(_nbReadsPerDataset[i]);
-#ifndef SERIAL
+#ifndef CLUSTER
 				//command += " &";
 #endif
 
@@ -662,7 +662,7 @@ public:
 
 				string command = "";
 
-#ifndef SERIAL
+#ifndef CLUSTER
 				//command += "nohup";
 #endif
 				command += "./simkaMerge ";
@@ -672,7 +672,7 @@ public:
 				command += " -partition-id " + SimkaAlgorithm<>::toString(i);
 				command += " " + string(STR_MAX_MEMORY) + " " + _options->getStr(STR_MAX_MEMORY);
 				command += " " + string(STR_NB_CORES) + " " + _options->getStr(STR_NB_CORES);
-#ifndef SERIAL
+#ifndef CLUSTER
 				//command += " &";
 #endif
 

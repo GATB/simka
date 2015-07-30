@@ -137,16 +137,16 @@ public:
 
 			IProperties* props = p.tool.getInput();
 
-			{
 
-				Configuration config;
+			Configuration* config = new Configuration();
+			{
 				Repartitor* repartitor = new Repartitor();
 				LOCAL(repartitor);
 
 				{
 					Storage* storage = StorageFactory(STORAGE_HDF5).load (p.outputDir + "/" + "config.h5");
 					LOCAL (storage);
-					config.load(storage->getGroup(""));
+					config->load(storage->getGroup(""));
 					repartitor->load(storage->getGroup(""));
 				}
 				//delete storage;
@@ -187,8 +187,8 @@ public:
 				SimkaSequenceFilter sequenceFilter(p.minReadSize, p.minReadShannonIndex);
 				IBank* filteredBank = new SimkaPotaraBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, p.maxReads);
 				// = new SimkaPotaraBankFiltered(bank)
-				//LOCAL(filteredBank);
-				//LOCAL(bank);
+				LOCAL(filteredBank);
+				LOCAL(bank);
 
 				Storage* solidStorage = 0;
 
@@ -204,8 +204,8 @@ public:
 				//props->add(1, STR_URI_OUTPUT_TMP, tempDir);
 				//cout << tempDir << endl;
 
-				SortingCountAlgorithm<span> algo (filteredBank, config, repartitor,
-						SortingCountAlgorithm<span>::getDefaultProcessorVector (config, props, solidStorage),
+				SortingCountAlgorithm<span> algo (filteredBank, *config, repartitor,
+						SortingCountAlgorithm<span>::getDefaultProcessorVector (*config, props, solidStorage),
 						props);
 
 				algo.execute();
@@ -213,8 +213,11 @@ public:
 				System::file().rmdir(tempDir);
 			}
 
+			//cout << "heo" << endl;
+			//delete config;
+			//cout << "heo" << endl;
 			writeFinishSignal(p);
-
+			//cout << "heo" << endl;
 		}
 
 		void writeFinishSignal(Parameter& p){
