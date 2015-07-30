@@ -137,76 +137,78 @@ public:
 
 			IProperties* props = p.tool.getInput();
 
-			Storage* storage = StorageFactory(STORAGE_HDF5).load (p.outputDir + "/" + "config.h5");
-			//LOCAL (storage);
+			{
+				Storage* storage = StorageFactory(STORAGE_HDF5).load (p.outputDir + "/" + "config.h5");
+				LOCAL (storage);
 
-			Configuration config;
-			Repartitor* repartitor = new Repartitor();
-			config.load(storage->getGroup(""));
-			repartitor->load(storage->getGroup(""));
+				Configuration config;
+				Repartitor* repartitor = new Repartitor();
+				config.load(storage->getGroup(""));
+				repartitor->load(storage->getGroup(""));
 
-			delete storage;
-			/*
-			config._kmerSize = p.kmerSize;
-			config._minim_size = 8;
-			config._max_disk_space = 0;
-			config._max_memory = props->getInt(STR_MAX_MEMORY);
-			config._nbCores = props->getInt(STR_NB_CORES);
-			config._nb_partitions_in_parallel = config._nbCores;*/
-			/*
-			size_t      _kmerSize;
-			size_t      _minim_size;
-			size_t      _repartitionType;
-			size_t      _minimizerType;
+				//delete storage;
+				/*
+				config._kmerSize = p.kmerSize;
+				config._minim_size = 8;
+				config._max_disk_space = 0;
+				config._max_memory = props->getInt(STR_MAX_MEMORY);
+				config._nbCores = props->getInt(STR_NB_CORES);
+				config._nb_partitions_in_parallel = config._nbCores;*/
+				/*
+				size_t      _kmerSize;
+				size_t      _minim_size;
+				size_t      _repartitionType;
+				size_t      _minimizerType;
 
-			tools::misc::KmerSolidityKind _solidityKind;
+				tools::misc::KmerSolidityKind _solidityKind;
 
-			u_int64_t   ;
-			u_int32_t   _max_memory;
+				u_int64_t   ;
+				u_int32_t   _max_memory;
 
-			size_t      _nbCores;
-			size_t      _nb_partitions_in_parallel;
-			size_t      _partitionType;
+				size_t      _nbCores;
+				size_t      _nb_partitions_in_parallel;
+				size_t      _partitionType;
 
-			std::vector<tools::misc::CountRange>  _abundance;
-			size_t _abundanceUserNb;*/
-
-
-			string tempDir = p.outputDir + "/temp/" + p.bankName;
-			System::file().mkdir(tempDir, -1);
-			//cout << i << endl;
-			//string outputDir = p.outputDir + "/comp_part" + to_string(p.datasetId) + "/";
-
-			//cout << "\tinput: " << p.outputDir + "/input/" + p.bankName << endl;
-			IBank* bank = Bank::open(p.outputDir + "/input/" + p.bankName);
-
-			SimkaSequenceFilter sequenceFilter(p.minReadSize, p.minReadShannonIndex);
-			IBank* filteredBank = new SimkaPotaraBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, p.maxReads);
-			// = new SimkaPotaraBankFiltered(bank)
-
-			Storage* solidStorage = 0;
-
-			string solidsName = p.outputDir + "/solid/" +  p.bankName + ".h5";
-			bool autoDelete = false; // (solidsName == "none") || (solidsName == "null");
-			solidStorage = StorageFactory(STORAGE_HDF5).create (solidsName, true, autoDelete);
+				std::vector<tools::misc::CountRange>  _abundance;
+				size_t _abundanceUserNb;*/
 
 
+				string tempDir = p.outputDir + "/temp/" + p.bankName;
+				System::file().mkdir(tempDir, -1);
+				//cout << i << endl;
+				//string outputDir = p.outputDir + "/comp_part" + to_string(p.datasetId) + "/";
 
-			//props->add(1, STR_HISTOGRAM_MAX, "0");
-			//props->add(1, STR_KMER_ABUNDANCE_MIN_THRESHOLD, "0");
-			//props->add(1, STR_SOLIDITY_KIND, "sum");
-			//props->add(1, STR_URI_OUTPUT_TMP, tempDir);
-			//cout << tempDir << endl;
+				//cout << "\tinput: " << p.outputDir + "/input/" + p.bankName << endl;
+				IBank* bank = Bank::open(p.outputDir + "/input/" + p.bankName);
 
-			SortingCountAlgorithm<span> algo (filteredBank, config, repartitor,
-					SortingCountAlgorithm<span>::getDefaultProcessorVector (config, props, solidStorage),
-					props);
+				SimkaSequenceFilter sequenceFilter(p.minReadSize, p.minReadShannonIndex);
+				IBank* filteredBank = new SimkaPotaraBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, p.maxReads);
+				// = new SimkaPotaraBankFiltered(bank)
+				LOCAL(filteredBank);
+				LOCAL(bank);
 
-			algo.execute();
-			delete solidStorage;
-			delete filteredBank;
+				Storage* solidStorage = 0;
 
-			System::file().rmdir(tempDir);
+				string solidsName = p.outputDir + "/solid/" +  p.bankName + ".h5";
+				bool autoDelete = false; // (solidsName == "none") || (solidsName == "null");
+				solidStorage = StorageFactory(STORAGE_HDF5).create (solidsName, true, autoDelete);
+				LOCAL(solidStorage);
+
+
+				//props->add(1, STR_HISTOGRAM_MAX, "0");
+				//props->add(1, STR_KMER_ABUNDANCE_MIN_THRESHOLD, "0");
+				//props->add(1, STR_SOLIDITY_KIND, "sum");
+				//props->add(1, STR_URI_OUTPUT_TMP, tempDir);
+				//cout << tempDir << endl;
+
+				SortingCountAlgorithm<span> algo (filteredBank, config, repartitor,
+						SortingCountAlgorithm<span>::getDefaultProcessorVector (config, props, solidStorage),
+						props);
+
+				algo.execute();
+
+				System::file().rmdir(tempDir);
+			}
 
 			writeFinishSignal(p);
 
