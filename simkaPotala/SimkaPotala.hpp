@@ -561,9 +561,8 @@ public:
 
 				jobFile->fwrite(jobCommand.c_str(), jobCommand.size(), 1);
 				jobFile->flush();
-				delete jobFile;
-
 				string submitCommand = _jobCountCommand + " " + jobFile->getPath();
+				delete jobFile;
 				system(submitCommand.c_str());
 #else
 				cout << "\t" << command << endl;
@@ -685,9 +684,8 @@ public:
 
 				jobFile->fwrite(jobCommand.c_str(), jobCommand.size(), 1);
 				jobFile->flush();
-				delete jobFile;
-
 				string submitCommand = _jobMergeCommand + " " + jobFile->getPath();
+				delete jobFile;
 				system(submitCommand.c_str());
 #else
 				cout << "\t" << command << endl;
