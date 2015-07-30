@@ -105,13 +105,13 @@ public:
 
 	SimkaFusion(IProperties* options){
 
-		_maxNbReads = 0;
 		_options = options;
 
 		_inputFilename = _options->getStr(STR_URI_INPUT);
 		_outputDir = _options->getStr(STR_URI_OUTPUT);
 		_outputDirTemp = _options->getStr(STR_URI_OUTPUT_TMP);
 
+		_maxNbReads = _options->getInt(STR_SIMKA_MAX_READS);
 		_maxJobCount = _options->getInt(STR_SIMKA_NB_JOB_COUNT);
 		_maxJobMerge = _options->getInt(STR_SIMKA_NB_JOB_MERGE);
 		_jobCountFilename = _options->getStr(STR_SIMKA_JOB_COUNT_FILENAME);
