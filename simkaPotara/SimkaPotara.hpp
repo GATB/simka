@@ -13,7 +13,7 @@
 #include <KmerCountCompressor.hpp>
 #include <Simka.hpp>
 
-//#define CLUSTER
+#define CLUSTER
 //#define SERIAL
 #define SLEEP_TIME_SEC 1
 
