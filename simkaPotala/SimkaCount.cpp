@@ -204,7 +204,7 @@ public:
 
 			algo.execute();
 			delete solidStorage;
-			//delete filteredBank;
+			delete filteredBank;
 
 			System::file().rmdir(tempDir);
 

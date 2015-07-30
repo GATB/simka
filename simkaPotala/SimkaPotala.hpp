@@ -484,6 +484,7 @@ public:
         LOCAL (storage);
 
         IBank* bank = Bank::open(_outputDirTempFilter + "/input/" + _bankNames[0]);
+        bank->finalize();
         IBank* sampleBank = new SimkaBankSample(bank);
 		SortingCountAlgorithm<span> sortingCount (sampleBank, _options);
 
@@ -552,7 +553,7 @@ public:
 				//command = _cmdJobCount + " " + command;
 
 #ifdef CLUSTER
-				string jobFilename = _outputDirTempFilter + "/job_count/job_" + _bankNames[i] + ".bash";
+				string jobFilename = _outputDirTempFilter + "/job_count/job_count_" + _bankNames[i] + ".bash";
 				IFile* jobFile = System::file().newFile(jobFilename.c_str(), "w");
 				string jobCommand = _jobCountContents + '\n' + '\n';
 				jobCommand += command;
@@ -675,7 +676,7 @@ public:
 #endif
 
 #ifdef CLUSTER
-				string jobFilename = _outputDirTempFilter + "/job_merge/job_" + _bankNames[i] + ".bash";
+				string jobFilename = _outputDirTempFilter + "/job_merge/job_merge_" + SimkaAlgorithm<>::toString(i) + ".bash";
 				IFile* jobFile = System::file().newFile(jobFilename.c_str(), "w");
 				string jobCommand = _jobMergeContents + '\n' + '\n';
 				jobCommand += command;
