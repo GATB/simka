@@ -22,21 +22,19 @@
 #include "SimkaAlgorithm.hpp"
 
 
-
-Simka::Simka()  : Tool ("Simka")
+IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
 {
+    IOptionsParser* parser = parent; //new OptionsParser ("Simka");
 
-
-	IOptionsParser* parser = getParser();
+	//IOptionsParser* parser = getParser();
 	IOptionsParser* dskParser = SortingCountAlgorithm<>::getOptionsParser();
 	parser->push_back(dskParser);
 	dskParser->setVisible(false);
+	//cout << parser->getParser(STR_NB_CORES) << endl;
 	parser->getParser(STR_NB_CORES)->setVisible(false);
 
 	//Main parser
 	parser->push_front(dskParser->getParser (STR_URI_OUTPUT_TMP));
-	//parser->push_front(dskParser->getParser (STR_URI_OUTPUT_DIR));
-	//parser->getParser (STR_URI_OUTPUT_DIR)->setHelp("output directory for temporary files");
 	parser->push_front(dskParser->getParser (STR_URI_OUTPUT));
 	parser->getParser (STR_URI_OUTPUT)->setHelp("output directory for result files (similarity matrix, heatmaps)");
 	parser->push_front(dskParser->getParser (STR_URI_INPUT));
@@ -67,14 +65,22 @@ Simka::Simka()  : Tool ("Simka")
     coreParser->push_back(new OptionOneParam(parser->getParser(STR_NB_CORES)->getName(), parser->getParser(STR_NB_CORES)->getHelp(), false, "0"));
     coreParser->push_back(dskParser->getParser (STR_MAX_MEMORY));
     coreParser->push_back(dskParser->getParser (STR_MAX_DISK));
-    //coreParser->push_back(parser->getParser(STR_VERBOSE));
-
-
-	//coreParser->getParser(STR_NB_CORES)->setVisible(true);;
 
 	parser->push_back(kmerParser);
 	parser->push_back(readParser);
 	parser->push_back(coreParser);
+
+
+    return parser;
+}
+
+
+Simka::Simka()  : Tool ("Simka")
+{
+
+	Simka::createOptionsParser(getParser());
+
+    //coreParser->push_back(new OptionOneParam(parser->getParser(STR_NB_CORES)->getName(), parser->getParser(STR_NB_CORES)->getHelp(), false, "0"));
 
 	//if (IOptionsParser* input = dskParser->getParser (STR_KMER_ABUNDANCE_MIN_THRESHOLD))  {  input->setVisible (false);  }
 

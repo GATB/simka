@@ -29,6 +29,9 @@ public:
 	SimkaStatistics(size_t nbBanks);
 	SimkaStatistics& operator+=  (const SimkaStatistics& other);
 	void print();
+	void load(Group& group);
+	void save(Group& group);
+	void outputMatrix(const string& outputDir, const vector<string>& _bankNames);
 
     size_t _nbBanks;
 
@@ -54,10 +57,13 @@ public:
 	u_int64_t _nbDistinctKmers;
 	u_int64_t _nbSolidKmers;
 
-    vector<SpeciesAbundanceVectorType > _speciesAbundancePerDataset;
 	//u_int64_t _nbKmersInCoupleBankSupRatio;
 
 	//unordered_map<string, histo_t> _histos;
+private:
+
+	void dumpMatrix(const string& outputDir, const vector<string>& _bankNames, const string& outputFilename, const vector<vector<float> >& matrix);
+	string _outputFilenameSuffix;
 };
 
 

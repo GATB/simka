@@ -28,6 +28,7 @@ template<size_t span>
 SimkaCountProcessor<span>::SimkaCountProcessor (SimkaStatistics& stats, size_t nbBanks, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, IteratorListener* progress) :
 _progress(progress), _stats(stats)
 {
+
 	// We configure the vector for the N.(N+1)/2 possible pairs
 	//_countTotal.resize (_nbBanks*(_nbBanks+1)/2);
 
@@ -339,6 +340,12 @@ Algorithm("simka", -1, options),
 _progress (0), _tmpPartitionsStorage(0), _tmpPartitions(0)
 {
 
+
+	_stats = 0;
+	//_simkaDistance = 0;
+	_banks = 0;
+	_processor = 0;
+
 	_options = options;
 
 
@@ -360,9 +367,6 @@ _progress (0), _tmpPartitionsStorage(0), _tmpPartitions(0)
 	_minReadShannonIndex = _options->getDouble(STR_SIMKA_MIN_READ_SHANNON_INDEX);
 	_minReadShannonIndex = std::max(_minReadShannonIndex, 0.0);
 	_minReadShannonIndex = std::min(_minReadShannonIndex, 2.0);
-	_minKmerShannonIndex = _options->getDouble(STR_SIMKA_MIN_KMER_SHANNON_INDEX);
-	_minKmerShannonIndex = std::max(_minKmerShannonIndex, 0.0);
-	_minKmerShannonIndex = std::min(_minKmerShannonIndex, 2.0);
 
 	//string maxDisk = "";
 	//if(_options->get(STR_MAX_DISK)){
@@ -433,10 +437,22 @@ void SimkaAlgorithm<span>::execute() {
 	layoutInputFilename();
 	createBank();
 
+	/*
+#ifdef SIMKA_FUSION
+
+	cout << "SimkaAlgo.cpp 1" << endl;
+	clear();
+	delete _banks;
+	cout << "SimkaAlgo.cpp 2" << endl;
+	SimkaFusion<span>* simkaFusion = new SimkaFusion<span>(_options, _inputFilename, _outputDir, _outputDirTemp, _nbReadsPerDataset, _maxNbReads);
+	simkaFusion->execute();
+	return;
+#endif*/
+
 	count();
 
 	outputMatrix();
-	outputHeatmap();
+	//outputHeatmap();
 
 	if(_options->getInt(STR_VERBOSE) != 0){
 		_stats->print();
@@ -728,7 +744,7 @@ void SimkaAlgorithm<span>::executeSimkamin() {
     _tmpPartitions->remove();
     //return;
 	outputMatrix();
-	outputHeatmap();
+	//outputHeatmap();
 
 	if(_options->getInt(STR_VERBOSE) != 0){
 		_stats->print();
@@ -850,6 +866,8 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 	}
 
 	cout << endl;
+
+
 }
 
 
@@ -905,92 +923,10 @@ void SimkaAlgorithm<span>::count(){
 
 template<size_t span>
 void SimkaAlgorithm<span>::outputMatrix(){
-
-	_simkaDistance = new SimkaDistance(*_stats);
-
-	_outputFilenameSuffix = "";
-
-	char buffer[200];
-
-	string strKmerSize = "_k";
-	snprintf(buffer,200,"%llu",_kmerSize);
-	strKmerSize += string(buffer);
-	_outputFilenameSuffix += strKmerSize;
-
-	/*
-    string strAbMax = "";
-    if(_abundanceThreshold.second < 1000000){
-    	snprintf(buffer,200,"%llu",_abundanceThreshold.second);
-    	strAbMax += "_max" + string(buffer);
-    }
-    _outputFilenameSuffix += strAbMax;
-
-	string strAbMin = "_min";
-	snprintf(buffer,200,"%llu",_abundanceThreshold.first);
-	strAbMin += string(buffer);
-	_outputFilenameSuffix += strAbMin;*/
-
-
-	//_matDksNormFilename = "mat_dks_norm" + filenameSuffix + ".csv";
-	//_matDksPercFilename = "mat_dks_asym" + filenameSuffix + ".csv";
-	//_matAksNormFilename = "mat_aks_norm" + filenameSuffix + ".csv";
-	//_matAksPercFilename = "mat_aks_asym" + filenameSuffix + ".csv";
-
-    dumpMatrix("mat_presenceAbsence_sorensen", _simkaDistance->_matrixSymSorensen);
-    //dumpMatrix("mat_presenceAbsence_sorensen_asym", _simkaDistance->_matrixAsymSorensen);
-
-    dumpMatrix("mat_presenceAbsence_jaccard", _simkaDistance->_matrixSymJaccardPresenceAbsence);
-    dumpMatrix("mat_presenceAbsence_jaccard_asym", _simkaDistance->_matrixAsymJaccardPresenceAbsence);
-
-    dumpMatrix("mat_abundance_jaccard", _simkaDistance->_matrixSymJaccardAbundance);
-    dumpMatrix("mat_abundance_jaccard_asym", _simkaDistance->_matrixAsymJaccardAbundance);
-
-    dumpMatrix("mat_abundance_brayCurtis", _simkaDistance->_matrixBrayCurtis);
-    //dumpMatrix("mat_kullbackLeibler", _simkaDistance->getMatrixKullbackLeibler());
-
+	_stats->outputMatrix(_outputDir, _bankNames);
 }
 
-
-
-template<size_t span>
-void SimkaAlgorithm<span>::dumpMatrix(const string& outputFilename, const vector<vector<float> >& matrix){
-
-	char buffer[200];
-	string str;
-
-	for(size_t i=0; i<matrix.size(); i++){
-		str += ";" + _bankNames[i];
-		//str += ";" + datasetInfos[i]._name;
-	}
-	str += '\n';
-
-	for(size_t i=0; i<matrix.size(); i++){
-
-		str += _bankNames[i] + ";";
-		//str += datasetInfos[i]._name + ";";
-		for(size_t j=0; j<matrix.size(); j++){
-
-			//snprintf(buffer,200,"%.2f", matrix[i][j]);
-			snprintf(buffer,200,"%f", matrix[i][j]);
-			str += string(buffer) + ";";
-
-			//str += to_string(matrix[i][j]) + ";";
-		}
-
-		//matrixNormalizedStr.erase(matrixNormalizedStr.end()-1);
-		str.erase(str.size()-1);
-		//str.pop_back(); //remove ; at the end of the line
-		str += '\n';
-	}
-
-
-	gatb::core::system::IFile* file = gatb::core::system::impl::System::file().newFile(_outputDir + "/" + outputFilename + _outputFilenameSuffix + ".csv", "wb");
-	file->fwrite(str.c_str(), str.size(), 1);
-	file->flush();
-	delete file;
-
-}
-
+/*
 template<size_t span>
 void SimkaAlgorithm<span>::outputHeatmap(){
 	cout << endl << endl;
@@ -1004,27 +940,7 @@ void SimkaAlgorithm<span>::outputHeatmap(){
 template<size_t span>
 void SimkaAlgorithm<span>::__outputHeatmap(const string& outputFilenamePrefix, const string& matrixAsymFilename, const string& matrixNormFilename){
 
-	/*
-	string filename = matrixPercFilename.substr(0, matrixPercFilename.size()-4); //remove mat extension .csv
-	vector<string> linePartList;
-	string outputFilename = "heatmap";
-	string part;
-	//string linePart;
-	//vector<string> linePartList;
-	stringstream stream(filename);
 
-	while(getline(stream, part, '_')){
-		//cout << part << endl;
-		linePartList.push_back(part);
-	}
-	linePartList.erase(linePartList.begin() + 0); //Remove 'mat' prefix
-	linePartList.erase(linePartList.begin() + 1); //Remove 'norm' or 'perc'
-
-	for(size_t i=0; i<linePartList.size(); i++){
-		outputFilename += "_" + linePartList[i];
-	}
-	outputFilename += ".png";
-	*/
 
 	string asymFilename = matrixAsymFilename + _outputFilenameSuffix + ".csv";
 	string normFilename = matrixNormFilename + _outputFilenameSuffix + ".csv";
@@ -1049,7 +965,7 @@ void SimkaAlgorithm<span>::__outputHeatmap(const string& outputFilenamePrefix, c
     //else
     //	_heatmapAksFilename = outputFilename;
 
-}
+}*/
 
 
 template<size_t span>
@@ -1077,15 +993,20 @@ void SimkaAlgorithm<span>::print(){
 template<size_t span>
 void SimkaAlgorithm<span>::clear(){
 
+	if(_banks){
+		//_banks->finalize();
+		//delete _banks;
+	}
+
 	System::file().remove(_banksInputFilename);
-    _processor->forget();
+    if(_processor) _processor->forget();
 
     for(size_t i=0; i<_tempFilenamesToDelete.size(); i++){
     	System::file().remove(_tempFilenamesToDelete[i]);
     }
 
-    delete _stats;
-    delete _simkaDistance;
+    if(_stats) delete _stats;
+    //if(_simkaDistance) delete _simkaDistance;
 	//_banks->remove();
 	//delete _processor;
 }

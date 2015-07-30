@@ -25,10 +25,6 @@
 #include <gatb/gatb_core.hpp>
 /********************************************************************************/
 
-using namespace gatb::core;
-using namespace gatb::core::tools;
-using namespace gatb::core::bank;
-using namespace gatb::core::kmer::impl;
 
 //using namespace gatb::core::system;
 //using namespace gatb::core::system::impl;
@@ -61,6 +57,7 @@ public:
 
     // Actual job done by the tool is here
     void execute ();
+    static IOptionsParser* createOptionsParser (IOptionsParser* parent);
     //static void executeAlgorithm (Simka& simka, IProperties* props);
 
 

@@ -42,7 +42,6 @@ SimkaStatistics::SimkaStatistics(size_t nbBanks){
 		//_kullbackLeibler[i].resize(nbBanks, 0);
 	}
 
-	_speciesAbundancePerDataset.resize(_nbBanks);
 }
 
 
@@ -59,7 +58,6 @@ SimkaStatistics& SimkaStatistics::operator+=  (const SimkaStatistics& other){
 		_nbDistinctKmersSharedByBanksThreshold[i] += other._nbDistinctKmersSharedByBanksThreshold[i];
 		_nbKmersSharedByBanksThreshold[i] += other._nbKmersSharedByBanksThreshold[i];
 	}
-
 
 	for(size_t i=0; i<_nbBanks; i++){
 		for(size_t j=0; j<_nbBanks; j++){
@@ -138,9 +136,154 @@ void SimkaStatistics::print(){
    cout << endl << endl;
 }
 
+void SimkaStatistics::load(Group& group){
+
+    Storage::istream is (group, "simkaStats");
+
+    //is.read ((char*)&_nbBanks,                sizeof(_nbBanks));
+    is.read ((char*)&_nbKmers,                sizeof(_nbKmers));
+    is.read ((char*)&_nbErroneousKmers,                sizeof(_nbErroneousKmers));
+    is.read ((char*)&_nbDistinctKmers,                sizeof(_nbDistinctKmers));
+    is.read ((char*)&_nbSolidKmers,                sizeof(_nbSolidKmers));
+
+    is.read ((char*)_nbSolidDistinctKmersPerBank.data(), sizeof(u_int64_t)*_nbBanks);
+    is.read ((char*)_nbKmersPerBank.data(), sizeof(u_int64_t)*_nbBanks);
+    is.read ((char*)_nbSolidKmersPerBank.data(), sizeof(u_int64_t)*_nbBanks);
+    is.read ((char*)_nbDistinctKmersSharedByBanksThreshold.data(), sizeof(u_int64_t)*_nbBanks);
+    is.read ((char*)_nbKmersSharedByBanksThreshold.data(), sizeof(u_int64_t)*_nbBanks);
+
+    for(size_t i=0; i<_nbBanks; i++){
+    	is.read ((char*)_matrixNbDistinctSharedKmers[i].data(), sizeof(u_int64_t)*_nbBanks);
+    	is.read ((char*)_matrixNbSharedKmers[i].data(), sizeof(u_int64_t)*_nbBanks);
+    	is.read ((char*)_brayCurtisNumerator[i].data(), sizeof(u_int64_t)*_nbBanks);
+    }
+
+	/*
+    tools::storage::impl::Storage::istream is (group, "simkaStats");
+
+    is.read ((char*)&_nbpart,     sizeof(_nbpart));
+    is.read ((char*)&_mm,         sizeof(_mm));
+    is.read ((char*)&_nb_minims,  sizeof(_nb_minims));
+    is.read ((char*)&_nbPass,     sizeof(_nbPass));
+
+    DEBUG (("[Repartitor::load] :  _nbpart=%d  _mm=%d  _nb_minims=%d  _nbPass=%d \n",
+        _nbpart, _mm, _nb_minims, _nbPass
+    ));
+
+    _repart_table.resize (_nb_minims);
+
+    is.read ((char*)_repart_table.data(), sizeof(Value) * _nb_minims);
+
+    is.read ((char*)&hasMinimizerFrequencies, sizeof(bool));
+
+    u_int32_t magic = 0;
+    is.read ((char*)&magic,  sizeof(magic));
+    if (magic != MAGIC_NUMBER)  { throw system::Exception("Unable to load Repartitor (minimRepart), possibly due to bad format."); }
+
+    if (hasMinimizerFrequencies)
+    {
+        tools::storage::impl::Storage::istream is2 (group, "minimFrequency");
+        _freq_order = new uint32_t [_nb_minims];
+        is2.read ((char*)_freq_order,     sizeof(uint32_t)*_nb_minims);
+
+        is2.read ((char*)&magic,  sizeof(magic));
+        if (magic != MAGIC_NUMBER)  { throw system::Exception("Unable to load Repartitor (minimFrequency), possibly due to bad format."); }
+    }*/
+}
+
+void SimkaStatistics::save (Group& group){
+
+    Storage::ostream os (group, "simkaStats");
+
+    //os.write ((const char*)&_nbBanks,                sizeof(_nbBanks));
+    os.write ((const char*)&_nbKmers,                sizeof(_nbKmers));
+    os.write ((const char*)&_nbErroneousKmers,                sizeof(_nbErroneousKmers));
+    os.write ((const char*)&_nbDistinctKmers,                sizeof(_nbDistinctKmers));
+    os.write ((const char*)&_nbSolidKmers,                sizeof(_nbSolidKmers));
+
+    os.write ((const char*)_nbSolidDistinctKmersPerBank.data(), sizeof(u_int64_t)*_nbBanks);
+    os.write ((const char*)_nbKmersPerBank.data(), sizeof(u_int64_t)*_nbBanks);
+    os.write ((const char*)_nbSolidKmersPerBank.data(), sizeof(u_int64_t)*_nbBanks);
+    os.write ((const char*)_nbDistinctKmersSharedByBanksThreshold.data(), sizeof(u_int64_t)*_nbBanks);
+    os.write ((const char*)_nbKmersSharedByBanksThreshold.data(), sizeof(u_int64_t)*_nbBanks);
+
+    for(size_t i=0; i<_nbBanks; i++){
+        os.write ((const char*)_matrixNbDistinctSharedKmers[i].data(), sizeof(u_int64_t)*_nbBanks);
+        os.write ((const char*)_matrixNbSharedKmers[i].data(), sizeof(u_int64_t)*_nbBanks);
+        os.write ((const char*)_brayCurtisNumerator[i].data(), sizeof(u_int64_t)*_nbBanks);
+    }
+
+    os.flush();
+}
+
+void SimkaStatistics::outputMatrix(const string& outputDir, const vector<string>& bankNames){
+
+
+	SimkaDistance _simkaDistance(*this);
+
+	_outputFilenameSuffix = "";
+
+	char buffer[200];
+
+	//string strKmerSize = "_k";
+	//snprintf(buffer,200,"%llu",_kmerSize);
+	//strKmerSize += string(buffer);
+	//_outputFilenameSuffix += strKmerSize;
+
+
+	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_sorensen", _simkaDistance._matrixSymSorensen);
+	//dumpMatrix("mat_presenceAbsence_sorensen_asym", _simkaDistance->_matrixAsymSorensen);
+
+	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_jaccard", _simkaDistance._matrixSymJaccardPresenceAbsence);
+	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_jaccard_asym", _simkaDistance._matrixAsymJaccardPresenceAbsence);
+
+	dumpMatrix(outputDir, bankNames, "mat_abundance_jaccard", _simkaDistance._matrixSymJaccardAbundance);
+	dumpMatrix(outputDir, bankNames, "mat_abundance_jaccard_asym", _simkaDistance._matrixAsymJaccardAbundance);
+
+	dumpMatrix(outputDir, bankNames, "mat_abundance_brayCurtis", _simkaDistance._matrixBrayCurtis);
+	//dumpMatrix("mat_kullbackLeibler", _simkaDistance->getMatrixKullbackLeibler());
+
+}
 
 
 
+void SimkaStatistics::dumpMatrix(const string& outputDir, const vector<string>& bankNames, const string& outputFilename, const vector<vector<float> >& matrix){
+
+	char buffer[200];
+	string str;
+
+	for(size_t i=0; i<matrix.size(); i++){
+		str += ";" + bankNames[i];
+		//str += ";" + datasetInfos[i]._name;
+	}
+	str += '\n';
+
+	for(size_t i=0; i<matrix.size(); i++){
+
+		str += bankNames[i] + ";";
+		//str += datasetInfos[i]._name + ";";
+		for(size_t j=0; j<matrix.size(); j++){
+
+			//snprintf(buffer,200,"%.2f", matrix[i][j]);
+			snprintf(buffer,200,"%f", matrix[i][j]);
+			str += string(buffer) + ";";
+
+			//str += to_string(matrix[i][j]) + ";";
+		}
+
+		//matrixNormalizedStr.erase(matrixNormalizedStr.end()-1);
+		str.erase(str.size()-1);
+		//str.pop_back(); //remove ; at the end of the line
+		str += '\n';
+	}
+
+
+	gatb::core::system::IFile* file = gatb::core::system::impl::System::file().newFile(outputDir + "/" + outputFilename + _outputFilenameSuffix + ".csv", "wb");
+	file->fwrite(str.c_str(), str.size(), 1);
+	file->flush();
+	delete file;
+
+}
 
 
 

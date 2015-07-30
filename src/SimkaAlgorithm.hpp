@@ -24,6 +24,7 @@
 #include <gatb/gatb_core.hpp>
 #include<stdio.h>
 
+//#define SIMKA_FUSION
 //#define MULTI_PROCESSUS
 //#define MULTI_DISK
 //#define SIMKA_MIN
@@ -1681,6 +1682,13 @@ public:
 
 	void executeSimkamin();
 
+
+    static string toString(u_int64_t value){
+    	char buffer[40];
+    	snprintf(buffer, 30, "%llu", value);
+    	return string(buffer);
+    }
+
 private:
 
 	void layoutInputFilename();
@@ -1689,9 +1697,9 @@ private:
 
 	void outputMatrix();
 
-	void dumpMatrix(const string& outputFilename, const vector<vector<float> >& matrix);
-	void outputHeatmap();
-	void __outputHeatmap(const string& outputFilenamePrefix, const string& matrixPercFilename, const string& matrixNormFilename);
+	//void dumpMatrix(const string& outputFilename, const vector<vector<float> >& matrix);
+	//void outputHeatmap();
+	//void __outputHeatmap(const string& outputFilenamePrefix, const string& matrixPercFilename, const string& matrixNormFilename);
 
 	void clear();
 
@@ -1713,7 +1721,7 @@ private:
 	//size_t _nbCores;
 
 	SimkaStatistics* _stats;
-	SimkaDistance* _simkaDistance;
+	//SimkaDistance* _simkaDistance;
 
 	string _banksInputFilename;
 	vector<string> _tempFilenamesToDelete;
@@ -1762,6 +1770,8 @@ private:
 
     //MultiDiskStorage<Type>* _multiStorage;
     //u_int64_t _maxDisk;
+
+
 };
 
 

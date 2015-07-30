@@ -52,13 +52,29 @@ FOREACH (KSIZE ${gatb-core-klist})
 ENDFOREACH ()
 
 # we define the files to be compiled
-file (GLOB_RECURSE  ProjectFiles  src/*  ${PROJECT_BINARY_DIR}/src/template/*.cpp)
+file (GLOB_RECURSE  ProjectFiles  src/Simka*  ${PROJECT_BINARY_DIR}/src/template/*.cpp)
 
 # we define the artifact to be built: the project binary
 add_executable        (${PROJECT_NAME}  src/main.cpp ${ProjectFiles})
 
 # we define which libraries to be linked with project binary
 target_link_libraries (${PROJECT_NAME}  ${gatb-core-libraries})
+
+
+add_executable        (simkaPotala  ../simkaPotala/SimkaPotala.cpp ${ProjectFiles})
+target_link_libraries (simkaPotala  ${gatb-core-libraries})
+
+add_executable        (simkaCount  ../simkaPotala/SimkaCount.cpp ${ProjectFiles})
+target_link_libraries (simkaCount  ${gatb-core-libraries})
+
+add_executable        (simkaMerge  ../simkaPotala/SimkaMerge.cpp ${ProjectFiles})
+target_link_libraries (simkaMerge  ${gatb-core-libraries})
+
+################################################################################
+#  UTILS 
+################################################################################
+#add_subdirectory (src_simkaMerge)
+#add_executable        (simkaCount  src/SimkaCount.cpp ${ProjectFiles})
 
 ################################################################################
 #  PACKAGING 

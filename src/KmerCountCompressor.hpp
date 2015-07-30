@@ -118,6 +118,10 @@ public:
 
 	}
 
+	u_int64_t getNbKmers(){
+		return _nbKmers;
+	}
+
 protected:
 
     int _nbBanks;
@@ -166,6 +170,24 @@ public:
 
     ~KmerCountCompressorPartition(){
 
+
+
+
+    	//cout << _rangeEncoder.getBufferSize() << endl;
+
+
+		/*
+		string path = _outputFile->getPath();
+		cout << "Partition " << _partitionIndex << endl;
+		cout << "\tNb kmers: " << _nbKmers << endl;
+		cout << "\tCompressed size: " << System::file().getSize(path) << endl;
+		cout << "\tByte per kmer count: " << System::file().getSize(path) / (float)_nbKmers<< endl;*/
+
+
+		delete _outputFile;
+    }
+
+    void flush(){
     	_rangeEncoder.flush();
 
     	writeBlock();
@@ -180,20 +202,6 @@ public:
     	_outputFile->fwrite((const char*) _rangeEncoder.getBuffer(true), _rangeEncoder.getBufferSize(), 1);
 
 		_outputFile->flush();
-
-
-    	//cout << _rangeEncoder.getBufferSize() << endl;
-
-		string path = _outputFile->getPath();
-
-
-		cout << "Partition " << _partitionIndex << endl;
-		cout << "\tNb kmers: " << _nbKmers << endl;
-		cout << "\tCompressed size: " << System::file().getSize(path) << endl;
-		cout << "\tByte per kmer count: " << System::file().getSize(path) / (float)_nbKmers<< endl;
-
-
-		delete _outputFile;
     }
 
     void insert(const Type& kmer, const CountVector& abundancePerBank){
@@ -205,71 +213,73 @@ public:
     	_lastKmerValue = kmerValue;
 
 
-#ifdef MONO_BANK
+    	if(abundancePerBank.size() == 1){
+
+        	CompressionUtils::encodeNumeric(_rangeEncoder, _bankCountModel, abundancePerBank[0]);
+    	}
+    	else{
 
 
-    	CompressionUtils::encodeNumeric(_rangeEncoder, _bankCountModel, abundancePerBank[0]);
 
-#else
 
-    	//u_int64_t deltaValue;
-    	//u_int8_t deltaType;
 
-    	int modelIndex = 0;
+			//u_int64_t deltaValue;
+			//u_int8_t deltaType;
 
-    	_banks.clear();
-    	//int nbBankCount;
-    	for(int bankId=0; bankId<abundancePerBank.size(); bankId++){
-    		if(abundancePerBank[bankId] > 0){
-    			_banks.push_back(bankId);
-    			//nbBankCount += 1;
-    		}
+			int modelIndex = 0;
+
+			_banks.clear();
+			//int nbBankCount;
+			for(int bankId=0; bankId<abundancePerBank.size(); bankId++){
+				if(abundancePerBank[bankId] > 0){
+					_banks.push_back(bankId);
+					//nbBankCount += 1;
+				}
+			}
+
+			//deltaType = CompressionUtils::getDeltaValue(nbBankCount, _lastNbBankCount, &deltaValue);
+			//_rangeEncoder.encode(_bankCountDeltaModel, deltaType);
+			//CompressionUtils::encodeNumeric(_rangeEncoder, _bankCountModel, deltaValue);
+			//_lastNbBankCount = nbBankCount;
+			CompressionUtils::encodeNumeric(_rangeEncoder, _bankCountModel, _banks.size());
+
+			int lastBankId = 0;
+
+			for(int bankId : _banks){
+
+				u_int16_t abundance = abundancePerBank[bankId];
+
+				//if(abundance == 0){
+
+				//}
+				//else{
+
+
+					if(modelIndex >= _bankModels.size()){
+						addField();
+					}
+
+					//deltaType = CompressionUtils::getDeltaValue(bankId, _lastBanks[modelIndex], &deltaValue);
+					//_rangeEncoder.encode(_bankDeltaModels[modelIndex], deltaType);
+					//CompressionUtils::encodeNumeric(_rangeEncoder, _bankModels[modelIndex], deltaValue);
+					//_lastBanks[modelIndex] = bankId;
+
+					CompressionUtils::encodeNumeric(_rangeEncoder, _bankModels[modelIndex], bankId - lastBankId);
+					lastBankId = bankId;
+
+					//deltaType = CompressionUtils::getDeltaValue(abundance, _lastAbundances[modelIndex], &deltaValue);
+					//_rangeEncoder.encode(_deltaModels[modelIndex], deltaType);
+					//CompressionUtils::encodeNumeric(_rangeEncoder, _abundanceModels[modelIndex], deltaValue);
+					//_lastAbundances[modelIndex] = abundance;
+					CompressionUtils::encodeNumeric(_rangeEncoder, _abundanceModels[modelIndex], abundance);
+
+					modelIndex += 1;
+
+					//}
+
+			}
     	}
 
-    	//deltaType = CompressionUtils::getDeltaValue(nbBankCount, _lastNbBankCount, &deltaValue);
-    	//_rangeEncoder.encode(_bankCountDeltaModel, deltaType);
-    	//CompressionUtils::encodeNumeric(_rangeEncoder, _bankCountModel, deltaValue);
-    	//_lastNbBankCount = nbBankCount;
-    	CompressionUtils::encodeNumeric(_rangeEncoder, _bankCountModel, _banks.size());
-
-    	int lastBankId = 0;
-
-    	for(int bankId : _banks){
-
-    		u_int16_t abundance = abundancePerBank[bankId];
-
-    		//if(abundance == 0){
-
-    		//}
-    		//else{
-
-
-            	if(modelIndex >= _bankModels.size()){
-            		addField();
-            	}
-
-            	//deltaType = CompressionUtils::getDeltaValue(bankId, _lastBanks[modelIndex], &deltaValue);
-            	//_rangeEncoder.encode(_bankDeltaModels[modelIndex], deltaType);
-            	//CompressionUtils::encodeNumeric(_rangeEncoder, _bankModels[modelIndex], deltaValue);
-            	//_lastBanks[modelIndex] = bankId;
-
-            	CompressionUtils::encodeNumeric(_rangeEncoder, _bankModels[modelIndex], bankId - lastBankId);
-            	lastBankId = bankId;
-
-            	//deltaType = CompressionUtils::getDeltaValue(abundance, _lastAbundances[modelIndex], &deltaValue);
-            	//_rangeEncoder.encode(_deltaModels[modelIndex], deltaType);
-            	//CompressionUtils::encodeNumeric(_rangeEncoder, _abundanceModels[modelIndex], deltaValue);
-            	//_lastAbundances[modelIndex] = abundance;
-            	CompressionUtils::encodeNumeric(_rangeEncoder, _abundanceModels[modelIndex], abundance);
-
-            	modelIndex += 1;
-
-            	//}
-
-
-    	}
-
-#endif
 
     	if(_rangeEncoder.getBufferSize() >= MAX_MEMORY_PER_BLOCK){
     		writeBlock();
@@ -288,6 +298,13 @@ public:
 		//_rangeEncoder.clear();
 		//clear();
 	}
+
+	u_int64_t getSizeByte(){
+		//cout << _outputFile->getPath() << endl;
+		//cout << System::file().getSize(_outputFile->getPath()) << endl;
+		return System::file().getSize(_outputFile->getPath());
+	}
+
 
 
 private:
@@ -318,13 +335,14 @@ public:
     /** */
     KmerCountCompressor(const string& outputDir, int nbPartitions, int nbBanks){
 
-    	_rootDir = outputDir + "/dsk_output/";
+    	_rootDir = outputDir; // + "/dsk_output/";
     	_nbPartitions = nbPartitions;
     	_nbBanks = nbBanks;
 
 		System::file().rmdir(_rootDir);
 		System::file().mkdir(_rootDir, -1);
 
+		cout << _rootDir << endl;
 		//cout << nbPartitions << endl;
 		for(int i=0; i<nbPartitions; i++){
 			KmerCountCompressorPartition<span>* comp = new KmerCountCompressorPartition<span>(_rootDir, i, nbBanks);
@@ -333,9 +351,22 @@ public:
     }
 
     ~KmerCountCompressor(){
+
+    	u_int64_t nbKmers = 0;
+    	u_int64_t size = 0;
+
     	for(KmerCountCompressorPartition<span>* comp : _partitionCompressors){
+    		comp->flush();
+    		nbKmers += comp->getNbKmers();
+    		size += comp->getSizeByte();
     		delete comp;
     	}
+
+
+		cout << "Compression statistics " << endl;
+		cout << "\tNb kmers: " << nbKmers << endl;
+		cout << "\tCompressed size: " << size << "B  -  " << size/MBYTE << " MB" << endl;
+		cout << "\tByte per kmer count: " << size / (float) nbKmers<< endl;
 
         IFile* outputFile = System::file().newFile(_rootDir + "/dsk_count_data", "wb");
         outputFile->print("%i %i", _nbPartitions, _nbBanks);
