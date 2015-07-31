@@ -237,7 +237,7 @@ public:
 
 			_banks.clear();
 			//int nbBankCount;
-			for(int bankId=0; bankId<abundancePerBank.size(); bankId++){
+			for(size_t bankId=0; bankId<abundancePerBank.size(); bankId++){
 				if(abundancePerBank[bankId] > 0){
 					_banks.push_back(bankId);
 					//nbBankCount += 1;
@@ -252,7 +252,9 @@ public:
 
 			int lastBankId = 0;
 
-			for(int bankId : _banks){
+			for(size_t i=0; i<_banks.size(); i++){
+
+				int bankId = _banks[i];
 
 				u_int16_t abundance = abundancePerBank[bankId];
 
@@ -362,7 +364,8 @@ public:
     	u_int64_t nbKmers = 0;
     	u_int64_t size = 0;
 
-    	for(KmerCountCompressorPartition<span>* comp : _partitionCompressors){
+    	for(size_t i=0; i<_partitionCompressors.size(); i++){
+    		KmerCountCompressorPartition<span>* comp = _partitionCompressors[i];
     		comp->flush();
     		nbKmers += comp->getNbKmers();
     		size += comp->getSizeByte();
