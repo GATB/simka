@@ -1,7 +1,7 @@
 #!/bin/bash
 #MSUB -r Counting
-#MSUB -T 259200
+#MSUB -T 86400
 #MSUB -q large
 #MSUB -A fg0001
-#MSUB -n 32
-#MSUB -Q long
+#MSUB -n 1
+#MSUB -Q normal
