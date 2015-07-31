@@ -10,6 +10,7 @@ SimkaPotara::SimkaPotara()  : Tool ("SimkaPotara")
 	//Kmer parser
     IOptionsParser* jobParser = new OptionsParser ("job");
 
+    jobParser->push_back (new OptionOneParam (STR_SIMKA_NB_PARTITIONS, "nb partitions", false, "0" ));
     jobParser->push_back (new OptionOneParam (STR_SIMKA_JOB_COUNT_COMMAND, "command to submit counting job", true ));
     jobParser->push_back (new OptionOneParam (STR_SIMKA_JOB_MERGE_COMMAND, "command to submit merging job", true ));
     jobParser->push_back (new OptionOneParam (STR_SIMKA_JOB_COUNT_FILENAME, "filename to the couting job", true ));
@@ -81,7 +82,7 @@ template<size_t span> struct Functor  {  void operator ()  (Parameter p)
 	simkaFusion->execute();
 	return;*/
 
-	SimkaFusion<span> simkaAlgorithm (p._props);
+	SimkaPotaraAlgorithm<span> simkaAlgorithm (p._props);
 	simkaAlgorithm.execute();
 
 	/*
