@@ -616,8 +616,8 @@ public:
     	//	cout << number << endl;
     	//}
 
-    	_nbPartitions = stoi(numbers[0]);
-    	_nbBanks = stoi(numbers[1]);
+    	_nbPartitions = atoi(numbers[0].c_str());
+    	_nbBanks = atoi(numbers[1].c_str());
 
     	//for(int i=0; i<_nbCores; i++)
 
