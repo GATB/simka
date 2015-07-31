@@ -122,6 +122,12 @@ public:
 		return _nbKmers;
 	}
 
+    static string toString(u_int64_t value){
+    	char buffer[40];
+    	snprintf(buffer, 30, "%llu", value);
+    	return string(buffer);
+    }
+
 protected:
 
     int _nbBanks;
@@ -165,7 +171,8 @@ public:
     KmerCountCompressorPartition(const string& outputDir, int partitionIndex, int nbBanks)
     : KmerCountCoder(nbBanks, partitionIndex)
     {
-    	_outputFile = System::file().newFile(outputDir + "/part_" + to_string(_partitionIndex), "wb");
+    	string filename = outputDir + "/part_" + KmerCountCoder::toString(_partitionIndex);
+    	_outputFile = System::file().newFile(filename.c_str(), "wb");
     }
 
     ~KmerCountCompressorPartition(){
@@ -440,7 +447,9 @@ public:
 
     	_nbDecodedKmers = 0;
     	_nbDecodedKmersProgress = 0;
-    	_inputFile = new ifstream((inputDir + "/part_" + to_string(_partitionIndex)).c_str(), ios::in|ios::binary);
+
+    	string filename = inputDir + "/part_" + KmerCountCoder::toString(_partitionIndex);
+    	_inputFile = new ifstream(filename.c_str(), ios::in|ios::binary);
 
     	_inputFile->seekg(0, _inputFile->end);
     	_rangeDecoder.setInputFile(_inputFile, true);
@@ -633,7 +642,8 @@ public:
 
     	for(int i=0; i<_nbPartitions; i++){
 
-    		ifstream* file = new ifstream((_inputDir + "/part_" + to_string(i)).c_str(), ios::in|ios::binary);
+    		string filename = _inputDir + "/part_" + KmerCountCoder::toString(i);
+    		ifstream* file = new ifstream(filename.c_str(), ios::in|ios::binary);
 
     		file->seekg(0, file->end);
     		rangeDecoder.setInputFile(file, true);

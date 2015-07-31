@@ -380,7 +380,7 @@ public:
     	void createProcessor(){
 
         	_stats = new SimkaStatistics(_nbBanks);
-        	_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, SIMKA_SOLID_KIND::SUM, false, 0);
+        	_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, SUM, false, 0);
         	_processor->use();
 
         	_processors.push_back(_processor->clone());

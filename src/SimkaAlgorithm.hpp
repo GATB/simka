@@ -1474,7 +1474,7 @@ struct SimkaSequenceFilter
 	//int* _datasetIndex;
 
 	SimkaSequenceFilter(size_t minReadSize, double minShannonIndex){
-
+		_maxNbReads = 0;
 		_nbReadProcessed = 0;
 		_minReadSize = minReadSize;
 		_minShannonIndex = minShannonIndex;
@@ -1580,6 +1580,7 @@ public:
      * \param[in] filter : functor that filters sequence.
      */
 	SimkaBankFiltered (IBank* ref, const Filter& filter, const vector<u_int64_t>& nbReadsPerDataset, u_int64_t nbReadToProcess) : BankDelegate (ref), _filter(filter)  {
+
 		_nbReadsPerDataset = nbReadsPerDataset;
 		_nbReadToProcess = nbReadToProcess;
 
