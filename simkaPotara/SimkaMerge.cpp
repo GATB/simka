@@ -166,6 +166,9 @@ private:
 };
 
 
+
+
+
 template<size_t span>
 class SimkaMergeAlgorithm : public Algorithm
 {
@@ -181,8 +184,7 @@ public:
 	Parameter& p;
 
 	SimkaMergeAlgorithm(Parameter& p) :
-		Algorithm("SimkaMergeAlgorithm", 1, p.props),
-	p(p)
+		Algorithm("SimkaMergeAlgorithm", 1, p.props), p(p)
 	{
 		_abundanceThreshold.first = 0;
 		_abundanceThreshold.second = 0;
@@ -192,7 +194,12 @@ public:
 		delete _progress;
 	}
 
+	pthread_t statThread;
+
+
+
 	void execute(){
+
 		removeStorage(p);
 
 		_partitiontId = p.partitionId;
@@ -307,6 +314,7 @@ public:
 						{
 							nbKmersProcessed += 1;
 							if(nbKmersProcessed > 500000){
+								//cout << "queue size:   " << pq.size() << endl;
 								//cout << nbKmersProcessed << endl;
 								_progress->inc(nbKmersProcessed);
 								nbKmersProcessed = 0;

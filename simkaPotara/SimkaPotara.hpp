@@ -15,7 +15,7 @@
 
 #include <gatb/kmer/impl/RepartitionAlgorithm.hpp>
 
-#define CLUSTER
+//#define CLUSTER
 //#define SERIAL
 #define SLEEP_TIME_SEC 1
 
@@ -487,8 +487,23 @@ public:
 	}
 
 	void createConfig(){
+
+		string filename = _outputDirTempFilter + "/" + "config.h5";
+		if(System::file().doesExist(filename)){
+			cout << "\t" << " config already exists (remove file " << filename << " to config again)" << endl;
+
+
+			Storage* storage = StorageFactory(STORAGE_HDF5).load (filename);
+			LOCAL (storage);
+			Configuration* config = new Configuration();
+			config->load(storage->getGroup(""));
+			_nbPartitions = config->_nb_partitions;
+
+			return;
+		}
+
 	    Storage* storage = 0;
-        storage = StorageFactory(STORAGE_HDF5).create (_outputDirTempFilter + "/" + "config.h5", true, false);
+        storage = StorageFactory(STORAGE_HDF5).create (filename, true, false);
         LOCAL (storage);
 
         IBank* bank = Bank::open(_outputDirTempFilter + "/input/" + _bankNames[0]);

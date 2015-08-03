@@ -145,8 +145,6 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 
 	//cout << kmer.toString(31) << endl;
 
-
-
 	//cout << endl;
 
 	if(_progress){ //Simka_min
@@ -155,8 +153,10 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 	}
 	else{
 
-		if(!isSolidVector(counts))
-			return false;
+		if(_abundanceThreshold.first > 1){
+			if(!isSolidVector(counts))
+				return false;
+		}
 
 		_localStats->_nbSolidKmers += 1;
 
@@ -201,28 +201,12 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 
 		CountNumber abundanceI = counts[i];
 
-
-
-		//_nbKmerCounted += abundanceI;
-		//_localStats->_nbKmers += abundanceI;
-		//_localStats->_nbKmersPerBank[i] += abundanceI;
-		//_totalAbundance += abundanceI;
-
-
-		/*
-		for(size_t j=i+1; j<counts.size(); j++){
-			CountNumber abundanceJ = counts[j];
-			updateBrayCurtis(i, abundanceI, j, abundanceJ);
-		}*/
-
 		if(abundanceI){
 			nbBanksThatHaveKmer += 1;
 			_localStats->_nbSolidDistinctKmersPerBank[i] += 1;
 			_localStats->_nbSolidKmersPerBank[i] += abundanceI;
 		}
 
-		//if(abundance < _abundanceMin) continue;
-		//bool done = false;
 
 		for(size_t j=i+1; j<counts.size(); j++){
 			CountNumber abundanceJ = counts[j];
@@ -238,32 +222,6 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 			}
 
 		}
-
-		/*
-
-		if(abundanceI){
-			//totalAbundance += abundanceI;
-			nbBanksThatHaveKmer += 1;
-			_localStats->_nbSolidDistinctKmersPerBank[i] += 1;
-			_localStats->_nbSolidKmersPerBank[i] += abundanceI;
-			//hasBankKmer[i] = true;
-
-			//if(kmerInBankCoupleAbundance.first == -1)
-			//	kmerInBankCoupleAbundance.first = abundance;
-			//else if(kmerInBankCoupleAbundance.second == -1)
-			//	kmerInBankCoupleAbundance.second = abundance;
-			for(size_t j=0; j<counts.size(); j++){
-
-				CountNumber abundanceJ = counts[j];
-
-				if(abundanceJ){
-					_localStats->_matrixNbSharedKmers[i][j] += abundanceI;
-					_localStats->_matrixNbDistinctSharedKmers[i][j] += 1;
-					//updateKullbackLeibler(i, abundanceI, j, abundanceJ);
-				}
-
-			}
-		}*/
 
 	}
 

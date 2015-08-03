@@ -15,7 +15,7 @@ matrix = {
 }
 
 
-def outputHeatmap(outputFilename, matrixAsymFilename):
+def outputHeatmap(outputFilename, matrixAsymFilename, matrixSymFilename):
 
 #asymFilename = matrixAsymFilename + _outputFilenameSuffix + ".csv";
 #	normFilename = matrixNormFilename + _outputFilenameSuffix + ".csv";
@@ -24,7 +24,7 @@ def outputHeatmap(outputFilename, matrixAsymFilename):
 #	print(matrixNormFilename)
 #	print(outputFilename)
 #command = "Rscript " +  heatmap_script_filename + " " + join(mat_input_dir, matrixAsymFilename) + " " + join(mat_input_dir, matrixNormFilename) + " " + join(mat_input_dir, outputFilename)
-	command = "Rscript " +  heatmap_script_filename + " " + join(mat_input_dir, matrixAsymFilename) + " " + join(mat_input_dir, outputFilename)
+	command = "Rscript " +  heatmap_script_filename + " " + join(mat_input_dir, matrixAsymFilename) + " " + join(mat_input_dir, matrixSymFilename) + " " + join(mat_input_dir, outputFilename)
 	print(command)
 #print command
 	os.system(command)
@@ -51,8 +51,8 @@ def createHeatmap():
 		#one version of the similairty function (sym)
 		if len(matrix_filenames) == 1:
 			#print("lala")
-			outputHeatmap("heatmap_" + method_name + ".pdf", matrix_filenames[0])
-			outputHclust("hclust_" + method_name + ".pdf", matrix_filenames[0])
+			outputHeatmap("heatmap_" + method_name + ".png", matrix_filenames[0], matrix_filenames[0])
+			outputHclust("hclust_" + method_name + ".png", matrix_filenames[0])
 		#two version of the similarity function (sym and asym)
 		else:
 			sym = ""
@@ -62,8 +62,8 @@ def createHeatmap():
 					asym = filename
 				else:
 					sym = filename
-			outputHeatmap("heatmap_" + method_name + ".pdf", asym)
-			outputHclust("hclust_" + method_name + ".pdf", sym)
+			outputHeatmap("heatmap_" + method_name + ".png", asym, sym)
+			outputHclust("hclust_" + method_name + ".png", sym)
 
 
 #outputHeatmap()
