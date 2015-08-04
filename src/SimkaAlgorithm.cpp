@@ -207,6 +207,7 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 			_localStats->_nbSolidKmersPerBank[i] += abundanceI;
 		}
 
+		u_int64_t bc;
 
 		for(size_t j=i+1; j<counts.size(); j++){
 			CountNumber abundanceJ = counts[j];
@@ -221,8 +222,9 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 				_localStats->_brayCurtisNumerator[j][i] += abundanceJ;
 			}*/
 			//updateBrayCurtis(i, abundanceI, j, abundanceJ);
-			_localStats->_brayCurtisNumerator[i][j] += min(abundanceI, abundanceJ);
-			_localStats->_brayCurtisNumerator[j][i] += min(abundanceI, abundanceJ);
+			bc = min(abundanceI, abundanceJ);
+			_localStats->_brayCurtisNumerator[i][j] += bc;
+			_localStats->_brayCurtisNumerator[j][i] += bc;
 
 			if(abundanceI && abundanceJ){
 				_localStats->_matrixNbSharedKmers[i][j] += abundanceI;
