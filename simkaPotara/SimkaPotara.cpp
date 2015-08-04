@@ -1,7 +1,12 @@
 
 #include "SimkaPotara.hpp"
 
+/*
+TODO:
+	- Faire la config dans un job a part (job_count.bash) pour avoir la même config pour les job de comptage et la config
+	- Verifier les paramètre passer au jobs généré (nbcores, maxmemory...)
 
+*/
 SimkaPotara::SimkaPotara()  : Tool ("SimkaPotara")
 {
 
