@@ -210,8 +210,19 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 
 		for(size_t j=i+1; j<counts.size(); j++){
 			CountNumber abundanceJ = counts[j];
-			updateBrayCurtis(i, abundanceI, j, abundanceJ);
 
+			/*
+			if(abundanceI < abundanceJ){
+				_localStats->_brayCurtisNumerator[i][j] += abundanceI;
+				_localStats->_brayCurtisNumerator[j][i] += abundanceI;
+			}
+			else{
+				_localStats->_brayCurtisNumerator[i][j] += abundanceJ;
+				_localStats->_brayCurtisNumerator[j][i] += abundanceJ;
+			}*/
+			//updateBrayCurtis(i, abundanceI, j, abundanceJ);
+			_localStats->_brayCurtisNumerator[i][j] += min(abundanceI, abundanceJ);
+			_localStats->_brayCurtisNumerator[j][i] += min(abundanceI, abundanceJ);
 
 			if(abundanceI && abundanceJ){
 				_localStats->_matrixNbSharedKmers[i][j] += abundanceI;
