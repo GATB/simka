@@ -24,6 +24,9 @@
 #include <gatb/gatb_core.hpp>
 #include<stdio.h>
 
+//#define BOOTSTRAP
+#define MAX_BOOTSTRAP 50
+#define NB_BOOTSTRAP 45
 //#define SIMKA_FUSION
 //#define MULTI_PROCESSUS
 //#define MULTI_DISK
@@ -1473,12 +1476,26 @@ struct SimkaSequenceFilter
 	//int* _bankIndex;
 	//int* _datasetIndex;
 
+
 	SimkaSequenceFilter(size_t minReadSize, double minShannonIndex){
 		_maxNbReads = 0;
 		_nbReadProcessed = 0;
 		_minReadSize = minReadSize;
 		_minShannonIndex = minShannonIndex;
 	}
+
+#ifdef BOOTSTRAP
+	vector<bool> _bootstraps;
+
+
+	void setBootstrap(vector<bool>& bootstraps){
+		_bootstraps = bootstraps;
+		//for(size_t i=0; i<_bootstraps.size(); i++)
+		//	cout << _bootstraps[i];
+		//cout << endl << endl;
+	}
+
+#endif
 
 	void setMaxReads(u_int64_t maxReads){
 		_maxNbReads = maxReads;
@@ -1492,11 +1509,20 @@ struct SimkaSequenceFilter
 			}
 		}
 
+
+#ifdef BOOTSTRAP
+		int readPerBootstrap = _maxNbReads / MAX_BOOTSTRAP;
+		int bootstrapIndex = seq.getIndex() / readPerBootstrap;
+		if(!_bootstraps[bootstrapIndex]) return false;
+		//cout << bootstrapIndex << endl;
+#endif
+
 		if(!isReadSizeValid(seq))
 			return false;
 
 		if(!isShannonIndexValid(seq))
 			return false;
+
 
 		//cout << _nbReadProcessed << endl;
 		_nbReadProcessed += 1;
@@ -1587,7 +1613,7 @@ public:
 		ref->estimate(_numberRef, _totalSizeRef, _maxSizeRef);
 	}
 
-
+	/*
     void estimate (u_int64_t& number, u_int64_t& totalSize, u_int64_t& maxSize){
 
     	number = _nbReadToProcess;
@@ -1603,7 +1629,7 @@ public:
     	//number = _nbReadToProcess;
     	//totalSize = _nbReadToProcess*readSize;
     	//maxSize = readSize;
-    }
+    }*/
 
     /** \copydoc tools::collections::Iterable::iterator */
     Iterator<Sequence>* iterator ()
@@ -1642,6 +1668,24 @@ public:
             		SimkaTruncateIterator<Sequence>* truncIt = new SimkaTruncateIterator<Sequence>(iterators[i], _nbReadsPerDataset[i] + _nbReadsPerDataset[i]/5);
             		Filter filter(_filter);
             		filter.setMaxReads(_nbReadsPerDataset[i]);
+
+#ifdef BOOTSTRAP
+
+            		srand (time(NULL));
+            		size_t nbBootstrap = 0;
+            		vector<bool> iSBoostrap(MAX_BOOTSTRAP);
+
+            		while(nbBootstrap != NB_BOOTSTRAP){
+            			int index = rand() % iSBoostrap.size();
+
+            			if(!iSBoostrap[index]){
+            				iSBoostrap[index] = true;
+            				nbBootstrap += 1;
+            			}
+            		}
+            		filter.setBootstrap(iSBoostrap);
+
+#endif
                 	FilterIterator<Sequence,Filter>* filterIt = new FilterIterator<Sequence,Filter> (truncIt, filter);
                 	iterators[i] = filterIt;
 

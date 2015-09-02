@@ -862,6 +862,7 @@ void SimkaAlgorithm<span>::createBank(){
 		_nbReadsPerDataset.push_back( ceil(_maxNbReads / (float)(_nbBankPerDataset[i])) );
 	}
 
+
 	SimkaSequenceFilter sequenceFilter(_minReadSize, _minReadShannonIndex);
 
 
@@ -870,6 +871,7 @@ void SimkaAlgorithm<span>::createBank(){
 
 
 	//cout << bank->estimateNbItems() << endl;
+
 
 
 }
