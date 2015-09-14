@@ -23,7 +23,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-options(echo=TRUE) # if you want see commands in output file
+#options(echo=TRUE) # if you want see commands in output file
 args <- commandArgs(trailingOnly = TRUE)
 png(file=args[2],width=800,height=800,res=100)
 cr3 = as.matrix(read.table(file=args[1], sep=";", header=TRUE, row.names=1))

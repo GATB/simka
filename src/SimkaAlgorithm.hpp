@@ -40,6 +40,8 @@ const string STR_SIMKA_MIN_READ_SHANNON_INDEX = "-read-shannon-index";
 const string STR_SIMKA_MIN_KMER_SHANNON_INDEX = "-kmer-shannon-index";
 const string STR_KMER_PER_READ = "-kmer-per-read";
 
+const string STR_SIMKA_DISTANCE_BRAYCURTIS = "-bray-curtis";
+
 enum SIMKA_SOLID_KIND{
 	RANGE,
 	SUM,
@@ -51,6 +53,18 @@ typedef u_int16_t bankIdType;
 //#define IX(rad) ((rad)+(256))
 #define IX(rad) ((rad))
 
+class SimkaDistanceParam{
+
+public:
+
+	SimkaDistanceParam(){}
+
+	SimkaDistanceParam(IProperties* params){
+		_computeBrayCurtis = params->get(STR_SIMKA_DISTANCE_BRAYCURTIS);
+	}
+
+    bool _computeBrayCurtis;
+};
 
 template<typename Type>
 class Disk{
@@ -1435,9 +1449,9 @@ public:
     typedef typename Kmer<span>::Type  Type;
     //typedef typename Kmer<span>::Count Count;
 
-	SimkaCountProcessor(SimkaStatistics& stats, size_t nbBanks, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, IteratorListener* progress);
+	SimkaCountProcessor(SimkaStatistics& stats, size_t nbBanks, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, IteratorListener* progress, const SimkaDistanceParam& distanceParams);
 	~SimkaCountProcessor();
-    CountProcessorAbstract<span>* clone ()  {  return new SimkaCountProcessor (_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle, _progress);  }
+    CountProcessorAbstract<span>* clone ()  {  return new SimkaCountProcessor (_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle, _progress, _distanceParams);  }
 	//CountProcessorAbstract<span>* clone ();
 	void finishClones (vector<ICountProcessor<span>*>& clones);
 	void finishClone(SimkaCountProcessor<span>* clone);
@@ -1465,7 +1479,7 @@ private:
     u_int64_t _totalAbundance;
 
     u_int64_t _nbKmerCounted;
-
+    SimkaDistanceParam _distanceParams;
 };
 
 struct SimkaSequenceFilter
@@ -1702,6 +1716,8 @@ private:
     Filter _filter;
     u_int64_t _nbReadToProcess;
 };
+
+
 
 
 

@@ -76,7 +76,13 @@ def createHeatmap():
 args = sys.argv
 
 mat_input_dir = args[1]
-rscript_dir = args[2]
+
+
+try:
+	rscript_dir = args[2]
+except:
+	rscript_dir = os.path.dirname(os.path.realpath(__file__))
+
 heatmap_script_filename = join(rscript_dir, "heatmap.r")
 hclust_script_filename = join(rscript_dir, "dendro.r")
 

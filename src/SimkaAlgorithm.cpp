@@ -25,7 +25,7 @@ static const char* strProgressCounting =      "Simka: Step 2: counting kmers  ";
 
 
 template<size_t span>
-SimkaCountProcessor<span>::SimkaCountProcessor (SimkaStatistics& stats, size_t nbBanks, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, IteratorListener* progress) :
+SimkaCountProcessor<span>::SimkaCountProcessor (SimkaStatistics& stats, size_t nbBanks, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, IteratorListener* progress, const SimkaDistanceParam& distanceParams) :
 _progress(progress), _stats(stats)
 {
 
@@ -38,6 +38,7 @@ _progress(progress), _stats(stats)
 	_soliditySingle = soliditySingle;
 
 	_localStats = new SimkaStatistics(_nbBanks);
+	_distanceParams = distanceParams;
 
 	_nbKmerCounted = 0;
 }
@@ -222,9 +223,12 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 				_localStats->_brayCurtisNumerator[j][i] += abundanceJ;
 			}*/
 			//updateBrayCurtis(i, abundanceI, j, abundanceJ);
-			bc = min(abundanceI, abundanceJ);
-			_localStats->_brayCurtisNumerator[i][j] += bc;
-			_localStats->_brayCurtisNumerator[j][i] += bc;
+
+			if(_distanceParams._computeBrayCurtis){
+				bc = min(abundanceI, abundanceJ);
+				_localStats->_brayCurtisNumerator[i][j] += bc;
+				_localStats->_brayCurtisNumerator[j][i] += bc;
+			}
 
 			if(abundanceI && abundanceJ){
 				_localStats->_matrixNbSharedKmers[i][j] += abundanceI;
@@ -609,7 +613,8 @@ void SimkaAlgorithm<span>::executeSimkamin() {
 
 
 	_stats = new SimkaStatistics(_nbBanks);
-    _processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle, _progress);
+	SimkaDistanceParam distanceParams(_options);
+    _processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle, _progress, distanceParams);
     _processor->use();
 
     MemAllocator pool (_nbCores);
@@ -884,7 +889,8 @@ void SimkaAlgorithm<span>::count(){
 	SortingCountAlgorithm<span> sortingCount (_banks, _options);
 
 	// We create a custom count processor and give it to the sorting count algorithm
-	_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle, _progress);
+	SimkaDistanceParam distanceParams(_options);
+	_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle, _progress, distanceParams);
 	_processor->use();
 	sortingCount.addProcessor (_processor);
 

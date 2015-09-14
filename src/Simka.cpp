@@ -66,9 +66,15 @@ IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
     coreParser->push_back(dskParser->getParser (STR_MAX_MEMORY));
     coreParser->push_back(dskParser->getParser (STR_MAX_DISK));
 
+    //Distances
+    IOptionsParser* distanceParser = new OptionsParser ("distances");
+    distanceParser->push_back (new OptionNoParam (STR_SIMKA_DISTANCE_BRAYCURTIS.c_str(), "compute Bray Curtis distance"));
+
+
 	parser->push_back(kmerParser);
 	parser->push_back(readParser);
 	parser->push_back(coreParser);
+	parser->push_back(distanceParser);
 
 
     return parser;

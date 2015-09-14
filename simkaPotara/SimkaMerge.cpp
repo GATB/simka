@@ -212,7 +212,7 @@ public:
 		//}
 
 		_nbBanks = _datasetIds.size();
-		createProcessor();
+		createProcessor(p);
 
 		vector<StorageIt<span>*> its;
 		//vector<Partition<Count>*> partitions;
@@ -386,10 +386,11 @@ public:
 		delete inputFile;
 	}
 
-	void createProcessor(){
+	void createProcessor(Parameter& p){
 
 		_stats = new SimkaStatistics(_nbBanks);
-		_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, SUM, false, 0);
+		SimkaDistanceParam distanceParams(p.props);
+		_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, SUM, false, 0, distanceParams);
 		_processor->use();
 
 		_processors.push_back(_processor->clone());

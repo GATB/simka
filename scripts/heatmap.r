@@ -26,7 +26,7 @@ if (!require("gplots")) {
    install.packages("gplots", dependencies = TRUE)
    library(gplots)
    }
-options(echo=TRUE) # if you want see commands in output file
+#options(echo=TRUE) # if you want see commands in output file
 args <- commandArgs(trailingOnly = TRUE)
 png(file=args[3],width=800,height=800,res=65)
 n=100 # number of steps between 2 colors
@@ -57,7 +57,7 @@ palette=colorRampPalette(c("green", "yellow", "red", "brown", "grey23"))(n = 5*n
  cr3_norm = as.matrix(read.table(file=args[2], sep=";", header=TRUE, row.names=1))
  inv_cr3 = matrix(trueMax, ncol=dim(cr3_norm)[1], nrow=dim(cr3_norm)[1]) - cr3_norm
  distance    = dist(inv_cr3)
- cluster     = hclust(distance)
+ cluster     = hclust(distance, method="ward")
  dendrogram  = as.dendrogram(cluster)
  
  
