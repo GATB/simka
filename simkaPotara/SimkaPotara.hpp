@@ -1,9 +1,23 @@
-/*
- * SimkaFusion.hpp
+/*****************************************************************************
+ *   Simka: Fast kmer-based method for estimating the similarity between numerous metagenomic datasets
+ *   A tool from the GATB (Genome Assembly Tool Box)
+ *   Copyright (C) 2015  INRIA
+ *   Authors: G.Benoit, C.Lemaitre, P.Peterlongo
  *
- *  Created on: 22 juil. 2015
- *      Author: gbenoit
- */
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *****************************************************************************/
+
 
 #ifndef TOOLS_SIMKA_SRC_SIMKAFUSION_HPP_
 #define TOOLS_SIMKA_SRC_SIMKAFUSION_HPP_
@@ -177,26 +191,18 @@ public:
 		}
 
 		_banksInputFilename = _inputFilename + "_dsk_dataset_temp__";
-		IFile* inputFile = System::file().newFile(_inputFilename, "rb");
+		ifstream inputFile(_inputFilename.c_str());
 		IFile* bankFile = System::file().newFile(_banksInputFilename, "wb");
-
-		inputFile->seeko(0, SEEK_END);
-		u_int64_t size = inputFile->tell();
-		inputFile->seeko(0, SEEK_SET);
-		char buffer2[size];
-		inputFile->fread(buffer2, size, size);
-		string fileContents(buffer2, size);
 
 		string line;
 		string linePart;
 		vector<string> linePartList;
-		stringstream fileContentsStream(fileContents);
 
 		string bankFileContents = "";
 
 		u_int64_t lineIndex = 0;
 
-		while(getline(fileContentsStream, line)){
+		while(getline(inputFile, line)){
 
 			if(line == "") continue;
 
@@ -269,7 +275,7 @@ public:
 
 		bankFile->fwrite(bankFileContents.c_str(), bankFileContents.size(), 1);
 
-		delete inputFile;
+		inputFile.close();
 		bankFile->flush();
 		delete bankFile;
 
@@ -292,29 +298,23 @@ public:
 		//	cout << endl << "Creating input" << endl;
 		//}
 
-		IFile* inputFile = System::file().newFile(_inputFilename, "rb");
+		ifstream inputFile(_inputFilename.c_str());
+
 
 		//Hold dataset ids
 		string datasetIdFilename = _outputDirTempFilter + "/" + "datasetIds";
 		IFile* datasetIdFile = System::file().newFile(datasetIdFilename, "wb");
 
-		inputFile->seeko(0, SEEK_END);
-		u_int64_t size = inputFile->tell();
-		inputFile->seeko(0, SEEK_SET);
-		char buffer2[size];
-		inputFile->fread(buffer2, size, size);
-		string fileContents(buffer2, size);
 
 		string line;
 		string linePart;
 		vector<string> linePartList;
-		stringstream fileContentsStream(fileContents);
 
 		//string bankFileContents = "";
 
 		u_int64_t lineIndex = 0;
 
-		while(getline(fileContentsStream, line)){
+		while(getline(inputFile, line)){
 
 			if(line == "") continue;
 
@@ -393,7 +393,7 @@ public:
 		//bankFile->fwrite(bankFileContents.c_str(), bankFileContents.size(), 1);
 		datasetIdFile->flush();
 		delete datasetIdFile;
-		delete inputFile;
+		inputFile.close();
 		//bankFile->flush();
 		//delete bankFile;
 

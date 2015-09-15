@@ -737,26 +737,19 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 		cout << endl << "Creating input" << endl;
 	}
 
-	IFile* inputFile = System::file().newFile(_inputFilename, "rb");
+	_banksInputFilename = _inputFilename + "_dsk_dataset_temp__";
+	ifstream inputFile(_inputFilename.c_str());
 	IFile* bankFile = System::file().newFile(_banksInputFilename, "wb");
-
-	inputFile->seeko(0, SEEK_END);
-	u_int64_t size = inputFile->tell();
-	inputFile->seeko(0, SEEK_SET);
-	char buffer2[size];
-	inputFile->fread(buffer2, size, size);
-	string fileContents(buffer2, size);
 
 	string line;
 	string linePart;
 	vector<string> linePartList;
-	stringstream fileContentsStream(fileContents);
 
 	string bankFileContents = "";
 
 	u_int64_t lineIndex = 0;
 
-	while(getline(fileContentsStream, line)){
+	while(getline(inputFile, line)){
 
 		if(line == "") continue;
 
@@ -829,7 +822,8 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 
 	bankFile->fwrite(bankFileContents.c_str(), bankFileContents.size(), 1);
 
-	delete inputFile;
+	inputFile.close();
+	//delete inputFile;
 	bankFile->flush();
 	delete bankFile;
 
