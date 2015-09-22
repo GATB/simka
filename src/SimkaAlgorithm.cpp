@@ -343,6 +343,7 @@ _progress (0), _tmpPartitionsStorage(0), _tmpPartitions(0)
 	_minReadShannonIndex = std::max(_minReadShannonIndex, 0.0);
 	_minReadShannonIndex = std::min(_minReadShannonIndex, 2.0);
 
+
 	//string maxDisk = "";
 	//if(_options->get(STR_MAX_DISK)){
 	//	maxDisk = _options->getStr(STR_MAX_DISK);
@@ -403,6 +404,14 @@ SimkaAlgorithm<span>::~SimkaAlgorithm() {
 
 template<size_t span>
 void SimkaAlgorithm<span>::execute() {
+
+	if(!System::file().doesExist(_outputDir)){
+		int ok = System::file().mkdir(_outputDir, -1);
+		if(ok != 0){
+	        std::cout << "Error: can't create output directory (" << _outputDir << ")" << std::endl;
+	        return;
+		}
+	}
 
 	if(_nbMinimizers > 0){
 		executeSimkamin();

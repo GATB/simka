@@ -139,6 +139,7 @@ public:
 
 		_nbAskedPartitions = _options->getInt(STR_SIMKA_NB_PARTITIONS);
 
+
 		//string solidFilename = _outputDir + "/solid/" +  p.bankName + suffix + ".h5";
 
 		//cout << "SimkaFusion constructor       " << _outputDirTempFilter << endl;
@@ -152,6 +153,13 @@ public:
 
 	void execute(){
 
+		if(!System::file().doesExist(_outputDir)){
+			int ok = System::file().mkdir(_outputDir, -1);
+			if(ok != 0){
+		        std::cout << "Error: can't create output directory (" << _outputDir << ")" << std::endl;
+		        return;
+			}
+		}
 
 		//System::file().rmdir(_outputDirTemp + "/input/");
 		//System::file().rmdir(_outputDirTemp + "/solid/");
