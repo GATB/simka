@@ -270,7 +270,7 @@ public:
 				subBankFile->flush();
 				delete subBankFile;
 
-				bankFileContents += System::file().getBaseName(subBankFilename) + "\n";
+				bankFileContents += subBankFilename + "\n";
 				_nbBankPerDataset.push_back(linePartList.size() - 1); //linePartList.size() - 1 = nb sub banks
 				//_nbReadsPerDataset.push_back(ceil(_maxNbReads / (float)()));
 			}
@@ -828,14 +828,16 @@ public:
 		cout << endl << "Computing stats..." << endl;
 		cout << _nbBanks << endl;
 
-		SimkaStatistics mainStats(_nbBanks);
+
+		SimkaDistanceParam distanceParams(_options);
+		SimkaStatistics mainStats(_nbBanks, distanceParams);
 
 		for(size_t i=0; i<_nbPartitions; i++){
 
 			Storage* storage = StorageFactory(STORAGE_HDF5).load (_outputDirTempFilter + "/stats/part_" + SimkaAlgorithm<>::toString(i) + ".stats");
 			LOCAL (storage);
 
-			SimkaStatistics stats(_nbBanks);
+			SimkaStatistics stats(_nbBanks, distanceParams);
 			stats.load(storage->getGroup(""));
 
 			cout << stats._nbKmers << endl;

@@ -404,9 +404,9 @@ public:
 
 	void createProcessor(Parameter& p){
 
-		_stats = new SimkaStatistics(_nbBanks);
 		SimkaDistanceParam distanceParams(p.props);
-		_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, SUM, false, 0, distanceParams);
+		_stats = new SimkaStatistics(_nbBanks, distanceParams);
+		_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, SUM, false, 0);
 		_processor->use();
 
 		_processors.push_back(_processor->clone());

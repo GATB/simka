@@ -2,17 +2,16 @@
 #python create_heatmaps.py matrixFolder simkaRscriptFolder
 import os
 from os import listdir
-from os.path import isfile, join
+from os.path import isfile, join, splitext
 import sys
 
-
-matrix = {
-"presenceAbsence_sorensen": [],
-"presenceAbsence_jaccard": [],
-"abundance_jaccard": [],
-"abundance_brayCurtis": [],
-"compareads": [],
-}
+matrix = {}
+#matrix = {
+#"presenceAbsence_sorensen": [],
+#"presenceAbsence_jaccard": [],
+#"abundance_jaccard": [],
+#"abundance_brayCurtis": [],
+#}
 
 
 def outputHeatmap(outputFilename, matrixAsymFilename, matrixSymFilename):
@@ -36,23 +35,31 @@ def outputHclust(outputFilename, matrixNormFilename):
 	#print command
 	os.system(command)
 
-def createHeatmap():
+def execute():
 	files = [ f for f in listdir(mat_input_dir) if isfile(join(mat_input_dir,f))]
 	for filename in files:
 		if not ".csv" in filename: continue
-		for method_name in matrix.keys():
+		if "asym" in filename: continue
+		method_name = splitext(filename)[0]
+		method_name = method_name.replace("mat_", "")
+		try:
+			matrix[method_name].append(filename)
+		except:
+			matrix[method_name] = []
+			matrix[method_name].append(filename)
+		#for method_name in matrix.keys():
 			#print(filename, method_name)
-			if method_name in filename:
-				matrix[method_name].append(filename)
-				break
+			#if method_name in filename:
+				#matrix[method_name].append(filename)
+				#break
 
 	for method_name, matrix_filenames in matrix.items():
 		print("")
 		#one version of the similairty function (sym)
 		if len(matrix_filenames) == 1:
 			#print("lala")
-			outputHeatmap("heatmap_" + method_name + ".png", matrix_filenames[0], matrix_filenames[0])
-			outputHclust("hclust_" + method_name + ".png", matrix_filenames[0])
+			outputHeatmap("heatmap_" + method_name + ".pdf", matrix_filenames[0], matrix_filenames[0])
+			outputHclust("hclust_" + method_name + ".pdf", matrix_filenames[0])
 		#two version of the similarity function (sym and asym)
 		else:
 			sym = ""
@@ -62,8 +69,8 @@ def createHeatmap():
 					asym = filename
 				else:
 					sym = filename
-			outputHeatmap("heatmap_" + method_name + ".png", asym, sym)
-			outputHclust("hclust_" + method_name + ".png", sym)
+			outputHeatmap("heatmap_" + method_name + ".pdf", asym, sym)
+			outputHclust("hclust_" + method_name + ".pdf", sym)
 
 
 #outputHeatmap()
@@ -86,4 +93,4 @@ except:
 heatmap_script_filename = join(rscript_dir, "heatmap.r")
 hclust_script_filename = join(rscript_dir, "dendro.r")
 
-createHeatmap()
+execute()

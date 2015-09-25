@@ -25,9 +25,10 @@
 
 #options(echo=TRUE) # if you want see commands in output file
 args <- commandArgs(trailingOnly = TRUE)
-png(file=args[2],width=800,height=800,res=100)
+#png(file=args[2],width=800,height=800,res=100)
+pdf(file=args[2])
 cr3 = as.matrix(read.table(file=args[1], sep=";", header=TRUE, row.names=1))
 inv_cr3 = matrix(100, ncol=dim(cr3)[1], nrow=dim(cr3)[1]) - cr3
 Commet_distance = as.dist(inv_cr3)
 dendo_cr3 = hclust(Commet_distance)
-plot(dendo_cr3, main="Commet normalized analysis", sub = NA, xlab = paste("Complete clusterization of ",args[1]))
+plot(dendo_cr3, main="Commet normalized analysis", cex = 0.5, sub = NA, xlab = paste("Complete clusterization of ",args[1]))

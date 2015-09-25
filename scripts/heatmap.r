@@ -28,7 +28,8 @@ if (!require("gplots")) {
    }
 #options(echo=TRUE) # if you want see commands in output file
 args <- commandArgs(trailingOnly = TRUE)
-png(file=args[3],width=800,height=800,res=65)
+#png(file=args[3],width=800,height=800,res=65)
+pdf(file=args[3])
 n=100 # number of steps between 2 colors
 cr3 = as.matrix(read.table(file=args[1], sep=";", header=TRUE, row.names=1))
 
@@ -63,14 +64,14 @@ palette=colorRampPalette(c("green", "yellow", "red", "brown", "grey23"))(n = 5*n
  
  heatmap.2(cr3,
  trace = "none",
- dendrogram = "none",
+ dendrogram = "row",
  key = FALSE,
   Rowv=dendrogram,
   Colv = rev(dendrogram),
  col=palette,
  breaks = breaks,
  margins=c(10,10),
- main = args[4])
+ main = args[4], cexRow = 0.3, cexCol = 0.3)
 
 par(fig=c(0.05,0.4,0.8,1), new=TRUE)
 

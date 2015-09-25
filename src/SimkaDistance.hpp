@@ -23,6 +23,10 @@
 
 #include <gatb/gatb_core.hpp>
 
+
+const string STR_SIMKA_DISTANCE_BRAYCURTIS = "-bray-curtis";
+
+
 typedef vector<u_int16_t> SpeciesAbundanceVectorType;
 
 enum SIMKA_MATRIX_TYPE{
@@ -35,11 +39,25 @@ enum SIMKA_PRESENCE_ABUNDANCE{
 	ABUNDANCE,
 };
 
+class SimkaDistanceParam{
+
+public:
+
+	SimkaDistanceParam(){}
+
+	SimkaDistanceParam(IProperties* params){
+		_computeBrayCurtis = params->get(STR_SIMKA_DISTANCE_BRAYCURTIS);
+	}
+
+    bool _computeBrayCurtis;
+};
+
+
 class SimkaStatistics{
 
 public:
 
-	SimkaStatistics(size_t nbBanks);
+	SimkaStatistics(size_t nbBanks, SimkaDistanceParam& distanceParams);
 	SimkaStatistics& operator+=  (const SimkaStatistics& other);
 	void print();
 	void load(Group& group);
@@ -70,6 +88,7 @@ public:
 	u_int64_t _nbDistinctKmers;
 	u_int64_t _nbSolidKmers;
 
+	SimkaDistanceParam _distanceParams;
 	//u_int64_t _nbKmersInCoupleBankSupRatio;
 
 	//unordered_map<string, histo_t> _histos;
@@ -84,7 +103,7 @@ class SimkaDistance {
 
 public:
 
-	SimkaDistance(SimkaStatistics& stats);
+	SimkaDistance(SimkaStatistics& stats, SimkaDistanceParam& distanceParams);
 	//virtual ~SimkaDistance();
 
 	//vector<vector<float> > getMatrixSorensen(SIMKA_MATRIX_TYPE type);
@@ -97,10 +116,13 @@ public:
     vector<vector<float> > _matrixAsymJaccardPresenceAbsence;
     vector<vector<float> > _matrixSymJaccardAbundance;
     vector<vector<float> > _matrixAsymJaccardAbundance;
-    vector<vector<float> > _matrixSymSorensen;
+    vector<vector<float> > _matrix_presenceAbsence_sorensen;
     vector<vector<float> > _matrixAsymSorensen;
     vector<vector<float> > _matrixBrayCurtis;
     //vector<vector<float> > _matrixKullbackLeibler;
+
+    vector<vector<float> > _matrix_presenceAbsence_Whittaker;
+    vector<vector<float> > _matrix_presenceAbsence_kulczynski;
 
 private:
 
@@ -109,13 +131,16 @@ private:
 	void get_abc(size_t bank1, size_t bank2, u_int64_t& a, u_int64_t& b, u_int64_t& c);
     //void get_abc(SpeciesAbundanceVectorType& X, SpeciesAbundanceVectorType& Y, u_int64_t& a, u_int64_t& b, u_int64_t& c);
     double jaccardSimilarity(size_t i, size_t j, SIMKA_MATRIX_TYPE type, SIMKA_PRESENCE_ABUNDANCE presenceOrAbundance);
-    double sorensenSimilarity(u_int64_t& a, u_int64_t& b, u_int64_t& c, size_t i, size_t j, SIMKA_MATRIX_TYPE type);
     double brayCurtisSimilarity(size_t bank1, size_t bank2);
     //double kullbackLeibler(SpeciesAbundanceVectorType& X, SpeciesAbundanceVectorType& Y);
 	//void outputMatrix();
 
+    double distance_presenceAbsence_sorensen(u_int64_t& ua, u_int64_t& ub, u_int64_t& uc);
+    double distance_presenceAbsence_whittaker(u_int64_t& ua, u_int64_t& ub, u_int64_t& uc);
+    double distance_presenceAbsence_kulczynski(u_int64_t& ua, u_int64_t& ub, u_int64_t& uc);
 
 	SimkaStatistics& _stats;
+	SimkaDistanceParam _distanceParams;
 	size_t _nbBanks;
 
 };

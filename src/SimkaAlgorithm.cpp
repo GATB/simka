@@ -25,7 +25,7 @@ static const char* strProgressCounting =      "Simka: Step 2: counting kmers  ";
 
 
 template<size_t span>
-SimkaCountProcessor<span>::SimkaCountProcessor (SimkaStatistics& stats, size_t nbBanks, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, IteratorListener* progress, const SimkaDistanceParam& distanceParams) :
+SimkaCountProcessor<span>::SimkaCountProcessor (SimkaStatistics& stats, size_t nbBanks, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, IteratorListener* progress) :
 _progress(progress), _stats(stats)
 {
 
@@ -37,8 +37,7 @@ _progress(progress), _stats(stats)
 	_solidKind = solidKind;
 	_soliditySingle = soliditySingle;
 
-	_localStats = new SimkaStatistics(_nbBanks);
-	_distanceParams = distanceParams;
+	_localStats = new SimkaStatistics(_nbBanks, _stats._distanceParams);
 
 	_nbKmerCounted = 0;
 }
@@ -224,7 +223,7 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 			}*/
 			//updateBrayCurtis(i, abundanceI, j, abundanceJ);
 
-			if(_distanceParams._computeBrayCurtis){
+			if(_stats._distanceParams._computeBrayCurtis){
 				bc = min(abundanceI, abundanceJ);
 				_localStats->_brayCurtisNumerator[i][j] += bc;
 				_localStats->_brayCurtisNumerator[j][i] += bc;
@@ -621,9 +620,9 @@ void SimkaAlgorithm<span>::executeSimkamin() {
     _progress->init ();
 
 
-	_stats = new SimkaStatistics(_nbBanks);
 	SimkaDistanceParam distanceParams(_options);
-    _processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle, _progress, distanceParams);
+	_stats = new SimkaStatistics(_nbBanks, distanceParams);
+    _processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle, _progress);
     _processor->use();
 
     MemAllocator pool (_nbCores);
@@ -818,7 +817,7 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 			subBankFile->flush();
 			delete subBankFile;
 
-			bankFileContents += System::file().getBaseName(subBankFilename) + "\n";
+			bankFileContents += subBankFilename + "\n";
 			_nbBankPerDataset.push_back(linePartList.size() - 1); //linePartList.size() - 1 = nb sub banks
 			//_nbReadsPerDataset.push_back(ceil(_maxNbReads / (float)()));
 		}
@@ -887,13 +886,14 @@ void SimkaAlgorithm<span>::createBank(){
 template<size_t span>
 void SimkaAlgorithm<span>::count(){
 
-	_stats = new SimkaStatistics(_nbBanks);
+	SimkaDistanceParam distanceParams(_options);
+
+	_stats = new SimkaStatistics(_nbBanks, distanceParams);
 
 	SortingCountAlgorithm<span> sortingCount (_banks, _options);
 
 	// We create a custom count processor and give it to the sorting count algorithm
-	SimkaDistanceParam distanceParams(_options);
-	_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle, _progress, distanceParams);
+	_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle, _progress);
 	_processor->use();
 	sortingCount.addProcessor (_processor);
 
