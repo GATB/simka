@@ -47,6 +47,8 @@ IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
     kmerParser->push_back(new OptionOneParam (STR_KMER_PER_READ.c_str(), "number of selected kmers per read", false, "0"));
     kmerParser->push_back(dskParser->getParser (STR_KMER_ABUNDANCE_MIN));
     if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_KMER_ABUNDANCE_MIN)))  {  p->setDefaultValue ("0"); }
+    if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_SOLIDITY_KIND)))  {  p->setDefaultValue ("all"); }
+
     kmerParser->push_back(dskParser->getParser (STR_KMER_ABUNDANCE_MAX));
     kmerParser->push_back(dskParser->getParser (STR_SOLIDITY_KIND));
     kmerParser->getParser (STR_SOLIDITY_KIND)->setHelp("TODO");
@@ -153,6 +155,7 @@ template<size_t span> struct Functor  {  void operator ()  (Parameter p)
 void Simka::execute ()
 {
 	IProperties* input = getInput();
+
 	//Parameter params(*this, getInput());
 	Parameter params(input);
 
