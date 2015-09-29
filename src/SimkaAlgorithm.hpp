@@ -1457,7 +1457,7 @@ private:
 
     size_t         _nbBanks;
     size_t _kmerSize;
-	pair<size_t, size_t> _abundanceThreshold;
+	pair<CountNumber, CountNumber> _abundanceThreshold;
     SIMKA_SOLID_KIND _solidKind;
     bool _soliditySingle;
     IteratorListener* _progress;
