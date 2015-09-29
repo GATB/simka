@@ -34,11 +34,13 @@ using namespace std;
 
 struct Parameter
 {
-    Parameter (IProperties* props, string inputFilename, string outputDir, size_t partitionId) : props(props), inputFilename(inputFilename), outputDir(outputDir), partitionId(partitionId) {}
+    Parameter (IProperties* props, string inputFilename, string outputDir, size_t partitionId, size_t kmerSize, double minShannonIndex) : props(props), inputFilename(inputFilename), outputDir(outputDir), partitionId(partitionId), kmerSize(kmerSize), minShannonIndex(minShannonIndex) {}
     IProperties* props;
     string inputFilename;
     string outputDir;
     size_t partitionId;
+    size_t kmerSize;
+    double minShannonIndex;
 };
 
 
@@ -406,7 +408,7 @@ public:
 
 		SimkaDistanceParam distanceParams(p.props);
 		_stats = new SimkaStatistics(_nbBanks, distanceParams);
-		_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, SUM, false, 0);
+		_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, 0, p.minShannonIndex);
 		_processor->use();
 
 		_processors.push_back(_processor->clone());
@@ -470,6 +472,7 @@ public:
         getParser()->push_back (new OptionOneParam ("-partition-id",   "bank name", true));
         getParser()->push_back (new OptionOneParam ("-nb-cores",   "bank name", true));
         getParser()->push_back (new OptionOneParam ("-max-memory",   "bank name", true));
+        getParser()->push_back (new OptionOneParam (STR_SIMKA_MIN_KMER_SHANNON_INDEX,   "bank name", true));
 
     }
 
@@ -481,8 +484,9 @@ public:
     	size_t partitionId =  getInput()->getInt("-partition-id");
     	string inputFilename =  getInput()->getStr(STR_URI_INPUT);
     	string outputDir =  getInput()->getStr("-out-tmp-simka");
+    	double minShannonIndex =   getInput()->getDouble(STR_SIMKA_MIN_KMER_SHANNON_INDEX);
 
-    	Parameter params(getInput(), inputFilename, outputDir, partitionId);
+    	Parameter params(getInput(), inputFilename, outputDir, partitionId, kmerSize, minShannonIndex);
 
         Integer::apply<Functor,Parameter> (kmerSize, params);
 

@@ -1437,24 +1437,26 @@ public:
     typedef typename Kmer<span>::Type  Type;
     //typedef typename Kmer<span>::Count Count;
 
-	SimkaCountProcessor(SimkaStatistics& stats, size_t nbBanks, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, IteratorListener* progress);
+	SimkaCountProcessor(SimkaStatistics& stats, size_t nbBanks, size_t kmerSize, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, IteratorListener* progress, double minKmerShannonIndex);
 	~SimkaCountProcessor();
-    CountProcessorAbstract<span>* clone ()  {  return new SimkaCountProcessor (_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle, _progress);  }
+    CountProcessorAbstract<span>* clone ()  {  return new SimkaCountProcessor (_stats, _nbBanks, _kmerSize, _abundanceThreshold, _solidKind, _soliditySingle, _progress, _minKmerShannonIndex);  }
 	//CountProcessorAbstract<span>* clone ();
 	void finishClones (vector<ICountProcessor<span>*>& clones);
 	void finishClone(SimkaCountProcessor<span>* clone);
 	virtual bool process (size_t partId, const typename Kmer<span>::Type& kmer, const CountVector& count, CountNumber sum);
 
 	void computeStats(const CountVector& counts);
-	void updateBrayCurtis(int bank1, CountNumber abundance1, int bank2, CountNumber abundance2);
+	//void updateBrayCurtis(int bank1, CountNumber abundance1, int bank2, CountNumber abundance2);
 
 	bool isSolidVector(const CountVector& counts);
 	bool isSolid(CountNumber count);
+	double getShannonIndex(const Type&  kmer);
 
 
 private:
 
     size_t         _nbBanks;
+    size_t _kmerSize;
 	pair<size_t, size_t> _abundanceThreshold;
     SIMKA_SOLID_KIND _solidKind;
     bool _soliditySingle;
@@ -1467,6 +1469,7 @@ private:
     u_int64_t _totalAbundance;
 
     u_int64_t _nbKmerCounted;
+    double _minKmerShannonIndex;
 };
 
 struct SimkaSequenceFilter

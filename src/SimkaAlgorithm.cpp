@@ -25,7 +25,7 @@ static const char* strProgressCounting =      "Simka: Step 2: counting kmers  ";
 
 
 template<size_t span>
-SimkaCountProcessor<span>::SimkaCountProcessor (SimkaStatistics& stats, size_t nbBanks, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, IteratorListener* progress) :
+SimkaCountProcessor<span>::SimkaCountProcessor (SimkaStatistics& stats, size_t nbBanks, size_t kmerSize, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, IteratorListener* progress, double minKmerShannonIndex) :
 _progress(progress), _stats(stats)
 {
 
@@ -33,9 +33,11 @@ _progress(progress), _stats(stats)
 	//_countTotal.resize (_nbBanks*(_nbBanks+1)/2);
 
 	_nbBanks = nbBanks;
+	_kmerSize = kmerSize;
 	_abundanceThreshold = abundanceThreshold;
 	_solidKind = solidKind;
 	_soliditySingle = soliditySingle;
+	_minKmerShannonIndex = minKmerShannonIndex;
 
 	_localStats = new SimkaStatistics(_nbBanks, _stats._distanceParams);
 
@@ -117,6 +119,14 @@ bool SimkaCountProcessor<span>::isSolid(CountNumber count){
 
 template<size_t span>
 bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const CountVector& counts, CountNumber sum){
+
+	if(_minKmerShannonIndex != 0){
+		double shannonIndex = getShannonIndex(kmer);
+		if(shannonIndex < _minKmerShannonIndex){
+			return false;
+		}
+	}
+
 
 
 	if(_progress){ //Simka_min
@@ -255,29 +265,44 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 
 }
 
-
+/*
 template<size_t span>
 void SimkaCountProcessor<span>::updateBrayCurtis(int bank1, CountNumber abundance1, int bank2, CountNumber abundance2){
-	/*
-    //n = len(X)
-    bc_num = 0
-    bc_den = 0
-    for i in range(n):
-        if (X[i] + Y[i] > 0):
-            bc_num += abs(abundance1-abundance2)
-            bc_den += abundance1 + abundance2
-    bc = bc_num/bc_den
-    #
-    return bc*/
 
 
 	//_localStats->_brayCurtisNumerator[bank1][bank2] += abs(abundance1-abundance2);
 	_localStats->_brayCurtisNumerator[bank1][bank2] += min(abundance1, abundance2);
 	_localStats->_brayCurtisNumerator[bank2][bank1] += min(abundance1, abundance2);
+}*/
+
+
+template<size_t span>
+double SimkaCountProcessor<span>::getShannonIndex(const Type&  kmer){
+	float index = 0;
+	//float freq [5];
+
+	vector<float> _freqs(4, 0);
+
+	//char* seqStr = seq.getDataBuffer();
+
+    for (size_t i=0; i<_kmerSize; i++){
+    	_freqs[kmer[i]] += 1.0;
+    	//seq[sizeKmer-i-1] = bin2NT [(*this)[i]];
+    }
+
+	// Frequency of each letter (A, C, G, T or N)
+	//for(size_t i=0; i < seq.size(); i++)
+	//	_freqs[nt2binTab[(unsigned char)seq[i]]] += 1.0;
+
+	// Shannon index calculation
+	for (size_t i=0; i<_freqs.size(); i++){
+		_freqs[i] /= (float) _kmerSize;
+		if (_freqs[i] != 0)
+			index += _freqs[i] * log (_freqs[i]) / log(2);
+	}
+	return abs(index);
+
 }
-
-
-
 
 
 
@@ -341,6 +366,10 @@ _progress (0), _tmpPartitionsStorage(0), _tmpPartitions(0)
 	_minReadShannonIndex = _options->getDouble(STR_SIMKA_MIN_READ_SHANNON_INDEX);
 	_minReadShannonIndex = std::max(_minReadShannonIndex, 0.0);
 	_minReadShannonIndex = std::min(_minReadShannonIndex, 2.0);
+
+	_minKmerShannonIndex = _options->getDouble(STR_SIMKA_MIN_KMER_SHANNON_INDEX);
+	_minKmerShannonIndex = std::max(_minKmerShannonIndex, 0.0);
+	_minKmerShannonIndex = std::min(_minKmerShannonIndex, 2.0);
 
 
 	//string maxDisk = "";
@@ -622,7 +651,7 @@ void SimkaAlgorithm<span>::executeSimkamin() {
 
 	SimkaDistanceParam distanceParams(_options);
 	_stats = new SimkaStatistics(_nbBanks, distanceParams);
-    _processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle, _progress);
+    _processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _kmerSize, _abundanceThreshold, _solidKind, _soliditySingle, _progress, 0);
     _processor->use();
 
     MemAllocator pool (_nbCores);
@@ -893,7 +922,7 @@ void SimkaAlgorithm<span>::count(){
 	SortingCountAlgorithm<span> sortingCount (_banks, _options);
 
 	// We create a custom count processor and give it to the sorting count algorithm
-	_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle, _progress);
+	_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _kmerSize, _abundanceThreshold, _solidKind, _soliditySingle, _progress, _minKmerShannonIndex);
 	_processor->use();
 	sortingCount.addProcessor (_processor);
 

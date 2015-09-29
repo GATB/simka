@@ -29,7 +29,7 @@
 
 #include <gatb/kmer/impl/RepartitionAlgorithm.hpp>
 
-#define CLUSTER
+//#define CLUSTER
 //#define SERIAL
 #define SLEEP_TIME_SEC 1
 
@@ -733,6 +733,7 @@ public:
 			command += " -partition-id " + SimkaAlgorithm<>::toString(i);
 			command += " " + string(STR_MAX_MEMORY) + " " + _options->getStr(STR_MAX_MEMORY);
 			command += " " + string(STR_NB_CORES) + " " + _options->getStr(STR_NB_CORES);
+			command += " " + string(STR_SIMKA_MIN_KMER_SHANNON_INDEX) + " " + _options->getStr(STR_SIMKA_MIN_KMER_SHANNON_INDEX);
 #ifndef CLUSTER
 			//command += " &";
 #endif
