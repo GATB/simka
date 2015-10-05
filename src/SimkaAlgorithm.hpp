@@ -1448,8 +1448,8 @@ public:
 	void computeStats(const CountVector& counts);
 	//void updateBrayCurtis(int bank1, CountNumber abundance1, int bank2, CountNumber abundance2);
 
-	bool isSolidVector(const CountVector& counts);
-	bool isSolid(CountNumber count);
+	inline bool isSolidVector(const CountVector& counts);
+	//bool isSolid(CountNumber count);
 	double getShannonIndex(const Type&  kmer);
 
 
@@ -1458,6 +1458,7 @@ private:
     size_t         _nbBanks;
     size_t _kmerSize;
 	pair<CountNumber, CountNumber> _abundanceThreshold;
+	bool isAbundanceThreshold;
     SIMKA_SOLID_KIND _solidKind;
     bool _soliditySingle;
     IteratorListener* _progress;

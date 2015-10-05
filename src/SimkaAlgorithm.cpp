@@ -42,6 +42,7 @@ _progress(progress), _stats(stats)
 	_localStats = new SimkaStatistics(_nbBanks, _stats._distanceParams);
 
 	_nbKmerCounted = 0;
+	isAbundanceThreshold = _abundanceThreshold.first > 1 || _abundanceThreshold.second < 1000000;
 }
 
 template<size_t span>
@@ -87,7 +88,7 @@ bool SimkaCountProcessor<span>::isSolidVector(const CountVector& counts){
 	for(size_t i=0; i<counts.size(); i++){
 
 		//cout << counts[i] << " " << _abundanceThreshold.first << endl;
-		if(counts[i] >= _abundanceThreshold.first)
+		if(counts[i] >= _abundanceThreshold.first && counts[i] <= _abundanceThreshold.second)
 			return true;
 
 		/*
@@ -111,10 +112,10 @@ bool SimkaCountProcessor<span>::isSolidVector(const CountVector& counts){
 }
 
 
-template<size_t span>
-bool SimkaCountProcessor<span>::isSolid(CountNumber count){
-	return count >= _abundanceThreshold.first && count <= _abundanceThreshold.second;
-}
+//template<size_t span>
+//bool SimkaCountProcessor<span>::isSolid(CountNumber count){
+//	return count >= _abundanceThreshold.first && count <= _abundanceThreshold.second;
+//}
 
 
 template<size_t span>
@@ -163,7 +164,7 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 	}
 	else{
 
-		if(_abundanceThreshold.first > 1){
+		if(isAbundanceThreshold){
 			if(!isSolidVector(counts))
 				return false;
 		}
