@@ -48,15 +48,51 @@ _distanceParams(distanceParams)
 
 	_matrixNbDistinctSharedKmers.resize(_nbBanks);
 	_matrixNbSharedKmers.resize(_nbBanks);
-	_brayCurtisNumerator.resize(_nbBanks);
-	//_kullbackLeibler.resize(_nbBanks);
+
 	for(size_t i=0; i<_nbBanks; i++){
 		_matrixNbDistinctSharedKmers[i].resize(nbBanks, 0);
 		_matrixNbSharedKmers[i].resize(nbBanks, 0);
-		_brayCurtisNumerator[i].resize(nbBanks, 0);
 		//_kullbackLeibler[i].resize(nbBanks, 0);
 	}
 
+
+	if(_distanceParams._computeBrayCurtis){
+		_brayCurtisNumerator.resize(_nbBanks);
+		for(size_t i=0; i<_nbBanks; i++)
+			_brayCurtisNumerator[i].resize(nbBanks, 0);
+	}
+
+	if(_distanceParams._computeChord){
+		_chord_NiNj.resize(_nbBanks);
+		_chord_N2.resize(_nbBanks);
+		//_chord_N2j.resize(_nbBanks);
+		for(size_t i=0; i<_nbBanks; i++){
+			_chord_NiNj[i].resize(nbBanks, 0);
+			//_chord_N2i[i].resize(nbBanks, 0);
+			//_chord_N2j[i].resize(nbBanks, 0);
+		}
+	}
+
+	if(_distanceParams._computeHellinger){
+		_hellinger_SqrtNiNj.resize(_nbBanks);
+		for(size_t i=0; i<_nbBanks; i++){
+			_hellinger_SqrtNiNj[i].resize(nbBanks, 0);
+		}
+	}
+
+	if(_distanceParams._computeCanberra){
+		_canberra.resize(_nbBanks);
+		for(size_t i=0; i<_nbBanks; i++){
+			_canberra[i].resize(nbBanks, 0);
+		}
+	}
+
+	if(_distanceParams._computeKulczynski){
+		_kulczynski_minNiNj.resize(_nbBanks);
+		for(size_t i=0; i<_nbBanks; i++){
+			_kulczynski_minNiNj[i].resize(nbBanks, 0);
+		}
+	}
 }
 
 
@@ -72,16 +108,35 @@ SimkaStatistics& SimkaStatistics::operator+=  (const SimkaStatistics& other){
 		_nbSolidKmersPerBank[i] += other._nbSolidKmersPerBank[i];
 		_nbDistinctKmersSharedByBanksThreshold[i] += other._nbDistinctKmersSharedByBanksThreshold[i];
 		_nbKmersSharedByBanksThreshold[i] += other._nbKmersSharedByBanksThreshold[i];
+
+
+		if(_distanceParams._computeChord)
+			_chord_N2[i] += other._chord_N2[i];
+
 	}
 
 	for(size_t i=0; i<_nbBanks; i++){
 		for(size_t j=0; j<_nbBanks; j++){
 			_matrixNbDistinctSharedKmers[i][j] += other._matrixNbDistinctSharedKmers[i][j];
 			_matrixNbSharedKmers[i][j] += other._matrixNbSharedKmers[i][j];
-			_brayCurtisNumerator[i][j] += other._brayCurtisNumerator[i][j];
-			//_kullbackLeibler[i][j] += other._kullbackLeibler[i][j];
+
+			if(_distanceParams._computeBrayCurtis)
+				_brayCurtisNumerator[i][j] += other._brayCurtisNumerator[i][j];
+
+			if(_distanceParams._computeChord)
+				_chord_NiNj[i][j] += other._chord_NiNj[i][j];
+
+			if(_distanceParams._computeHellinger)
+				_hellinger_SqrtNiNj[i][j] += other._hellinger_SqrtNiNj[i][j];
+
+			if(_distanceParams._computeCanberra)
+				_canberra[i][j] += other._canberra[i][j];
+
+			if(_distanceParams._computeKulczynski)
+				_kulczynski_minNiNj[i][j] += other._kulczynski_minNiNj[i][j];
 		}
 	}
+
 
 	return *this;
 }
@@ -245,22 +300,36 @@ void SimkaStatistics::outputMatrix(const string& outputDir, const vector<string>
 	//strKmerSize += string(buffer);
 	//_outputFilenameSuffix += strKmerSize;
 
-
+	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_chord-hellinger", _simkaDistance._matrix_presenceAbsence_chordHellinger);
 	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_whittaker", _simkaDistance._matrix_presenceAbsence_Whittaker);
 	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_kulczynski", _simkaDistance._matrix_presenceAbsence_kulczynski);
-	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_sorensen", _simkaDistance._matrix_presenceAbsence_sorensen);
+	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_sorensen-brayCurtis", _simkaDistance._matrix_presenceAbsence_sorensenBrayCurtis);
+	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_jaccard-canberra", _simkaDistance._matrix_presenceAbsence_jaccardCanberra);
+	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_simka-jaccard", _simkaDistance._matrix_presenceAbsence_jaccard_simka);
+	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_simka-jaccard_asym", _simkaDistance._matrix_presenceAbsence_jaccard_simka_asym);
+	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_ochiai", _simkaDistance._matrix_presenceAbsence_ochiai);
 
-	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_jaccard", _simkaDistance._matrixSymJaccardPresenceAbsence);
-	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_jaccard_asym", _simkaDistance._matrixAsymJaccardPresenceAbsence);
 
-	dumpMatrix(outputDir, bankNames, "mat_abundance_jaccard", _simkaDistance._matrixSymJaccardAbundance);
-	dumpMatrix(outputDir, bankNames, "mat_abundance_jaccard_asym", _simkaDistance._matrixAsymJaccardAbundance);
+	dumpMatrix(outputDir, bankNames, "mat_abundance_simka-jaccard", _simkaDistance._matrixSymJaccardAbundance);
+	dumpMatrix(outputDir, bankNames, "mat_abundance_simka-jaccard_asym", _simkaDistance._matrixAsymJaccardAbundance);
+	dumpMatrix(outputDir, bankNames, "mat_abundance_ochiai", _simkaDistance._matrixOchiai);
+	dumpMatrix(outputDir, bankNames, "mat_abundance_sorensen", _simkaDistance._matrixSorensen);
+	dumpMatrix(outputDir, bankNames, "mat_abundance_jaccard", _simkaDistance._matrixJaccardAbundance);
+
+	if(_distanceParams._computeChord)
+		dumpMatrix(outputDir, bankNames, "mat_abundance_chord", _simkaDistance._matrixChord);
+
+	if(_distanceParams._computeHellinger)
+		dumpMatrix(outputDir, bankNames, "mat_abundance_hellinger", _simkaDistance._matrixHellinger);
 
 	if(_distanceParams._computeBrayCurtis)
 		dumpMatrix(outputDir, bankNames, "mat_abundance_brayCurtis", _simkaDistance._matrixBrayCurtis);
 
-	//dumpMatrix("mat_kullbackLeibler", _simkaDistance->getMatrixKullbackLeibler());
+	if(_distanceParams._computeCanberra)
+		dumpMatrix(outputDir, bankNames, "mat_abundance_canberra", _simkaDistance._matrixCanberra);
 
+	if(_distanceParams._computeKulczynski)
+		dumpMatrix(outputDir, bankNames, "mat_abundance_kulczynski", _simkaDistance._matrixKulczynski);
 }
 
 
@@ -328,17 +397,32 @@ SimkaDistance::SimkaDistance(SimkaStatistics& stats, SimkaDistanceParam& distanc
 	u_int64_t b;
 	u_int64_t c;
 
+	//AnB is symetrical
+	for(size_t i=0; i<_nbBanks; i++)
+		for(size_t j=i+1; j<_nbBanks; j++)
+			_stats._matrixNbDistinctSharedKmers[j][i] = _stats._matrixNbDistinctSharedKmers[i][j];
+
+    _matrixJaccardAbundance = createSquaredMatrix(_nbBanks);
     _matrixBrayCurtis = createSquaredMatrix(_nbBanks);
-    _matrixSymJaccardPresenceAbsence = createSquaredMatrix(_nbBanks);
-    _matrixAsymJaccardPresenceAbsence = createSquaredMatrix(_nbBanks);
+    _matrixChord = createSquaredMatrix(_nbBanks);
+    _matrixHellinger = createSquaredMatrix(_nbBanks);
+    _matrixCanberra = createSquaredMatrix(_nbBanks);
+    _matrixKulczynski = createSquaredMatrix(_nbBanks);
     _matrixSymJaccardAbundance = createSquaredMatrix(_nbBanks);
     _matrixAsymJaccardAbundance = createSquaredMatrix(_nbBanks);
+    _matrixOchiai = createSquaredMatrix(_nbBanks);
+    _matrixSorensen = createSquaredMatrix(_nbBanks);
 
-    _matrix_presenceAbsence_sorensen = createSquaredMatrix(_nbBanks);
+    _matrix_presenceAbsence_sorensenBrayCurtis = createSquaredMatrix(_nbBanks);
     _matrix_presenceAbsence_Whittaker = createSquaredMatrix(_nbBanks);
     _matrix_presenceAbsence_kulczynski = createSquaredMatrix(_nbBanks);
-    //_matrixAsymSorensen = createSquaredMatrix(_nbBanks);
-    //_matrixKullbackLeibler = createSquaredMatrix(_nbBanks);
+    _matrix_presenceAbsence_ochiai = createSquaredMatrix(_nbBanks);
+    _matrix_presenceAbsence_chordHellinger = createSquaredMatrix(_nbBanks);
+    _matrix_presenceAbsence_jaccardCanberra = createSquaredMatrix(_nbBanks);
+    _matrix_presenceAbsence_jaccard_simka = createSquaredMatrix(_nbBanks);
+    _matrix_presenceAbsence_jaccard_simka_asym = createSquaredMatrix(_nbBanks);
+
+    double dist = 0;
 
 	for(size_t i=0; i<_nbBanks; i++){
 		//SpeciesAbundanceVectorType& X_i = _stats._speciesAbundancePerDataset[i];
@@ -349,59 +433,105 @@ SimkaDistance::SimkaDistance(SimkaStatistics& stats, SimkaDistanceParam& distanc
 
 			get_abc(i, j, a, b ,c);
 
-			//Jaccard
-			double jaccardSym = jaccardSimilarity(i, j, SYMETRICAL, PRESENCE_ABSENCE);
-			_matrixSymJaccardPresenceAbsence[i][j] = jaccardSym;
-			_matrixSymJaccardPresenceAbsence[j][i] = jaccardSym;
 
-			_matrixAsymJaccardPresenceAbsence[i][j] = jaccardSimilarity(i, j, ASYMETRICAL, PRESENCE_ABSENCE);
-			_matrixAsymJaccardPresenceAbsence[j][i] = jaccardSimilarity(j, i, ASYMETRICAL, PRESENCE_ABSENCE);
 
-			jaccardSym = jaccardSimilarity(i, j, SYMETRICAL, ABUNDANCE);
-			_matrixSymJaccardAbundance[i][j] = jaccardSym;
-			_matrixSymJaccardAbundance[j][i] = jaccardSym;
+			//PresenceAbsence chord hellinger
+			dist = distance_presenceAbsence_chordHellinger(a, b, c);
+			_matrix_presenceAbsence_chordHellinger[i][j] = dist;
+			_matrix_presenceAbsence_chordHellinger[j][i] = dist;
 
-			_matrixAsymJaccardAbundance[i][j] = jaccardSimilarity(i, j, ASYMETRICAL, ABUNDANCE);
-			_matrixAsymJaccardAbundance[j][i] = jaccardSimilarity(j, i, ASYMETRICAL, ABUNDANCE);
+			//Presence Absence Ochiai
+			dist = distance_presenceAbsence_ochiai(a, b, c);
+			_matrix_presenceAbsence_ochiai[i][j] = dist;
+			_matrix_presenceAbsence_ochiai[j][i] = dist;
 
-			//PresenceAbsence Sorensen
-			double sorensen = distance_presenceAbsence_sorensen(a, b, c);
-			_matrix_presenceAbsence_sorensen[i][j] = sorensen;
-			_matrix_presenceAbsence_sorensen[j][i] = sorensen;
+			//PresenceAbsence Jaccard Canberra
+			dist = distance_presenceAbsence_jaccardCanberra(a, b, c);
+			_matrix_presenceAbsence_jaccardCanberra[i][j] = dist;
+			_matrix_presenceAbsence_jaccardCanberra[j][i] = dist;
 
+			//PresenceAbsence Jaccard Simka
+			dist = distance_presenceAbsence_jaccard_simka(i, j, SYMETRICAL);
+			_matrix_presenceAbsence_jaccard_simka[i][j] = dist;
+			_matrix_presenceAbsence_jaccard_simka[j][i] = dist;
+			_matrix_presenceAbsence_jaccard_simka_asym[i][j] = distance_presenceAbsence_jaccard_simka(i, j, ASYMETRICAL);
+			_matrix_presenceAbsence_jaccard_simka_asym[j][i] = distance_presenceAbsence_jaccard_simka(j, i, ASYMETRICAL);
+
+			//PresenceAbsence Sorensen BrayCurtis
+			dist = distance_presenceAbsence_sorensenBrayCurtis(a, b, c);
+			_matrix_presenceAbsence_sorensenBrayCurtis[i][j] = dist;
+			_matrix_presenceAbsence_sorensenBrayCurtis[j][i] = dist;
 
 			//PresenceAbsence Whittaker
-			double whittaker = distance_presenceAbsence_whittaker(a, b, c);
-			_matrix_presenceAbsence_Whittaker[i][j] = whittaker;
-			_matrix_presenceAbsence_Whittaker[j][i] = whittaker;
-
+			dist = distance_presenceAbsence_whittaker(a, b, c);
+			_matrix_presenceAbsence_Whittaker[i][j] = dist;
+			_matrix_presenceAbsence_Whittaker[j][i] = dist;
 
 			//PresenceAbsence kulczynski
-			double kulczynski = distance_presenceAbsence_kulczynski(a, b, c);
-			_matrix_presenceAbsence_kulczynski[i][j] = kulczynski;
-			_matrix_presenceAbsence_kulczynski[j][i] = kulczynski;
+			dist = distance_presenceAbsence_kulczynski(a, b, c);
+			_matrix_presenceAbsence_kulczynski[i][j] = dist;
+			_matrix_presenceAbsence_kulczynski[j][i] = dist;
 
 
 
+			//Abundance Ochiai
+			dist = distance_abundance_ochiai(i, j);
+			_matrixOchiai[i][j] = dist;
+			_matrixOchiai[j][i] = dist;
 
-	        double bray = brayCurtisSimilarity(i,j);
-			_matrixBrayCurtis[i][j] = bray;
-			_matrixBrayCurtis[j][i] = bray;
+			//Abundance Sorensen
+			dist = distance_abundance_sorensen(i, j);
+			_matrixSorensen[i][j] = dist;
+			_matrixSorensen[j][i] = dist;
 
+			//Abundance Jaccard
+			dist = distance_abundance_jaccard(i, j);
+			_matrixJaccardAbundance[i][j] = dist;
+			_matrixJaccardAbundance[j][i] = dist;
 
-			//double kl_val = kullbackLeibler(X_i,X_j);
-			//_matrixKullbackLeibler[i][j] = kl_val;
-			//_matrixKullbackLeibler[j][i] = kl_val;
+			//Abundance Jaccard Simka
+			dist = distance_abundance_jaccard_simka(i, j, SYMETRICAL);
+			_matrixSymJaccardAbundance[i][j] = dist;
+			_matrixSymJaccardAbundance[j][i] = dist;
+
+			_matrixAsymJaccardAbundance[i][j] = distance_abundance_jaccard_simka(i, j, ASYMETRICAL);
+			_matrixAsymJaccardAbundance[j][i] = distance_abundance_jaccard_simka(j, i, ASYMETRICAL);
+
+			//Abundance bray-curtis
+			if(_distanceParams._computeBrayCurtis){
+				dist = distance_abundance_brayCurtis(i,j);
+				_matrixBrayCurtis[i][j] = dist;
+				_matrixBrayCurtis[j][i] = dist;
+			}
+
+			//Abundance Chord
+			if(_distanceParams._computeChord){
+				dist = distance_abundance_chord(i, j);
+				_matrixChord[i][j] = dist;
+				_matrixChord[j][i] = dist;
+			}
+
+			//Abundance Hellinger
+			if(_distanceParams._computeHellinger){
+				dist = distance_abundance_hellinger(i, j);
+				_matrixHellinger[i][j] = dist;
+				_matrixHellinger[j][i] = dist;
+			}
+
+			//Abundance Canberra
+			if(_distanceParams._computeCanberra){
+				dist = distance_abundance_canberra(i, j, a, b, c);
+				_matrixCanberra[i][j] = dist;
+				_matrixCanberra[j][i] = dist;
+			}
+
+			//Abundance Kulczynski
+			if(_distanceParams._computeKulczynski){
+				dist = distance_abundance_kulczynski(i, j);
+				_matrixKulczynski[i][j] = dist;
+				_matrixKulczynski[j][i] = dist;
+			}
 		}
-
-		/*
-		for(size_t j=0; j<_nbBanks; j++){
-
-			//Jaccard
-			double jaccardAsym = jaccardSimilarity(i, j, ASYMETRICAL);
-			_matrixSymJaccard[i][j] = jaccardAsym;
-
-		}*/
 
 	}
 
@@ -415,72 +545,157 @@ vector<vector<float> > SimkaDistance::createSquaredMatrix(size_t n){
 
     matrix.resize(n);
     for(size_t i=0; i<n; i++)
-    	matrix[i].resize(n, 100);
+    	matrix[i].resize(n, 0);
 
     return matrix;
 
 }
 
 
-void SimkaDistance::get_abc(size_t bank1, size_t bank2, u_int64_t& a, u_int64_t& b, u_int64_t& c){
+void SimkaDistance::get_abc(size_t i, size_t j, u_int64_t& a, u_int64_t& b, u_int64_t& c){
 
-	a = _stats._matrixNbDistinctSharedKmers[bank1][bank2];
-	b = (_stats._nbSolidDistinctKmersPerBank[bank1] - a);
-	c = (_stats._nbSolidDistinctKmersPerBank[bank2] - a);
-
-}
-
-double SimkaDistance::brayCurtisSimilarity(size_t i, size_t j){
-
-	double intersectionSize = _stats._brayCurtisNumerator[i][j];
-	double unionSize = _stats._nbSolidKmersPerBank[i] + _stats._nbSolidKmersPerBank[j];
-
-	return 100 * ((2*intersectionSize) / unionSize);
-}
-
-//double SimkaDistance::jaccardSimilarity(u_int64_t& a, u_int64_t& b, u_int64_t& c){
-double SimkaDistance::jaccardSimilarity(size_t i, size_t j, SIMKA_MATRIX_TYPE type, SIMKA_PRESENCE_ABUNDANCE presenceOrAbundance){
-
-	double intersectionSize = 0;
-	double unionSize = 0;
-
-	if(presenceOrAbundance == PRESENCE_ABSENCE){
-
-	    if(type == SYMETRICAL){
-	    	intersectionSize = _stats._matrixNbDistinctSharedKmers[i][j];
-	    	unionSize = _stats._nbSolidDistinctKmersPerBank[i] + _stats._nbSolidDistinctKmersPerBank[j] - intersectionSize;
-	    }
-	    else if(type == ASYMETRICAL){
-	    	intersectionSize = _stats._matrixNbDistinctSharedKmers[i][j];
-	    	unionSize = _stats._nbSolidDistinctKmersPerBank[i];
-	    }
-	}
-	else if(presenceOrAbundance == ABUNDANCE){
-
-	    if(type == SYMETRICAL){
-	    	intersectionSize = _stats._matrixNbSharedKmers[i][j] + _stats._matrixNbSharedKmers[j][i];
-	    	unionSize = _stats._nbSolidKmersPerBank[i] + _stats._nbSolidKmersPerBank[j];
-	    }
-	    else if(type == ASYMETRICAL){
-	    	intersectionSize = _stats._matrixNbSharedKmers[i][j];
-	    	unionSize = _stats._nbSolidKmersPerBank[i];
-	    }
-	}
-
-
-	return 100 * (intersectionSize / unionSize);
+	a = _stats._matrixNbDistinctSharedKmers[i][j];
+	b = (_stats._nbSolidDistinctKmersPerBank[i] - a);
+	c = (_stats._nbSolidDistinctKmersPerBank[j] - a);
 
 }
 
-double SimkaDistance::distance_presenceAbsence_sorensen(u_int64_t& ua, u_int64_t& ub, u_int64_t& uc){
+double SimkaDistance::distance_abundance_brayCurtis(size_t i, size_t j){
+
+	double num = _stats._brayCurtisNumerator[i][j];
+	double den = _stats._nbSolidKmersPerBank[i] + _stats._nbSolidKmersPerBank[j];
+
+	//return 100 * ((2*intersectionSize) / unionSize);
+	return num / den;
+}
+
+//Abundance Chord
+double SimkaDistance::distance_abundance_chord(size_t i, size_t j){
+
+	double intersection = 2*_stats._chord_NiNj[i][j];
+	double unionSize = sqrt(_stats._chord_N2[i]) * sqrt(_stats._chord_N2[j]);
+
+	double chordDistance = sqrt(2 - (intersection / unionSize));
+	//chordDistance -= 1;
+	//return chordDistance;
+	return chordDistance;
+}
+
+//Abundance Hellinger
+double SimkaDistance::distance_abundance_hellinger(size_t i, size_t j){
+
+	double intersection = 2*_stats._hellinger_SqrtNiNj[i][j];
+	double union_ = sqrt(_stats._nbSolidKmersPerBank[i]) * sqrt(_stats._nbSolidKmersPerBank[j]);
+
+	double hellingerDistance = sqrt(2 - (intersection / union_));
+
+	return hellingerDistance;
+}
+
+//Abundance Canberra
+double SimkaDistance::distance_abundance_canberra(size_t i, size_t j, u_int64_t& ua, u_int64_t& ub, u_int64_t& uc){
 
 	double a = (double) ua;
 	double b = (double) ub;
 	double c = (double) uc;
 
-	double distance = (b+c) / (2*a + b + c);
+	double canberraDistance = (1 / (a+b+c)) * _stats._canberra[i][j];
 
-	return (1 - distance) * 100;
+	return canberraDistance;
+}
+
+//Abundance Kulczynski
+double SimkaDistance::distance_abundance_kulczynski(size_t i, size_t j){
+
+	double numerator = (_stats._nbSolidKmersPerBank[i] + _stats._nbSolidKmersPerBank[j]) * _stats._kulczynski_minNiNj[i][j];
+	double denominator = _stats._nbSolidKmersPerBank[i] * _stats._nbSolidKmersPerBank[j];
+
+	double kulczynskiDistance = 1 - 0.5 * (numerator / denominator);
+
+	return kulczynskiDistance;
+}
+
+//abundance jaccard simka
+double SimkaDistance::distance_abundance_jaccard_simka(size_t i, size_t j, SIMKA_MATRIX_TYPE type){
+
+	double numerator = 0;
+	double denominator = 0;
+
+	double A1 = _stats._matrixNbSharedKmers[i][j];
+	double B1 = _stats._matrixNbSharedKmers[j][i];
+	double A0 = _stats._nbSolidKmersPerBank[i];
+	double B0 = _stats._nbSolidKmersPerBank[j];
+
+	if(type == SYMETRICAL){
+		//numerator = A1 * B1;
+		//denominator = A0*B1 + A1*B0 - A1*B1;
+		numerator = A1 + B1;
+		denominator = A0 + B0;
+	}
+	else if(type == ASYMETRICAL){
+		numerator = A1;
+		denominator = A0;
+	}
+
+	return 1 - numerator / denominator;
+
+}
+
+//abundance Ochiai
+double SimkaDistance::distance_abundance_ochiai(size_t i, size_t j){
+
+	double A1 = _stats._matrixNbSharedKmers[i][j];
+	double B1 = _stats._matrixNbSharedKmers[j][i];
+	double A0 = _stats._nbSolidKmersPerBank[i];
+	double B0 = _stats._nbSolidKmersPerBank[j];
+
+	return 1 - sqrt(A1/A0) * sqrt(B1/B0);
+}
+
+//abundance Sorensen
+double SimkaDistance::distance_abundance_sorensen(size_t i, size_t j){
+
+	double numerator = 0;
+	double denominator = 0;
+
+	double A1 = _stats._matrixNbSharedKmers[i][j];
+	double B1 = _stats._matrixNbSharedKmers[j][i];
+	double A0 = _stats._nbSolidKmersPerBank[i];
+	double B0 = _stats._nbSolidKmersPerBank[j];
+
+	numerator = 2*A1*B1;
+	denominator = A0*B1 + A1*B0;
+
+	return 1 - numerator / denominator;
+}
+
+//abundance jaccard
+double SimkaDistance::distance_abundance_jaccard(size_t i, size_t j){
+
+	double numerator = 0;
+	double denominator = 0;
+
+	double A1 = _stats._matrixNbSharedKmers[i][j];
+	double B1 = _stats._matrixNbSharedKmers[j][i];
+	double A0 = _stats._nbSolidKmersPerBank[i];
+	double B0 = _stats._nbSolidKmersPerBank[j];
+
+	numerator = A1 * B1;
+	denominator = A0*B1 + A1*B0 - A1*B1;
+
+	return 1 - numerator / denominator;
+
+}
+
+double SimkaDistance::distance_presenceAbsence_chordHellinger(u_int64_t& ua, u_int64_t& ub, u_int64_t& uc){
+
+	double a = (double) ua;
+	double b = (double) ub;
+	double c = (double) uc;
+
+	double p1 = sqrt((a+b)*(a+c));
+
+	return sqrt(2*(1-a/p1));
 }
 
 double SimkaDistance::distance_presenceAbsence_whittaker(u_int64_t& ua, u_int64_t& ub, u_int64_t& uc){
@@ -497,7 +712,16 @@ double SimkaDistance::distance_presenceAbsence_whittaker(u_int64_t& ua, u_int64_
 
 	double distance = 0.5 * (p1 + p2 + abs(p3-p4));
 
-	return (1 - distance) * 100;
+	return distance;
+}
+
+double SimkaDistance::distance_presenceAbsence_canberra(u_int64_t& ua, u_int64_t& ub, u_int64_t& uc){
+
+	double a = (double) ua;
+	double b = (double) ub;
+	double c = (double) uc;
+
+	return 0;
 }
 
 double SimkaDistance::distance_presenceAbsence_kulczynski(u_int64_t& ua, u_int64_t& ub, u_int64_t& uc){
@@ -511,28 +735,54 @@ double SimkaDistance::distance_presenceAbsence_kulczynski(u_int64_t& ua, u_int64
 
 	double distance = 1 - 0.5*(p1 + p2);
 
-	return (1 - distance) * 100;
+	return distance;
 }
 
-/*
-double SimkaDistance::kullbackLeibler(SpeciesAbundanceVectorType& X, SpeciesAbundanceVectorType& Y){
+double SimkaDistance::distance_presenceAbsence_sorensenBrayCurtis(u_int64_t& ua, u_int64_t& ub, u_int64_t& uc){
 
-	vector<double> XY(X.size());
+	double a = (double) ua;
+	double b = (double) ub;
+	double c = (double) uc;
 
-    for(size_t i=0; i<X.size(); i++){
-    	XY[i] = (X[i] + Y[i]) / 2.0;
+	double distance = (b+c) / (2*a + b + c);
+
+	return distance;
+}
+
+
+
+
+double SimkaDistance::distance_presenceAbsence_ochiai(u_int64_t& ua, u_int64_t& ub, u_int64_t& uc){
+
+	double a = (double) ua;
+	double b = (double) ub;
+	double c = (double) uc;
+
+	return 1 - (a / sqrt((a+b)*(a+c)));
+}
+
+double SimkaDistance::distance_presenceAbsence_jaccardCanberra(u_int64_t& ua, u_int64_t& ub, u_int64_t& uc){
+
+	double a = (double) ua;
+	double b = (double) ub;
+	double c = (double) uc;
+
+	return (b+c) / (a+b+c);
+}
+
+double SimkaDistance::distance_presenceAbsence_jaccard_simka(size_t i, size_t j, SIMKA_MATRIX_TYPE type){
+
+	double numerator = 0;
+	double denominator = 0;
+
+    if(type == SYMETRICAL){
+    	numerator = _stats._matrixNbDistinctSharedKmers[i][j];
+    	denominator = _stats._nbSolidDistinctKmersPerBank[i] + _stats._nbSolidDistinctKmersPerBank[j] - numerator;
+    }
+    else if(type == ASYMETRICAL){
+    	numerator = _stats._matrixNbDistinctSharedKmers[i][j];
+    	denominator = _stats._nbSolidDistinctKmersPerBank[i];
     }
 
-    double kl = 0;
-
-    for(size_t i=0; i<X.size(); i++){
-        if (X[i]*Y[i] > 0){
-            double kl_x = X[i] * log(X[i]/XY[i]);
-            double kl_y = Y[i] * log(Y[i]/XY[i]);
-            kl += kl_x + kl_y;
-        }
-    }
-
-    return kl;
-
-}*/
+    return 1 - numerator/denominator;
+}

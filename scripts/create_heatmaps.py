@@ -38,15 +38,25 @@ def outputHclust(outputFilename, matrixNormFilename):
 def execute():
 	files = [ f for f in listdir(mat_input_dir) if isfile(join(mat_input_dir,f))]
 	for filename in files:
+		asym = False
 		if not ".csv" in filename: continue
-		if "asym" in filename: continue
+		if "asym" in filename:
+			asym = True
+			asym_filename = filename
+			filename = filename.replace("_asym", "")
 		method_name = splitext(filename)[0]
 		method_name = method_name.replace("mat_", "")
 		try:
-			matrix[method_name].append(filename)
+			if asym:
+				matrix[method_name].append(asym_filename)
+			else:
+				matrix[method_name].append(filename)
 		except:
 			matrix[method_name] = []
-			matrix[method_name].append(filename)
+			if asym:
+				matrix[method_name].append(asym_filename)
+			else:
+				matrix[method_name].append(filename)
 		#for method_name in matrix.keys():
 			#print(filename, method_name)
 			#if method_name in filename:

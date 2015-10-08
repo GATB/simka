@@ -22,6 +22,29 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
+if(FALSE){
+args <- commandArgs(trailingOnly = TRUE)
+library(gplots);
+cr3 = as.matrix(read.table(file=args[1], sep=";", header=TRUE, row.names=1, check.names = FALSE))
+if(grepl("chord",args[1]) || grepl("hellinger",args[1])){
+	cr3 = (sqrt(2) - cr3) * 100
+} else {
+	cr3 = (1 - cr3) * 100
+}
+pdf(file=args[3])
+dat_heatmap <- heatmap.2(cr3,dendrogram = "none", Rowv=NA,Colv = "Rowv", col = topo.colors(15), scale="none",tracecol=FALSE, margins=c(10,10), key = TRUE, keysize = 1.5 , cexRow = 0.2, cexCol = 0.2, density.info=c("histogram"), breaks = c(2,4,6,8,10,15,20,25,30,35,40,50,60,70,80,100),lhei = c(2, 8));
+dev.off()
+}
+
+
+
+
+
+
+#if(FALSE){
+
+
 if (!require("gplots")) {
    install.packages("gplots", dependencies = TRUE)
    library(gplots)
@@ -32,6 +55,15 @@ args <- commandArgs(trailingOnly = TRUE)
 pdf(file=args[3])
 n=100 # number of steps between 2 colors
 cr3 = as.matrix(read.table(file=args[1], sep=";", header=TRUE, row.names=1))
+cr3_norm = as.matrix(read.table(file=args[2], sep=";", header=TRUE, row.names=1))
+
+if(grepl("chord",args[1]) || grepl("hellinger",args[1])){
+	cr3 = (sqrt(2) - cr3) * 100
+} else {
+	cr3 = (1 - cr3) * 100
+}
+
+#cr3_norm = cr3_norm * 100
 
 mini=min(cr3[])
 maxi=max(cr3[row(cr3)!=col(cr3)])
@@ -54,13 +86,12 @@ palette=colorRampPalette(c("green", "yellow", "red", "brown", "grey23"))(n = 5*n
 
  par(fig=c(0.2,1,0,0.8))
 
- 
- cr3_norm = as.matrix(read.table(file=args[2], sep=";", header=TRUE, row.names=1))
- inv_cr3 = matrix(trueMax, ncol=dim(cr3_norm)[1], nrow=dim(cr3_norm)[1]) - cr3_norm
- distance    = dist(inv_cr3)
- cluster     = hclust(distance, method="ward")
- dendrogram  = as.dendrogram(cluster)
- 
+
+#inv_cr3 = matrix(trueMax, ncol=dim(cr3_norm)[1], nrow=dim(cr3_norm)[1]) - cr3_norm
+ distance    = dist(cr3_norm)
+ cluster     = hclust(distance, method="ward.D2")
+dendrogram  = as.dendrogram(cluster)
+#pam(distance, 3, cluster.only=TRUE, diss=TRUE)
  
  heatmap.2(cr3,
  trace = "none",
@@ -71,7 +102,7 @@ palette=colorRampPalette(c("green", "yellow", "red", "brown", "grey23"))(n = 5*n
  col=palette,
  breaks = breaks,
  margins=c(10,10),
- main = args[4], cexRow = 0.3, cexCol = 0.3)
+ main = args[4], cexRow = 0.2, cexCol = 0.2)
 
 par(fig=c(0.05,0.4,0.8,1), new=TRUE)
 
@@ -95,7 +126,7 @@ par(fig=c(0.05,0.4,0.8,1), new=TRUE)
  # pour faire un break
  rect(maxi,-0.1,maxi+black.space,2.1,col="white",border=NA)
 
-
+#}
 
 
 

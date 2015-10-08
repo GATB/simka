@@ -1471,6 +1471,7 @@ private:
 
     u_int64_t _nbKmerCounted;
     double _minKmerShannonIndex;
+
 };
 
 struct SimkaSequenceFilter

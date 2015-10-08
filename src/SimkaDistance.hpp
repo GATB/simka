@@ -25,6 +25,10 @@
 
 
 const string STR_SIMKA_DISTANCE_BRAYCURTIS = "-bray-curtis";
+const string STR_SIMKA_DISTANCE_CHORD = "-chord";
+const string STR_SIMKA_DISTANCE_HELLINGER = "-hellinger";
+const string STR_SIMKA_DISTANCE_CANBERRA = "-canberra";
+const string STR_SIMKA_DISTANCE_KULCZYNSKI = "-kulczynski";
 
 
 typedef vector<u_int16_t> SpeciesAbundanceVectorType;
@@ -32,11 +36,6 @@ typedef vector<u_int16_t> SpeciesAbundanceVectorType;
 enum SIMKA_MATRIX_TYPE{
 	SYMETRICAL,
 	ASYMETRICAL,
-};
-
-enum SIMKA_PRESENCE_ABUNDANCE{
-	PRESENCE_ABSENCE,
-	ABUNDANCE,
 };
 
 class SimkaDistanceParam{
@@ -47,9 +46,17 @@ public:
 
 	SimkaDistanceParam(IProperties* params){
 		_computeBrayCurtis = params->get(STR_SIMKA_DISTANCE_BRAYCURTIS);
+		_computeChord = params->get(STR_SIMKA_DISTANCE_CHORD);
+		_computeHellinger = params->get(STR_SIMKA_DISTANCE_HELLINGER);
+		_computeCanberra = params->get(STR_SIMKA_DISTANCE_CANBERRA);
+		_computeKulczynski = params->get(STR_SIMKA_DISTANCE_KULCZYNSKI);
 	}
 
     bool _computeBrayCurtis;
+    bool _computeChord;
+    bool _computeHellinger;
+    bool _computeCanberra;
+    bool _computeKulczynski;
 };
 
 
@@ -77,6 +84,20 @@ public:
 
 	vector<vector<u_int64_t> > _brayCurtisNumerator;
 	//vector<vector<double> > _kullbackLeibler;
+
+
+    //Abundance Chord
+	vector<vector<u_int64_t> > _chord_NiNj;
+	vector<u_int64_t> _chord_N2;
+
+    //Abundance Hellinger
+	vector<vector<u_int64_t> > _hellinger_SqrtNiNj;
+
+    //Abundance Canberra
+	vector<vector<u_int64_t> > _canberra;
+
+	//Abundance Kulczynski
+	vector<vector<u_int64_t> > _kulczynski_minNiNj;
 
 
 	//string _outputDir;
@@ -112,32 +133,55 @@ public:
 	//vector<vector<float> > getMatrixBrayCurtis();
 	//vector<vector<float> > getMatrixKullbackLeibler();
 
-    vector<vector<float> > _matrixSymJaccardPresenceAbsence;
-    vector<vector<float> > _matrixAsymJaccardPresenceAbsence;
+    vector<vector<float> > _matrixJaccardAbundance;
+    vector<vector<float> > _matrixBrayCurtis;
+    vector<vector<float> > _matrixChord;
+    vector<vector<float> > _matrixHellinger;
+    vector<vector<float> > _matrixCanberra;
+    vector<vector<float> > _matrixKulczynski;
     vector<vector<float> > _matrixSymJaccardAbundance;
     vector<vector<float> > _matrixAsymJaccardAbundance;
-    vector<vector<float> > _matrix_presenceAbsence_sorensen;
-    vector<vector<float> > _matrixAsymSorensen;
-    vector<vector<float> > _matrixBrayCurtis;
+    vector<vector<float> > _matrixOchiai;
+    vector<vector<float> > _matrixSorensen;
+
     //vector<vector<float> > _matrixKullbackLeibler;
 
+    vector<vector<float> > _matrix_presenceAbsence_sorensenBrayCurtis;
     vector<vector<float> > _matrix_presenceAbsence_Whittaker;
     vector<vector<float> > _matrix_presenceAbsence_kulczynski;
+    vector<vector<float> > _matrix_presenceAbsence_ochiai;
+    vector<vector<float> > _matrix_presenceAbsence_chordHellinger;
+    vector<vector<float> > _matrix_presenceAbsence_jaccardCanberra;
+    vector<vector<float> > _matrix_presenceAbsence_jaccard_simka;
+    vector<vector<float> > _matrix_presenceAbsence_jaccard_simka_asym;
 
 private:
 
 
 	vector<vector<float> > createSquaredMatrix(size_t n);
 	void get_abc(size_t bank1, size_t bank2, u_int64_t& a, u_int64_t& b, u_int64_t& c);
-    //void get_abc(SpeciesAbundanceVectorType& X, SpeciesAbundanceVectorType& Y, u_int64_t& a, u_int64_t& b, u_int64_t& c);
-    double jaccardSimilarity(size_t i, size_t j, SIMKA_MATRIX_TYPE type, SIMKA_PRESENCE_ABUNDANCE presenceOrAbundance);
-    double brayCurtisSimilarity(size_t bank1, size_t bank2);
-    //double kullbackLeibler(SpeciesAbundanceVectorType& X, SpeciesAbundanceVectorType& Y);
-	//void outputMatrix();
 
-    double distance_presenceAbsence_sorensen(u_int64_t& ua, u_int64_t& ub, u_int64_t& uc);
+
+    double distance_abundance_brayCurtis(size_t bank1, size_t bank2);
+    double distance_abundance_chord(size_t i, size_t j);
+    double distance_abundance_hellinger(size_t i, size_t j);
+    double distance_abundance_canberra(size_t i, size_t j, u_int64_t& ua, u_int64_t& ub, u_int64_t& uc);
+    double distance_abundance_kulczynski(size_t i, size_t j);
+    double distance_abundance_ochiai(size_t i, size_t j);
+    double distance_abundance_sorensen(size_t i, size_t j);
+    double distance_abundance_jaccard(size_t i, size_t j);
+    double distance_abundance_jaccard_simka(size_t i, size_t j, SIMKA_MATRIX_TYPE type);
+
+
+    double distance_presenceAbsence_chordHellinger(u_int64_t& ua, u_int64_t& ub, u_int64_t& uc);
+    double distance_presenceAbsence_hellinger(u_int64_t& ua, u_int64_t& ub, u_int64_t& uc);
     double distance_presenceAbsence_whittaker(u_int64_t& ua, u_int64_t& ub, u_int64_t& uc);
+    double distance_presenceAbsence_canberra(u_int64_t& ua, u_int64_t& ub, u_int64_t& uc);
     double distance_presenceAbsence_kulczynski(u_int64_t& ua, u_int64_t& ub, u_int64_t& uc);
+    double distance_presenceAbsence_ochiai(u_int64_t& ua, u_int64_t& ub, u_int64_t& uc);
+    double distance_presenceAbsence_sorensenBrayCurtis(u_int64_t& ua, u_int64_t& ub, u_int64_t& uc);
+    double distance_presenceAbsence_jaccardCanberra(u_int64_t& ua, u_int64_t& ub, u_int64_t& uc);
+    double distance_presenceAbsence_jaccard_simka(size_t i, size_t j, SIMKA_MATRIX_TYPE type);
 
 	SimkaStatistics& _stats;
 	SimkaDistanceParam _distanceParams;

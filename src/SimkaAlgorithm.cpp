@@ -218,38 +218,85 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 			_localStats->_nbSolidKmersPerBank[i] += abundanceI;
 		}
 
-		u_int64_t bc;
 
 		for(size_t j=i+1; j<counts.size(); j++){
 			CountNumber abundanceJ = counts[j];
 
 			/*
-			if(abundanceI < abundanceJ){
-				_localStats->_brayCurtisNumerator[i][j] += abundanceI;
-				_localStats->_brayCurtisNumerator[j][i] += abundanceI;
-			}
-			else{
-				_localStats->_brayCurtisNumerator[i][j] += abundanceJ;
-				_localStats->_brayCurtisNumerator[j][i] += abundanceJ;
-			}*/
-			//updateBrayCurtis(i, abundanceI, j, abundanceJ);
+			if(_stats._distanceParams._computeBrayCurtis)
+				_localStats->_brayCurtisNumerator[i][j] += abs(abundanceI - abundanceJ);
 
-			if(_stats._distanceParams._computeBrayCurtis){
-				bc = min(abundanceI, abundanceJ);
-				_localStats->_brayCurtisNumerator[i][j] += bc;
-				_localStats->_brayCurtisNumerator[j][i] += bc;
+			if(_stats._distanceParams._computeChord)
+				_localStats->_chord_NiNj[i][j] += abundanceI * abundanceJ;
+
+			if(_stats._distanceParams._computeHellinger)
+				_localStats->_hellinger_SqrtNiNj[i][j] += sqrt(abundanceI * abundanceJ);
+
+			if(_stats._distanceParams._computeCanberra){
+				if(abundanceI + abundanceJ > 0){
+					_localStats->_canberra[i][j] += pow((abundanceI - abundanceJ) / (abundanceI + abundanceJ), 2);
+				}
 			}
+
+			if(_stats._distanceParams._computeKulczynski)
+				_localStats->_kulczynski_minNiNj[i][j] += min(abundanceI, abundanceJ);*/
 
 			if(abundanceI && abundanceJ){
 				_localStats->_matrixNbSharedKmers[i][j] += abundanceI;
 				_localStats->_matrixNbSharedKmers[j][i] += abundanceJ;
 				_localStats->_matrixNbDistinctSharedKmers[i][j] += 1;
-				_localStats->_matrixNbDistinctSharedKmers[j][i] += 1;
+				//_localStats->_matrixNbDistinctSharedKmers[j][i] += 1;
 				//updateKullbackLeibler(i, abundanceI, j, abundanceJ);
 			}
 
 		}
 
+	}
+
+
+	if(_stats._distanceParams._computeBrayCurtis){
+		for(size_t i=0; i<counts.size(); i++){
+			for(size_t j=i+1; j<counts.size(); j++){
+				_localStats->_brayCurtisNumerator[i][j] += abs(counts[i] - counts[j]);
+			}
+		}
+	}
+
+	if(_stats._distanceParams._computeChord){
+		for(size_t i=0; i<counts.size(); i++){
+			_localStats->_chord_N2[i] += pow(counts[i], 2);
+			for(size_t j=i+1; j<counts.size(); j++){
+				_localStats->_chord_NiNj[i][j] += counts[i] * counts[j];
+			}
+		}
+	}
+
+	if(_stats._distanceParams._computeHellinger){
+		for(size_t i=0; i<counts.size(); i++){
+			for(size_t j=i+1; j<counts.size(); j++){
+				_localStats->_hellinger_SqrtNiNj[i][j] += sqrt(counts[i] * counts[j]);
+			}
+		}
+	}
+
+	if(_stats._distanceParams._computeCanberra){
+		for(size_t i=0; i<counts.size(); i++){
+			CountNumber abundanceI = counts[i];
+			for(size_t j=i+1; j<counts.size(); j++){
+				CountNumber abundanceJ = counts[j];
+				if(abundanceI + abundanceJ > 0)
+					_localStats->_canberra[i][j] += pow((abundanceI - abundanceJ) / (abundanceI + abundanceJ), 2);
+			}
+		}
+
+	}
+
+	if(_stats._distanceParams._computeKulczynski){
+		for(size_t i=0; i<counts.size(); i++){
+			for(size_t j=i+1; j<counts.size(); j++){
+				_localStats->_kulczynski_minNiNj[i][j] += min(counts[i], counts[j]);
+			}
+		}
 	}
 
 	_localStats->_nbDistinctKmersSharedByBanksThreshold[nbBanksThatHaveKmer-1] += 1;
