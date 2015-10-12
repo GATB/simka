@@ -29,7 +29,7 @@
 
 #include <gatb/kmer/impl/RepartitionAlgorithm.hpp>
 
-#define CLUSTER
+//#define CLUSTER
 //#define SERIAL
 #define SLEEP_TIME_SEC 1
 
@@ -734,6 +734,14 @@ public:
 			command += " " + string(STR_MAX_MEMORY) + " " + _options->getStr(STR_MAX_MEMORY);
 			command += " " + string(STR_NB_CORES) + " " + _options->getStr(STR_NB_CORES);
 			command += " " + string(STR_SIMKA_MIN_KMER_SHANNON_INDEX) + " " + _options->getStr(STR_SIMKA_MIN_KMER_SHANNON_INDEX);
+
+			SimkaDistanceParam distanceParams(_options);
+			if(distanceParams._computeBrayCurtis) command += " " + STR_SIMKA_DISTANCE_BRAYCURTIS + " ";
+			if(distanceParams._computeCanberra) command += " " + STR_SIMKA_DISTANCE_CANBERRA + " ";
+			if(distanceParams._computeChord) command += " " + STR_SIMKA_DISTANCE_CHORD + " ";
+			if(distanceParams._computeHellinger) command += " " + STR_SIMKA_DISTANCE_HELLINGER + " ";
+			if(distanceParams._computeKulczynski) command += " " + STR_SIMKA_DISTANCE_KULCZYNSKI + " ";
+
 #ifndef CLUSTER
 			//command += " &";
 #endif

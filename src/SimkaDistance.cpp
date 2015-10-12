@@ -222,11 +222,21 @@ void SimkaStatistics::load(Group& group){
     is.read ((char*)_nbDistinctKmersSharedByBanksThreshold.data(), sizeof(u_int64_t)*_nbBanks);
     is.read ((char*)_nbKmersSharedByBanksThreshold.data(), sizeof(u_int64_t)*_nbBanks);
 
+    is.read ((char*)&_distanceParams._computeBrayCurtis,                sizeof(_distanceParams._computeBrayCurtis));
+    is.read ((char*)&_distanceParams._computeCanberra,                sizeof(_distanceParams._computeCanberra));
+    is.read ((char*)&_distanceParams._computeChord,                sizeof(_distanceParams._computeChord));
+    is.read ((char*)&_distanceParams._computeHellinger,                sizeof(_distanceParams._computeHellinger));
+    is.read ((char*)&_distanceParams._computeKulczynski,                sizeof(_distanceParams._computeKulczynski));
+
     for(size_t i=0; i<_nbBanks; i++){
     	is.read ((char*)_matrixNbDistinctSharedKmers[i].data(), sizeof(u_int64_t)*_nbBanks);
     	is.read ((char*)_matrixNbSharedKmers[i].data(), sizeof(u_int64_t)*_nbBanks);
-    	is.read ((char*)_brayCurtisNumerator[i].data(), sizeof(u_int64_t)*_nbBanks);
     }
+
+
+    if(_distanceParams._computeBrayCurtis)
+        for(size_t i=0; i<_nbBanks; i++)
+        	is.read ((char*)_brayCurtisNumerator[i].data(), sizeof(u_int64_t)*_nbBanks);
 
 	/*
     tools::storage::impl::Storage::istream is (group, "simkaStats");
@@ -280,8 +290,18 @@ void SimkaStatistics::save (Group& group){
     for(size_t i=0; i<_nbBanks; i++){
         os.write ((const char*)_matrixNbDistinctSharedKmers[i].data(), sizeof(u_int64_t)*_nbBanks);
         os.write ((const char*)_matrixNbSharedKmers[i].data(), sizeof(u_int64_t)*_nbBanks);
-        os.write ((const char*)_brayCurtisNumerator[i].data(), sizeof(u_int64_t)*_nbBanks);
     }
+
+    os.write ((const char*)&_distanceParams._computeBrayCurtis,                sizeof(_distanceParams._computeBrayCurtis));
+    os.write ((const char*)&_distanceParams._computeCanberra,                sizeof(_distanceParams._computeCanberra));
+    os.write ((const char*)&_distanceParams._computeChord,                sizeof(_distanceParams._computeChord));
+    os.write ((const char*)&_distanceParams._computeHellinger,                sizeof(_distanceParams._computeHellinger));
+    os.write ((const char*)&_distanceParams._computeKulczynski,                sizeof(_distanceParams._computeKulczynski));
+
+
+    if(_distanceParams._computeBrayCurtis)
+        for(size_t i=0; i<_nbBanks; i++)
+            os.write ((const char*)_brayCurtisNumerator[i].data(), sizeof(u_int64_t)*_nbBanks);
 
     os.flush();
 }
