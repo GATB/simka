@@ -29,7 +29,7 @@
 
 #include <gatb/kmer/impl/RepartitionAlgorithm.hpp>
 
-//#define CLUSTER
+#define CLUSTER
 //#define SERIAL
 #define SLEEP_TIME_SEC 1
 
