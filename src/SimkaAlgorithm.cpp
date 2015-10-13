@@ -285,7 +285,7 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 			for(size_t j=i+1; j<counts.size(); j++){
 				CountNumber abundanceJ = counts[j];
 				if(abundanceI + abundanceJ > 0)
-					_localStats->_canberra[i][j] += pow((abundanceI - abundanceJ) / (abundanceI + abundanceJ), 2);
+					_localStats->_canberra[i][j] += abs((abundanceI - abundanceJ) / (abundanceI + abundanceJ));
 			}
 		}
 
