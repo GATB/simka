@@ -713,59 +713,64 @@ public:
 
 	    	string datasetId = SimkaAlgorithm<>::toString(i);
 			string finishFilename = _outputDirTempFilter + "/merge_synchro/" +  datasetId + ".ok";
+
 			if(System::file().doesExist(finishFilename)){
-				System::file().remove(finishFilename);
-			//	cout << "\t" << _bankNames[i] << " already  (remove file " << finishFilename << " to count again)" << endl;
+				cout << "\t" << _bankNames[i] << " already merged (remove file " << finishFilename << " to count again)" << endl;
 			}
-			//else{
+			else{
+				//if(System::file().doesExist(finishFilename)){
+				//	System::file().remove(finishFilename);
+				//	cout << "\t" << _bankNames[i] << " already  (remove file " << finishFilename << " to count again)" << endl;
+				//}
+				//else{
 
-			filenameQueue.push_back(datasetId);
+				filenameQueue.push_back(datasetId);
 
-			string command = "";
+				string command = "";
 
-#ifndef CLUSTER
-			//command += "nohup";
-#endif
-			command += "./simkaMerge ";
-			command += " " + string(STR_KMER_SIZE) + " " + _options->getStr(STR_KMER_SIZE);
-			command += " " + string(STR_URI_INPUT) + " " + _inputFilename;
-			command += " " + string("-out-tmp-simka") + " " + _outputDirTempFilter;
-			command += " -partition-id " + SimkaAlgorithm<>::toString(i);
-			command += " " + string(STR_MAX_MEMORY) + " " + _options->getStr(STR_MAX_MEMORY);
-			command += " " + string(STR_NB_CORES) + " " + _options->getStr(STR_NB_CORES);
-			command += " " + string(STR_SIMKA_MIN_KMER_SHANNON_INDEX) + " " + _options->getStr(STR_SIMKA_MIN_KMER_SHANNON_INDEX);
+	#ifndef CLUSTER
+				//command += "nohup";
+	#endif
+				command += "./simkaMerge ";
+				command += " " + string(STR_KMER_SIZE) + " " + _options->getStr(STR_KMER_SIZE);
+				command += " " + string(STR_URI_INPUT) + " " + _inputFilename;
+				command += " " + string("-out-tmp-simka") + " " + _outputDirTempFilter;
+				command += " -partition-id " + SimkaAlgorithm<>::toString(i);
+				command += " " + string(STR_MAX_MEMORY) + " " + _options->getStr(STR_MAX_MEMORY);
+				command += " " + string(STR_NB_CORES) + " " + _options->getStr(STR_NB_CORES);
+				command += " " + string(STR_SIMKA_MIN_KMER_SHANNON_INDEX) + " " + _options->getStr(STR_SIMKA_MIN_KMER_SHANNON_INDEX);
 
-			SimkaDistanceParam distanceParams(_options);
-			if(distanceParams._computeBrayCurtis) command += " " + STR_SIMKA_DISTANCE_BRAYCURTIS + " ";
-			if(distanceParams._computeCanberra) command += " " + STR_SIMKA_DISTANCE_CANBERRA + " ";
-			if(distanceParams._computeChord) command += " " + STR_SIMKA_DISTANCE_CHORD + " ";
-			if(distanceParams._computeHellinger) command += " " + STR_SIMKA_DISTANCE_HELLINGER + " ";
-			if(distanceParams._computeKulczynski) command += " " + STR_SIMKA_DISTANCE_KULCZYNSKI + " ";
+				SimkaDistanceParam distanceParams(_options);
+				if(distanceParams._computeBrayCurtis) command += " " + STR_SIMKA_DISTANCE_BRAYCURTIS + " ";
+				if(distanceParams._computeCanberra) command += " " + STR_SIMKA_DISTANCE_CANBERRA + " ";
+				if(distanceParams._computeChord) command += " " + STR_SIMKA_DISTANCE_CHORD + " ";
+				if(distanceParams._computeHellinger) command += " " + STR_SIMKA_DISTANCE_HELLINGER + " ";
+				if(distanceParams._computeKulczynski) command += " " + STR_SIMKA_DISTANCE_KULCZYNSKI + " ";
 
-#ifndef CLUSTER
-			//command += " &";
-#endif
+	#ifndef CLUSTER
+				//command += " &";
+	#endif
 
-#ifdef CLUSTER
-			string jobFilename = _outputDirTempFilter + "/job_merge/job_merge_" + SimkaAlgorithm<>::toString(i) + ".bash";
-			IFile* jobFile = System::file().newFile(jobFilename.c_str(), "w");
-			string jobCommand = _jobMergeContents + '\n' + '\n';
-			jobCommand += command;
+	#ifdef CLUSTER
+				string jobFilename = _outputDirTempFilter + "/job_merge/job_merge_" + SimkaAlgorithm<>::toString(i) + ".bash";
+				IFile* jobFile = System::file().newFile(jobFilename.c_str(), "w");
+				string jobCommand = _jobMergeContents + '\n' + '\n';
+				jobCommand += command;
 
-			cout << "\t" << jobCommand << endl;
+				cout << "\t" << jobCommand << endl;
 
-			jobFile->fwrite(jobCommand.c_str(), jobCommand.size(), 1);
-			jobFile->flush();
-			string submitCommand = _jobMergeCommand + " " + jobFile->getPath();
-			delete jobFile;
-			system(submitCommand.c_str());
-#else
-			cout << "\t" << command << endl;
-			system(command.c_str());
-#endif
+				jobFile->fwrite(jobCommand.c_str(), jobCommand.size(), 1);
+				jobFile->flush();
+				string submitCommand = _jobMergeCommand + " " + jobFile->getPath();
+				delete jobFile;
+				system(submitCommand.c_str());
+	#else
+				cout << "\t" << command << endl;
+				system(command.c_str());
+	#endif
 
-			nbJobs += 1;
-		//}
+				nbJobs += 1;
+			}
 
 			if(nbJobs >= _maxJobMerge){
 				while(true){
