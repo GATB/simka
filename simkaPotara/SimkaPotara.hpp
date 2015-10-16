@@ -715,7 +715,7 @@ public:
 			string finishFilename = _outputDirTempFilter + "/merge_synchro/" +  datasetId + ".ok";
 
 			if(System::file().doesExist(finishFilename)){
-				cout << "\t" << _bankNames[i] << " already merged (remove file " << finishFilename << " to count again)" << endl;
+				cout << "\t" << datasetId << " already merged (remove file " << finishFilename << " to merge again)" << endl;
 			}
 			else{
 				//if(System::file().doesExist(finishFilename)){
