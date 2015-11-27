@@ -795,8 +795,8 @@ double SimkaDistance::distance_presenceAbsence_jaccard_simka(size_t i, size_t j,
 	double denominator = 0;
 
     if(type == SYMETRICAL){
-    	numerator = _stats._matrixNbDistinctSharedKmers[i][j];
-    	denominator = _stats._nbSolidDistinctKmersPerBank[i] + _stats._nbSolidDistinctKmersPerBank[j] - numerator;
+    	numerator = 2*_stats._matrixNbDistinctSharedKmers[i][j];
+    	denominator = _stats._nbSolidDistinctKmersPerBank[i] + _stats._nbSolidDistinctKmersPerBank[j];
     }
     else if(type == ASYMETRICAL){
     	numerator = _stats._matrixNbDistinctSharedKmers[i][j];

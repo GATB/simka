@@ -1471,6 +1471,7 @@ private:
 
     u_int64_t _nbKmerCounted;
     double _minKmerShannonIndex;
+    CountVector _solidCounts;
 
 };
 
@@ -1515,6 +1516,7 @@ struct SimkaSequenceFilter
 			}
 		}
 
+		//cout << seq.getIndex() << " " <<  _nbReadProcessed << endl;
 
 #ifdef BOOTSTRAP
 		int readPerBootstrap = _maxNbReads / MAX_BOOTSTRAP;
@@ -1641,6 +1643,7 @@ public:
     Iterator<Sequence>* iterator ()
     {
 
+    	//cout << endl << "---" << endl;
     	//cout << "lala" << endl;
         // We create one iterator from the reference
         Iterator<Sequence>* it = _ref->iterator ();
@@ -1659,7 +1662,7 @@ public:
 
             	//cout << "\t\t" << _nbReadsPerDataset[i] << endl;
 
-
+            	//cout << _nbReadsPerDataset[i] << endl;
             	//Depending on the parameter -max-reads we truncate or not the reads iterator
             	if(_nbReadsPerDataset[i] == 0){
 

@@ -43,6 +43,8 @@ _progress(progress), _stats(stats)
 
 	_nbKmerCounted = 0;
 	isAbundanceThreshold = _abundanceThreshold.first > 1 || _abundanceThreshold.second < 1000000;
+
+	_solidCounts.resize(_nbBanks);
 }
 
 template<size_t span>
@@ -80,31 +82,11 @@ void SimkaCountProcessor<span>::finishClone(SimkaCountProcessor<span>* clone){
 template<size_t span>
 bool SimkaCountProcessor<span>::isSolidVector(const CountVector& counts){
 
-	//if(_solidKind == SIMKA_SOLID_KIND::RANGE){
-	//}
-
-	//bool isSolid_ = false;
-
 	for(size_t i=0; i<counts.size(); i++){
 
-		//cout << counts[i] << " " << _abundanceThreshold.first << endl;
 		if(counts[i] >= _abundanceThreshold.first && counts[i] <= _abundanceThreshold.second)
 			return true;
 
-		/*
-		CountNumber abundance = counts[i];
-
-		if(abundance == 0) continue;
-
-		if(isSolid(abundance)){
-			return true;
-		}*/
-
-		//nbBanks += 1;
-		//if(nbBanks > 1){
-		//	isSolid = true;
-		//	break;
-		//}
 	}
 
 	return false;
@@ -165,12 +147,39 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 	else{
 
 		if(isAbundanceThreshold){
+
 			if(!isSolidVector(counts))
 				return false;
+
+			/*
+			cout << endl;
+			for(size_t i=0; i<counts.size(); i++)
+				cout << counts[i] << " ";
+			cout << endl;*/
+
+			for(size_t i=0; i<counts.size(); i++){
+
+				if(counts[i] >= _abundanceThreshold.first && counts[i] <= _abundanceThreshold.second)
+					_solidCounts[i] = counts[i];
+				else
+					_solidCounts[i] = 0;
+			}
+
+			/*
+			for(size_t i=0; i<counts.size(); i++)
+				cout << _solidCounts[i] << " ";
+			cout << endl;*/
+
+			computeStats(_solidCounts);
+		}
+		else{
+			computeStats(counts);
+
 		}
 
 		_localStats->_nbSolidKmers += 1;
 
+		/*
 		if(_soliditySingle){
 			CountVector counts2(counts);
 			for(size_t i=0; i<counts.size(); i++){
@@ -182,18 +191,9 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 		}
 		else{
 			computeStats(counts);
-		}
+		}*/
 
 	}
-
-	/*
-	CountVector counts2;
-	for(int i=0; i<counts.size(); i++){
-		if(counts[i] < _abundanceThreshold.first)
-			counts2.push_back(0);
-		else
-			counts2.push_back(counts[i]);
-	}*/
 
 
 	return true;
@@ -285,7 +285,7 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 			for(size_t j=i+1; j<counts.size(); j++){
 				CountNumber abundanceJ = counts[j];
 				if(abundanceI + abundanceJ > 0)
-					_localStats->_canberra[i][j] += abs((abundanceI - abundanceJ) / (abundanceI + abundanceJ));
+					_localStats->_canberra[i][j] += abs(abundanceI - abundanceJ) / (abundanceI + abundanceJ);
 			}
 		}
 
@@ -941,9 +941,11 @@ void SimkaAlgorithm<span>::createBank(){
 			cout << "Max nb reads: " << _maxNbReads << endl << endl;
 	}
 
+
 	for(size_t i=0; i<_nbBankPerDataset.size(); i++){
 		//cout << _maxNbReads << " " << _nbBankPerDataset[i] << endl;
-		_nbReadsPerDataset.push_back( ceil(_maxNbReads / (float)(_nbBankPerDataset[i])) );
+		//_nbReadsPerDataset.push_back( ceil(_maxNbReads / (float)(_nbBankPerDataset[i])) );
+		_nbReadsPerDataset.push_back( _maxNbReads );
 	}
 
 
