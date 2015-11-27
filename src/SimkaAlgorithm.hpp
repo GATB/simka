@@ -595,7 +595,7 @@ public:
 	 {
 		//Type un = 1;
 		 //_kmerMask    = (un << (kmerSize*2)) - un;
-		 _mask_radix  = Type((int64_t) 255);
+		 _mask_radix.setVal(255);
 		 _mask_radix  = _mask_radix << ((_kmerSize - 4)*2);
 		 //_shift       = 2*(kmerSize-1);
 		 //_shift_val   = un.getSize() -8;
@@ -954,7 +954,8 @@ public:
     	//cout << "\n\n\n" << endl;
     	KxmerPointer<span>* pointer = new KxmerPointer<span> (_radix_kmers+ IX(0) ,0,0,0,255,this->_kmerSize, _radix_sizes + IX(0), _bankIdMatrix);
 
-        Type previous_kmer = 0;
+        Type previous_kmer;
+        previous_kmer.setVal(0);
         //Type currentKmer;
         pointer->next();
         previous_kmer = pointer->value();
@@ -1111,7 +1112,7 @@ public:
     {
     	_progressReadProcessed = 0;
 
-        _mask_radix = (int64_t) 255 ;
+        _mask_radix.setVal( 255 );
         _mask_radix = _mask_radix << ((this->_kmerSize - 4)*2); //get first 4 nt  of the kmers (heavy weight)
     	//u_int64_t nbEntries = estimateNbSequences * _nbMinimizers;
     	//u_int64_t nbCreated = 0;
