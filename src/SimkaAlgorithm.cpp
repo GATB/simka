@@ -25,8 +25,8 @@ static const char* strProgressCounting =      "Simka: Step 2: counting kmers  ";
 
 
 template<size_t span>
-SimkaCountProcessor<span>::SimkaCountProcessor (SimkaStatistics& stats, size_t nbBanks, size_t kmerSize, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, IteratorListener* progress, double minKmerShannonIndex) :
-_progress(progress), _stats(stats)
+SimkaCountProcessor<span>::SimkaCountProcessor (SimkaStatistics& stats, size_t nbBanks, size_t kmerSize, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, double minKmerShannonIndex) :
+_stats(stats)
 {
 
 	// We configure the vector for the N.(N+1)/2 possible pairs
@@ -50,12 +50,12 @@ _progress(progress), _stats(stats)
 template<size_t span>
 SimkaCountProcessor<span>::~SimkaCountProcessor () {
 
-	if(_progress){ //Simka_min
+	/*if(_progress){ //Simka_min
 		if(_nbKmerCounted > 0){
 			_progress->inc(_nbKmerCounted);
 			_nbKmerCounted = 0;
 		}
-	}
+	}*/
 
 	delete _localStats;
 }
@@ -82,12 +82,19 @@ void SimkaCountProcessor<span>::finishClone(SimkaCountProcessor<span>* clone){
 template<size_t span>
 bool SimkaCountProcessor<span>::isSolidVector(const CountVector& counts){
 
+	size_t nbBanks = 0;
+	size_t nbSolids = 0;
+
 	for(size_t i=0; i<counts.size(); i++){
 
 		if(counts[i] >= _abundanceThreshold.first && counts[i] <= _abundanceThreshold.second)
 			return true;
 
+		if(counts[i] > 0) nbBanks += 1;
+
 	}
+
+	if(nbBanks > 1) return true;
 
 	return false;
 
@@ -111,13 +118,13 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 	}
 
 
-
+	/*
 	if(_progress){ //Simka_min
 		if(_nbKmerCounted > 500000){
 			_progress->inc(_nbKmerCounted);
 			_nbKmerCounted = 0;
 		}
-	}
+	}*/
 
 	//return false;
 
@@ -140,11 +147,11 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 
 	//cout << endl;
 
-	if(_progress){ //Simka_min
-		_localStats->_nbSolidKmers += 1;
-		computeStats(counts);
-	}
-	else{
+	//if(_progress){ //Simka_min
+	//	_localStats->_nbSolidKmers += 1;
+	//	computeStats(counts);
+	//}
+	//else{
 
 		if(isAbundanceThreshold){
 
@@ -157,6 +164,7 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 				cout << counts[i] << " ";
 			cout << endl;*/
 
+			/*
 			for(size_t i=0; i<counts.size(); i++){
 
 				if(counts[i] >= _abundanceThreshold.first && counts[i] <= _abundanceThreshold.second)
@@ -165,12 +173,14 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 					_solidCounts[i] = 0;
 			}
 
-			/*
-			for(size_t i=0; i<counts.size(); i++)
-				cout << _solidCounts[i] << " ";
-			cout << endl;*/
 
-			computeStats(_solidCounts);
+			//for(size_t i=0; i<counts.size(); i++)
+			//	cout << _solidCounts[i] << " ";
+			//cout << endl;
+
+			computeStats(_solidCounts);*/
+
+			computeStats(counts);
 		}
 		else{
 			computeStats(counts);
@@ -193,7 +203,7 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 			computeStats(counts);
 		}*/
 
-	}
+		//}
 
 
 	return true;
@@ -383,8 +393,8 @@ double SimkaCountProcessor<span>::getShannonIndex(const Type&  kmer){
 template<size_t span>
 SimkaAlgorithm<span>::SimkaAlgorithm(IProperties* options)
 :
-Algorithm("simka", -1, options),
-_progress (0), _tmpPartitionsStorage(0), _tmpPartitions(0)
+Algorithm("simka", -1, options)
+//_progress (0), _tmpPartitionsStorage(0), _tmpPartitions(0)
 {
 
 
@@ -394,7 +404,6 @@ _progress (0), _tmpPartitionsStorage(0), _tmpPartitions(0)
 	_processor = 0;
 
 	_options = options;
-
 
 	_maxMemory = getInput()->getInt(STR_MAX_MEMORY);
     _nbCores = getInput()->getInt(STR_NB_CORES);
@@ -489,28 +498,14 @@ void SimkaAlgorithm<span>::execute() {
 		}
 	}
 
-	if(_nbMinimizers > 0){
-		executeSimkamin();
-		return;
-	}
 
 	layoutInputFilename();
 	createBank();
 
-	/*
-#ifdef SIMKA_FUSION
-
-	cout << "SimkaAlgo.cpp 1" << endl;
-	clear();
-	delete _banks;
-	cout << "SimkaAlgo.cpp 2" << endl;
-	SimkaFusion<span>* simkaFusion = new SimkaFusion<span>(_options, _inputFilename, _outputDir, _outputDirTemp, _nbReadsPerDataset, _maxNbReads);
-	simkaFusion->execute();
-	return;
-#endif*/
 
 	count();
 
+
 	outputMatrix();
 	//outputHeatmap();
 
@@ -522,298 +517,7 @@ void SimkaAlgorithm<span>::execute() {
 	clear();
 }
 
-template<size_t span>
-std::vector<size_t> SimkaAlgorithm<span>::getNbCoresList()
-{
-    std::vector<size_t> result;
 
-    for (size_t p=0; p<_nbPartitions; )
-    {
-        u_int64_t ram_total = 0;
-        size_t i=0;
-        for (i=0; i< _nbCores && p<_nbPartitions
-            && (ram_total ==0  || ((ram_total+(_nbKmerPerPartitions[p]*getSizeofPerItem()))  <= _maxMemory*MBYTE)) ; i++, p++)
-        {
-            ram_total += _nbKmerPerPartitions[p]*getSizeofPerItem();
-        }
-
-        result.push_back (i);
-    }
-
-    return result;
-}
-
-
-template<size_t span>
-void SimkaAlgorithm<span>::executeSimkamin() {
-
-	layoutInputFilename();
-	createBank();
-
-
-
-
-
-
-
-
-
-
-
-	//_stats = new SimkaStatistics(_nbBanks);
-	//SortingCountAlgorithm<span> sortingCount (_banks, _options);
-	//_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _abundanceThreshold, _solidKind, _soliditySingle);
-	//_processor->use();
-	u_int64_t nbReadToProcess = _maxNbReads * _nbBanks;
-	u_int64_t maxNbKmers = nbReadToProcess * _nbMinimizers;
-	u_int64_t maxNbKmersMemoryB = maxNbKmers * getSizeofPerItem();
-	size_t memoryB = _maxMemory * MBYTE;
-	size_t perfectOpenFiles = 0;
-	size_t max_open_files = System::file().getMaxFilesNumber() / 1.1;
-
-	//cout << maxNbKmers << endl;
-	if(maxNbKmersMemoryB < memoryB){
-		perfectOpenFiles = _nbCores;
-	}
-	else{
-		size_t memoryPerCoreB = memoryB / _nbCores;
-		memoryPerCoreB /= 1.1;
-		perfectOpenFiles = maxNbKmersMemoryB / memoryPerCoreB;
-	}
-
-	if(perfectOpenFiles > max_open_files){
-		perfectOpenFiles = max_open_files;
-	}
-	perfectOpenFiles = min(perfectOpenFiles, (size_t)2000);
-	perfectOpenFiles = max(perfectOpenFiles, _nbCores);
-
-	//cout << perfectOpenFiles << endl;
-	//cout << max_open_files << endl;
-	_nbPartitions = perfectOpenFiles;
-	cout << "Nb partitions: " << _nbPartitions << endl;
-
-
-	_nbKmerPerPartitions.resize(_nbPartitions, 0);
-	_nbk_per_radix_per_part.resize(256);
-    for(size_t ii=0; ii<256; ii++)
-	{
-		_nbk_per_radix_per_part[ii].resize(_nbPartitions, 0);
-	}
-
-    //_multiStorage->createRepartition(_nbPartitions, maxNbKmersMemoryB/_nbPartitions);
-    //_multiStorage->createStorages();
-
-    string tmpStorageName = _outputDirTemp + "/" + System::file().getTemporaryFilename("dsk_partitions");
-    setPartitionsStorage (StorageFactory(STORAGE_FILE).create (tmpStorageName, true, false));
-    setPartitions        (0); // close the partitions first, otherwise new files are opened before  closing parti from previous pass
-    setPartitions        ( & (*_tmpPartitionsStorage)().getPartition<Type> ("parts", _nbPartitions));
-    cout << "Tmp storage: " << tmpStorageName << endl;
-
-
-
-    vector<Iterator<Sequence>*> itBanks =  _banks->iterator()->getComposition();
-
-    cout << endl;
-    //int total = 0;
-	//u_int64_t progressUpdateStep = nbReadToProcess / 100;
-	//progressUpdateStep = max(progressUpdateStep, (u_int64_t)10000);
-	//cout << progressUpdateStep << endl;
-    //size_t nbIterations = (1 + _processors.size()) * _config._volume * MBYTE / sizeof(Type);
-    setProgress (new ProgressSynchro (
-        createIteratorListener (nbReadToProcess, strProgressPartitionning),
-        System::thread().newSynchronizer())
-    );
-    _progress->init ();
-
-    for (size_t i=0; i<itBanks.size(); i++){
-
-    	//cout << i << endl;
-
-        getDispatcher()->iterate (itBanks[i], FillPartitions<span> (_progress, _nbMinimizers, _nbPartitions, _kmerSize, _maxNbReads, _tmpPartitions, _nbk_per_radix_per_part, _minKmerShannonIndex), 1000, true);
-
-//#ifdef MULTI_DISK
-        //        _multiStorage->flush();
-        //#else
-        _tmpPartitions->flush();
-        //#endif
-
-        vector<size_t> nbItems;
-        for (size_t p=0; p<_nbPartitions; p++)
-        {
-        	//#ifdef MULTI_DISK
-        	//        u_int64_t nbItem = _multiStorage->getPartition(p).getNbItems();
-        	//#else
-        u_int64_t nbItem = (*_tmpPartitions)[p].getNbItems();
-        //#endif
-
-            nbItems.push_back (nbItem);
-            //_nbKmerPerPartitions[p] += nbItem;
-            //total += nbItem;
-        }
-        _nbKmersPerPartitionPerBank.push_back (nbItems);
-
-		//GR: close the input bank here with call to finalize
-		itBanks[i]->forget(); //->finalize();
-    }
-
-
-    _totalKmers = 0;
-    for (size_t p=0; p<_nbPartitions; p++){
-    	//#ifdef MULTI_DISK
-    	//    	u_int64_t nbItem = _multiStorage->getPartition(p).getNbItems();
-    	//#else
-        u_int64_t nbItem = (*_tmpPartitions)[p].getNbItems();
-        //#endif
-
-    	_nbKmerPerPartitions[p] = nbItem;
-        _totalKmers += nbItem;
-    }
-    cout << endl << "Total kmers: "  << _totalKmers << endl;
-
-
-
-    //_nbCores = 1;
-
-
-
-
-
-
-
-
-    vector<size_t> coreList = getNbCoresList();
-
-    cout << endl << "Nb cores list:  ";
-    for(size_t i=0; i<coreList.size(); i++){
-    	cout << coreList[i] << " ";
-    }
-    cout << endl;
-
-
-    setProgress (new ProgressSynchro (
-        createIteratorListener (_totalKmers, strProgressCounting),
-        System::thread().newSynchronizer())
-    );
-    _progress->init ();
-
-
-	SimkaDistanceParam distanceParams(_options);
-	_stats = new SimkaStatistics(_nbBanks, distanceParams);
-    _processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _kmerSize, _abundanceThreshold, _solidKind, _soliditySingle, _progress, 0);
-    _processor->use();
-
-    MemAllocator pool (_nbCores);
-	u_int64_t memoryPoolSize = _maxMemory*MBYTE;
-
-    size_t p = 0;
-    for (size_t i=0; i<coreList.size(); i++)
-    {
-        vector<ICommand*> cmds;
-
-        vector<ICountProcessor<span>*> clones;
-
-        size_t currentNbCores = coreList[i];
-
-        u_int64_t mem = (_maxMemory*MBYTE)/currentNbCores;
-
-        size_t cacheSize = min ((u_int64_t)(200*1000), mem/(50*sizeof(Count)));
-
-        /** We build a list of 'currentNbCores' commands to be dispatched each one in one thread. */
-        for (size_t j=0; j<currentNbCores; j++, p++)
-        {
-            ISynchronizer* synchro = System::thread().newSynchronizer();
-            LOCAL (synchro);
-
-            ICountProcessor<span>* processorClone = _processor->clone ();
-
-            processorClone->use();
-            clones.push_back (processorClone);
-
-
-            uint64_t memoryPartition = (_nbKmerPerPartitions[p]*getSizeofPerItem()); //in bytes
-            //cout << _nbKmerPerPartitions[p] << endl;
-            //cout << "\t" << getSizeofPerItem() << endl;
-            //cout << "\t" << memoryPartition << endl;
-
-            ICommand* cmd = 0;
-
-
-			if (memoryPartition >= memoryPoolSize)
-			{
-				static const int EXCEED_FACTOR = 2;
-
-				if (memoryPartition  < EXCEED_FACTOR*memoryPoolSize)
-				{
-					memoryPoolSize = memoryPartition;
-				}
-				else
-				{
-					unsigned long system_mem = System::info().getMemoryPhysicalTotal();
-					memoryPoolSize = memoryPartition;
-
-					if (memoryPoolSize > system_mem*0.95)
-					{
-						throw Exception ("memory issue: %lld bytes required, %lld bytes set by command-line limit, %lld bytes in system memory",
-							memoryPartition, memoryPoolSize, system_mem
-						);
-					}
-					else
-						cout << "Warning: forced to allocate extra memory: " << memoryPoolSize / MBYTE << " MB" << endl;
-
-				}
-			}
-
-		   //if capa pool ==0, reserve max memo , pass pool to partibyvec, will be used  for vec kmers
-			if (pool.getCapacity() == 0)  {  pool.reserve (memoryPoolSize); }
-			else if (memoryPoolSize > pool.getCapacity()) { pool.reserve(0); pool.reserve (memoryPoolSize); }
-
-
-			vector<size_t> nbItemsPerBankPerPart;
-			for (size_t i=0; i<_nbKmersPerPartitionPerBank.size(); i++)
-			{
-				nbItemsPerBankPerPart.push_back (_nbKmersPerPartitionPerBank[i][p] - (i==0 ? 0 : _nbKmersPerPartitionPerBank[i-1][p]) );
-			}
-
-			//cmd = new PartitionsByVectorCommand<span> (
-			//	(*_tmpPartitions)[p], processorClone, cacheSize, _progress, _fillTimeInfo,
-			//	pInfo, pass, p, _config._nbCores_per_partition, _config._kmerSize, pool, nbItemsPerBankPerPart
-			//);
-			int nbCore = 1;
-			cmd = new PartitionCommand<span> (
-					//_multiStorage->getPartition(p), processorClone, cacheSize, 0, p, nbCore, _kmerSize, pool, nbItemsPerBankPerPart, _nbKmerPerPartitions, _nbk_per_radix_per_part
-					(*_tmpPartitions)[p], processorClone, cacheSize, 0, p, nbCore, _kmerSize, pool, nbItemsPerBankPerPart, _nbKmerPerPartitions, _nbk_per_radix_per_part
-			);
-
-            cmds.push_back (cmd);
-
-        }
-
-        getDispatcher()->dispatchCommands (cmds, 0);
-
-        _processor->finishClones (clones);
-        for (size_t i=0; i<clones.size(); i++)  { delete clones[i]; }  clones.clear();
-
-        //cout << pool.getCapacity()/(double)MBYTE << " " << pool.getUsedSpace()/(double)MBYTE << " " << (pool.getUsedSpace()*100) / (double)pool.getCapacity() << endl;
-
-        pool.free_all();
-    }
-
-
-
-
-    //_multiStorage->remove();
-    _tmpPartitions->remove();
-    //return;
-	outputMatrix();
-	//outputHeatmap();
-
-	if(_options->getInt(STR_VERBOSE) != 0){
-		_stats->print();
-		print();
-	}
-
-	clear();
-}
 
 template<size_t span>
 void SimkaAlgorithm<span>::layoutInputFilename(){
@@ -866,6 +570,8 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 		if(!valid){
 			continue;
 		}*/
+
+
 
 		string bankId = linePartList[0];
 		_bankNames.push_back(bankId);
@@ -962,8 +668,14 @@ void SimkaAlgorithm<span>::createBank(){
 
 }
 
+
+
+
+
+
 template<size_t span>
 void SimkaAlgorithm<span>::count(){
+
 
 	SimkaDistanceParam distanceParams(_options);
 
@@ -972,7 +684,7 @@ void SimkaAlgorithm<span>::count(){
 	SortingCountAlgorithm<span> sortingCount (_banks, _options);
 
 	// We create a custom count processor and give it to the sorting count algorithm
-	_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _kmerSize, _abundanceThreshold, _solidKind, _soliditySingle, _progress, _minKmerShannonIndex);
+	_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _kmerSize, _abundanceThreshold, _solidKind, _soliditySingle, _minKmerShannonIndex);
 	_processor->use();
 	sortingCount.addProcessor (_processor);
 
@@ -982,51 +694,20 @@ void SimkaAlgorithm<span>::count(){
 
 }
 
+
+
+
+
+
+
+
+
 template<size_t span>
 void SimkaAlgorithm<span>::outputMatrix(){
 	_stats->outputMatrix(_outputDir, _bankNames);
 }
 
-/*
-template<size_t span>
-void SimkaAlgorithm<span>::outputHeatmap(){
-	cout << endl << endl;
-	__outputHeatmap("heatmap_presenceAbsence_sorensen", "mat_presenceAbsence_sorensen", "mat_presenceAbsence_sorensen");
-	__outputHeatmap("heatmap_presenceAbsence_jaccard", "mat_presenceAbsence_jaccard_asym", "mat_presenceAbsence_jaccard");
-	__outputHeatmap("heatmap_abundance_jaccard", "mat_abundance_jaccard_asym", "mat_abundance_jaccard");
-	__outputHeatmap("heatmap_abundance_brayCurtis", "mat_abundance_brayCurtis", "mat_abundance_brayCurtis");
-}
 
-
-template<size_t span>
-void SimkaAlgorithm<span>::__outputHeatmap(const string& outputFilenamePrefix, const string& matrixAsymFilename, const string& matrixNormFilename){
-
-
-
-	string asymFilename = matrixAsymFilename + _outputFilenameSuffix + ".csv";
-	string normFilename = matrixNormFilename + _outputFilenameSuffix + ".csv";
-	string outputFilename = outputFilenamePrefix + _outputFilenameSuffix + ".png";
-
-
-	string command = "Rscript ./Rscripts/heatmap.r " + _outputDir + "/" + asymFilename + " " + _outputDir + "/" + normFilename + " " + _outputDir + "/" + outputFilename;
-	//cout << command << endl;
-
-    try
-    {
-    	system(command.c_str());
-    }
-    catch (Exception& e)
-    {
-        std::cout << "EXCEPTION: " << e.getMessage() << std::endl;
-        //return EXIT_FAILURE;
-    }
-
-    //if(linePartList[0] == "dks")
-    //	_heatmapDksFilename = outputFilename;
-    //else
-    //	_heatmapAksFilename = outputFilename;
-
-}*/
 
 
 template<size_t span>
@@ -1034,18 +715,6 @@ void SimkaAlgorithm<span>::print(){
 
 	cout << "Output folder:   " << _outputDir << endl;
 
-	/*
-	cout << "Similarity matrix:" << endl;
-	cout << "\t" << "DKS (presence/absence)" << endl;
-	cout << "\t\t" << "asym: " << _outputDir + "/" + _matDksPercFilename << endl;
-	cout << "\t\t" << "norm: " << _outputDir + "/" + _matDksNormFilename << endl;
-	cout << "\t" << "AKS (abundance)" << endl;
-	cout << "\t\t" << "asym: " << _outputDir + "/" + _matAksPercFilename << endl;
-	cout << "\t\t" << "norm: " << _outputDir + "/" + _matAksNormFilename << endl;
-
-	cout << "Heatmaps:" << endl;
-	cout << "\t" << "DKS (presence/absence):" << _outputDir + "/" + _heatmapDksFilename << endl;
-	cout << "\t" << "AKS (abundance):" << _outputDir + "/" + _heatmapAksFilename << endl;*/
 
 
 }
