@@ -29,7 +29,7 @@
 
 #include <gatb/kmer/impl/RepartitionAlgorithm.hpp>
 
-#define CLUSTER
+//#define CLUSTER
 //#define SERIAL
 #define SLEEP_TIME_SEC 1
 
@@ -130,16 +130,30 @@ public:
 		_outputDirTemp = _options->getStr(STR_URI_OUTPUT_TMP);
 
 		_maxNbReads = _options->getInt(STR_SIMKA_MAX_READS);
-		_maxJobCount = _options->getInt(STR_SIMKA_NB_JOB_COUNT);
-		_maxJobMerge = _options->getInt(STR_SIMKA_NB_JOB_MERGE);
-		_jobCountFilename = _options->getStr(STR_SIMKA_JOB_COUNT_FILENAME);
-		_jobMergeFilename = _options->getStr(STR_SIMKA_JOB_MERGE_FILENAME);
-		_jobCountCommand = _options->getStr(STR_SIMKA_JOB_COUNT_COMMAND);
-		_jobMergeCommand = _options->getStr(STR_SIMKA_JOB_MERGE_COMMAND);
+		//_maxJobCount = _options->getInt(STR_SIMKA_NB_JOB_COUNT);
+		//_maxJobMerge = _options->getInt(STR_SIMKA_NB_JOB_MERGE);
+		//_jobCountFilename = _options->getStr(STR_SIMKA_JOB_COUNT_FILENAME);
+		//_jobMergeFilename = _options->getStr(STR_SIMKA_JOB_MERGE_FILENAME);
+		//_jobCountCommand = _options->getStr(STR_SIMKA_JOB_COUNT_COMMAND);
+		//_jobMergeCommand = _options->getStr(STR_SIMKA_JOB_MERGE_COMMAND);
 
 		_nbAskedPartitions = _options->getInt(STR_SIMKA_NB_PARTITIONS);
 
+		_maxMemory = _options->getInt(STR_MAX_MEMORY);
+		_nbCores = _options->getInt(STR_NB_CORES);
 
+		_maxJobMerge = _nbCores;
+
+		u_int64_t minMemory = 2000;
+		size_t maxJobCountTemp = _maxMemory/minMemory;
+		_maxJobCount = min(_nbCores, maxJobCountTemp);
+		_memoryPerJob = _maxMemory / _maxJobCount;
+		_coresPerJob = ceil(_nbCores / (float)_maxJobCount);
+
+
+		cout << "Nb jobs in parallel: " << _maxJobCount << endl;
+		cout << "Cores per jobs: " << _coresPerJob << endl;
+		cout << "Memory per jobs: " << _memoryPerJob << endl;
 		//string solidFilename = _outputDir + "/solid/" +  p.bankName + suffix + ".h5";
 
 		//cout << "SimkaFusion constructor       " << _outputDirTempFilter << endl;
@@ -591,15 +605,15 @@ public:
 				command += " " + string("-out-tmp-simka") + " " + _outputDirTempFilter;
 				command += " " + string("-out-tmp") + " " + tempDir;
 				command += " -bank-name " + _bankNames[i];
-				command += " " + string(STR_MAX_MEMORY) + " " + _options->getStr(STR_MAX_MEMORY);
-				command += " " + string(STR_NB_CORES) + " " + _options->getStr(STR_NB_CORES);
+				command += " " + string(STR_MAX_MEMORY) + " " + SimkaAlgorithm<>::toString(_memoryPerJob);
+				command += " " + string(STR_NB_CORES) + " " + SimkaAlgorithm<>::toString(_coresPerJob);
 				command += " " + string(STR_URI_INPUT) + " dummy ";
 				command += " " + string(STR_KMER_ABUNDANCE_MIN) + " " + _options->getStr(STR_KMER_ABUNDANCE_MIN);
 				command += " " + string(STR_SIMKA_MIN_READ_SIZE) + " " + _options->getStr(STR_SIMKA_MIN_READ_SIZE);
 				command += " " + string(STR_SIMKA_MIN_READ_SHANNON_INDEX) + " " + _options->getStr(STR_SIMKA_MIN_READ_SHANNON_INDEX);
 				command += " " + string(STR_SIMKA_MAX_READS) + " " + SimkaAlgorithm<>::toString(_nbReadsPerDataset[i]);
 #ifndef CLUSTER
-				//command += " &";
+				command += " &";
 #endif
 
 				//command = _cmdJobCount + " " + command;
@@ -737,7 +751,7 @@ public:
 				command += " " + string("-out-tmp-simka") + " " + _outputDirTempFilter;
 				command += " -partition-id " + SimkaAlgorithm<>::toString(i);
 				command += " " + string(STR_MAX_MEMORY) + " " + _options->getStr(STR_MAX_MEMORY);
-				command += " " + string(STR_NB_CORES) + " " + _options->getStr(STR_NB_CORES);
+				command += " " + string(STR_NB_CORES) + " 1";
 				command += " " + string(STR_SIMKA_MIN_KMER_SHANNON_INDEX) + " " + _options->getStr(STR_SIMKA_MIN_KMER_SHANNON_INDEX);
 
 				SimkaDistanceParam distanceParams(_options);
@@ -748,7 +762,7 @@ public:
 				if(distanceParams._computeKulczynski) command += " " + STR_SIMKA_DISTANCE_KULCZYNSKI + " ";
 
 	#ifndef CLUSTER
-				//command += " &";
+				command += " &";
 	#endif
 
 	#ifdef CLUSTER
@@ -862,6 +876,12 @@ public:
 
 		mainStats.outputMatrix(_outputDir, _bankNames);
 	}
+
+
+	u_int64_t _maxMemory;
+	size_t _nbCores;
+	u_int64_t _memoryPerJob;
+	size_t _coresPerJob;
 
 	//IBank* _banks;
 	IProperties* _options;

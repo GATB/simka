@@ -408,7 +408,7 @@ public:
 
 		SimkaDistanceParam distanceParams(p.props);
 		_stats = new SimkaStatistics(_nbBanks, distanceParams);
-		_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, 0, p.minShannonIndex);
+		_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, p.minShannonIndex);
 		_processor->use();
 
 		_processors.push_back(_processor->clone());
