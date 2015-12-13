@@ -641,8 +641,14 @@ void SimkaAlgorithm<span>::createBank(){
 	if(_maxNbReads == 0){
 		if(_options->getInt(STR_VERBOSE) != 0)
 			cout << "-maxNbReads is not defined. Simka will estimating it..." << endl;
-		_maxNbReads = bank->estimateNbItems() / _nbBanks;
-		_maxNbReads -= (_maxNbReads/10);
+		//_maxNbReads = bank->estimateNbItems() / _nbBanks;
+		//_maxNbReads -= (_maxNbReads/10);
+		u_int64_t minReads = -1;
+		for (size_t i=0; i<_nbBanks; i++){
+			u_int64_t nbReads = bank->estimateNbItemsBanki(i);
+			if(nbReads < minReads) minReads = nbReads;
+		}
+		_maxNbReads = minReads;
 		if(_options->getInt(STR_VERBOSE) != 0)
 			cout << "Max nb reads: " << _maxNbReads << endl << endl;
 	}
