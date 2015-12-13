@@ -166,6 +166,12 @@ public:
 					config->load(storage->getGroup(""));
 					repartitor->load(storage->getGroup(""));
 				}
+
+				config->_abundanceUserNb = 1;
+				config->_abundance.clear();
+				CountRange range(props->getInt(STR_KMER_ABUNDANCE_MIN), 100000);
+				config->_abundance.push_back(range);
+
 				//delete storage;
 				/*
 				config._kmerSize = p.kmerSize;
