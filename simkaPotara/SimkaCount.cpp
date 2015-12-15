@@ -91,6 +91,8 @@ public:
 
     	//size_t datasetId =  getInput()->getInt(STR_ID);
     	size_t kmerSize =  getInput()->getInt(STR_KMER_SIZE);
+    	cout << kmerSize << endl;
+
     	string outputDir =  getInput()->getStr("-out-tmp-simka");
     	string bankName =  getInput()->getStr("-bank-name");
     	size_t minReadSize =  getInput()->getInt(STR_SIMKA_MIN_READ_SIZE);

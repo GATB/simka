@@ -29,6 +29,8 @@
 
 #include <gatb/kmer/impl/RepartitionAlgorithm.hpp>
 
+#include <unistd.h>
+
 //#define CLUSTER
 //#define SERIAL
 #define SLEEP_TIME_SEC 1
@@ -144,11 +146,14 @@ public:
 
 		_maxJobMerge = _nbCores;
 
+		size_t maxCoreCount = (2*System::info().getNbCores()) / 3;
+		size_t nbCoresCount = min(maxCoreCount, _nbCores);
+
 		u_int64_t minMemory = 2000;
 		size_t maxJobCountTemp = _maxMemory/minMemory;
-		_maxJobCount = min(_nbCores, maxJobCountTemp);
+		_maxJobCount = min(nbCoresCount, maxJobCountTemp);
 		_memoryPerJob = _maxMemory / _maxJobCount;
-		_coresPerJob = ceil(_nbCores / (float)_maxJobCount);
+		_coresPerJob = ceil(nbCoresCount / (float)_maxJobCount);
 
 
 		cout << "Nb jobs in parallel: " << _maxJobCount << endl;
@@ -157,6 +162,9 @@ public:
 		//string solidFilename = _outputDir + "/solid/" +  p.bankName + suffix + ".h5";
 
 		//cout << "SimkaFusion constructor       " << _outputDirTempFilter << endl;
+
+
+
 
 	}
 
@@ -580,6 +588,7 @@ public:
 
 	void count(){
 
+		vector<vector<string> > commands;
 
 		_progress = new ProgressSynchro (
 			createIteratorListener (_bankNames.size(), "Counting datasets"),
@@ -589,6 +598,25 @@ public:
 		vector<string> filenameQueue;
 		vector<string> filenameQueueToRemove;
 		size_t nbJobs = 0;
+
+
+			/*
+		id_t pids[_maxJobCount];
+		//int pipe_fd[_maxJobCount];
+		for(int child=0;child<_maxJobCount;child++) {
+			cout << child << endl;
+			 //int pipe[2];
+			 int ret;
+			 ret = fork();
+			 if(ret) {
+			  pids[child] = ret;
+			  cout << "ha:   " << ret << endl;
+			 } else {
+				 cout << "child" << endl;
+			  //exec(...);
+			 }
+		}
+*/
 
 	    for (size_t i=0; i<_bankNames.size(); i++){
 
@@ -600,6 +628,107 @@ public:
 			}
 			else{
 
+				string tempDir = _outputDirTempFilter + "/temp/" + _bankNames[i];
+
+				vector<string> command;
+				command.push_back(_bankNames[i]);
+				command.push_back(tempDir);
+				/*
+				command.push_back();
+				command.push_back(+ " " + );
+
+				command.push_back(+ " " + );
+				command.push_back( + );
+				command.push_back(string(STR_MAX_MEMORY) + " " + SimkaAlgorithm<>::toString(_memoryPerJob));
+				command.push_back(string(STR_NB_CORES) + " " + SimkaAlgorithm<>::toString(_coresPerJob));
+				command.push_back(string() + " dummy ");
+				command.push_back(string(STR_KMER_ABUNDANCE_MIN) + " " + _options->getStr(STR_KMER_ABUNDANCE_MIN));
+				command.push_back(string(STR_SIMKA_MIN_READ_SIZE) + " " + _options->getStr(STR_SIMKA_MIN_READ_SIZE));
+				command.push_back(string(STR_SIMKA_MIN_READ_SHANNON_INDEX) + " " + _options->getStr(STR_SIMKA_MIN_READ_SHANNON_INDEX));
+				command.push_back(string(STR_SIMKA_MAX_READS) + " " + SimkaAlgorithm<>::toString(_nbReadsPerDataset[i]));
+				*/
+				commands.push_back(command);
+			}
+	    }
+
+	    vector<id_t> pids(commands.size());
+	    size_t jobDone = 0;
+	    vector<bool> isJobFinished(commands.size());
+	    //size_t nbJobs = 0;
+
+	    for(size_t i=0; i<commands.size(); i++){
+			 int ret;
+			ret = fork();
+			if(ret) {
+				pids[i] = ret;
+				nbJobs += 1;
+				cout << "-------------:   " << ret << "   " << i << "   " << nbJobs << endl;
+
+				if(nbJobs >= _maxJobCount){
+
+					//while(true){
+					//bool ok = false;
+					for(size_t j=0; j<=i; j++){
+
+						if(isJobFinished[j]) continue;
+
+						int status;
+						waitpid(pids[j], &status, 0);
+						cout << "job finiashed " << j << endl;
+
+						isJobFinished[j] = true;
+						nbJobs -= 1;
+						//jobDone += 1;
+						//ok = true;
+					}
+						//if(ok) break;
+					//}
+				}
+
+				cout << nbJobs << endl;
+				//if(i == commands.size()-1)
+				//    waitpid(pids[i], &status, 0);
+				//nbJobs -= 1;
+				//}
+
+			}
+			else {
+				vector<string> command = commands[i];
+				cout << "child" << endl;
+				execl(
+						"./simkaCount",
+						(string(STR_KMER_SIZE) + " " + _options->getStr(STR_KMER_SIZE)).c_str(),
+						string("-out-tmp-simka") .c_str(),
+						_outputDirTempFilter.c_str(),
+						string("-out-tmp") .c_str(),
+						command[1].c_str(),
+						"-bank-name" ,
+						command[0].c_str(),
+						STR_URI_INPUT,
+						"dummy",
+						STR_SIMKA_MAX_READS.c_str(),
+						SimkaAlgorithm<>::toString(_maxNbReads).c_str(),
+						STR_SIMKA_MIN_READ_SHANNON_INDEX.c_str(),
+						"0",
+						STR_SIMKA_MIN_READ_SIZE.c_str(),
+						"0",
+						STR_KMER_ABUNDANCE_MIN,
+						_options->getStr(STR_KMER_ABUNDANCE_MIN).c_str(),
+						"-verbose",
+						"0",
+						NULL
+				);
+			}
+	    }
+
+
+		for(size_t j=0; j<commands.size(); j++){
+			int status;
+			waitpid(pids[j], &status, 0);
+			//ok = true;
+		}
+
+	    /*
 				filenameQueue.push_back(_bankNames[i]);
 
 
@@ -642,6 +771,9 @@ public:
 				system(submitCommand.c_str());
 #else
 				cout << "\t" << command << endl;
+				//execl("./simkaCount",
+				//		(string(STR_KMER_SIZE) + " " + _options->getStr(STR_KMER_SIZE)).c_str(),
+				//	NULL);
 				system(command.c_str());
 #endif
 				nbJobs += 1;
@@ -707,7 +839,7 @@ public:
 	    }
 
 
-	    cout << nbJobs << endl;
+	    cout << nbJobs << endl;*/
 
 	    _progress->finish();
 	    delete _progress;
