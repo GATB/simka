@@ -651,7 +651,7 @@ public:
 			}
 	    }
 
-	    vector<id_t> pids(commands.size());
+	    vector<pid_t> pids(commands.size());
 	    size_t jobDone = 0;
 	    vector<bool> isJobFinished(commands.size());
 	    //size_t nbJobs = 0;
