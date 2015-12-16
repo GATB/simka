@@ -90,11 +90,12 @@ bool SimkaCountProcessor<span>::isSolidVector(const CountVector& counts){
 		if(counts[i] >= _abundanceThreshold.first && counts[i] <= _abundanceThreshold.second)
 			return true;
 
+		//cout << "a " <<  counts[i] << _abundanceThreshold.first << "  " << _abundanceThreshold.second << endl;
 		if(counts[i] > 0) nbBanks += 1;
 
 	}
 
-	if(nbBanks > 1) return true;
+	//if(nbBanks > 1) return true;
 
 	return false;
 
@@ -110,12 +111,7 @@ bool SimkaCountProcessor<span>::isSolidVector(const CountVector& counts){
 template<size_t span>
 bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const CountVector& counts, CountNumber sum){
 
-	if(_minKmerShannonIndex != 0){
-		double shannonIndex = getShannonIndex(kmer);
-		if(shannonIndex < _minKmerShannonIndex){
-			return false;
-		}
-	}
+
 
 
 	/*
@@ -143,6 +139,13 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 		_totalAbundance += abundance;
 	}
 
+	if(_minKmerShannonIndex != 0){
+		double shannonIndex = getShannonIndex(kmer);
+		if(shannonIndex < _minKmerShannonIndex){
+			return false;
+		}
+	}
+
 	//cout << kmer.toString(31) << endl;
 
 	//cout << endl;
@@ -153,10 +156,12 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 	//}
 	//else{
 
-		if(isAbundanceThreshold){
+	computeStats(counts);
 
-			if(!isSolidVector(counts))
-				return false;
+	//	if(isAbundanceThreshold){
+
+		//	if(!isSolidVector(counts))
+			//	return false;
 
 			/*
 			cout << endl;
@@ -180,12 +185,12 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 
 			computeStats(_solidCounts);*/
 
-			computeStats(counts);
-		}
-		else{
-			computeStats(counts);
+			//computeStats(counts);
+	//}
+	//else{
+	//	computeStats(counts);
 
-		}
+	//}
 
 		_localStats->_nbSolidKmers += 1;
 

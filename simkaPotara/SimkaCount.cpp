@@ -26,31 +26,193 @@ using namespace std;
 
 
 
+
+
+
+
+
+
+/********************************************************************************/
+/** \brief Iterator that can be cancelled at some point during iteration
+ *
+ * This iterator iterates a referred iterator and will finish:
+ *      - when the referred iterator is over
+ *   or - when the cancel member variable is set to true
+ *
+ */
+template <class Item, typename Filter> class SimkaInputIterator : public Iterator<Item>
+{
+public:
+
+    /** Constructor.
+     * \param[in] ref : the referred iterator
+     * \param[in] initRef : will call 'first' on the reference if true
+     */
+	SimkaInputIterator(vector<Iterator<Item>* >& refs, size_t nbBanks, u_int64_t maxReads, Filter filter)
+        :  _refs(refs), _ref(refs[0]), _filter(filter) {
+		_isDone = true;
+		_nbBanks = nbBanks;
+		cout << _nbBanks << endl;
+		_maxReads = maxReads;
+		_nbReadProcessed = 0;
+		_currentBank = 0;
+		_currentInternalBank = 0;
+	}
+
+    /** \copydoc  Iterator::first */
+    void first()
+    {
+
+
+        _ref->first();
+
+
+        _isDone = _ref->isDone();
+
+
+        while (!_ref->isDone() && _filter(_ref->item())==false)
+        	_ref->next();
+
+
+    	*(this->_item) = _ref->item();
+
+    	//_ref->next();
+        /** IMPORTANT : we need to copy the referred item => we just can't rely on a simple
+         * pointer (in case of usage of Dispatcher for instance where a buffer of items is kept
+         * and could be wrong if the referred items doesn't exist any more when accessing the
+         * buffer).
+         * TODO doc: I get it, but why is it done only in this iterator and not other iterators like FilterIterator?*/
+        //if (!_isDone)  { *(this->_item) = _ref->item(); }
+
+        //cout << "HAA   " << _currentBank << endl;
+    }
+
+    bool isFinished(){
+    	if(_currentBank == _refs.size()-1){
+    		_isDone = true;
+    		return true;
+    	}
+    	return false;
+    }
+
+    void nextDataset(){
+    	//cout << "next dataset "<< endl;
+    	while(_currentInternalBank < _nbBanks){
+        	_currentBank += 1;
+    		_currentInternalBank += 1;
+    	}
+    	_currentInternalBank = 0;
+    	_nbReadProcessed = 0;
+
+		if(isFinished()){
+			return;
+		}
+
+    	nextBank();
+    }
+
+    void nextBank(){
+    	//cout << "next bank "<< endl;
+    	_currentInternalBank += 1;
+    	if(_currentInternalBank == _nbBanks){
+    		nextDataset();
+    	}
+    	else{
+        	_isDone = false;
+        	_currentBank += 1;
+        	_ref = _refs[_currentBank];
+        	first();
+    	}
+
+    }
+
+
+
+
+
+    /** \copydoc  Iterator::next */
+    void next()
+    {
+
+    	_ref->next();
+
+        _isDone = _ref->isDone();
+
+        while (!_ref->isDone() && _filter(_ref->item())==false)
+        	_ref->next();
+
+        //_isDone = _ref->isDone();
+
+        //if (!_isDone)  {
+        	*(this->_item) = _ref->item();
+        	_nbReadProcessed += 1;
+
+        	//cout << &_ref->item() << endl;
+        //}
+
+    	//cout << _nbReadProcessed << "  " << _maxReads << "    " << _refs.size() << endl;
+
+
+        if(_isDone){
+    		if(isFinished())
+    			return;
+    		else
+    			nextBank();
+
+        }
+        else{
+        	//*(this->_item) = _ref->item();
+        }
+
+    	if(_nbReadProcessed >= _maxReads){
+    		if(isFinished())
+    			return;
+    		else
+    			nextDataset();
+    	}
+
+    }
+
+    /** \copydoc  Iterator::isDone */
+    bool isDone()  {  return _isDone;  }
+
+    /** \copydoc  Iterator::item */
+    Item& item ()  {  return *(this->_item);  }
+
+
+private:
+
+    bool            _isDone;
+    size_t _currentBank;
+    vector<Iterator<Item>* > _refs;
+    Iterator<Item>* _ref;
+    size_t _nbBanks;
+    u_int64_t _maxReads;
+    Filter _filter;
+    u_int64_t _nbReadProcessed;
+    size_t _currentInternalBank;
+};
+
+
+
 template<typename Filter> class SimkaPotaraBankFiltered : public BankDelegate
 {
 public:
 
-	SimkaPotaraBankFiltered (IBank* ref, const Filter& filter, u_int64_t maxReads) : BankDelegate (ref), _filter(filter)  {
+	SimkaPotaraBankFiltered (IBank* ref, const Filter& filter, u_int64_t maxReads, size_t nbDatasets) : BankDelegate (ref), _filter(filter)  {
 		//_nbReadsPerDataset = nbReadsPerDataset;
 		_maxReads = maxReads;
+		_nbDatasets = nbDatasets;
 	}
 
-    /** \copydoc tools::collections::Iterable::iterator */
+
     Iterator<Sequence>* iterator ()
     {
 
-    	//cout << "lala" << endl;
-        // We create one iterator from the reference
         Iterator<Sequence>* it = _ref->iterator ();
-
-        // We get the composition for this iterator
         std::vector<Iterator<Sequence>*> iterators = it->getComposition();
-
-		SimkaTruncateIterator<Sequence>* truncIt = new SimkaTruncateIterator<Sequence>(iterators[0], _maxReads+_maxReads/5);
-		Filter filter(_filter);
-		filter.setMaxReads(_maxReads);
-    	FilterIterator<Sequence,Filter>* filterIt = new FilterIterator<Sequence,Filter> (truncIt, filter);
-    	return filterIt;
+        return new SimkaInputIterator<Sequence, Filter> (iterators, _nbDatasets, _maxReads, _filter);
+    	//return filterIt;
 
     }
 
@@ -61,6 +223,7 @@ private:
     Filter _filter;
     u_int64_t _nbReadToProcess;
     size_t _datasetId;
+    size_t _nbDatasets;
 };
 
 
@@ -78,6 +241,7 @@ public:
         getParser()->push_back (new OptionOneParam (STR_SIMKA_MIN_READ_SIZE,   "bank name", true));
         getParser()->push_back (new OptionOneParam (STR_SIMKA_MIN_READ_SHANNON_INDEX,   "bank name", true));
         getParser()->push_back (new OptionOneParam (STR_SIMKA_MAX_READS,   "bank name", true));
+        getParser()->push_back (new OptionOneParam ("-nb-datasets",   "bank name", true));
         //getParser()->push_back (new OptionOneParam ("-nb-cores",   "bank name", true));
         //getParser()->push_back (new OptionOneParam ("-max-memory",   "bank name", true));
 
@@ -91,15 +255,16 @@ public:
 
     	//size_t datasetId =  getInput()->getInt(STR_ID);
     	size_t kmerSize =  getInput()->getInt(STR_KMER_SIZE);
-    	cout << kmerSize << endl;
+    	//cout << kmerSize << endl;
 
     	string outputDir =  getInput()->getStr("-out-tmp-simka");
     	string bankName =  getInput()->getStr("-bank-name");
     	size_t minReadSize =  getInput()->getInt(STR_SIMKA_MIN_READ_SIZE);
     	double minReadShannonIndex =  getInput()->getDouble(STR_SIMKA_MIN_READ_SHANNON_INDEX);
     	u_int64_t maxReads =  getInput()->getInt(STR_SIMKA_MAX_READS);
+    	size_t nbDatasets =   getInput()->getInt("-nb-datasets");
 
-    	Parameter params(*this, kmerSize, outputDir, bankName, minReadSize, minReadShannonIndex, maxReads);
+    	Parameter params(*this, kmerSize, outputDir, bankName, minReadSize, minReadShannonIndex, maxReads, nbDatasets);
 
         Integer::apply<Functor,Parameter> (kmerSize, params);
 
@@ -137,8 +302,8 @@ public:
 
     struct Parameter
     {
-        Parameter (SimkaCount& tool, size_t kmerSize, string outputDir, string bankName, size_t minReadSize, double minReadShannonIndex, u_int64_t maxReads) :
-        	tool(tool), kmerSize(kmerSize), outputDir(outputDir), bankName(bankName), minReadSize(minReadSize), minReadShannonIndex(minReadShannonIndex), maxReads(maxReads)  {}
+        Parameter (SimkaCount& tool, size_t kmerSize, string outputDir, string bankName, size_t minReadSize, double minReadShannonIndex, u_int64_t maxReads, size_t nbDatasets) :
+        	tool(tool), kmerSize(kmerSize), outputDir(outputDir), bankName(bankName), minReadSize(minReadSize), minReadShannonIndex(minReadShannonIndex), maxReads(maxReads), nbDatasets(nbDatasets)  {}
         SimkaCount& tool;
         //size_t datasetId;
         size_t kmerSize;
@@ -147,6 +312,7 @@ public:
         size_t minReadSize;
         double minReadShannonIndex;
         u_int64_t maxReads;
+        size_t nbDatasets;
     };
 
     template<size_t span> struct Functor  {
@@ -200,7 +366,6 @@ public:
 				std::vector<tools::misc::CountRange>  _abundance;
 				size_t _abundanceUserNb;*/
 
-
 				string tempDir = p.outputDir + "/temp/" + p.bankName;
 				System::file().mkdir(tempDir, -1);
 				//cout << i << endl;
@@ -210,7 +375,7 @@ public:
 				IBank* bank = Bank::open(p.outputDir + "/input/" + p.bankName);
 
 				SimkaSequenceFilter sequenceFilter(p.minReadSize, p.minReadShannonIndex);
-				IBank* filteredBank = new SimkaPotaraBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, p.maxReads);
+				IBank* filteredBank = new SimkaPotaraBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, p.maxReads, p.nbDatasets);
 				// = new SimkaPotaraBankFiltered(bank)
 				LOCAL(filteredBank);
 				LOCAL(bank);

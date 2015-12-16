@@ -297,7 +297,7 @@ public:
 			u_int16_t best_p;
 			Type previous_kmer;
 			SimkaCounterBuilderMerge solidCounter(_nbBanks);
-
+			//cout << _nbBanks << endl;
 
 			if (pq.size() != 0) // everything empty, no kmer at all
 			{
@@ -415,6 +415,28 @@ public:
 	}
 
 	void insert(const Type& kmer, const SimkaCounterBuilderMerge& counter){
+
+		/*
+		size_t nbBanks = 0;
+		for(size_t i=0; i<counter.get().size(); i++){
+
+			//if(counts[i] >= _abundanceThreshold.first && counts[i] <= _abundanceThreshold.second)
+			//	return true;
+
+			if(counter.get()[i] > 0) nbBanks += 1;
+
+		}
+
+		if(nbBanks == _nbBanks){
+			cout << nbBanks << endl;
+
+			cout << kmer.toString(31) << endl;
+			for(size_t i=0; i<counter.get().size(); i++){
+				cout << counter.get()[i] << " ";
+			}
+			cout << endl;
+		}*/
+
 		//cout <<_partitiontId << " "<< kmer.toString(31) << endl;
 		_processors[0]->process (_partitiontId, kmer, counter.get(), 0);
 	}

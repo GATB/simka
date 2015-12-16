@@ -188,16 +188,17 @@ private:
 
 struct SimkaSequenceFilter
 {
-	u_int64_t _maxNbReads;
+	//u_int64_t _maxNbReads;
 	//u_int64_t _maxNbReadsPerBank;
-	u_int64_t _nbReadProcessed;
+	//u_int64_t _nbReadProcessed;
+	//CancellableIterator<Sequence>* _it;
 	//int* _bankIndex;
 	//int* _datasetIndex;
 
 
 	SimkaSequenceFilter(size_t minReadSize, double minShannonIndex){
-		_maxNbReads = 0;
-		_nbReadProcessed = 0;
+		//_maxNbReads = 0;
+		//_nbReadProcessed = 0;
 		_minReadSize = minReadSize;
 		_minShannonIndex = minShannonIndex;
 	}
@@ -215,17 +216,24 @@ struct SimkaSequenceFilter
 
 #endif
 
-	void setMaxReads(u_int64_t maxReads){
-		_maxNbReads = maxReads;
-	}
+	//void setMaxReads(u_int64_t maxReads){
+	//	_maxNbReads = maxReads;
+	//}
+
+	//void setIt(CancellableIterator<Sequence>* it){
+	//	_it = it;
+	//}
 
 	bool operator() (Sequence& seq){
 
-		if(_maxNbReads != 0){
-			if(_nbReadProcessed >= _maxNbReads){
-				return false;
-			}
-		}
+		//cout << seq.toString() << endl;
+		//cout << _nbReadProcessed << endl;
+		//if(_maxNbReads != 0){
+		//	if(_nbReadProcessed >= _maxNbReads){
+		//		_it->_cancel = true;
+		//		return false;
+		//	}
+		//}
 
 		//cout << seq.getIndex() << " " <<  _nbReadProcessed << endl;
 
@@ -244,7 +252,8 @@ struct SimkaSequenceFilter
 
 
 		//cout << _nbReadProcessed << endl;
-		_nbReadProcessed += 1;
+		//_nbReadProcessed += 1;
+
 		return true;
 	}
 
@@ -298,7 +307,7 @@ struct SimkaSequenceFilter
 	double _minShannonIndex;
 };
 
-
+/*
 template <class Item> class SimkaTruncateIterator : public TruncateIterator<Item>
 {
 public:
@@ -311,15 +320,15 @@ private:
     Iterator<Item>* _ref2;
     void setRef (Iterator<Item>* ref2)  { SP_SETATTR(ref2); }
 
-};
+};*/
 
 template<typename Filter> class SimkaBankFiltered : public BankDelegate
 {
 public:
 
-	u_int64_t _numberRef;
-	u_int64_t _totalSizeRef;
-	u_int64_t _maxSizeRef;
+	//u_int64_t _numberRef;
+	//u_int64_t _totalSizeRef;
+	//u_int64_t _maxSizeRef;
     /** Constructor.
      * \param[in] ref : referred bank.
      * \param[in] filter : functor that filters sequence.
@@ -329,7 +338,7 @@ public:
 		_nbReadsPerDataset = nbReadsPerDataset;
 		_nbReadToProcess = nbReadToProcess;
 
-		ref->estimate(_numberRef, _totalSizeRef, _maxSizeRef);
+		//ref->estimate(_numberRef, _totalSizeRef, _maxSizeRef);
 	}
 
 	/*
@@ -385,9 +394,11 @@ public:
 
                 	//We create a truncated iterator that stop processing reads when _nbReadsPerDataset[i] is reached
             		//cout << _nbReadsPerDataset[i] << endl;
-            		SimkaTruncateIterator<Sequence>* truncIt = new SimkaTruncateIterator<Sequence>(iterators[i], _nbReadsPerDataset[i] + _nbReadsPerDataset[i]/5);
+
+            		//CancellableIterator<Sequence>* truncIt = new CancellableIterator<Sequence>(*iterators[i]);
             		Filter filter(_filter);
-            		filter.setMaxReads(_nbReadsPerDataset[i]);
+            		//filter.setMaxReads(_nbReadsPerDataset[i]);
+            		//filter.setIt(truncIt);
 
 #ifdef BOOTSTRAP
 
@@ -406,7 +417,7 @@ public:
             		filter.setBootstrap(iSBoostrap);
 
 #endif
-                	FilterIterator<Sequence,Filter>* filterIt = new FilterIterator<Sequence,Filter> (truncIt, filter);
+                	FilterIterator<Sequence,Filter>* filterIt = new FilterIterator<Sequence,Filter> (iterators[i], filter);
                 	iterators[i] = filterIt;
 
             	}
