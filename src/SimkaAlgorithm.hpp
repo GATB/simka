@@ -201,7 +201,7 @@ public:
      * \param[in] initRef : will call 'first' on the reference if true
      */
 	SimkaInputIterator(Iterator<Item>* refs, size_t nbBanks, u_int64_t maxReads, Filter filter)
-        :  _filter(filter) {
+        :  _filter(filter), _mainref(0) {
 
 		setMainref(refs);
 		_ref = _mainref->getComposition()[0];
