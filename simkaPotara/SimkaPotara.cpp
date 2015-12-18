@@ -32,17 +32,18 @@ SimkaPotara::SimkaPotara()  : Tool ("SimkaPotara")
 	Simka::createOptionsParser(getParser());
 
 	//Kmer parser
-    IOptionsParser* jobParser = new OptionsParser ("job");
+    IOptionsParser* clusterParser = new OptionsParser ("cluster");
 
-    jobParser->push_back (new OptionOneParam (STR_SIMKA_NB_PARTITIONS, "nb partitions", false, "0" ));
-    //jobParser->push_back (new OptionOneParam (STR_SIMKA_JOB_COUNT_COMMAND, "command to submit counting job", true ));
-    //jobParser->push_back (new OptionOneParam (STR_SIMKA_JOB_MERGE_COMMAND, "command to submit merging job", true ));
-    //jobParser->push_back (new OptionOneParam (STR_SIMKA_JOB_COUNT_FILENAME, "filename to the couting job", true ));
-    //jobParser->push_back (new OptionOneParam (STR_SIMKA_JOB_MERGE_FILENAME, "filename to the merging job", true ));
-    //jobParser->push_back (new OptionOneParam (STR_SIMKA_NB_JOB_COUNT, "maximum number of simultaneous counting jobs", true ));
-    //jobParser->push_back (new OptionOneParam (STR_SIMKA_NB_JOB_MERGE, "maximum number of simultaneous merging jobs", true ));
+    clusterParser->push_back (new OptionNoParam (STR_SIMKA_CLUSTER_MODE, "enable cluster mode. All cluster args below must be set", false));
+    clusterParser->push_back (new OptionOneParam (STR_SIMKA_NB_JOB_COUNT, "maximum number of simultaneous counting jobs. Impact disk usage", false ));
+    clusterParser->push_back (new OptionOneParam (STR_SIMKA_NB_JOB_MERGE, "maximum number of simultaneous merging jobs", false ));
+    //clusterParser->push_back (new OptionOneParam (STR_SIMKA_NB_PARTITIONS, "nb partitions", false, "0" ));
+    clusterParser->push_back (new OptionOneParam (STR_SIMKA_JOB_COUNT_COMMAND, "command to submit counting job", false ));
+    clusterParser->push_back (new OptionOneParam (STR_SIMKA_JOB_MERGE_COMMAND, "command to submit merging job", false ));
+    clusterParser->push_back (new OptionOneParam (STR_SIMKA_JOB_COUNT_FILENAME, "filename to the couting job", false ));
+    clusterParser->push_back (new OptionOneParam (STR_SIMKA_JOB_MERGE_FILENAME, "filename to the merging job", false ));
 
-	getParser()->push_back(jobParser);
+	getParser()->push_back(clusterParser);
     //coreParser->push_back(new OptionOneParam(parser->getParser(STR_NB_CORES)->getName(), parser->getParser(STR_NB_CORES)->getHelp(), false, "0"));
 
 	//if (IOptionsParser* input = dskParser->getParser (STR_KMER_ABUNDANCE_MIN_THRESHOLD))  {  input->setVisible (false);  }

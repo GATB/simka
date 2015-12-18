@@ -584,7 +584,7 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 		line.erase(std::remove(line.begin(),line.end(),' '),line.end());
 		if(line == "") continue;
 
-		cout << line << endl;
+		//cout << line << endl;
 		lineIdDatasets.clear();
 		linepartPairedDatasets.clear();
 		//vector<string> filenames;
@@ -616,7 +616,7 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 			stringstream lineDatasetsStream(lineDatasets);
 			while(getline(lineDatasetsStream, linePart, ',')){
 				linepartDatasets.push_back(linePart);
-				cout << "\t" << linePart << endl;
+				//cout << "\t" << linePart << endl;
 			}
 
 			//bankFileContents += linepartDatasets[0] + "\n";
