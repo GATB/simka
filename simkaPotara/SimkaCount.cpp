@@ -32,166 +32,7 @@ using namespace std;
 
 
 
-/********************************************************************************/
-/** \brief Iterator that can be cancelled at some point during iteration
- *
- * This iterator iterates a referred iterator and will finish:
- *      - when the referred iterator is over
- *   or - when the cancel member variable is set to true
- *
- */
-template <class Item, typename Filter> class SimkaInputIterator : public Iterator<Item>
-{
-public:
 
-    /** Constructor.
-     * \param[in] ref : the referred iterator
-     * \param[in] initRef : will call 'first' on the reference if true
-     */
-	SimkaInputIterator(vector<Iterator<Item>* >& refs, size_t nbBanks, u_int64_t maxReads, Filter filter)
-        :  _refs(refs), _ref(refs[0]), _filter(filter) {
-		_isDone = true;
-		_nbBanks = nbBanks;
-		cout << _nbBanks << endl;
-		_maxReads = maxReads;
-		_nbReadProcessed = 0;
-		_currentBank = 0;
-		_currentInternalBank = 0;
-	}
-
-    /** \copydoc  Iterator::first */
-    void first()
-    {
-
-
-        _ref->first();
-
-
-        _isDone = _ref->isDone();
-
-
-        while (!_ref->isDone() && _filter(_ref->item())==false)
-        	_ref->next();
-
-
-    	*(this->_item) = _ref->item();
-
-    	//_ref->next();
-        /** IMPORTANT : we need to copy the referred item => we just can't rely on a simple
-         * pointer (in case of usage of Dispatcher for instance where a buffer of items is kept
-         * and could be wrong if the referred items doesn't exist any more when accessing the
-         * buffer).
-         * TODO doc: I get it, but why is it done only in this iterator and not other iterators like FilterIterator?*/
-        //if (!_isDone)  { *(this->_item) = _ref->item(); }
-
-        //cout << "HAA   " << _currentBank << endl;
-    }
-
-    bool isFinished(){
-    	if(_currentBank == _refs.size()-1){
-    		_isDone = true;
-    		return true;
-    	}
-    	return false;
-    }
-
-    void nextDataset(){
-    	//cout << "next dataset "<< endl;
-    	while(_currentInternalBank < _nbBanks){
-        	_currentBank += 1;
-    		_currentInternalBank += 1;
-    	}
-    	_currentInternalBank = 0;
-    	_nbReadProcessed = 0;
-
-		if(isFinished()){
-			return;
-		}
-
-    	nextBank();
-    }
-
-    void nextBank(){
-    	//cout << "next bank "<< endl;
-    	_currentInternalBank += 1;
-    	if(_currentInternalBank == _nbBanks){
-    		nextDataset();
-    	}
-    	else{
-        	_isDone = false;
-        	_currentBank += 1;
-        	_ref = _refs[_currentBank];
-        	first();
-    	}
-
-    }
-
-
-
-
-
-    /** \copydoc  Iterator::next */
-    void next()
-    {
-
-    	_ref->next();
-
-        _isDone = _ref->isDone();
-
-        while (!_ref->isDone() && _filter(_ref->item())==false)
-        	_ref->next();
-
-        //_isDone = _ref->isDone();
-
-        //if (!_isDone)  {
-        	*(this->_item) = _ref->item();
-        	_nbReadProcessed += 1;
-
-        	//cout << &_ref->item() << endl;
-        //}
-
-    	//cout << _nbReadProcessed << "  " << _maxReads << "    " << _refs.size() << endl;
-
-
-        if(_isDone){
-    		if(isFinished())
-    			return;
-    		else
-    			nextBank();
-
-        }
-        else{
-        	//*(this->_item) = _ref->item();
-        }
-
-    	if(_nbReadProcessed >= _maxReads){
-    		if(isFinished())
-    			return;
-    		else
-    			nextDataset();
-    	}
-
-    }
-
-    /** \copydoc  Iterator::isDone */
-    bool isDone()  {  return _isDone;  }
-
-    /** \copydoc  Iterator::item */
-    Item& item ()  {  return *(this->_item);  }
-
-
-private:
-
-    bool            _isDone;
-    size_t _currentBank;
-    vector<Iterator<Item>* > _refs;
-    Iterator<Item>* _ref;
-    size_t _nbBanks;
-    u_int64_t _maxReads;
-    Filter _filter;
-    u_int64_t _nbReadProcessed;
-    size_t _currentInternalBank;
-};
 
 
 
@@ -210,8 +51,8 @@ public:
     {
 
         Iterator<Sequence>* it = _ref->iterator ();
-        std::vector<Iterator<Sequence>*> iterators = it->getComposition();
-        return new SimkaInputIterator<Sequence, Filter> (iterators, _nbDatasets, _maxReads, _filter);
+        //std::vector<Iterator<Sequence>*> iterators = it->getComposition();
+        return new SimkaInputIterator<Sequence, Filter> (it, _nbDatasets, _maxReads, _filter);
     	//return filterIt;
 
     }
@@ -387,7 +228,7 @@ public:
 				solidStorage = StorageFactory(STORAGE_HDF5).create (solidsName, true, autoDelete);
 				LOCAL(solidStorage);
 
-
+				solidStorage->root().setCompressLevel (1);
 				//props->add(1, STR_HISTOGRAM_MAX, "0");
 				//props->add(1, STR_KMER_ABUNDANCE_MIN_THRESHOLD, "0");
 				//props->add(1, STR_SOLIDITY_KIND, "sum");

@@ -186,6 +186,160 @@ private:
 
 };
 
+
+
+/********************************************************************************/
+/**
+ *
+ */
+template <class Item, typename Filter> class SimkaInputIterator : public Iterator<Item>
+{
+public:
+
+    /** Constructor.
+     * \param[in] ref : the referred iterator
+     * \param[in] initRef : will call 'first' on the reference if true
+     */
+	SimkaInputIterator(Iterator<Item>* refs, size_t nbBanks, u_int64_t maxReads, Filter filter)
+        :  _filter(filter) {
+
+		setMainref(refs);
+		_ref = _mainref->getComposition()[0];
+		_isDone = true;
+		_nbBanks = nbBanks;
+		//cout << _nbBanks << endl;
+		_maxReads = maxReads;
+		_nbReadProcessed = 0;
+		_currentBank = 0;
+		_currentInternalBank = 0;
+	}
+
+    /** \copydoc  Iterator::first */
+    void first()
+    {
+
+        _ref->first();
+
+        _isDone = _ref->isDone();
+
+        while (!_ref->isDone() && _filter(_ref->item())==false)
+        	_ref->next();
+
+    	*(this->_item) = _ref->item();
+
+    }
+
+    bool isFinished(){
+    	if(_currentBank == _mainref->getComposition().size()-1){
+    		_isDone = true;
+    		return true;
+    	}
+    	return false;
+    }
+
+    void nextDataset(){
+    	//cout << "next dataset "<< endl;
+    	while(_currentInternalBank < _nbBanks){
+        	_currentBank += 1;
+    		_currentInternalBank += 1;
+    	}
+    	_currentInternalBank = 0;
+    	_nbReadProcessed = 0;
+
+		if(isFinished()){
+			return;
+		}
+
+    	nextBank();
+    }
+
+    void nextBank(){
+    	//cout << "next bank "<< endl;
+    	_currentInternalBank += 1;
+    	if(_currentInternalBank == _nbBanks){
+    		nextDataset();
+    	}
+    	else{
+        	_isDone = false;
+        	_currentBank += 1;
+        	_ref = _mainref->getComposition()[_currentBank];
+        	first();
+    	}
+
+    }
+
+
+
+
+
+    /** \copydoc  Iterator::next */
+    void next()
+    {
+
+    	_ref->next();
+
+        _isDone = _ref->isDone();
+
+        while (!_ref->isDone() && _filter(_ref->item())==false)
+        	_ref->next();
+
+        //_isDone = _ref->isDone();
+
+        //if (!_isDone)  {
+        	*(this->_item) = _ref->item();
+        	_nbReadProcessed += 1;
+
+        	//cout << &_ref->item() << endl;
+        //}
+
+    	//cout << _nbReadProcessed << "  " << _maxReads << "    " << _refs.size() << endl;
+
+
+        if(_isDone){
+    		if(isFinished())
+    			return;
+    		else
+    			nextBank();
+
+        }
+        else{
+        	//*(this->_item) = _ref->item();
+        }
+
+    	if(_nbReadProcessed >= _maxReads){
+    		if(isFinished())
+    			return;
+    		else
+    			nextDataset();
+    	}
+
+    }
+
+    /** \copydoc  Iterator::isDone */
+    bool isDone()  {  return _isDone;  }
+
+    /** \copydoc  Iterator::item */
+    Item& item ()  {  return *(this->_item);  }
+
+
+private:
+
+    bool            _isDone;
+    size_t _currentBank;
+    //vector<Iterator<Item>* > _refs;
+    Iterator<Item>* _ref;
+    size_t _nbBanks;
+    u_int64_t _maxReads;
+    Filter _filter;
+    u_int64_t _nbReadProcessed;
+    size_t _currentInternalBank;
+
+
+    Iterator<Item>* _mainref;
+    void setMainref (Iterator<Item>* mainref)  { SP_SETATTR(mainref); }
+};
+
+
 struct SimkaSequenceFilter
 {
 	//u_int64_t _maxNbReads;
@@ -333,10 +487,10 @@ public:
      * \param[in] ref : referred bank.
      * \param[in] filter : functor that filters sequence.
      */
-	SimkaBankFiltered (IBank* ref, const Filter& filter, const vector<u_int64_t>& nbReadsPerDataset, u_int64_t nbReadToProcess) : BankDelegate (ref), _filter(filter)  {
+	SimkaBankFiltered (IBank* ref, const Filter& filter, const vector<size_t>& nbPaireds, u_int64_t maxReads) : BankDelegate (ref), _filter(filter)  {
 
-		_nbReadsPerDataset = nbReadsPerDataset;
-		_nbReadToProcess = nbReadToProcess;
+		_nbPaireds = nbPaireds;
+		_maxReads = maxReads;
 
 		//ref->estimate(_numberRef, _totalSizeRef, _maxSizeRef);
 	}
@@ -371,67 +525,73 @@ public:
         // We get the composition for this iterator
         std::vector<Iterator<Sequence>*> iterators = it->getComposition();
 
-        if (iterators.size() == 1)  { return new FilterIterator<Sequence,Filter> (it, _filter); }
-        else
-        {
+        //if (iterators.size() == 1)  { return new FilterIterator<Sequence,Filter> (it, _filter); }
+        //else
+        //{
             // We are going to create a new CompositeIterator, we won't need the one we just got from the reference
-            LOCAL(it);
+		LOCAL(it);
 
-            // We may have to encapsulate each sub iterator with the filter.
-            for (size_t i=0; i<iterators.size(); i++)  {
+		// We may have to encapsulate each sub iterator with the filter.
+		for (size_t i=0; i<iterators.size(); i++)  {
 
-            	//cout << "\t\t" << _nbReadsPerDataset[i] << endl;
+			/*
+			//cout << "\t\t" << _nbReadsPerDataset[i] << endl;
 
-            	//cout << _nbReadsPerDataset[i] << endl;
-            	//Depending on the parameter -max-reads we truncate or not the reads iterator
-            	if(_nbReadsPerDataset[i] == 0){
+			//cout << _nbReadsPerDataset[i] << endl;
+			//Depending on the parameter -max-reads we truncate or not the reads iterator
+			if(_nbReadsPerDataset[i] == 0){
 
-                	//Max nb reads parameter is set to 0. All the reads of each dataset are processed
-                	iterators[i] = new FilterIterator<Sequence,Filter> (iterators[i], _filter);
+				//Max nb reads parameter is set to 0. All the reads of each dataset are processed
+				iterators[i] = new FilterIterator<Sequence,Filter> (iterators[i], _filter);
 
-            	}
-            	else{
+			}
+			else{
 
-                	//We create a truncated iterator that stop processing reads when _nbReadsPerDataset[i] is reached
-            		//cout << _nbReadsPerDataset[i] << endl;
+				//We create a truncated iterator that stop processing reads when _nbReadsPerDataset[i] is reached
+				//cout << _nbReadsPerDataset[i] << endl;
 
-            		//CancellableIterator<Sequence>* truncIt = new CancellableIterator<Sequence>(*iterators[i]);
-            		Filter filter(_filter);
-            		//filter.setMaxReads(_nbReadsPerDataset[i]);
-            		//filter.setIt(truncIt);
+				//CancellableIterator<Sequence>* truncIt = new CancellableIterator<Sequence>(*iterators[i]);
+				Filter filter(_filter);
+				//filter.setMaxReads(_nbReadsPerDataset[i]);
+				//filter.setIt(truncIt);
 
 #ifdef BOOTSTRAP
 
-            		srand (time(NULL));
-            		size_t nbBootstrap = 0;
-            		vector<bool> iSBoostrap(MAX_BOOTSTRAP);
+				srand (time(NULL));
+				size_t nbBootstrap = 0;
+				vector<bool> iSBoostrap(MAX_BOOTSTRAP);
 
-            		while(nbBootstrap != NB_BOOTSTRAP){
-            			int index = rand() % iSBoostrap.size();
+				while(nbBootstrap != NB_BOOTSTRAP){
+					int index = rand() % iSBoostrap.size();
 
-            			if(!iSBoostrap[index]){
-            				iSBoostrap[index] = true;
-            				nbBootstrap += 1;
-            			}
-            		}
-            		filter.setBootstrap(iSBoostrap);
+					if(!iSBoostrap[index]){
+						iSBoostrap[index] = true;
+						nbBootstrap += 1;
+					}
+				}
+				filter.setBootstrap(iSBoostrap);
 
 #endif
-                	FilterIterator<Sequence,Filter>* filterIt = new FilterIterator<Sequence,Filter> (iterators[i], filter);
-                	iterators[i] = filterIt;
+				FilterIterator<Sequence,Filter>* filterIt = new FilterIterator<Sequence,Filter> (iterators[i], filter);
+				iterators[i] = filterIt;
 
-            	}
+			}*/
+
+
+				//Iterator<Sequence>* it = iterators[i];
+				//std::vector<Iterator<Sequence>*> iterators_ = it->getComposition();
+				iterators[i] = new SimkaInputIterator<Sequence, Filter> (iterators[i], _nbPaireds[i], _maxReads, _filter);
 
             }
-            return new CompositeIterator<Sequence> (iterators);
-        }
+
+		return new CompositeIterator<Sequence> (iterators);
     }
 
 private:
 
-	vector<u_int64_t> _nbReadsPerDataset;
+	vector<size_t> _nbPaireds;
     Filter _filter;
-    u_int64_t _nbReadToProcess;
+    u_int64_t _maxReads;
 };
 
 
@@ -467,8 +627,14 @@ public:
     	return string(buffer);
     }
 
-private:
+protected:
 
+
+    bool setup();
+    bool isInputValid();
+    void parseArgs();
+    bool createDirs();
+    void computeMaxReads();
 	void layoutInputFilename();
 	void createBank();
 	void count();
@@ -508,12 +674,14 @@ private:
 
 	SimkaCountProcessor<span>* _processor;
 	vector<string> _bankNames;
-	vector<u_int64_t> _nbReadsPerDataset;
+	//vector<u_int64_t> _nbReadsPerDataset;
 
 	string _outputFilenameSuffix;
 
 	u_int64_t _totalKmers;
     vector<size_t> _nbBankPerDataset;
+
+	string _smallerBankId;
 	//string _matDksNormFilename;
 	//string _matDksPercFilename;
 	//string _matAksNormFilename;

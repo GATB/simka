@@ -82,8 +82,8 @@ void SimkaCountProcessor<span>::finishClone(SimkaCountProcessor<span>* clone){
 template<size_t span>
 bool SimkaCountProcessor<span>::isSolidVector(const CountVector& counts){
 
-	size_t nbBanks = 0;
-	size_t nbSolids = 0;
+	//size_t nbBanks = 0;
+	//size_t nbSolids = 0;
 
 	for(size_t i=0; i<counts.size(); i++){
 
@@ -91,7 +91,7 @@ bool SimkaCountProcessor<span>::isSolidVector(const CountVector& counts){
 			return true;
 
 		//cout << "a " <<  counts[i] << _abundanceThreshold.first << "  " << _abundanceThreshold.second << endl;
-		if(counts[i] > 0) nbBanks += 1;
+		//if(counts[i] > 0) nbBanks += 1;
 
 	}
 
@@ -156,20 +156,18 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 	//}
 	//else{
 
-	computeStats(counts);
+		if(isAbundanceThreshold){
 
-	//	if(isAbundanceThreshold){
-
-		//	if(!isSolidVector(counts))
-			//	return false;
+			if(!isSolidVector(counts))
+				return false;
 
 			/*
 			cout << endl;
 			for(size_t i=0; i<counts.size(); i++)
 				cout << counts[i] << " ";
 			cout << endl;*/
+			//cout << _abundanceThreshold.first << " " << _abundanceThreshold.second << endl;
 
-			/*
 			for(size_t i=0; i<counts.size(); i++){
 
 				if(counts[i] >= _abundanceThreshold.first && counts[i] <= _abundanceThreshold.second)
@@ -183,32 +181,16 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 			//	cout << _solidCounts[i] << " ";
 			//cout << endl;
 
-			computeStats(_solidCounts);*/
+			computeStats(_solidCounts);
 
 			//computeStats(counts);
-	//}
-	//else{
-	//	computeStats(counts);
-
-	//}
-
-		_localStats->_nbSolidKmers += 1;
-
-		/*
-		if(_soliditySingle){
-			CountVector counts2(counts);
-			for(size_t i=0; i<counts.size(); i++){
-				//if(!isSolid(counts[i]))
-				if(counts[i] < _abundanceThreshold.first)
-					counts2[i] = 0;
-			}
-			computeStats(counts2);
 		}
 		else{
 			computeStats(counts);
-		}*/
 
-		//}
+		}
+
+		_localStats->_nbSolidKmers += 1;
 
 
 	return true;
@@ -403,35 +385,13 @@ Algorithm("simka", -1, options)
 {
 
 
+	_options = options;
 	_stats = 0;
 	//_simkaDistance = 0;
 	_banks = 0;
 	_processor = 0;
 
-	_options = options;
 
-	_maxMemory = getInput()->getInt(STR_MAX_MEMORY);
-    _nbCores = getInput()->getInt(STR_NB_CORES);
-	_inputFilename = _options->getStr(STR_URI_INPUT);
-	_outputDir = _options->get(STR_URI_OUTPUT) ? _options->getStr(STR_URI_OUTPUT) : "./";
-	_outputDirTemp = _options->get(STR_URI_OUTPUT_TMP) ? _options->getStr(STR_URI_OUTPUT_TMP) : "./";
-	_kmerSize = _options->getInt(STR_KMER_SIZE);
-	_abundanceThreshold.first = _options->getInt(STR_KMER_ABUNDANCE_MIN);
-	_abundanceThreshold.second = _options->getInt(STR_KMER_ABUNDANCE_MAX);
-	_soliditySingle = _options->get(STR_SIMKA_SOLIDITY_PER_DATASET);
-	_nbMinimizers = getInput()->getInt(STR_KMER_PER_READ);
-	//_maxDisk = getInput()->getInt(STR_MAX_DISK);
-
-	//read filter
-	_maxNbReads = _options->getInt(STR_SIMKA_MAX_READS);
-	_minReadSize = _options->getInt(STR_SIMKA_MIN_READ_SIZE);
-	_minReadShannonIndex = _options->getDouble(STR_SIMKA_MIN_READ_SHANNON_INDEX);
-	_minReadShannonIndex = std::max(_minReadShannonIndex, 0.0);
-	_minReadShannonIndex = std::min(_minReadShannonIndex, 2.0);
-
-	_minKmerShannonIndex = _options->getDouble(STR_SIMKA_MIN_KMER_SHANNON_INDEX);
-	_minKmerShannonIndex = std::max(_minKmerShannonIndex, 0.0);
-	_minKmerShannonIndex = std::min(_minKmerShannonIndex, 2.0);
 
 
 	//string maxDisk = "";
@@ -481,7 +441,7 @@ Algorithm("simka", -1, options)
 	//cout << "Output filename: " << _outputFilename << endl;
 
 
-	_banksInputFilename = _inputFilename + "_dsk_dataset_temp__";
+	//_banksInputFilename = _inputFilename + "_dsk_dataset_temp__";
 
 
 }
@@ -495,18 +455,10 @@ SimkaAlgorithm<span>::~SimkaAlgorithm() {
 template<size_t span>
 void SimkaAlgorithm<span>::execute() {
 
-	if(!System::file().doesExist(_outputDir)){
-		int ok = System::file().mkdir(_outputDir, -1);
-		if(ok != 0){
-	        std::cout << "Error: can't create output directory (" << _outputDir << ")" << std::endl;
-	        return;
-		}
-	}
+	if(!setup()) return;
+	if(!isInputValid()) return;
 
-
-	layoutInputFilename();
 	createBank();
-
 
 	count();
 
@@ -523,6 +475,245 @@ void SimkaAlgorithm<span>::execute() {
 }
 
 
+template<size_t span>
+bool SimkaAlgorithm<span>::setup() {
+
+	parseArgs();
+
+	if(! createDirs() ) return false;
+
+	try{
+		layoutInputFilename();
+	}
+	catch (Exception& e){
+		cout << "Syntax error in input file" << endl;
+		return false;
+	}
+
+	_nbBanks = _bankNames.size();
+	computeMaxReads();
+
+	return true;
+}
+
+
+template<size_t span>
+void SimkaAlgorithm<span>::parseArgs() {
+
+
+	_maxMemory = _options->getInt(STR_MAX_MEMORY);
+    _nbCores = _options->getInt(STR_NB_CORES);
+	_inputFilename = _options->getStr(STR_URI_INPUT);
+	_outputDir = _options->get(STR_URI_OUTPUT) ? _options->getStr(STR_URI_OUTPUT) : "./";
+	_outputDirTemp = _options->get(STR_URI_OUTPUT_TMP) ? _options->getStr(STR_URI_OUTPUT_TMP) : "./";
+	_kmerSize = _options->getInt(STR_KMER_SIZE);
+	_abundanceThreshold.first = _options->getInt(STR_KMER_ABUNDANCE_MIN);
+	_abundanceThreshold.second = _options->getInt(STR_KMER_ABUNDANCE_MAX);
+	_soliditySingle = _options->get(STR_SIMKA_SOLIDITY_PER_DATASET);
+	//_nbMinimizers = _options->getInt(STR_KMER_PER_READ);
+	//_maxDisk = getInput()->getInt(STR_MAX_DISK);
+
+	//read filter
+	_maxNbReads = _options->getInt(STR_SIMKA_MAX_READS);
+	_minReadSize = _options->getInt(STR_SIMKA_MIN_READ_SIZE);
+	_minReadShannonIndex = _options->getDouble(STR_SIMKA_MIN_READ_SHANNON_INDEX);
+	_minReadShannonIndex = std::max(_minReadShannonIndex, 0.0);
+	_minReadShannonIndex = std::min(_minReadShannonIndex, 2.0);
+
+	_minKmerShannonIndex = _options->getDouble(STR_SIMKA_MIN_KMER_SHANNON_INDEX);
+	_minKmerShannonIndex = std::max(_minKmerShannonIndex, 0.0);
+	_minKmerShannonIndex = std::min(_minKmerShannonIndex, 2.0);
+
+}
+
+template<size_t span>
+bool SimkaAlgorithm<span>::createDirs(){
+
+	if(!System::file().doesExist(_outputDir)){
+		int ok = System::file().mkdir(_outputDir, -1);
+		if(ok != 0){
+	        std::cout << "Error: can't create output directory (" << _outputDir << ")" << std::endl;
+	        return false;
+		}
+	}
+
+	_outputDirTemp = _outputDirTemp;
+
+	if(!System::file().doesExist(_outputDirTemp)){
+		int ok = System::file().mkdir(_outputDirTemp, -1);
+		if(ok != 0){
+	        std::cout << "Error: can't create output temp directory (" << _outputDirTemp << ")" << std::endl;
+	        return false;
+		}
+	}
+
+	_outputDirTemp += "/simka_output_temp/";
+	System::file().mkdir(_outputDirTemp, -1);
+
+	_options->setStr(STR_URI_OUTPUT_TMP, _outputDirTemp);
+	System::file().mkdir(_outputDirTemp + "/input/", -1);
+
+	return true;
+}
+
+template<size_t span>
+void SimkaAlgorithm<span>::layoutInputFilename(){
+
+	if(_options->getInt(STR_VERBOSE) != 0){
+		cout << endl << "Creating input" << endl;
+	}
+
+	string inputDir = _outputDirTemp + "/input/";
+	ifstream inputFile(_inputFilename.c_str());
+
+	_banksInputFilename =  inputDir + "__input_simka__"; //_inputFilename + "_dsk_dataset_temp__";
+	IFile* bankFile = System::file().newFile(_banksInputFilename, "wb");
+
+	string line;
+	string linePart;
+	vector<string> lineIdDatasets;
+	vector<string> linepartPairedDatasets;
+	vector<string> linepartDatasets;
+
+	string bankFileContents = "";
+
+	u_int64_t lineIndex = 0;
+
+	while(getline(inputFile, line)){
+
+		line.erase(std::remove(line.begin(),line.end(),' '),line.end());
+		if(line == "") continue;
+
+		cout << line << endl;
+		lineIdDatasets.clear();
+		linepartPairedDatasets.clear();
+		//vector<string> filenames;
+
+		stringstream lineStream(line);
+		while(getline(lineStream, linePart, ':')){
+			lineIdDatasets.push_back(linePart);
+		}
+
+		string bankId = lineIdDatasets[0];
+		string linePairedDatasets = lineIdDatasets[1];
+
+		stringstream linePairedDatasetsStream(linePairedDatasets);
+		while(getline(linePairedDatasetsStream, linePart, ';')){
+			linepartPairedDatasets.push_back(linePart);
+		}
+
+		string subBankFilename = inputDir + bankId;
+		IFile* subBankFile = System::file().newFile(subBankFilename, "wb");
+		//cout << subBankFile->getPath() << endl;
+		string subBankContents = "";
+		_nbBankPerDataset.push_back(linepartPairedDatasets.size());
+
+		for(size_t i=0; i<linepartPairedDatasets.size(); i++){
+			string lineDatasets = linepartPairedDatasets[i];
+
+			linepartDatasets.clear();
+
+			stringstream lineDatasetsStream(lineDatasets);
+			while(getline(lineDatasetsStream, linePart, ',')){
+				linepartDatasets.push_back(linePart);
+				cout << "\t" << linePart << endl;
+			}
+
+			//bankFileContents += linepartDatasets[0] + "\n";
+
+
+			for(size_t i=0; i<linepartDatasets.size(); i++){
+				subBankContents += linepartDatasets[i] + "\n";
+			}
+
+		}
+
+		subBankContents.erase(subBankContents.size()-1);
+		subBankFile->fwrite(subBankContents.c_str(), subBankContents.size(), 1);
+		subBankFile->flush();
+		delete subBankFile;
+
+		bankFileContents += inputDir + "/" + bankId + "\n";
+
+		lineIndex += 1;
+
+		_bankNames.push_back(bankId);
+
+
+	}
+
+
+	inputFile.close();
+
+	bankFileContents.erase(bankFileContents.size()-1);
+	bankFile->fwrite(bankFileContents.c_str(), bankFileContents.size(), 1);
+	bankFile->flush();
+	delete bankFile;
+
+
+	if(_options->getInt(STR_VERBOSE) != 0){
+		cout << "\tNb input datasets: " << _bankNames.size() << endl;
+		cout << endl;
+	}
+
+}
+
+
+template<size_t span>
+bool SimkaAlgorithm<span>::isInputValid(){
+
+	string inputDir = _outputDirTemp + "/input/";
+
+	for (size_t i=0; i<_nbBanks; i++){
+
+		try{
+			IBank* bank = Bank::open(inputDir + _bankNames[i]);
+			LOCAL(bank);
+		}
+		catch (Exception& e){
+			cout << "Can't open dataset: " << _bankNames[i] << endl;
+			return false;
+		}
+
+	}
+
+	return true;
+
+}
+
+template<size_t span>
+void SimkaAlgorithm<span>::computeMaxReads(){
+
+	string inputDir = _outputDirTemp + "/input/";
+
+	if(_maxNbReads == 0){
+		if(_options->getInt(STR_VERBOSE) != 0)
+			cout << "-maxNbReads is not defined. Simka will estimating it..." << endl;
+	}
+
+	u_int64_t minReads = -1;
+	for (size_t i=0; i<_nbBanks; i++){
+
+		IBank* bank = Bank::open(inputDir + _bankNames[i]);
+		LOCAL(bank);
+		u_int64_t nbReads = bank->estimateNbItems();
+		nbReads /= _nbBankPerDataset[i];
+		if(nbReads < minReads){
+			minReads = nbReads;
+			_smallerBankId = _bankNames[i];
+		}
+
+	}
+
+	if(_maxNbReads == 0){
+		_maxNbReads = minReads;
+		if(_options->getInt(STR_VERBOSE) != 0)
+			cout << "Max nb reads: " << _maxNbReads << endl << endl;
+	}
+
+}
+
+/*
 
 template<size_t span>
 void SimkaAlgorithm<span>::layoutInputFilename(){
@@ -557,24 +748,6 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 				linePartList.push_back(linePart);
 			}
 		}
-
-/*
-		bool valid = true;
-		//cout << linePartList.size() << endl;
-		//Bank id
-		for(size_t i=1; i<linePartList.size(); i++){
-			string filename = linePartList[1];
-			//cout << filename << endl;
-			if( ! System::file().doesExist(filename)){
-				cout << "\tFilename does not exist: " << filename << endl;
-				valid = false;
-				//break;
-			}
-		}
-
-		if(!valid){
-			continue;
-		}*/
 
 
 
@@ -634,55 +807,19 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 	cout << endl;
 
 
-}
+}*/
 
 
 template<size_t span>
 void SimkaAlgorithm<span>::createBank(){
 
 	IBank* bank = Bank::open(_banksInputFilename);
-	_nbBanks = bank->getCompositionNb();
-
-	if(_maxNbReads == 0){
-		if(_options->getInt(STR_VERBOSE) != 0)
-			cout << "-maxNbReads is not defined. Simka will estimating it..." << endl;
-		//_maxNbReads = bank->estimateNbItems() / _nbBanks;
-		//_maxNbReads -= (_maxNbReads/10);
-		u_int64_t minReads = -1;
-		for (size_t i=0; i<_nbBanks; i++){
-			u_int64_t nbReads = bank->estimateNbItemsBanki(i);
-			if(nbReads < minReads) minReads = nbReads;
-		}
-		_maxNbReads = minReads;
-		if(_options->getInt(STR_VERBOSE) != 0)
-			cout << "Max nb reads: " << _maxNbReads << endl << endl;
-	}
-
-
-	for(size_t i=0; i<_nbBankPerDataset.size(); i++){
-		//cout << _maxNbReads << " " << _nbBankPerDataset[i] << endl;
-		//_nbReadsPerDataset.push_back( ceil(_maxNbReads / (float)(_nbBankPerDataset[i])) );
-		_nbReadsPerDataset.push_back( _maxNbReads );
-	}
-
 
 	SimkaSequenceFilter sequenceFilter(_minReadSize, _minReadShannonIndex);
 
-
-	_banks = new SimkaBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, _nbReadsPerDataset, _maxNbReads*_nbBanks);
-
-
-
-	//cout << bank->estimateNbItems() << endl;
-
-
+	_banks = new SimkaBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, _nbBankPerDataset, _maxNbReads);
 
 }
-
-
-
-
-
 
 template<size_t span>
 void SimkaAlgorithm<span>::count(){

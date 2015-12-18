@@ -205,7 +205,7 @@ public:
 		Algorithm("SimkaMergeAlgorithm", 1, p.props), p(p)
 	{
 		_abundanceThreshold.first = 0;
-		_abundanceThreshold.second = 0;
+		_abundanceThreshold.second = 999999999;
 	}
 
 	~SimkaMergeAlgorithm(){

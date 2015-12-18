@@ -237,6 +237,25 @@ void SimkaStatistics::load(Group& group){
         for(size_t i=0; i<_nbBanks; i++)
         	is.read ((char*)_brayCurtisNumerator[i].data(), sizeof(u_int64_t)*_nbBanks);
 
+
+    if(_distanceParams._computeCanberra)
+        for(size_t i=0; i<_nbBanks; i++)
+        	is.read ((char*)_canberra[i].data(), sizeof(u_int64_t)*_nbBanks);
+
+
+    if(_distanceParams._computeChord){
+        is.read ((char*)_chord_N2.data(), sizeof(u_int64_t)*_nbBanks);
+        for(size_t i=0; i<_nbBanks; i++)
+        	is.read ((char*)_chord_NiNj[i].data(), sizeof(u_int64_t)*_nbBanks);
+    }
+
+    if(_distanceParams._computeHellinger)
+        for(size_t i=0; i<_nbBanks; i++)
+        	is.read ((char*)_hellinger_SqrtNiNj[i].data(), sizeof(u_int64_t)*_nbBanks);
+
+    if(_distanceParams._computeKulczynski)
+        for(size_t i=0; i<_nbBanks; i++)
+        	is.read ((char*)_kulczynski_minNiNj[i].data(), sizeof(u_int64_t)*_nbBanks);
 	/*
     tools::storage::impl::Storage::istream is (group, "simkaStats");
 
@@ -301,6 +320,26 @@ void SimkaStatistics::save (Group& group){
     if(_distanceParams._computeBrayCurtis)
         for(size_t i=0; i<_nbBanks; i++)
             os.write ((const char*)_brayCurtisNumerator[i].data(), sizeof(u_int64_t)*_nbBanks);
+
+    if(_distanceParams._computeCanberra)
+        for(size_t i=0; i<_nbBanks; i++)
+        	os.write ((const char*)_canberra[i].data(), sizeof(u_int64_t)*_nbBanks);
+
+
+    if(_distanceParams._computeChord){
+        os.write ((const char*)_chord_N2.data(), sizeof(u_int64_t)*_nbBanks);
+        for(size_t i=0; i<_nbBanks; i++)
+        	os.write ((const char*)_chord_NiNj[i].data(), sizeof(u_int64_t)*_nbBanks);
+    }
+
+    if(_distanceParams._computeHellinger)
+        for(size_t i=0; i<_nbBanks; i++)
+        	os.write ((const char*)_hellinger_SqrtNiNj[i].data(), sizeof(u_int64_t)*_nbBanks);
+
+    if(_distanceParams._computeKulczynski)
+        for(size_t i=0; i<_nbBanks; i++)
+        	os.write ((const char*)_kulczynski_minNiNj[i].data(), sizeof(u_int64_t)*_nbBanks);
+
 
     os.flush();
 }

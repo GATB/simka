@@ -44,7 +44,7 @@ IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
 	//Kmer parser
     IOptionsParser* kmerParser = new OptionsParser ("kmer");
     kmerParser->push_back(dskParser->getParser (STR_KMER_SIZE));
-    kmerParser->push_back(new OptionOneParam (STR_KMER_PER_READ.c_str(), "number of selected kmers per read", false, "0"));
+    //kmerParser->push_back(new OptionOneParam (STR_KMER_PER_READ.c_str(), "number of selected kmers per read", false, "0"));
     kmerParser->push_back(dskParser->getParser (STR_KMER_ABUNDANCE_MIN));
     if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_KMER_ABUNDANCE_MIN)))  {  p->setDefaultValue ("0"); }
     if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_SOLIDITY_KIND)))  {  p->setDefaultValue ("all"); }

@@ -118,21 +118,21 @@ private:
 
 
 template<size_t span>
-class SimkaPotaraAlgorithm : public Algorithm{
+class SimkaPotaraAlgorithm : public SimkaAlgorithm<span>{
 public:
 
 
 	SimkaPotaraAlgorithm(IProperties* options):
-	Algorithm("SimkaPotara", 1, options)
+		SimkaAlgorithm<span>(options)
 	{
 
-		_options = options;
+		//_options = options;
 
-		_inputFilename = _options->getStr(STR_URI_INPUT);
-		_outputDir = _options->getStr(STR_URI_OUTPUT);
-		_outputDirTemp = _options->getStr(STR_URI_OUTPUT_TMP);
+		//_inputFilename = _options->getStr(STR_URI_INPUT);
+		//_outputDir = _options->getStr(STR_URI_OUTPUT);
+		//_outputDirTemp = _options->getStr(STR_URI_OUTPUT_TMP);
 
-		_maxNbReads = _options->getInt(STR_SIMKA_MAX_READS);
+		//_maxNbReads = _options->getInt(STR_SIMKA_MAX_READS);
 		//_maxJobCount = _options->getInt(STR_SIMKA_NB_JOB_COUNT);
 		//_maxJobMerge = _options->getInt(STR_SIMKA_NB_JOB_MERGE);
 		//_jobCountFilename = _options->getStr(STR_SIMKA_JOB_COUNT_FILENAME);
@@ -140,29 +140,10 @@ public:
 		//_jobCountCommand = _options->getStr(STR_SIMKA_JOB_COUNT_COMMAND);
 		//_jobMergeCommand = _options->getStr(STR_SIMKA_JOB_MERGE_COMMAND);
 
-		_nbAskedPartitions = _options->getInt(STR_SIMKA_NB_PARTITIONS);
 
-		_maxMemory = _options->getInt(STR_MAX_MEMORY);
-		_nbCores = _options->getInt(STR_NB_CORES);
-
-		_maxJobMerge = _nbCores;
-
-		size_t maxCoreCount = (3*System::info().getNbCores()) / 4;
-		size_t nbCoresCount = min(maxCoreCount, _nbCores);
-
-		u_int64_t minMemory = 2000;
-		size_t maxJobCountTemp = _maxMemory/minMemory;
-		_maxJobCount = min(nbCoresCount, maxJobCountTemp);
-		_memoryPerJob = _maxMemory / _maxJobCount;
-		_coresPerJob = ceil(nbCoresCount / (float)_maxJobCount);
-
-
-		cout << "Nb jobs in parallel: " << _maxJobCount << endl;
-		cout << "Cores per jobs: " << _coresPerJob << endl;
-		cout << "Memory per jobs: " << _memoryPerJob << endl;
 		//string solidFilename = _outputDir + "/solid/" +  p.bankName + suffix + ".h5";
 
-		//cout << "SimkaFusion constructor       " << _outputDirTempFilter << endl;
+		//cout << "SimkaFusion constructor       " << _outputDirTemp << endl;
 
 
 
@@ -176,14 +157,7 @@ public:
 
 	void execute(){
 
-
-		if(!System::file().doesExist(_outputDir)){
-			int ok = System::file().mkdir(_outputDir, -1);
-			if(ok != 0){
-		        std::cout << "Error: can't create output directory (" << _outputDir << ")" << std::endl;
-		        return;
-			}
-		}
+		setup();
 
 		//System::file().rmdir(_outputDirTemp + "/input/");
 		//System::file().rmdir(_outputDirTemp + "/solid/");
@@ -194,13 +168,12 @@ public:
 		//_stats = new SimkaStatistics(_nbBanks);
 
 
-		createDirs();
-		layoutInputFilename_FROM_SIMKA();
+		//createDirs();
+		//layoutInputFilename(_outputDirTemp + "/input/");
 		//layoutInputFilename();
 
 		//return;
-		if(!computeMaxReads()) return;
-		createConfig();
+		//if(!computeMaxReads()) return;
 
 		//sleep(SLEEP_TIME_SEC);
 
@@ -216,192 +189,49 @@ public:
 
 	}
 
-	void layoutInputFilename_FROM_SIMKA(){
+	void setup(){
+		SimkaAlgorithm<span>::setup();
+		parseArgs();
+		createDirs();
+		layoutInputFilename();
+		createConfig();
+	}
 
-		if(_options->getInt(STR_VERBOSE) != 0){
-			cout << endl << "Creating input" << endl;
-		}
+	void parseArgs() {
 
-		_banksInputFilename = _inputFilename + "_dsk_dataset_temp__";
-		ifstream inputFile(_inputFilename.c_str());
-		//IFile* bankFile = System::file().newFile(_banksInputFilename, "wb");
+		_nbAskedPartitions = this->_options->getInt(STR_SIMKA_NB_PARTITIONS);
 
-		string line;
-		string linePart;
-		vector<string> lineIdDatasets;
-		vector<string> linepartPairedDatasets;
-		vector<string> linepartDatasets;
+		//_maxMemory = _options->getInt(STR_MAX_MEMORY);
+		//_nbCores = _options->getInt(STR_NB_CORES);
 
-		string bankFileContents = "";
+		_maxJobMerge = this->_nbCores;
 
-		u_int64_t lineIndex = 0;
+		size_t maxCoreCount = (3*System::info().getNbCores()) / 4;
+		size_t nbCoresCount = min(maxCoreCount, this->_nbCores);
 
-		while(getline(inputFile, line)){
-
-			line.erase(std::remove(line.begin(),line.end(),' '),line.end());
-			if(line == "") continue;
-
-			cout << line << endl;
-			lineIdDatasets.clear();
-			linepartPairedDatasets.clear();
-			//vector<string> filenames;
-
-			stringstream lineStream(line);
-			while(getline(lineStream, linePart, ':')){
-				lineIdDatasets.push_back(linePart);
-			}
-
-			string bankId = lineIdDatasets[0];
-			string linePairedDatasets = lineIdDatasets[1];
-
-			stringstream linePairedDatasetsStream(linePairedDatasets);
-			while(getline(linePairedDatasetsStream, linePart, ';')){
-				linepartPairedDatasets.push_back(linePart);
-			}
+		u_int64_t minMemory = 2000;
+		size_t maxJobCountTemp = this->_maxMemory/minMemory;
+		_maxJobCount = min(nbCoresCount, maxJobCountTemp);
+		_memoryPerJob = this->_maxMemory / _maxJobCount;
+		_coresPerJob = ceil(nbCoresCount / (float)_maxJobCount);
 
 
-			IFile* subBankFile = System::file().newFile(_outputDirTempFilter + "/input/" + bankId, "wb");
-			string subBankContents = "";
-			_nbBankPerDataset.push_back(linepartPairedDatasets.size());
-
-			for(size_t i=0; i<linepartPairedDatasets.size(); i++){
-				string lineDatasets = linepartPairedDatasets[i];
-
-				linepartDatasets.clear();
-
-				stringstream lineDatasetsStream(lineDatasets);
-				while(getline(lineDatasetsStream, linePart, ',')){
-					linepartDatasets.push_back(linePart);
-					cout << "\t" << linePart << endl;
-				}
-
-				//bankFileContents += linepartDatasets[0] + "\n";
-
-
-				for(size_t i=0; i<linepartDatasets.size(); i++){
-					subBankContents += linepartDatasets[i] + "\n";
-				}
-
-				/*
-				if(linepartDatasets.size() == 1){
-					bankFileContents += linepartDatasets[0] + "\n";
-					vector<size_t> datasets;
-					datasets.push_back(1);
-					//_nbBankPerDataset.push_back(datasets);
-				}
-				//ID and list of filename (paired files for example)
-				else{
-					//char buffer[200];
-					//snprintf(buffer,200,"%llu", lineIndex);
-					string subBankFilename = _banksInputFilename + "_" + SimkaAlgorithm<>::toString(lineIndex);
-					_tempFilenamesToDelete.push_back(subBankFilename);
-					IFile* subBankFile = System::file().newFile(subBankFilename, "wb");
-					string subBankContents = "";
-
-					for(size_t i=1; i<linePartList.size(); i++){
-						subBankContents += linePartList[i] + "\n";
-					}
-					subBankContents.erase(subBankContents.size()-1);
-					//subBankContents.pop_back(); // "remove last /n
-					subBankFile->fwrite(subBankContents.c_str(), subBankContents.size(), 1);
-					subBankFile->flush();
-					delete subBankFile;
-
-					bankFileContents += subBankFilename + "\n";
-					//_nbBankPerDataset.push_back(linePartList.size() - 1); //linePartList.size() - 1 = nb sub banks
-					//_nbReadsPerDataset.push_back(ceil(_maxNbReads / (float)()));
-				}*/
-
-			}
-
-
-			subBankContents.erase(subBankContents.size()-1);
-			subBankFile->fwrite(subBankContents.c_str(), subBankContents.size(), 1);
-			subBankFile->flush();
-			delete subBankFile;
-
-
-			lineIndex += 1;
-
-			_bankNames.push_back(bankId);
-
-
-			//continue;
+		cout << "Nb jobs in parallel: " << _maxJobCount << endl;
+		cout << "Cores per jobs: " << _coresPerJob << endl;
+		cout << "Memory per jobs: " << _memoryPerJob << endl;
+	}
 
 
 
-	/*
-			bool valid = true;
-			//cout << linePartList.size() << endl;
-			//Bank id
-			for(size_t i=1; i<linePartList.size(); i++){
-				string filename = linePartList[1];
-				//cout << filename << endl;
-				if( ! System::file().doesExist(filename)){
-					cout << "\tFilename does not exist: " << filename << endl;
-					valid = false;
-					//break;
-				}
-			}
+	void layoutInputFilename(){
 
-			if(!valid){
-				continue;
-			}*/
+		//SimkaAlgorithm<span>::layoutInputFilename();
 
-			/*
-			_bankNames.push_back(bankId);
-
-
-			 //ID and one filename
-			if(linePartList.size() == 2){
-				bankFileContents += linePartList[1] + "\n";
-				_nbBankPerDataset.push_back(1);
-			}
-			//ID and list of filename (paired files for example)
-			else{
-				char buffer[200];
-				snprintf(buffer,200,"%llu", lineIndex);
-				string subBankFilename = _banksInputFilename + "_" + string(buffer);
-				_tempFilenamesToDelete.push_back(subBankFilename);
-				IFile* subBankFile = System::file().newFile(subBankFilename, "wb");
-				string subBankContents = "";
-
-				for(size_t i=1; i<linePartList.size(); i++){
-					subBankContents += linePartList[i] + "\n";
-				}
-				subBankContents.erase(subBankContents.size()-1);
-				//subBankContents.pop_back(); // "remove last /n
-				subBankFile->fwrite(subBankContents.c_str(), subBankContents.size(), 1);
-				subBankFile->flush();
-				delete subBankFile;
-
-				bankFileContents += subBankFilename + "\n";
-				_nbBankPerDataset.push_back(linePartList.size() - 1); //linePartList.size() - 1 = nb sub banks
-				//_nbReadsPerDataset.push_back(ceil(_maxNbReads / (float)()));
-			}
-
-			lineIndex += 1;*/
-		}
-
-		//bankFileContents.erase(bankFileContents.size()-1);
-		//bankFileContents.pop_back(); // "remove last /n
-
-		//bankFile->fwrite(bankFileContents.c_str(), bankFileContents.size(), 1);
-
-		inputFile.close();
-		//bankFile->flush();
-		//delete bankFile;
-
-		//for(int i=0; i<_nbBanksOfDataset.size(); i++){
-		//	cout << i << "   "  << _nbBanksOfDataset[i] << endl;
-		//}
-
-		//Hold dataset ids
-		string datasetIdFilename = _outputDirTempFilter + "/" + "datasetIds";
+		string datasetIdFilename = this->_outputDirTemp + "/" + "datasetIds";
 		IFile* datasetIdFile = System::file().newFile(datasetIdFilename, "wb");
 
-		for(size_t i=0; i<_bankNames.size(); i++){
-			string bankName = _bankNames[i];
+		for(size_t i=0; i<this->_bankNames.size(); i++){
+			string bankName = this->_bankNames[i];
 
 			string bankIdLine = bankName + '\n';
 			datasetIdFile->fwrite(bankIdLine.c_str(), bankIdLine.size(), 1);
@@ -410,72 +240,10 @@ public:
 		datasetIdFile->flush();
 		delete datasetIdFile;
 
-
-		if(_options->getInt(STR_VERBOSE) != 0){
-			cout << "\tNb input datasets: " << _bankNames.size() << endl;
-		}
-
-		cout << endl;
-
 	}
 
 
 
-
-	bool computeMaxReads(){
-
-		_nbBanks = _bankNames.size();
-		string inputDir = _outputDirTempFilter + "/input/";
-		//IBank* bank = Bank::open(_banksInputFilename);
-		//LOCAL(bank);
-		//_nbBanks = bank->getCompositionNb();
-
-		//cout << _banksInputFilename << endl;
-		if(_maxNbReads == 0){
-			if(_options->getInt(STR_VERBOSE) != 0)
-				cout << "-maxNbReads is not defined. Simka will estimating it..." << endl;
-		}
-		//_maxNbReads = bank->estimateNbItems() / _nbBanks;
-		//_maxNbReads -= (_maxNbReads/10);
-		u_int64_t minReads = -1;
-		for (size_t i=0; i<_nbBanks; i++){
-
-			try{
-				IBank* bank = Bank::open(inputDir + _bankNames[i]);
-				LOCAL(bank);
-				u_int64_t nbReads = bank->estimateNbItems();
-				nbReads /= _nbBankPerDataset[i];
-				if(nbReads < minReads){
-					minReads = nbReads;
-					_smallerBankId = _bankNames[i];
-				}
-			}
-			catch (Exception& e){
-				cout << "Can't open dataset: " << _bankNames[i] << endl;
-				return false;
-			}
-
-		}
-
-		if(_maxNbReads == 0){
-			_maxNbReads = minReads;
-			if(_options->getInt(STR_VERBOSE) != 0)
-				cout << "Max nb reads: " << _maxNbReads << endl << endl;
-		}
-
-		return true;
-		//for(size_t i=0; i<_nbBankPerDataset.size(); i++){
-			//cout << _maxNbReads << " " << _nbBankPerDataset[i] << endl;
-			//_nbReadsPerDataset.push_back( ceil(_maxNbReads / (float)(_nbBankPerDataset[i])) );
-		//}
-
-		//_nbReadsPerDataset = nbReadsPerDataset;
-
-		//System::file().remove(_banksInputFilename);
-	    //for(size_t i=0; i<_tempFilenamesToDelete.size(); i++){
-	    //	System::file().remove(_tempFilenamesToDelete[i]);
-	    //}
-	}
 
 	void createDirs(){
 
@@ -485,26 +253,18 @@ public:
 		suffix += "_s" + _options->getStr(STR_SIMKA_MIN_READ_SHANNON_INDEX);
 		suffix += "_n" + SimkaAlgorithm<>::toString(_maxNbReads);
 		suffix += "_p" + SimkaAlgorithm<>::toString(_nbAskedPartitions);*/
-		_outputDirTempFilter = _outputDirTemp; // + "/" + suffix + "/";
+		//_outputDirTemp = _outputDirTemp; // + "/" + suffix + "/";
 
-		if(!System::file().doesExist(_outputDirTempFilter)){
-			int ok = System::file().mkdir(_outputDirTempFilter, -1);
-			if(ok != 0){
-		        std::cout << "Error: can't create output temp directory (" << _outputDirTempFilter << ")" << std::endl;
-		        return;
-			}
-		}
+
 
 		//System::file().mkdir(_outputDirTemp, -1);
-		System::file().mkdir(_outputDirTempFilter, -1);
-		System::file().mkdir(_outputDirTempFilter + "/input/", -1);
-		System::file().mkdir(_outputDirTempFilter + "/solid/", -1);
-		System::file().mkdir(_outputDirTempFilter + "/temp/", -1);
-		System::file().mkdir(_outputDirTempFilter + "/count_synchro/", -1);
-		System::file().mkdir(_outputDirTempFilter + "/merge_synchro/", -1);
-		System::file().mkdir(_outputDirTempFilter + "/stats/", -1);
-		System::file().mkdir(_outputDirTempFilter + "/job_count/", -1);
-		System::file().mkdir(_outputDirTempFilter + "/job_merge/", -1);
+		System::file().mkdir(this->_outputDirTemp + "/solid/", -1);
+		System::file().mkdir(this->_outputDirTemp + "/temp/", -1);
+		System::file().mkdir(this->_outputDirTemp + "/count_synchro/", -1);
+		System::file().mkdir(this->_outputDirTemp + "/merge_synchro/", -1);
+		System::file().mkdir(this->_outputDirTemp + "/stats/", -1);
+		System::file().mkdir(this->_outputDirTemp + "/job_count/", -1);
+		System::file().mkdir(this->_outputDirTemp + "/job_merge/", -1);
 
 #ifdef CLUSTER
 		IFile* inputFile = System::file().newFile(_jobCountFilename, "rb");
@@ -531,7 +291,7 @@ public:
 
 	void createConfig(){
 
-		string filename = _outputDirTempFilter + "/" + "config.h5";
+		string filename = this->_outputDirTemp + "/" + "config.h5";
 		if(System::file().doesExist(filename)){
 
 		    try{
@@ -553,27 +313,27 @@ public:
 		    }
 		    catch (Exception& e)
 		    {
-		    	cout << "\tcan't open config" << endl;
+		    	cout << "\tcan't open config, computing it again" << endl;
 		    	System::file().remove(filename);
 		    	createConfig();
 		        return;
 		    }
 		}
 
-		_options->setInt(STR_MAX_MEMORY, _memoryPerJob);
-		_options->setInt(STR_NB_CORES, _coresPerJob);
+		this->_options->setInt(STR_MAX_MEMORY, _memoryPerJob);
+		this->_options->setInt(STR_NB_CORES, _coresPerJob);
 
 	    Storage* storage = 0;
         storage = StorageFactory(STORAGE_HDF5).create (filename, true, false);
         LOCAL (storage);
 
 
-		IBank* bank = Bank::open(_outputDirTempFilter + "/input/" + _smallerBankId);
+		IBank* bank = Bank::open(this->_outputDirTemp + "/input/" + this->_smallerBankId);
 		LOCAL(bank);
-        //IBank* bank = Bank::open(_outputDirTempFilter + "/input/" + _bankNames[0]);
+        //IBank* bank = Bank::open(_outputDirTemp + "/input/" + _bankNames[0]);
         bank->finalize();
-        IBank* sampleBank = new SimkaBankSample(bank, 5000000);
-		SortingCountAlgorithm<span> sortingCount (sampleBank, _options);
+        IBank* sampleBank = new SimkaBankSample(bank, bank->estimateNbItems()/3);
+		SortingCountAlgorithm<span> sortingCount (sampleBank, this->_options);
 
 		SimkaNullProcessor<span>* proc = new SimkaNullProcessor<span>();
 
@@ -602,7 +362,7 @@ public:
 
 		config.save(storage->getGroup(""));
 		//sortingCount.getRepartitor()->save(storage->getGroup(""));
-
+		//delete sampleBank;
 
 	    //setStorage (storage);
 
@@ -613,10 +373,10 @@ public:
 
 	void count(){
 
-		vector<vector<string> > commands;
+		vector<string> commands;
 
 		_progress = new ProgressSynchro (
-			createIteratorListener (_bankNames.size(), "Counting datasets"),
+			this->createIteratorListener (this->_bankNames.size(), "Counting datasets"),
 			System::thread().newSynchronizer());
 		_progress->init ();
 
@@ -624,188 +384,60 @@ public:
 		vector<string> filenameQueueToRemove;
 		size_t nbJobs = 0;
 
+	    for (size_t i=0; i<this->_bankNames.size(); i++){
 
-			/*
-		id_t pids[_maxJobCount];
-		//int pipe_fd[_maxJobCount];
-		for(int child=0;child<_maxJobCount;child++) {
-			cout << child << endl;
-			 //int pipe[2];
-			 int ret;
-			 ret = fork();
-			 if(ret) {
-			  pids[child] = ret;
-			  cout << "ha:   " << ret << endl;
-			 } else {
-				 cout << "child" << endl;
-			  //exec(...);
-			 }
-		}
-*/
-
-	    for (size_t i=0; i<_bankNames.size(); i++){
-
-	    	cout << endl << endl << "\tDataset " << i << endl;
-
-			string finishFilename = _outputDirTempFilter + "/count_synchro/" +  _bankNames[i] + ".ok";
+			string finishFilename = this->_outputDirTemp + "/count_synchro/" +  this->_bankNames[i] + ".ok";
 			if(System::file().doesExist(finishFilename)){
-				cout << "\t" << _bankNames[i] << " already counted (remove file " << finishFilename << " to count again)" << endl;
+				cout << "\t" << this->_bankNames[i] << " already counted (remove file " << finishFilename << " to count again)" << endl;
+				continue;
 			}
-			else{
+			//else{
 
-				string tempDir = _outputDirTempFilter + "/temp/" + _bankNames[i];
+
+			string tempDir = this->_outputDirTemp + "/temp/" + this->_bankNames[i];
+
+			string command = "./simkaCount ";
+			command += " " + string(STR_KMER_SIZE) + " " + SimkaAlgorithm<>::toString(this->_kmerSize);
+			command += " " + string("-out-tmp-simka") + " " + this->_outputDirTemp;
+			command += " " + string("-out-tmp") + " " + tempDir;
+			command += " -bank-name " + this->_bankNames[i];
+			command += " -nb-datasets " + SimkaAlgorithm<>::toString(this->_nbBankPerDataset[i]);
+			command += " " + string(STR_MAX_MEMORY) + " " + SimkaAlgorithm<>::toString(_memoryPerJob);
+			command += " " + string(STR_NB_CORES) + " " + SimkaAlgorithm<>::toString(_coresPerJob);
+			command += " " + string(STR_URI_INPUT) + " dummy ";
+			command += " " + string(STR_KMER_ABUNDANCE_MIN) + " " + SimkaAlgorithm<>::toString(this->_abundanceThreshold.first);
+			command += " " + string(STR_SIMKA_MIN_READ_SIZE) + " " + SimkaAlgorithm<>::toString(this->_minReadSize);
+			command += " " + string(STR_SIMKA_MIN_READ_SHANNON_INDEX) + " " + SimkaAlgorithm<>::toString(this->_minReadShannonIndex);
+			command += " " + string(STR_SIMKA_MAX_READS) + " " + SimkaAlgorithm<>::toString(this->_maxNbReads);
+			//command += " -verbose 0";
+			command += " &";
+
+				//commands.push_back(command);
+
+				/*
+				string tempDir = _outputDirTemp + "/temp/" + _bankNames[i];
 
 				vector<string> command;
 				command.push_back(_bankNames[i]);
 				command.push_back(tempDir);
 				command.push_back(SimkaAlgorithm<>::toString(_nbBankPerDataset[i]));
-				/*
-				command.push_back();
-				command.push_back(+ " " + );
-
-				command.push_back(+ " " + );
-				command.push_back( + );
-				command.push_back(string(STR_MAX_MEMORY) + " " + SimkaAlgorithm<>::toString(_memoryPerJob));
-				command.push_back(string(STR_NB_CORES) + " " + SimkaAlgorithm<>::toString(_coresPerJob));
-				command.push_back(string() + " dummy ");
-				command.push_back(string(STR_KMER_ABUNDANCE_MIN) + " " + _options->getStr(STR_KMER_ABUNDANCE_MIN));
-				command.push_back(string(STR_SIMKA_MIN_READ_SIZE) + " " + _options->getStr(STR_SIMKA_MIN_READ_SIZE));
-				command.push_back(string(STR_SIMKA_MIN_READ_SHANNON_INDEX) + " " + _options->getStr(STR_SIMKA_MIN_READ_SHANNON_INDEX));
-				command.push_back(string(STR_SIMKA_MAX_READS) + " " + SimkaAlgorithm<>::toString(_nbReadsPerDataset[i]));
-				*/
-				commands.push_back(command);
-			}
-	    }
-
-	    vector<pid_t> pids(commands.size());
-	    size_t jobDone = 0;
-	    vector<bool> isJobFinished(commands.size());
-	    //size_t nbJobs = 0;
-
-	    for(size_t i=0; i<commands.size(); i++){
-			 int ret;
-			ret = fork();
-			if(ret) {
-				pids[i] = ret;
-				nbJobs += 1;
-				//cout << "-------------:   " << ret << "   " << i << "   " << nbJobs << endl;
-
-				if(nbJobs >= _maxJobCount){
-
-					//while(true){
-					//bool ok = false;
-					for(size_t j=0; j<=i; j++){
-
-						if(isJobFinished[j]) continue;
-
-						int status;
-						cout << "wait for " << j << endl;
-						//waitpid(pids[j], &status, 0);
-						wait(NULL);
-						cout << "job finiashed " << j << endl;
-
-						isJobFinished[j] = true;
-						nbJobs -= 1;
-						break;
-						//jobDone += 1;
-						//ok = true;
-					}
-						//if(ok) break;
-					//}
-				}
-
-				//cout << nbJobs << endl;
-				//if(i == commands.size()-1)
-				//    waitpid(pids[i], &status, 0);
-				//nbJobs -= 1;
-				//}
-
-			}
-			else {
-
-				vector<string> command = commands[i];
-
-				cout << "./simkaCount " << " -out-tmp " << command[1] << "  " << " -out-tmp-simka " <<  _outputDirTempFilter << "  " << _maxNbReads << "  " << command[0] << endl;
-
-				//cout << "child" << endl;
-				execl(
-						"./simkaCount",
-						"./simkaCount",
-						STR_KMER_SIZE, _options->getStr(STR_KMER_SIZE).c_str(),
-						"-out-tmp-simka", _outputDirTempFilter.c_str(),
-						"-bank-name" , command[0].c_str(),
-						"-out-tmp", command[1].c_str(),
-						"-nb-datasets", command[2].c_str(),
-						STR_URI_INPUT, "dummy",
-						STR_SIMKA_MAX_READS.c_str(), SimkaAlgorithm<>::toString(_maxNbReads).c_str(),
-						STR_SIMKA_MIN_READ_SHANNON_INDEX.c_str(), _options->getStr(STR_SIMKA_MIN_READ_SHANNON_INDEX).c_str(),
-						STR_SIMKA_MIN_READ_SIZE.c_str(), _options->getStr(STR_SIMKA_MIN_READ_SIZE).c_str(),
-						STR_KMER_ABUNDANCE_MIN, _options->getStr(STR_KMER_ABUNDANCE_MIN).c_str(),
-						STR_MAX_MEMORY, SimkaAlgorithm<>::toString(_memoryPerJob).c_str(),
-						STR_NB_CORES, SimkaAlgorithm<>::toString(_coresPerJob).c_str(),
-						//"-verbose", "0",
-						NULL
-				);
-			}
-	    }
+				commands.push_back(command);*/
+			//}
+	    //}
 
 
-		for(size_t j=0; j<commands.size(); j++){
-			int status;
-			waitpid(pids[j], &status, 0);
-			//ok = true;
-		}
+	    //for (size_t i=0; i<_bankNames.size(); i++){
 
-	    /*
-				filenameQueue.push_back(_bankNames[i]);
+	    	//string command = commands[i];
+	    	//cout << command << endl;
 
+			filenameQueue.push_back(this->_bankNames[i]);
 
-				string tempDir = _outputDirTempFilter + "/temp/" + _bankNames[i];
+			cout << command << endl;
+			system(command.c_str());
 
-				string command = "";
-#ifndef CLUSTER
-				//command += "nohup";
-#endif
-				command += "./simkaCount ";
-				command += " " + string(STR_KMER_SIZE) + " " + _options->getStr(STR_KMER_SIZE);
-				command += " " + string("-out-tmp-simka") + " " + _outputDirTempFilter;
-				command += " " + string("-out-tmp") + " " + tempDir;
-				command += " -bank-name " + _bankNames[i];
-				command += " " + string(STR_MAX_MEMORY) + " " + SimkaAlgorithm<>::toString(_memoryPerJob);
-				command += " " + string(STR_NB_CORES) + " " + SimkaAlgorithm<>::toString(_coresPerJob);
-				command += " " + string(STR_URI_INPUT) + " dummy ";
-				command += " " + string(STR_KMER_ABUNDANCE_MIN) + " " + _options->getStr(STR_KMER_ABUNDANCE_MIN);
-				command += " " + string(STR_SIMKA_MIN_READ_SIZE) + " " + _options->getStr(STR_SIMKA_MIN_READ_SIZE);
-				command += " " + string(STR_SIMKA_MIN_READ_SHANNON_INDEX) + " " + _options->getStr(STR_SIMKA_MIN_READ_SHANNON_INDEX);
-				command += " " + string(STR_SIMKA_MAX_READS) + " " + SimkaAlgorithm<>::toString(_nbReadsPerDataset[i]);
-#ifndef CLUSTER
-				command += " &";
-#endif
-
-				//command = _cmdJobCount + " " + command;
-
-#ifdef CLUSTER
-				string jobFilename = _outputDirTempFilter + "/job_count/job_count_" + _bankNames[i] + ".bash";
-				IFile* jobFile = System::file().newFile(jobFilename.c_str(), "w");
-				string jobCommand = _jobCountContents + '\n' + '\n';
-				jobCommand += command;
-
-				cout << "\t" << jobCommand << endl;
-
-				jobFile->fwrite(jobCommand.c_str(), jobCommand.size(), 1);
-				jobFile->flush();
-				string submitCommand = _jobCountCommand + " " + jobFile->getPath();
-				delete jobFile;
-				system(submitCommand.c_str());
-#else
-				cout << "\t" << command << endl;
-				//execl("./simkaCount",
-				//		(string(STR_KMER_SIZE) + " " + _options->getStr(STR_KMER_SIZE)).c_str(),
-				//	NULL);
-				system(command.c_str());
-#endif
-				nbJobs += 1;
-			}
+			nbJobs += 1;
+			//cout << "job started" << endl;
 
 			if(nbJobs >= _maxJobCount){
 				while(true){
@@ -813,11 +445,12 @@ public:
 
 					for(size_t j=0; j<filenameQueue.size(); j++){
 
-						string finishFilename2 = _outputDirTempFilter + "/count_synchro/" + filenameQueue[j] + ".ok";
+						string finishFilename2 = this->_outputDirTemp + "/count_synchro/" + filenameQueue[j] + ".ok";
 						if(System::file().doesExist(finishFilename2)){
 							filenameQueueToRemove.push_back(filenameQueue[j]);
 							isJobAvailbale = true;
 							nbJobs -= 1;
+							//cout << "job finished" << endl;
 							_progress->inc(1);
 						}
 					}
@@ -833,19 +466,19 @@ public:
 						sleep(1);
 					}
 
-					if(i >= _bankNames.size()) break;
+					if(i >= this->_bankNames.size()) break;
 				}
 			}
-	    }
 
-	    cout << nbJobs << endl;
+
+	    }
 
 	    while(nbJobs > 0){
 			bool isJobAvailbale = false;
 
 			for(size_t j=0; j<filenameQueue.size(); j++){
 
-				string finishFilename2 = _outputDirTempFilter + "/count_synchro/" + filenameQueue[j] + ".ok";
+				string finishFilename2 = this->_outputDirTemp + "/count_synchro/" + filenameQueue[j] + ".ok";
 				if(System::file().doesExist(finishFilename2)){
 					filenameQueueToRemove.push_back(filenameQueue[j]);
 					isJobAvailbale = true;
@@ -866,22 +499,16 @@ public:
 			}
 	    }
 
-
-	    cout << nbJobs << endl;*/
-
 	    _progress->finish();
 	    delete _progress;
 	}
 
-	void waitForJob(){
-
-	}
 
 	void merge(){
 
 		//cout << "lala" << endl;
 		_progress = new ProgressSynchro (
-			createIteratorListener (_nbPartitions, "Merging datasets"),
+			this->createIteratorListener (_nbPartitions, "Merging datasets"),
 			System::thread().newSynchronizer());
 		_progress->init ();
 		//cout << "lala" << endl;
@@ -895,7 +522,7 @@ public:
 	    	cout << endl << endl <<  "\tDataset " << i << endl;
 
 	    	string datasetId = SimkaAlgorithm<>::toString(i);
-			string finishFilename = _outputDirTempFilter + "/merge_synchro/" +  datasetId + ".ok";
+			string finishFilename = this->_outputDirTemp + "/merge_synchro/" +  datasetId + ".ok";
 
 			if(System::file().doesExist(finishFilename)){
 				cout << "\t" << datasetId << " already merged (remove file " << finishFilename << " to merge again)" << endl;
@@ -915,15 +542,15 @@ public:
 				//command += "nohup";
 	#endif
 				command += "./simkaMerge ";
-				command += " " + string(STR_KMER_SIZE) + " " + _options->getStr(STR_KMER_SIZE);
-				command += " " + string(STR_URI_INPUT) + " " + _inputFilename;
-				command += " " + string("-out-tmp-simka") + " " + _outputDirTempFilter;
+				command += " " + string(STR_KMER_SIZE) + " " + SimkaAlgorithm<>::toString(this->_kmerSize);
+				command += " " + string(STR_URI_INPUT) + " " + this->_inputFilename;
+				command += " " + string("-out-tmp-simka") + " " + this->_outputDirTemp;
 				command += " -partition-id " + SimkaAlgorithm<>::toString(i);
-				command += " " + string(STR_MAX_MEMORY) + " " + _options->getStr(STR_MAX_MEMORY);
+				command += " " + string(STR_MAX_MEMORY) + " " + SimkaAlgorithm<>::toString(this->_maxMemory / this->_nbCores);
 				command += " " + string(STR_NB_CORES) + " 1";
-				command += " " + string(STR_SIMKA_MIN_KMER_SHANNON_INDEX) + " " + _options->getStr(STR_SIMKA_MIN_KMER_SHANNON_INDEX);
+				command += " " + string(STR_SIMKA_MIN_KMER_SHANNON_INDEX) + " " + SimkaAlgorithm<>::toString(this->_minKmerShannonIndex);
 
-				SimkaDistanceParam distanceParams(_options);
+				SimkaDistanceParam distanceParams(this->_options);
 				if(distanceParams._computeBrayCurtis) command += " " + STR_SIMKA_DISTANCE_BRAYCURTIS + " ";
 				if(distanceParams._computeCanberra) command += " " + STR_SIMKA_DISTANCE_CANBERRA + " ";
 				if(distanceParams._computeChord) command += " " + STR_SIMKA_DISTANCE_CHORD + " ";
@@ -935,7 +562,7 @@ public:
 	#endif
 
 	#ifdef CLUSTER
-				string jobFilename = _outputDirTempFilter + "/job_merge/job_merge_" + SimkaAlgorithm<>::toString(i) + ".bash";
+				string jobFilename = _outputDirTemp + "/job_merge/job_merge_" + SimkaAlgorithm<>::toString(i) + ".bash";
 				IFile* jobFile = System::file().newFile(jobFilename.c_str(), "w");
 				string jobCommand = _jobMergeContents + '\n' + '\n';
 				jobCommand += command;
@@ -961,7 +588,7 @@ public:
 
 					for(size_t j=0; j<filenameQueue.size(); j++){
 
-						string finishFilename2 = _outputDirTempFilter + "/merge_synchro/" + filenameQueue[j] + ".ok";
+						string finishFilename2 = this->_outputDirTemp + "/merge_synchro/" + filenameQueue[j] + ".ok";
 						if(System::file().doesExist(finishFilename2)){
 							filenameQueueToRemove.push_back(filenameQueue[j]);
 							isJobAvailbale = true;
@@ -981,7 +608,7 @@ public:
 						sleep(1);
 					}
 
-					if(i >= _bankNames.size()) break;
+					if(i >= this->_bankNames.size()) break;
 				}
 			}
 	    }
@@ -993,7 +620,7 @@ public:
 
 			for(size_t j=0; j<filenameQueue.size(); j++){
 
-				string finishFilename2 = _outputDirTempFilter + "/merge_synchro/" + filenameQueue[j] + ".ok";
+				string finishFilename2 = this->_outputDirTemp + "/merge_synchro/" + filenameQueue[j] + ".ok";
 				if(System::file().doesExist(finishFilename2)){
 					filenameQueueToRemove.push_back(filenameQueue[j]);
 					isJobAvailbale = true;
@@ -1023,18 +650,18 @@ public:
 
 	void stats(){
 		cout << endl << "Computing stats..." << endl;
-		cout << _nbBanks << endl;
+		cout << this->_nbBanks << endl;
 
 
-		SimkaDistanceParam distanceParams(_options);
-		SimkaStatistics mainStats(_nbBanks, distanceParams);
+		SimkaDistanceParam distanceParams(this->_options);
+		SimkaStatistics mainStats(this->_nbBanks, distanceParams);
 
 		for(size_t i=0; i<_nbPartitions; i++){
 
-			Storage* storage = StorageFactory(STORAGE_HDF5).load (_outputDirTempFilter + "/stats/part_" + SimkaAlgorithm<>::toString(i) + ".stats");
+			Storage* storage = StorageFactory(STORAGE_HDF5).load (this->_outputDirTemp + "/stats/part_" + SimkaAlgorithm<>::toString(i) + ".stats");
 			LOCAL (storage);
 
-			SimkaStatistics stats(_nbBanks, distanceParams);
+			SimkaStatistics stats(this->_nbBanks, distanceParams);
 			stats.load(storage->getGroup(""));
 
 			cout << stats._nbDistinctKmers << endl;
@@ -1043,30 +670,26 @@ public:
 
 		mainStats.print();
 
-		mainStats.outputMatrix(_outputDir, _bankNames);
+		mainStats.outputMatrix(this->_outputDir, this->_bankNames);
 	}
 
 
-	u_int64_t _maxMemory;
-	size_t _nbCores;
+	//u_int64_t _maxMemory;
+	//size_t _nbCores;
 	u_int64_t _memoryPerJob;
 	size_t _coresPerJob;
 
 	//IBank* _banks;
-	IProperties* _options;
-	string _inputFilename;
-	string _outputDir;
-	string _outputDirTemp;
-	string _outputDirTempFilter;
-	vector<string> _bankNames;
-    vector<size_t> _nbBankPerDataset;
+	//IProperties* _options;
+	//string _inputFilename;
+	//vector<string> _bankNames;
+	//vector<size_t> _nbBankPerDataset;
     size_t _nbPartitions;
-    size_t _nbBanks;
+    //size_t _nbBanks;
 	//vector<u_int64_t> _nbReadsPerDataset;
-	string _banksInputFilename;
-	vector<string> _tempFilenamesToDelete;
-	u_int64_t _maxNbReads;
-	string _smallerBankId;
+    //string _banksInputFilename;
+    //vector<string> _tempFilenamesToDelete;
+    //u_int64_t _maxNbReads;
 	//IBank* _sampleBank;
 
 	size_t _maxJobCount;
@@ -1094,62 +717,6 @@ public:
 
 
 
-
-
-/*
-IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
-{
-    IOptionsParser* parser = parent; //new OptionsParser ("Simka");
-
-	//IOptionsParser* parser = getParser();
-	IOptionsParser* dskParser = SortingCountAlgorithm<>::getOptionsParser();
-	parser->push_back(dskParser);
-	dskParser->setVisible(false);
-	//cout << parser->getParser(STR_NB_CORES) << endl;
-	parser->getParser(STR_NB_CORES)->setVisible(false);
-
-	//Main parser
-	parser->push_front(dskParser->getParser (STR_URI_OUTPUT_TMP));
-	parser->push_front(dskParser->getParser (STR_URI_OUTPUT));
-	parser->getParser (STR_URI_OUTPUT)->setHelp("output directory for result files (similarity matrix, heatmaps)");
-	parser->push_front(dskParser->getParser (STR_URI_INPUT));
-	parser->getParser(STR_URI_INPUT)->setHelp("input file of datasets. One dataset per line: id filename1 filename2...");
-
-
-	//Kmer parser
-    IOptionsParser* kmerParser = new OptionsParser ("kmer");
-    kmerParser->push_back(dskParser->getParser (STR_KMER_SIZE));
-    kmerParser->push_back(new OptionOneParam (STR_KMER_PER_READ.c_str(), "number of selected kmers per read", false, "0"));
-    kmerParser->push_back(dskParser->getParser (STR_KMER_ABUNDANCE_MIN));
-    if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_KMER_ABUNDANCE_MIN)))  {  p->setDefaultValue ("0"); }
-    kmerParser->push_back(dskParser->getParser (STR_KMER_ABUNDANCE_MAX));
-    kmerParser->push_back(dskParser->getParser (STR_SOLIDITY_KIND));
-    kmerParser->getParser (STR_SOLIDITY_KIND)->setHelp("TODO");
-    kmerParser->push_back (new OptionNoParam (STR_SIMKA_SOLIDITY_PER_DATASET.c_str(), "do not take into consideration multi-counting when determining solid kmers", false ));
-    kmerParser->push_back (new OptionOneParam (STR_SIMKA_MIN_KMER_SHANNON_INDEX.c_str(), "minimal Shannon index a kmer should have to be kept. Float in [0,2]", false, "0" ));
-
-
-    //Read filter parser
-    IOptionsParser* readParser = new OptionsParser ("read");
-    readParser->push_back (new OptionOneParam (STR_SIMKA_MAX_READS.c_str(), "maximum number of reads per dataset to process", false, "0" ));
-    readParser->push_back (new OptionOneParam (STR_SIMKA_MIN_READ_SIZE.c_str(), "minimal size a read should have to be kept", false, "0" ));
-    readParser->push_back (new OptionOneParam (STR_SIMKA_MIN_READ_SHANNON_INDEX.c_str(), "minimal Shannon index a read should have to be kept. Float in [0,2]", false, "0" ));
-
-    //Core parser
-    IOptionsParser* coreParser = new OptionsParser ("core");
-    coreParser->push_back(new OptionOneParam(parser->getParser(STR_NB_CORES)->getName(), parser->getParser(STR_NB_CORES)->getHelp(), false, "0"));
-    coreParser->push_back(dskParser->getParser (STR_MAX_MEMORY));
-    coreParser->push_back(dskParser->getParser (STR_MAX_DISK));
-
-	parser->push_back(kmerParser);
-	parser->push_back(readParser);
-	parser->push_back(coreParser);
-
-
-    return parser;
-}*/
-
-
 class SimkaPotara : public Tool{
 
 public:
@@ -1157,9 +724,5 @@ public:
 	SimkaPotara();
 	void execute();
 };
-
-
-
-
 
 #endif
