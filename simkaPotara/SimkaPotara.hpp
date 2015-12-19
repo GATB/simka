@@ -445,7 +445,7 @@ public:
 
 
 			if(_isClusterMode){
-				string jobFilename = this->_outputDirTemp + "/job_merge/job_merge_" + SimkaAlgorithm<>::toString(i) + ".bash";
+				string jobFilename = this->_outputDirTemp + "/job_count/job_count_" + SimkaAlgorithm<>::toString(i) + ".bash";
 				IFile* jobFile = System::file().newFile(jobFilename.c_str(), "w");
 				string jobCommand = _jobCountContents + '\n' + '\n';
 				jobCommand += command;
@@ -454,7 +454,7 @@ public:
 
 				jobFile->fwrite(jobCommand.c_str(), jobCommand.size(), 1);
 				jobFile->flush();
-				string submitCommand = _jobMergeCommand + " " + jobFile->getPath();
+				string submitCommand = _jobCountCommand + " " + jobFile->getPath();
 				delete jobFile;
 				system(submitCommand.c_str());
 			}
