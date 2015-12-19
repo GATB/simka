@@ -122,6 +122,8 @@ class SimkaPotaraAlgorithm : public SimkaAlgorithm<span>{
 public:
 
 
+    typedef typename Kmer<span>::Type  Type;
+
 	SimkaPotaraAlgorithm(IProperties* options):
 		SimkaAlgorithm<span>(options)
 	{
@@ -369,12 +371,23 @@ public:
 		sortingCount.execute();
 
 		Configuration config = sortingCount.getConfig();
-		config._nb_cached_items_per_core_per_part = 100000;
 
 
 		if(_isClusterMode){
+			//config._nb_cached_items_per_core_per_part = 100000;
 			_nbPartitions = _maxJobMerge;
 			config._nb_partitions = _nbPartitions;
+
+		    uint64_t memoryUsageCachedItems;
+		    config._nb_cached_items_per_core_per_part = 1 << 8; // cache at least 256 items (128 here, then * 2 in the next while loop)
+		    do
+		    {
+		        config._nb_cached_items_per_core_per_part *= 2;
+		        memoryUsageCachedItems = 1LL * config._nb_cached_items_per_core_per_part *config._nb_partitions * config._nbCores * sizeof(Type);
+		    }
+		    while (memoryUsageCachedItems < config._max_memory * MBYTE / 10);
+
+		    //cout << config._nb_cached_items_per_core_per_part << endl;
 		}
 		else{
 			_nbPartitions = config._nb_partitions;
