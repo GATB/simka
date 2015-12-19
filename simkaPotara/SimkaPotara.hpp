@@ -373,11 +373,11 @@ public:
 
 
 		if(_isClusterMode){
-			_nbPartitions = config._nb_partitions;
-		}
-		else{
 			_nbPartitions = _maxJobMerge;
 			config._nb_partitions = _nbPartitions;
+		}
+		else{
+			_nbPartitions = config._nb_partitions;
 		}
 
 
