@@ -196,22 +196,24 @@ template <class Item, typename Filter> class SimkaInputIterator : public Iterato
 {
 public:
 
-    /** Constructor.
-     * \param[in] ref : the referred iterator
-     * \param[in] initRef : will call 'first' on the reference if true
-     */
+	/** Constructor.
+	* \param[in] ref : the referred iterator
+	* \param[in] initRef : will call 'first' on the reference if true
+	*/
 	SimkaInputIterator(Iterator<Item>* refs, size_t nbBanks, u_int64_t maxReads, Filter filter)
-        :  _filter(filter), _mainref(0) {
+	:  _filter(filter), _mainref(0) {
 
 		setMainref(refs);
 		_ref = _mainref->getComposition()[0];
 		_isDone = true;
-		_nbBanks = nbBanks;
-		//cout << _nbBanks << endl;
+		_nbDatasets = nbBanks;
+		_nbBanks = _mainref->getComposition().size() / _nbDatasets;
 		_maxReads = maxReads;
 		_nbReadProcessed = 0;
 		_currentBank = 0;
 		_currentInternalBank = 0;
+		_currentDataset = 0;
+
 	}
 
     /** \copydoc  Iterator::first */
@@ -223,97 +225,86 @@ public:
         _isDone = _ref->isDone();
 
         while (!_ref->isDone() && _filter(_ref->item())==false)
-        	_ref->next();
+                _ref->next();
 
-    	*(this->_item) = _ref->item();
+        *(this->_item) = _ref->item();
 
     }
 
     bool isFinished(){
-    	if(_currentBank == _mainref->getComposition().size()-1){
-    		_isDone = true;
-    		return true;
-    	}
-    	return false;
+        if(_currentDataset == _nbDatasets){
+                _isDone = true;
+                return true;
+        }
+        return false;
     }
 
-    void nextDataset(){
-    	//cout << "next dataset "<< endl;
-    	while(_currentInternalBank < _nbBanks){
-        	_currentBank += 1;
-    		_currentInternalBank += 1;
-    	}
-    	_currentInternalBank = 0;
-    	_nbReadProcessed = 0;
+	void nextDataset(){
+		_currentDataset += 1;
+
+		if(isFinished()) return;
+
+		_currentBank = _currentDataset * _nbBanks;
+
+		_currentInternalBank = 0;
+		_nbReadProcessed = 0;
+
+		if(isFinished()) return;
+
+		_ref = _mainref->getComposition()[_currentBank];
+		_isDone = false;
+		first();
+		//nextBank();
+	}
+
+	void nextBank(){
+		//cout << "next bank" << endl;
+		//cout << "next bank "<< endl;
+		_currentInternalBank += 1;
+		if(_currentInternalBank == _nbBanks){
+			nextDataset();
+		}
+		else{
+			_isDone = false;
+			_currentBank += 1;
+			_ref = _mainref->getComposition()[_currentBank];
+			first();
+		}
+	}
+
+
+	void next(){
 
 		if(isFinished()){
+			_isDone = true;
 			return;
 		}
 
-    	nextBank();
-    }
+		_ref->next();
+		_isDone = _ref->isDone();
+		while (!_ref->isDone() && _filter(_ref->item())==false) _ref->next();
 
-    void nextBank(){
-    	//cout << "next bank "<< endl;
-    	_currentInternalBank += 1;
-    	if(_currentInternalBank == _nbBanks){
-    		nextDataset();
-    	}
-    	else{
-        	_isDone = false;
-        	_currentBank += 1;
-        	_ref = _mainref->getComposition()[_currentBank];
-        	first();
-    	}
+		*(this->_item) = _ref->item();
+		_nbReadProcessed += 1;
 
-    }
+		//cout << _nbReadProcessed << "  " << _currentBank << "    " << _nbBanks << "   " << _maxReads << endl;
 
 
+		if(_isDone){
+			if(isFinished())
+				return;
+			else
+				nextBank();
+		}
 
+		if(_nbReadProcessed >= _maxReads){
+			if(isFinished())
+				return;
+			else
+				nextDataset();
+		}
 
-
-    /** \copydoc  Iterator::next */
-    void next()
-    {
-
-    	_ref->next();
-
-        _isDone = _ref->isDone();
-
-        while (!_ref->isDone() && _filter(_ref->item())==false)
-        	_ref->next();
-
-        //_isDone = _ref->isDone();
-
-        //if (!_isDone)  {
-        	*(this->_item) = _ref->item();
-        	_nbReadProcessed += 1;
-
-        	//cout << &_ref->item() << endl;
-        //}
-
-    	//cout << _nbReadProcessed << "  " << _maxReads << "    " << _refs.size() << endl;
-
-
-        if(_isDone){
-    		if(isFinished())
-    			return;
-    		else
-    			nextBank();
-
-        }
-        else{
-        	//*(this->_item) = _ref->item();
-        }
-
-    	if(_nbReadProcessed >= _maxReads){
-    		if(isFinished())
-    			return;
-    		else
-    			nextDataset();
-    	}
-
-    }
+	}
 
     /** \copydoc  Iterator::isDone */
     bool isDone()  {  return _isDone;  }
@@ -333,7 +324,8 @@ private:
     Filter _filter;
     u_int64_t _nbReadProcessed;
     size_t _currentInternalBank;
-
+	size_t _currentDataset;
+	size_t _nbDatasets;
 
     Iterator<Item>* _mainref;
     void setMainref (Iterator<Item>* mainref)  { SP_SETATTR(mainref); }
