@@ -205,7 +205,7 @@ public:
 
 		setMainref(refs);
 		_ref = _mainref->getComposition()[0];
-		_isDone = true;
+		_isDone = false;
 		_nbDatasets = nbBanks;
 		_nbBanks = _mainref->getComposition().size() / _nbDatasets;
 		_maxReads = maxReads;
@@ -216,20 +216,6 @@ public:
 
 	}
 
-    /** \copydoc  Iterator::first */
-    void first()
-    {
-
-        _ref->first();
-
-        _isDone = _ref->isDone();
-
-        while (!_ref->isDone() && _filter(_ref->item())==false)
-                _ref->next();
-
-        *(this->_item) = _ref->item();
-
-    }
 
     bool isFinished(){
         if(_currentDataset == _nbDatasets){
@@ -272,6 +258,19 @@ public:
 		}
 	}
 
+    void first()
+    {
+
+        _ref->first();
+
+        while (!_ref->isDone() && _filter(_ref->item())==false)
+                _ref->next();
+
+        _isDone = _ref->isDone();
+
+        if(!_isDone) *(this->_item) = _ref->item();
+
+    }
 
 	void next(){
 
@@ -281,11 +280,14 @@ public:
 		}
 
 		_ref->next();
-		_isDone = _ref->isDone();
 		while (!_ref->isDone() && _filter(_ref->item())==false) _ref->next();
 
-		*(this->_item) = _ref->item();
-		_nbReadProcessed += 1;
+		_isDone = _ref->isDone();
+
+		if(!_isDone){
+			//cout << _currentBank << "  " << _isDone << endl;
+
+		}
 
 		//cout << _nbReadProcessed << "  " << _currentBank << "    " << _nbBanks << "   " << _maxReads << endl;
 
@@ -295,6 +297,10 @@ public:
 				return;
 			else
 				nextBank();
+		}
+		else{
+			*(this->_item) = _ref->item();
+			_nbReadProcessed += 1;
 		}
 
 		if(_nbReadProcessed >= _maxReads){
