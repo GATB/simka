@@ -213,6 +213,7 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 			nbBanksThatHaveKmer += 1;
 			_localStats->_nbSolidDistinctKmersPerBank[i] += 1;
 			_localStats->_nbSolidKmersPerBank[i] += abundanceI;
+			_localStats->_chord_N2[i] += pow(abundanceI, 2);
 		}
 
 
@@ -238,19 +239,36 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 			if(_stats._distanceParams._computeKulczynski)
 				_localStats->_kulczynski_minNiNj[i][j] += min(abundanceI, abundanceJ);*/
 
+
+			if(abundanceI + abundanceJ > 0){
+				_localStats->_canberra[i][j] += abs(abundanceI - abundanceJ) / (abundanceI + abundanceJ);
+				_localStats->_brayCurtisNumerator[i][j] += abs(abundanceI - abundanceJ);
+			}
+
+			if(abundanceI && abundanceJ){
+				_localStats->_matrixNbSharedKmers[i][j] += abundanceI;
+				_localStats->_matrixNbSharedKmers[j][i] += abundanceJ;
+				_localStats->_matrixNbDistinctSharedKmers[i][j] += 1;
+
+				_localStats->_chord_NiNj[i][j] += abundanceI * abundanceJ;
+				_localStats->_hellinger_SqrtNiNj[i][j] += sqrt(abundanceI * abundanceJ);
+				_localStats->_kulczynski_minNiNj[i][j] += min(abundanceI, abundanceJ);
+			}
+
+			/*
 			if(abundanceI && abundanceJ){
 				_localStats->_matrixNbSharedKmers[i][j] += abundanceI;
 				_localStats->_matrixNbSharedKmers[j][i] += abundanceJ;
 				_localStats->_matrixNbDistinctSharedKmers[i][j] += 1;
 				//_localStats->_matrixNbDistinctSharedKmers[j][i] += 1;
 				//updateKullbackLeibler(i, abundanceI, j, abundanceJ);
-			}
+			}*/
 
 		}
 
 	}
 
-
+	/*
 	if(_stats._distanceParams._computeBrayCurtis){
 		for(size_t i=0; i<counts.size(); i++){
 			for(size_t j=i+1; j<counts.size(); j++){
@@ -294,7 +312,7 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 				_localStats->_kulczynski_minNiNj[i][j] += min(counts[i], counts[j]);
 			}
 		}
-	}
+	}*/
 
 	_localStats->_nbDistinctKmersSharedByBanksThreshold[nbBanksThatHaveKmer-1] += 1;
 	_localStats->_nbKmersSharedByBanksThreshold[nbBanksThatHaveKmer-1] += _totalAbundance;
