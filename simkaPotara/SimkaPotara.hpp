@@ -202,13 +202,14 @@ public:
 
 	void parseArgs() {
 
+		_isClusterMode = true;
 
-		if(this->_options->get(STR_SIMKA_CLUSTER_MODE)){
+		//if(this->_options->get(STR_SIMKA_CLUSTER_MODE)){
 
-			cout << "cluster mode activated" << endl;
-			cout << "\t-max-memory = memory per job" << endl;
-			cout << "\t-nb-cores = cores per job" << endl;
-			cout << endl;
+			//cout << "cluster mode activated" << endl;
+			//cout << "\t-max-memory = memory per job" << endl;
+			//cout << "\t-nb-cores = cores per job" << endl;
+			//cout << endl;
 
 			_isClusterMode = true;
 			_maxJobCount = this->_options->getInt(STR_SIMKA_NB_JOB_COUNT);
@@ -245,8 +246,8 @@ public:
 			delete inputFile;
 
 
-			return;
-		}
+		return;
+		//}
 
 
 		size_t maxCores = System::info().getNbCores();

@@ -34,16 +34,21 @@ SimkaPotara::SimkaPotara()  : Tool ("SimkaPotara")
 	//Kmer parser
     IOptionsParser* clusterParser = new OptionsParser ("cluster");
 
-    clusterParser->push_back (new OptionNoParam (STR_SIMKA_CLUSTER_MODE, "enable cluster mode. All cluster args below must be set", false));
-    clusterParser->push_back (new OptionOneParam (STR_SIMKA_NB_JOB_COUNT, "maximum number of simultaneous counting jobs. Impact disk usage", false ));
-    clusterParser->push_back (new OptionOneParam (STR_SIMKA_NB_JOB_MERGE, "maximum number of simultaneous merging jobs", false ));
+    //clusterParser->push_back (new OptionNoParam (STR_SIMKA_CLUSTER_MODE, "enable cluster mode. All cluster args below must be set", false));
+    clusterParser->push_back (new OptionOneParam (STR_SIMKA_NB_JOB_COUNT, "maximum number of simultaneous counting jobs. Impact disk usage", true ));
+    clusterParser->push_back (new OptionOneParam (STR_SIMKA_NB_JOB_MERGE, "maximum number of simultaneous merging jobs (1 job required only 1 core)", true ));
     //clusterParser->push_back (new OptionOneParam (STR_SIMKA_NB_PARTITIONS, "nb partitions", false, "0" ));
-    clusterParser->push_back (new OptionOneParam (STR_SIMKA_JOB_COUNT_COMMAND, "command to submit counting job", false ));
-    clusterParser->push_back (new OptionOneParam (STR_SIMKA_JOB_MERGE_COMMAND, "command to submit merging job", false ));
-    clusterParser->push_back (new OptionOneParam (STR_SIMKA_JOB_COUNT_FILENAME, "filename to the couting job", false ));
-    clusterParser->push_back (new OptionOneParam (STR_SIMKA_JOB_MERGE_FILENAME, "filename to the merging job", false ));
+    clusterParser->push_back (new OptionOneParam (STR_SIMKA_JOB_COUNT_COMMAND, "command to submit counting job", true ));
+    clusterParser->push_back (new OptionOneParam (STR_SIMKA_JOB_MERGE_COMMAND, "command to submit merging job", true ));
+    clusterParser->push_back (new OptionOneParam (STR_SIMKA_JOB_COUNT_FILENAME, "filename to the couting job template", true ));
+    clusterParser->push_back (new OptionOneParam (STR_SIMKA_JOB_MERGE_FILENAME, "filename to the merging job template", true ));
+
 
 	getParser()->push_back(clusterParser);
+	getParser()->getParser("core")->getParser(STR_NB_CORES)->setHelp("number of cores per counting job");
+
+    //if (Option* p = dynamic_cast<Option*> (getParser()->getParser(STR_NB_CORES)))  {  p->setHelp("number of cores per job"); }
+    if (Option* p = dynamic_cast<Option*> (getParser()->getParser(STR_MAX_MEMORY)))  {  p->setHelp("max memory per counting job (in MBytes) "); }
     //coreParser->push_back(new OptionOneParam(parser->getParser(STR_NB_CORES)->getName(), parser->getParser(STR_NB_CORES)->getHelp(), false, "0"));
 
 	//if (IOptionsParser* input = dskParser->getParser (STR_KMER_ABUNDANCE_MIN_THRESHOLD))  {  input->setVisible (false);  }

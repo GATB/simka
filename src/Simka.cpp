@@ -40,6 +40,7 @@ IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
 	parser->push_front(dskParser->getParser (STR_URI_INPUT));
 	parser->getParser(STR_URI_INPUT)->setHelp("input file of datasets. One dataset per line: id filename1 filename2...");
 
+    //if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_URI_OUTPUT_TMP)))  {  p->s; }
 
 	//Kmer parser
     IOptionsParser* kmerParser = new OptionsParser ("kmer");
@@ -50,9 +51,9 @@ IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
     if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_SOLIDITY_KIND)))  {  p->setDefaultValue ("all"); }
 
     kmerParser->push_back(dskParser->getParser (STR_KMER_ABUNDANCE_MAX));
-    kmerParser->push_back(dskParser->getParser (STR_SOLIDITY_KIND));
-    kmerParser->getParser (STR_SOLIDITY_KIND)->setHelp("TODO");
-    kmerParser->push_back (new OptionNoParam (STR_SIMKA_SOLIDITY_PER_DATASET.c_str(), "do not take into consideration multi-counting when determining solid kmers", false ));
+    //kmerParser->push_back(dskParser->getParser (STR_SOLIDITY_KIND));
+    //kmerParser->getParser (STR_SOLIDITY_KIND)->setHelp("TODO");
+    //kmerParser->push_back (new OptionNoParam (STR_SIMKA_SOLIDITY_PER_DATASET.c_str(), "do not take into consideration multi-counting when determining solid kmers", false ));
     kmerParser->push_back (new OptionOneParam (STR_SIMKA_MIN_KMER_SHANNON_INDEX.c_str(), "minimal Shannon index a kmer should have to be kept. Float in [0,2]", false, "0" ));
 
 
