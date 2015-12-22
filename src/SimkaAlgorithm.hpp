@@ -531,10 +531,10 @@ public:
 	    		maxSize = _refMaxReadSize;
 			}
 			else{
-	    		number = maxReads;
-	    		//cout << maxReads << "  " << _refNbReads << endl;
-				totalSize = (maxReads*_refTotalSeqSize) / _refNbReads;
-	    		maxSize = _refMaxReadSize;
+				number = maxReads;
+				double factor =  (double)maxReads / (double)_refNbReads;
+				totalSize = _refTotalSeqSize * factor;
+				maxSize = _refMaxReadSize;
 			}
     	}
 
