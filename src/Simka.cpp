@@ -59,7 +59,7 @@ IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
 
     //Read filter parser
     IOptionsParser* readParser = new OptionsParser ("read");
-    readParser->push_back (new OptionOneParam (STR_SIMKA_MAX_READS.c_str(), "maximum number of reads per dataset to process", false, "0" ));
+    readParser->push_back (new OptionOneParam (STR_SIMKA_MAX_READS.c_str(), "maximum number of reads per dataset to process. Can be -1: use all reads. Can be 0: estimate it", false, "0" ));
     readParser->push_back (new OptionOneParam (STR_SIMKA_MIN_READ_SIZE.c_str(), "minimal size a read should have to be kept", false, "0" ));
     readParser->push_back (new OptionOneParam (STR_SIMKA_MIN_READ_SHANNON_INDEX.c_str(), "minimal Shannon index a read should have to be kept. Float in [0,2]", false, "0" ));
 
@@ -70,18 +70,18 @@ IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
     coreParser->push_back(dskParser->getParser (STR_MAX_DISK));
 
     //Distances
-    IOptionsParser* distanceParser = new OptionsParser ("distances");
-    distanceParser->push_back (new OptionNoParam (STR_SIMKA_DISTANCE_BRAYCURTIS.c_str(), "compute Bray Curtis distance"));
-    distanceParser->push_back (new OptionNoParam (STR_SIMKA_DISTANCE_CHORD.c_str(), "compute Chord distance"));
-    distanceParser->push_back (new OptionNoParam (STR_SIMKA_DISTANCE_HELLINGER.c_str(), "compute Hellinger distance"));
-    distanceParser->push_back (new OptionNoParam (STR_SIMKA_DISTANCE_CANBERRA.c_str(), "compute Canberra distance"));
-    distanceParser->push_back (new OptionNoParam (STR_SIMKA_DISTANCE_KULCZYNSKI.c_str(), "compute Kulczynski distance"));
+    //IOptionsParser* distanceParser = new OptionsParser ("distances");
+    //distanceParser->push_back (new OptionNoParam (STR_SIMKA_DISTANCE_BRAYCURTIS.c_str(), "compute Bray Curtis distance"));
+    //distanceParser->push_back (new OptionNoParam (STR_SIMKA_DISTANCE_CHORD.c_str(), "compute Chord distance"));
+    //distanceParser->push_back (new OptionNoParam (STR_SIMKA_DISTANCE_HELLINGER.c_str(), "compute Hellinger distance"));
+    //distanceParser->push_back (new OptionNoParam (STR_SIMKA_DISTANCE_CANBERRA.c_str(), "compute Canberra distance"));
+    //distanceParser->push_back (new OptionNoParam (STR_SIMKA_DISTANCE_KULCZYNSKI.c_str(), "compute Kulczynski distance"));
 
 
 	parser->push_back(kmerParser);
 	parser->push_back(readParser);
 	parser->push_back(coreParser);
-	parser->push_back(distanceParser);
+	//parser->push_back(distanceParser);
 
 
     return parser;

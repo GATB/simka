@@ -274,36 +274,48 @@ public:
 
 	void next(){
 
+
 		if(isFinished()){
 			_isDone = true;
 			return;
 		}
+
+		//cout << "haha" << endl;
 
 		_ref->next();
 		while (!_ref->isDone() && _filter(_ref->item())==false) _ref->next();
 
 		_isDone = _ref->isDone();
 
-		if(!_isDone){
+		//cout << "haha" << endl;
+		//if(!_isDone){
 			//cout << _currentBank << "  " << _isDone << endl;
 
-		}
+		//}
 
 		//cout << _nbReadProcessed << "  " << _currentBank << "    " << _nbBanks << "   " << _maxReads << endl;
 
 
 		if(_isDone){
-			if(isFinished())
+			if(isFinished()){
+				//cout << _nbReadProcessed << endl;
 				return;
-			else
+			}
+			else{
+				//cout << _nbReadProcessed << endl;
 				nextBank();
+				if(isFinished()){
+					//cout << _nbReadProcessed << endl;
+					return;
+				}
+			}
 		}
 		else{
 			*(this->_item) = _ref->item();
 			_nbReadProcessed += 1;
 		}
 
-		if(_nbReadProcessed >= _maxReads){
+		if(_maxReads && _nbReadProcessed >= _maxReads){
 			if(isFinished())
 				return;
 			else
@@ -478,10 +490,11 @@ template<typename Filter> class SimkaBankFiltered : public BankDelegate
 {
 public:
 
-	//u_int64_t _numberRef;
-	//u_int64_t _totalSizeRef;
-	//u_int64_t _maxSizeRef;
-    /** Constructor.
+	u_int64_t _refNbReads;
+	u_int64_t _refTotalSeqSize;
+	u_int64_t _refMaxReadSize;
+
+	/** Constructor.
      * \param[in] ref : referred bank.
      * \param[in] filter : functor that filters sequence.
      */
@@ -489,16 +502,45 @@ public:
 
 		_nbPaireds = nbPaireds;
 		_maxReads = maxReads;
+		_nbBanks = ref->getCompositionNb();
+		ref->estimate(_refNbReads, _refTotalSeqSize, _refMaxReadSize);
 
-		//ref->estimate(_numberRef, _totalSizeRef, _maxSizeRef);
+
+    	//cout << _refNbReads << endl;
+		//cout << _refTotalSeqSize << endl;
+		//cout << _refMaxReadSize << endl;
 	}
 
-	/*
+
     void estimate (u_int64_t& number, u_int64_t& totalSize, u_int64_t& maxSize){
 
-    	number = _nbReadToProcess;
-    	totalSize = (_totalSizeRef*_nbReadToProcess)/_numberRef;
-    	maxSize = _maxSizeRef;
+
+    	if(_maxReads == 0){
+    		number = _refNbReads;
+    		totalSize = _refTotalSeqSize;
+    		maxSize = _refMaxReadSize;
+    	}
+    	else{
+
+			u_int64_t maxReads = min (_refNbReads, _maxReads*_nbBanks);
+			//cout << "ha " <<  maxReads << endl;
+
+			if(maxReads == _refNbReads){
+	    		number = _refNbReads;
+	    		totalSize = _refTotalSeqSize;
+	    		maxSize = _refMaxReadSize;
+			}
+			else{
+	    		number = maxReads;
+	    		//cout << maxReads << "  " << _refNbReads << endl;
+				totalSize = (maxReads*_refTotalSeqSize) / _refNbReads;
+	    		maxSize = _refMaxReadSize;
+			}
+    	}
+
+    	//number = _maxReads;
+    	//totalSize = (_totalSizeRef*_nbReadToProcess)/_numberRef;
+    	//maxSize = _maxSizeRef;
 
     	//cout << number2 << endl;
 
@@ -509,7 +551,11 @@ public:
     	//number = _nbReadToProcess;
     	//totalSize = _nbReadToProcess*readSize;
     	//maxSize = readSize;
-    }*/
+
+    	//cout << number << endl;
+    	//cout << totalSize << endl;
+    	//cout << maxSize << endl;
+    }
 
     /** \copydoc tools::collections::Iterable::iterator */
     Iterator<Sequence>* iterator ()
@@ -590,6 +636,7 @@ private:
 	vector<size_t> _nbPaireds;
     Filter _filter;
     u_int64_t _maxReads;
+    size_t _nbBanks;
 };
 
 

@@ -704,11 +704,16 @@ void SimkaAlgorithm<span>::computeMaxReads(){
 
 	string inputDir = _outputDirTemp + "/input/";
 
+	//if(_maxNbReads != 0){
+	//	return;
+	//}
+
 	if(_maxNbReads == 0){
 		if(_options->getInt(STR_VERBOSE) != 0)
 			cout << "-maxNbReads is not defined. Simka will estimating it..." << endl;
 	}
 
+	u_int64_t totalReads = 0;
 	u_int64_t minReads = -1;
 	for (size_t i=0; i<_nbBanks; i++){
 
@@ -716,6 +721,7 @@ void SimkaAlgorithm<span>::computeMaxReads(){
 		LOCAL(bank);
 		u_int64_t nbReads = bank->estimateNbItems();
 		nbReads /= _nbBankPerDataset[i];
+		totalReads += nbReads;
 		if(nbReads < minReads){
 			minReads = nbReads;
 			_smallerBankId = _bankNames[i];
@@ -724,9 +730,18 @@ void SimkaAlgorithm<span>::computeMaxReads(){
 	}
 
 	if(_maxNbReads == 0){
-		_maxNbReads = minReads;
+		u_int64_t meanReads = totalReads / _nbBanks;
+		_maxNbReads = (minReads + meanReads) / 2;
+		if(_options->getInt(STR_VERBOSE) != 0){
+			cout << "Minimum reads: " << minReads << endl;
+			cout << "Mean reads: " << meanReads << endl;
+			cout << "Simka will use: " << _maxNbReads << " reads per dataset"<< endl << endl;
+		}
+	}
+	else if(_maxNbReads == -1){
 		if(_options->getInt(STR_VERBOSE) != 0)
-			cout << "Max nb reads: " << _maxNbReads << endl << endl;
+			cout << "Simka will use all reads"<< endl << endl;
+		_maxNbReads = 0;
 	}
 
 }
