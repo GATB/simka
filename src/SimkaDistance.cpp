@@ -630,8 +630,11 @@ double SimkaDistance::distance_abundance_brayCurtis(size_t i, size_t j){
 //Abundance Chord
 double SimkaDistance::distance_abundance_chord(size_t i, size_t j){
 
-	double intersection = 2*_stats._chord_NiNj[i][j];
-	double unionSize = sqrt(_stats._chord_N2[i]) * sqrt(_stats._chord_N2[j]);
+	long double intersection = 2*_stats._chord_NiNj[i][j];
+	if(intersection == 0) return sqrt(2);
+
+	long double unionSize = sqrtl(_stats._chord_N2[i]) * sqrtl(_stats._chord_N2[j]);
+	if(unionSize == 0)  return sqrt(2);
 
 	double chordDistance = sqrt(2 - (intersection / unionSize));
 	//chordDistance -= 1;
@@ -695,6 +698,7 @@ double SimkaDistance::distance_abundance_jaccard_simka(size_t i, size_t j, SIMKA
 		denominator = A0;
 	}
 
+	if(denominator == 0) return 1;
 	return 1 - numerator / denominator;
 
 }
@@ -724,6 +728,7 @@ double SimkaDistance::distance_abundance_sorensen(size_t i, size_t j){
 	numerator = 2*A1*B1;
 	denominator = A0*B1 + A1*B0;
 
+	if(denominator == 0) return 1;
 	return 1 - numerator / denominator;
 }
 
@@ -741,6 +746,7 @@ double SimkaDistance::distance_abundance_jaccard(size_t i, size_t j){
 	numerator = A1 * B1;
 	denominator = A0*B1 + A1*B0 - A1*B1;
 
+	if(denominator == 0) return 1;
 	return 1 - numerator / denominator;
 
 }
