@@ -104,8 +104,9 @@ public:
     	double minReadShannonIndex =  getInput()->getDouble(STR_SIMKA_MIN_READ_SHANNON_INDEX);
     	u_int64_t maxReads =  getInput()->getInt(STR_SIMKA_MAX_READS);
     	size_t nbDatasets =   getInput()->getInt("-nb-datasets");
+    	size_t nbPartitions =   getInput()->getInt("-nb-partitions");
 
-    	Parameter params(*this, kmerSize, outputDir, bankName, minReadSize, minReadShannonIndex, maxReads, nbDatasets);
+    	Parameter params(*this, kmerSize, outputDir, bankName, minReadSize, minReadShannonIndex, maxReads, nbDatasets, nbPartitions);
 
         Integer::apply<Functor,Parameter> (kmerSize, params);
 
@@ -143,8 +144,8 @@ public:
 
     struct Parameter
     {
-        Parameter (SimkaCount& tool, size_t kmerSize, string outputDir, string bankName, size_t minReadSize, double minReadShannonIndex, u_int64_t maxReads, size_t nbDatasets) :
-        	tool(tool), kmerSize(kmerSize), outputDir(outputDir), bankName(bankName), minReadSize(minReadSize), minReadShannonIndex(minReadShannonIndex), maxReads(maxReads), nbDatasets(nbDatasets)  {}
+        Parameter (SimkaCount& tool, size_t kmerSize, string outputDir, string bankName, size_t minReadSize, double minReadShannonIndex, u_int64_t maxReads, size_t nbDatasets, size_t nbPartitions) :
+        	tool(tool), kmerSize(kmerSize), outputDir(outputDir), bankName(bankName), minReadSize(minReadSize), minReadShannonIndex(minReadShannonIndex), maxReads(maxReads), nbDatasets(nbDatasets), nbPartitions(nbPartitions)  {}
         SimkaCount& tool;
         //size_t datasetId;
         size_t kmerSize;
@@ -154,6 +155,7 @@ public:
         double minReadShannonIndex;
         u_int64_t maxReads;
         size_t nbDatasets;
+        size_t nbPartitions;
     };
 
     template<size_t span> struct Functor  {
@@ -179,7 +181,7 @@ public:
 			sortingCount.execute();
 			Configuration config = sortingCount.getConfig();
 			//_nbPartitions = _maxJobMerge;
-			config._nb_partitions = 200;
+			config._nb_partitions = p.nbPartitions;
 
 			uint64_t memoryUsageCachedItems;
 			config._nb_cached_items_per_core_per_part = 1 << 8; // cache at least 256 items (128 here, then * 2 in the next while loop)

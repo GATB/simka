@@ -460,9 +460,11 @@ public:
 			command += " " + string(STR_NB_CORES) + " " + SimkaAlgorithm<>::toString(_coresPerJob);
 			command += " " + string(STR_URI_INPUT) + " dummy ";
 			command += " " + string(STR_KMER_ABUNDANCE_MIN) + " " + SimkaAlgorithm<>::toString(this->_abundanceThreshold.first);
+			command += " " + string(STR_KMER_ABUNDANCE_MAX) + " " + SimkaAlgorithm<>::toString(this->_abundanceThreshold.second);
 			command += " " + string(STR_SIMKA_MIN_READ_SIZE) + " " + SimkaAlgorithm<>::toString(this->_minReadSize);
 			command += " " + string(STR_SIMKA_MIN_READ_SHANNON_INDEX) + " " + Stringify::format("%f", this->_minReadShannonIndex);
 			command += " " + string(STR_SIMKA_MAX_READS) + " " + SimkaAlgorithm<>::toString(this->_maxNbReads);
+			command += " -nb-partitions " + SimkaAlgorithm<>::toString(_nbPartitions);
 			//command += " -verbose 0";
 
 
