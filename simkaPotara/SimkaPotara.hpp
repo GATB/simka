@@ -462,12 +462,13 @@ public:
 			command += " " + string(STR_SIMKA_MIN_READ_SIZE) + " " + SimkaAlgorithm<>::toString(this->_minReadSize);
 			command += " " + string(STR_SIMKA_MIN_READ_SHANNON_INDEX) + " " + Stringify::format("%f", this->_minReadShannonIndex);
 			command += " " + string(STR_SIMKA_MAX_READS) + " " + SimkaAlgorithm<>::toString(this->_maxNbReads);
-			//command += " -verbose 0";
+			command += " -verbose 0";
 
 
 			filenameQueue.push_back(this->_bankNames[i]);
 
-
+			cout << "Counting dataset " << i << endl;
+			cout << "\t" << command << endl;
 
 			if(_isClusterMode){
 				string jobFilename = this->_outputDirTemp + "/job_count/job_count_" + SimkaAlgorithm<>::toString(i) + ".bash";
@@ -475,7 +476,6 @@ public:
 				string jobCommand = _jobCountContents + '\n' + '\n';
 				jobCommand += command;
 
-				cout << "\t" << jobCommand << endl;
 
 				jobFile->fwrite(jobCommand.c_str(), jobCommand.size(), 1);
 				jobFile->flush();
@@ -485,7 +485,6 @@ public:
 			}
 			else{
 				command += " &";
-				cout << command << endl;
 				system(command.c_str());
 			}
 
@@ -601,13 +600,16 @@ public:
 				if(distanceParams._computeHellinger) command += " " + STR_SIMKA_DISTANCE_HELLINGER + " ";
 				if(distanceParams._computeKulczynski) command += " " + STR_SIMKA_DISTANCE_KULCZYNSKI + " ";
 
+
+				cout << "Merging partition " << i << endl;
+				cout << "\t" << command << endl;
+
 				if(_isClusterMode){
 					string jobFilename = this->_outputDirTemp + "/job_merge/job_merge_" + SimkaAlgorithm<>::toString(i) + ".bash";
 					IFile* jobFile = System::file().newFile(jobFilename.c_str(), "w");
 					string jobCommand = _jobMergeContents + '\n' + '\n';
 					jobCommand += command;
 
-					cout << "\t" << jobCommand << endl;
 
 					jobFile->fwrite(jobCommand.c_str(), jobCommand.size(), 1);
 					jobFile->flush();
@@ -617,7 +619,6 @@ public:
 				}
 				else{
 					command += " &";
-					cout << "\t" << command << endl;
 					system(command.c_str());
 				}
 
