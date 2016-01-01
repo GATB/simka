@@ -83,6 +83,7 @@ public:
         getParser()->push_back (new OptionOneParam (STR_SIMKA_MIN_READ_SHANNON_INDEX,   "bank name", true));
         getParser()->push_back (new OptionOneParam (STR_SIMKA_MAX_READS,   "bank name", true));
         getParser()->push_back (new OptionOneParam ("-nb-datasets",   "bank name", true));
+        getParser()->push_back (new OptionOneParam ("-nb-partitions",   "bank name", true));
         //getParser()->push_back (new OptionOneParam ("-nb-cores",   "bank name", true));
         //getParser()->push_back (new OptionOneParam ("-max-memory",   "bank name", true));
 
