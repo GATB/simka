@@ -522,7 +522,13 @@ public:
     	}
     	else{
 
-			u_int64_t maxReads = min (_refNbReads, _maxReads*_nbBanks);
+    		u_int64_t maxReads = 0;
+    		for(size_t i=0; i<_nbBanks; i++){
+    			maxReads += _maxReads * _nbPaireds[i];
+    		}
+    		//cout << _refNbReads << endl;
+    		//cout << _maxReads*_nbBanks << endl;
+    		maxReads = min (maxReads, _refNbReads);
 			//cout << "ha " <<  maxReads << endl;
 
 			if(maxReads == _refNbReads){
@@ -727,6 +733,8 @@ protected:
     vector<size_t> _nbBankPerDataset;
 
 	string _smallerBankId;
+
+
 	//string _matDksNormFilename;
 	//string _matDksPercFilename;
 	//string _matAksNormFilename;

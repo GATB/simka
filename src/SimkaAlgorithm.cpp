@@ -146,6 +146,27 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 		}
 	}
 
+	/*
+	float Ri = 500000;
+	float Rtotal = Ri * _nbBanks;
+	float Ntotal = _totalAbundance;
+	float X2j = 0;
+	for(size_t i=0; i<counts.size(); i++){
+
+		float Ni = counts[i];
+
+		X2j += pow((Ni/Ntotal - Ri/Rtotal), 2) / (Ri / (Rtotal*Ntotal));
+	}
+
+	//if(_totalAbundance == 1){
+	//	cout << X2j << endl;
+	//}
+	if(X2j <= (_nbBanks-1)*1.5) return false;
+	*/
+
+	//cout << X2j << endl;
+
+
 	//cout << kmer.toString(31) << endl;
 
 	//cout << endl;
