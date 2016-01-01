@@ -745,17 +745,21 @@ void SimkaAlgorithm<span>::computeMaxReads(){
 		totalReads += nbReads;
 		if(nbReads < minReads){
 			minReads = nbReads;
-			_smallerBankId = _bankNames[i];
+			//_smallerBankId = _bankNames[i];
 		}
 
 	}
 
+	u_int64_t meanReads = totalReads / _nbBanks;
+
+	if(_options->getInt(STR_VERBOSE) != 0){
+		cout << "Smaller datasets contains: " << minReads << " reads" << endl;
+		cout << "Whole datasets contains a mean of: " << meanReads << " reads" << endl;
+	}
+
 	if(_maxNbReads == 0){
-		u_int64_t meanReads = totalReads / _nbBanks;
 		_maxNbReads = (minReads + meanReads) / 2;
 		if(_options->getInt(STR_VERBOSE) != 0){
-			cout << "Minimum reads: " << minReads << endl;
-			cout << "Mean reads: " << meanReads << endl;
 			cout << "Simka will use: " << _maxNbReads << " reads per dataset"<< endl << endl;
 		}
 	}

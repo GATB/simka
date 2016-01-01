@@ -356,12 +356,13 @@ public:
         storage = StorageFactory(STORAGE_HDF5).create (filename, true, false);
         LOCAL (storage);
 
-
-		IBank* bank = Bank::open(this->_outputDirTemp + "/input/" + this->_smallerBankId);
+    	IBank* bank = Bank::open(this->_banksInputFilename);
+		//IBank* bank = Bank::open(this->_outputDirTemp + "/input/" + this->_smallerBankId);
 		LOCAL(bank);
         //IBank* bank = Bank::open(_outputDirTemp + "/input/" + _bankNames[0]);
-        bank->finalize();
-        IBank* sampleBank = new SimkaBankSample(bank, bank->estimateNbItems()/3);
+        //bank->finalize();
+		u_int64_t nbSeqs = 1000000;
+        IBank* sampleBank = new SimkaBankSample(bank, nbSeqs);
 		SortingCountAlgorithm<span> sortingCount (sampleBank, this->_options);
 
 		SimkaNullProcessor<span>* proc = new SimkaNullProcessor<span>();
@@ -462,7 +463,7 @@ public:
 			command += " " + string(STR_SIMKA_MIN_READ_SIZE) + " " + SimkaAlgorithm<>::toString(this->_minReadSize);
 			command += " " + string(STR_SIMKA_MIN_READ_SHANNON_INDEX) + " " + Stringify::format("%f", this->_minReadShannonIndex);
 			command += " " + string(STR_SIMKA_MAX_READS) + " " + SimkaAlgorithm<>::toString(this->_maxNbReads);
-			command += " -verbose 0";
+			//command += " -verbose 0";
 
 
 			filenameQueue.push_back(this->_bankNames[i]);
