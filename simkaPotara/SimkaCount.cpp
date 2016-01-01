@@ -18,7 +18,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-#include "SimkaAlgorithm.hpp"
+#include "SimkaPotara.hpp"
 //#include <gatb/gatb_core.hpp>
 
 // We use the required packages
@@ -158,13 +158,46 @@ public:
 
     template<size_t span> struct Functor  {
 
+        typedef typename Kmer<span>::Type  Type;
+
     	void operator ()  (Parameter p){
 
 
 			IProperties* props = p.tool.getInput();
 
 
-			Configuration* config = new Configuration();
+
+
+
+			IBank* bank = Bank::open(p.outputDir + "/input/" + p.bankName);
+			LOCAL(bank);
+			u_int64_t nbSeqs = 1;
+	        IBank* sampleBank = new SimkaBankSample(bank, nbSeqs);
+			SortingCountAlgorithm<span> sortingCount (sampleBank, props);
+			SimkaNullProcessor<span>* proc = new SimkaNullProcessor<span>();
+			sortingCount.addProcessor (proc);
+			sortingCount.execute();
+			Configuration config = sortingCount.getConfig();
+			//_nbPartitions = _maxJobMerge;
+			config._nb_partitions = 200;
+
+			uint64_t memoryUsageCachedItems;
+			config._nb_cached_items_per_core_per_part = 1 << 8; // cache at least 256 items (128 here, then * 2 in the next while loop)
+			do
+			{
+				config._nb_cached_items_per_core_per_part *= 2;
+				memoryUsageCachedItems = 1LL * config._nb_cached_items_per_core_per_part *config._nb_partitions * config._nbCores * sizeof(Type);
+			}
+			while (memoryUsageCachedItems < config._max_memory * MBYTE / 10);
+
+
+
+
+
+
+
+
+			//Configuration* config = new Configuration();
 			{
 				Repartitor* repartitor = new Repartitor();
 				LOCAL(repartitor);
@@ -172,40 +205,14 @@ public:
 				{
 					Storage* storage = StorageFactory(STORAGE_HDF5).load (p.outputDir + "/" + "config.h5");
 					LOCAL (storage);
-					config->load(storage->getGroup(""));
+					//config->load(storage->getGroup(""));
 					repartitor->load(storage->getGroup(""));
 				}
 
-				config->_abundanceUserNb = 1;
-				config->_abundance.clear();
-				CountRange range(props->getInt(STR_KMER_ABUNDANCE_MIN), 100000);
-				config->_abundance.push_back(range);
-
-				//delete storage;
-				/*
-				config._kmerSize = p.kmerSize;
-				config._minim_size = 8;
-				config._max_disk_space = 0;
-				config._max_memory = props->getInt(STR_MAX_MEMORY);
-				config._nbCores = props->getInt(STR_NB_CORES);
-				config._nb_partitions_in_parallel = config._nbCores;*/
-				/*
-				size_t      _kmerSize;
-				size_t      _minim_size;
-				size_t      _repartitionType;
-				size_t      _minimizerType;
-
-				tools::misc::KmerSolidityKind _solidityKind;
-
-				u_int64_t   ;
-				u_int32_t   _max_memory;
-
-				size_t      _nbCores;
-				size_t      _nb_partitions_in_parallel;
-				size_t      _partitionType;
-
-				std::vector<tools::misc::CountRange>  _abundance;
-				size_t _abundanceUserNb;*/
+				//config._abundanceUserNb = 1;
+				//config._abundance.clear();
+				//CountRange range(props->getInt(STR_KMER_ABUNDANCE_MIN), 100000);
+				//config._abundance.push_back(range);
 
 				string tempDir = p.outputDir + "/temp/" + p.bankName;
 				System::file().mkdir(tempDir, -1);
@@ -213,13 +220,12 @@ public:
 				//string outputDir = p.outputDir + "/comp_part" + to_string(p.datasetId) + "/";
 
 				//cout << "\tinput: " << p.outputDir + "/input/" + p.bankName << endl;
-				IBank* bank = Bank::open(p.outputDir + "/input/" + p.bankName);
 
 				SimkaSequenceFilter sequenceFilter(p.minReadSize, p.minReadShannonIndex);
 				IBank* filteredBank = new SimkaPotaraBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, p.maxReads, p.nbDatasets);
 				// = new SimkaPotaraBankFiltered(bank)
 				LOCAL(filteredBank);
-				LOCAL(bank);
+				//LOCAL(bank);
 
 				Storage* solidStorage = 0;
 
@@ -235,8 +241,8 @@ public:
 				//props->add(1, STR_URI_OUTPUT_TMP, tempDir);
 				//cout << tempDir << endl;
 
-				SortingCountAlgorithm<span> algo (filteredBank, *config, repartitor,
-						SortingCountAlgorithm<span>::getDefaultProcessorVector (*config, props, solidStorage),
+				SortingCountAlgorithm<span> algo (filteredBank, config, repartitor,
+						SortingCountAlgorithm<span>::getDefaultProcessorVector (config, props, solidStorage),
 						props);
 
 				algo.execute();
