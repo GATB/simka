@@ -356,12 +356,12 @@ public:
         storage = StorageFactory(STORAGE_HDF5).create (filename, true, false);
         LOCAL (storage);
 
-    	IBank* bank = Bank::open(this->_banksInputFilename);
-		//IBank* bank = Bank::open(this->_outputDirTemp + "/input/" + this->_smallerBankId);
+    	//IBank* bank = Bank::open(this->_banksInputFilename);
+		IBank* bank = Bank::open(this->_outputDirTemp + "/input/" + this->_largerBankId);
 		LOCAL(bank);
         //IBank* bank = Bank::open(_outputDirTemp + "/input/" + _bankNames[0]);
         //bank->finalize();
-		u_int64_t nbSeqs = 1000000;
+		u_int64_t nbSeqs = 1;
         IBank* sampleBank = new SimkaBankSample(bank, nbSeqs);
 		SortingCountAlgorithm<span> sortingCount (sampleBank, this->_options);
 

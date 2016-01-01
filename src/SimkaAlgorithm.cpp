@@ -736,6 +736,7 @@ void SimkaAlgorithm<span>::computeMaxReads(){
 
 	u_int64_t totalReads = 0;
 	u_int64_t minReads = -1;
+	u_int64_t maxReads = 0;
 	for (size_t i=0; i<_nbBanks; i++){
 
 		IBank* bank = Bank::open(inputDir + _bankNames[i]);
@@ -747,6 +748,10 @@ void SimkaAlgorithm<span>::computeMaxReads(){
 			minReads = nbReads;
 			//_smallerBankId = _bankNames[i];
 		}
+		if(nbReads > maxReads){
+			maxReads = nbReads;
+			_largerBankId = _bankNames[i];
+		}
 
 	}
 
@@ -754,6 +759,7 @@ void SimkaAlgorithm<span>::computeMaxReads(){
 
 	if(_options->getInt(STR_VERBOSE) != 0){
 		cout << "Smaller datasets contains: " << minReads << " reads" << endl;
+		cout << "Larger datasets contains: " << maxReads << " reads" << endl;
 		cout << "Whole datasets contains a mean of: " << meanReads << " reads" << endl;
 	}
 

@@ -732,7 +732,7 @@ protected:
 	u_int64_t _totalKmers;
     vector<size_t> _nbBankPerDataset;
 
-	//string _smallerBankId;
+	string _largerBankId;
 
 
 	//string _matDksNormFilename;
