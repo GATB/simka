@@ -202,7 +202,7 @@ public:
 
 	void parseArgs() {
 
-		_isClusterMode = true;
+		//_isClusterMode = true;
 
 		//if(this->_options->get(STR_SIMKA_CLUSTER_MODE)){
 
@@ -406,6 +406,7 @@ public:
 			_nbPartitions = config._nb_partitions;
 		}*/
 
+		cout << "HAAAAAAAAAAAAAAAA" << endl;
 
         RepartitorAlgorithm<span> repart (bank, storage->getGroup(""), config);
         repart.execute ();
@@ -469,6 +470,7 @@ public:
 
 
 			filenameQueue.push_back(this->_bankNames[i]);
+			System::file().mkdir(tempDir, -1);
 
 			cout << "Counting dataset " << i << endl;
 			cout << "\t" << command << endl;

@@ -56,38 +56,21 @@ public:
     //typedef typename Kmer<span>::ModelCanonical                             ModelCanonical;
     //typedef typename ModelCanonical::Kmer                                   KmerType;
 
-    StorageIt(const string& h5filename, size_t bankId, size_t partitionId){
+    StorageIt(Partition<Count>* partition1, size_t bankId, size_t partitionId, size_t nbPartitions){
 
     	//cout << h5filename << endl;
     	_bankId = bankId;
     	_partitionId = partitionId;
 
-		//string h5filename2 = "/WORKS/gbenoit/env/AHX_CFNIOSF_4_1_C0YDFACXX.h5";
-		Storage* storage1 = StorageFactory(STORAGE_HDF5).load (h5filename);
-		//storages.push_back(storage1);
-		//LOCAL (storage1);
-		//Storage* storage2 = StorageFactory(STORAGE_HDF5).load (h5filename2);
-		//LOCAL (storage2);
 
 
-
-		Group& dskGroup1 = storage1->root().getGroup("dsk");
-		//Group& dskGroup2 = storage2->root().getGroup("dsk");
-		string nbPartitionsStrg = dskGroup1.getGroup("solid").getProperty ("nb_partitions");
-		size_t nbPartitions = atol (nbPartitionsStrg.c_str());
-
-
-		Partition<Count>& partition1 = dskGroup1.getPartition<Count>("solid");
-	    Iterator<Count>* it2 = partition1.iterator();
-		//Partition<Count>& partition2 = dskGroup2.getPartition<Count>("solid");
-		//partitions.push_back(&partition1);
-
-		Collection<Count>& kmers1 = partition1[_partitionId];
+		//Iterator<Count>* it2 = partition1.iterator();
+		Collection<Count>& kmers1 = (*partition1)[_partitionId];
 		//collections.push_back(&kmers1);
 
 		_it = kmers1.iterator();
 
-		_nbKmers = partition1.getNbItems() / nbPartitions;
+		_nbKmers = partition1->getNbItems() / nbPartitions;
 		//it2->first();
 		//while(!it2->isDone()){
 		//	cout << it2->item().value.toString(31) << endl;
@@ -241,11 +224,25 @@ public:
 
 		u_int64_t nbKmers = 0;
 		u_int64_t nbKmersProcessed = 0;
+		size_t nbPartitions;
 
+		vector<Partition<Count>* > partitions;
 		for(size_t i=0; i<_nbBanks; i++){
 
 			string solidH5Filename = p.outputDir + "/solid/" +  _datasetIds[i] + ".h5";
-			StorageIt<span>* it = new StorageIt<span>(solidH5Filename, i, p.partitionId);
+			Storage* storage1 = StorageFactory(STORAGE_HDF5).load (solidH5Filename);
+			Group& dskGroup1 = storage1->root().getGroup("dsk");
+			string nbPartitionsStrg = dskGroup1.getGroup("solid").getProperty ("nb_partitions");
+			nbPartitions = atol (nbPartitionsStrg.c_str());
+			Partition<Count>* partition1 = &dskGroup1.getPartition<Count>("solid");
+
+			partitions.push_back(partition1);
+		}
+
+		for(size_t i=0; i<_nbBanks; i++){
+
+			//string solidH5Filename = p.outputDir + "/solid/" +  _datasetIds[i] + ".h5";
+			StorageIt<span>* it = new StorageIt<span>(partitions[i], i, p.partitionId, nbPartitions);
 			its.push_back(it);
 			nbKmers += it->getNbKmers();
 		}
@@ -255,6 +252,12 @@ public:
 			createIteratorListener (nbKmers, "Merging kmers"),
 			System::thread().newSynchronizer());
 		_progress->init ();
+
+
+
+
+
+
 
 		for(size_t i=0; i<_nbBanks; i++){
 
