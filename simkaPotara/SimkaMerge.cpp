@@ -245,8 +245,12 @@ public:
 			StorageIt<span>* it = new StorageIt<span>(partitions[i], i, p.partitionId, nbPartitions);
 			its.push_back(it);
 			nbKmers += it->getNbKmers();
+
+			//partitions[i]->remove();
+			//partitions[i]->forget();
 		}
 
+		//partitions.clear();
 
 		_progress = new ProgressSynchro (
 			createIteratorListener (nbKmers, "Merging kmers"),
@@ -364,8 +368,11 @@ public:
 			}
 		//}
 
+			cout << "end merging" << endl;
 		_progress->finish();
+		cout << "saving stats" << endl;
 		saveStats(p);
+		cout << "write finish signal" << endl;
 		writeFinishSignal(p);
 	}
 
@@ -451,15 +458,20 @@ public:
 	}
 
 	void saveStats(Parameter& p){
-		_processor->finishClones(_processors);
-		_processors[0]->forget();
-		_processor->forget();
 
+		_processor->finishClones(_processors);
+		cout << "create stats storage" << endl;
 		Storage* storage = 0;
 		storage = StorageFactory(STORAGE_HDF5).create (p.outputDir + "/stats/part_" + SimkaAlgorithm<>::toString(p.partitionId) + ".stats", true, false);
 		LOCAL (storage);
 
+		cout << "save stats in storage" << endl;
 		_stats->save(storage->getGroup(""));
+
+
+		cout << "forget procs" << endl;
+		_processors[0]->forget();
+		_processor->forget();
 
 	}
 
