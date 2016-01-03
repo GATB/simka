@@ -421,7 +421,10 @@ public:
 		_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, p.minShannonIndex);
 		_processor->use();
 
-		_processors.push_back(_processor->clone());
+		ICountProcessor<span>* proc = _processor->clone();
+		proc->use();
+
+		_processors.push_back(proc);
 	}
 
 	void insert(const Type& kmer, const SimkaCounterBuilderMerge& counter){
@@ -470,8 +473,8 @@ public:
 
 
 		cout << "forget procs" << endl;
-		_processors[0]->forget();
-		_processor->forget();
+		//_processors[0]->forget();
+		//_processor->forget();
 
 	}
 
