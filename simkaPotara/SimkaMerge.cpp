@@ -56,8 +56,8 @@ public:
     //typedef typename Kmer<span>::ModelCanonical                             ModelCanonical;
     //typedef typename ModelCanonical::Kmer                                   KmerType;
 
-    StorageIt(Partition<Count>* partition1, size_t bankId, size_t partitionId, size_t nbPartitions){
-
+    StorageIt(Iterator<Count>* it, size_t bankId, size_t partitionId){
+    	_it = it;
     	//cout << h5filename << endl;
     	_bankId = bankId;
     	_partitionId = partitionId;
@@ -65,12 +65,12 @@ public:
 
 
 		//Iterator<Count>* it2 = partition1.iterator();
-		Collection<Count>& kmers1 = (*partition1)[_partitionId];
+		//Collection<Count>& kmers1 = (*partition1)[_partitionId];
 		//collections.push_back(&kmers1);
 
-		_it = kmers1.iterator();
+		//_it = kmers1.iterator();
 
-		_nbKmers = partition1->getNbItems() / nbPartitions;
+		//_nbKmers = it->estimateNbItems();
 		//it2->first();
 		//while(!it2->isDone()){
 		//	cout << it2->item().value.toString(31) << endl;
@@ -82,9 +82,9 @@ public:
 
     }
 
-    void setPartitionId(size_t partitionId){
-    	_partitionId = partitionId;
-    }
+    //void setPartitionId(size_t partitionId){
+    //	_partitionId = partitionId;
+    //}
 
 	bool next(){
 		_it->next();
@@ -97,7 +97,7 @@ public:
 		return _it->item().value;
 	}
 
-	u_int16_t abundance(){
+	CountNumber& abundance(){
 		return _it->item().abundance;
 	}
 
@@ -105,14 +105,14 @@ public:
 		return _bankId;
 	}
 
-	u_int64_t getNbKmers(){
-		return _nbKmers;
-	}
+	//u_int64_t getNbKmers(){
+	//	return _nbKmers;
+	//}
 
 	u_int16_t _bankId;
 	u_int16_t _partitionId;
     Iterator<Count>* _it;
-    u_int64_t _nbKmers;
+    //u_int64_t _nbKmers;
 };
 
 
@@ -226,9 +226,23 @@ public:
 		u_int64_t nbKmersProcessed = 0;
 		size_t nbPartitions;
 
-		vector<Partition<Count>* > partitions;
-		for(size_t i=0; i<_nbBanks; i++){
 
+		vector<IterableGzFile<Count>* > partitions;
+		//vector<Iterator<Count>* > partitionIts;
+    	for(size_t i=0; i<_nbBanks; i++){
+    		string filename = p.outputDir + "/solid/" +  _datasetIds[i] + "/" + "part" + Stringify::format("%i", _partitiontId);
+    		cout << filename << endl;
+    		IterableGzFile<Count>* partition = new IterableGzFile<Count>(filename);
+    		partitions.push_back(partition);
+    		its.push_back(new StorageIt<span>(partition->iterator(), i, _partitiontId));
+    		nbKmers += partition->estimateNbItems();
+    	}
+
+
+		//vector<Partition<Count>* > partitions;
+		//for(size_t i=0; i<_nbBanks; i++){
+
+			/*
 			string solidH5Filename = p.outputDir + "/solid/" +  _datasetIds[i] + ".h5";
 			Storage* storage1 = StorageFactory(STORAGE_HDF5).load (solidH5Filename);
 			Group& dskGroup1 = storage1->root().getGroup("dsk");
@@ -236,9 +250,10 @@ public:
 			nbPartitions = atol (nbPartitionsStrg.c_str());
 			Partition<Count>* partition1 = &dskGroup1.getPartition<Count>("solid");
 
-			partitions.push_back(partition1);
-		}
+			partitions.push_back(partition1);*/
+		//}
 
+    	/*
 		for(size_t i=0; i<_nbBanks; i++){
 
 			//string solidH5Filename = p.outputDir + "/solid/" +  _datasetIds[i] + ".h5";
@@ -248,7 +263,7 @@ public:
 
 			//partitions[i]->remove();
 			//partitions[i]->forget();
-		}
+		}*/
 
 		//partitions.clear();
 
@@ -266,8 +281,9 @@ public:
 		for(size_t i=0; i<_nbBanks; i++){
 
 			StorageIt<span>* it = its[i];
-
 			it->_it->first();
+
+			//partitionIts[i]->first();
 
 			//while(!it->_it->isDone()){
 
@@ -287,6 +303,7 @@ public:
 			for (size_t i=0; i<_nbBanks; i++)
 			{
 
+				//Iterator<Count>* it = partitionIts[i];
 				StorageIt<span>* it = its[i];
 				//it->_it->first();
 

@@ -19,16 +19,63 @@
  *****************************************************************************/
 
 #include "SimkaPotara.hpp"
+#include "SimkaPotaraCompression.hpp"
 //#include <gatb/gatb_core.hpp>
 
 // We use the required packages
 using namespace std;
 
+//#define NB_COUNT_CACHE 1
 
 
+template<size_t span>
+class SimkaCompressedProcessor : public CountProcessorAbstract<span>{
+
+public:
+
+    typedef typename Kmer<span>::Type  Type;
+    typedef typename Kmer<span>::Count Count;
+
+    //SimkaCompressedProcessor(vector<BagGzFile<Count>* >& bags, vector<vector<Count> >& caches, vector<size_t>& cacheIndexes, CountNumber abundanceMin, CountNumber abundanceMax) : _bags(bags), _caches(caches), _cacheIndexes(cacheIndexes)
+    SimkaCompressedProcessor(vector<BagGzFile<Count>* >& bags, CountNumber abundanceMin, CountNumber abundanceMax) : _bags(bags)
+    {
+    	_abundanceMin = abundanceMin;
+    	_abundanceMax = abundanceMax;
+    }
+
+	~SimkaCompressedProcessor(){}
+    CountProcessorAbstract<span>* clone ()  {  return new SimkaCompressedProcessor (_bags, _abundanceMin, _abundanceMax);  }
+    //CountProcessorAbstract<span>* clone ()  {  return new SimkaCompressedProcessor (_bags, _caches, _cacheIndexes, _abundanceMin, _abundanceMax);  }
+	void finishClones (vector<ICountProcessor<span>*>& clones){}
+
+	bool process (size_t partId, const typename Kmer<span>::Type& kmer, const CountVector& count, CountNumber sum){
+		if(count[0] < _abundanceMin || count[0] > _abundanceMax) return false;
+		Count item(kmer, count[0]);
+		_bags[partId]->insert(item);
+		/*
+		size_t index = _cacheIndexes[partId];
+
+		_caches[partId][index] = item;
+		index += 1;
+
+		if(index == NB_COUNT_CACHE){
+			_bags[partId]->insert(_caches[partId], index);
+			_cacheIndexes[partId] = 0;
+		}
+		else{
+			_cacheIndexes[partId] = index;
+		}*/
+
+		return true;
+	}
 
 
-
+	vector<BagGzFile<Count>* >& _bags;
+	CountNumber _abundanceMin;
+	CountNumber _abundanceMax;
+	//vector<vector<Count> >& _caches;
+	//vector<size_t>& _cacheIndexes;
+};
 
 
 
@@ -106,8 +153,10 @@ public:
     	u_int64_t maxReads =  getInput()->getInt(STR_SIMKA_MAX_READS);
     	size_t nbDatasets =   getInput()->getInt("-nb-datasets");
     	size_t nbPartitions =   getInput()->getInt("-nb-partitions");
+    	CountNumber abundanceMin =   getInput()->getInt(STR_KMER_ABUNDANCE_MIN);
+    	CountNumber abundanceMax =   getInput()->getInt(STR_KMER_ABUNDANCE_MAX);
 
-    	Parameter params(*this, kmerSize, outputDir, bankName, minReadSize, minReadShannonIndex, maxReads, nbDatasets, nbPartitions);
+    	Parameter params(*this, kmerSize, outputDir, bankName, minReadSize, minReadShannonIndex, maxReads, nbDatasets, nbPartitions, abundanceMin, abundanceMax);
 
         Integer::apply<Functor,Parameter> (kmerSize, params);
 
@@ -145,8 +194,8 @@ public:
 
     struct Parameter
     {
-        Parameter (SimkaCount& tool, size_t kmerSize, string outputDir, string bankName, size_t minReadSize, double minReadShannonIndex, u_int64_t maxReads, size_t nbDatasets, size_t nbPartitions) :
-        	tool(tool), kmerSize(kmerSize), outputDir(outputDir), bankName(bankName), minReadSize(minReadSize), minReadShannonIndex(minReadShannonIndex), maxReads(maxReads), nbDatasets(nbDatasets), nbPartitions(nbPartitions)  {}
+        Parameter (SimkaCount& tool, size_t kmerSize, string outputDir, string bankName, size_t minReadSize, double minReadShannonIndex, u_int64_t maxReads, size_t nbDatasets, size_t nbPartitions, CountNumber abundanceMin, CountNumber abundanceMax) :
+        	tool(tool), kmerSize(kmerSize), outputDir(outputDir), bankName(bankName), minReadSize(minReadSize), minReadShannonIndex(minReadShannonIndex), maxReads(maxReads), nbDatasets(nbDatasets), nbPartitions(nbPartitions), abundanceMin(abundanceMin), abundanceMax(abundanceMax)  {}
         SimkaCount& tool;
         //size_t datasetId;
         size_t kmerSize;
@@ -157,11 +206,14 @@ public:
         u_int64_t maxReads;
         size_t nbDatasets;
         size_t nbPartitions;
+        CountNumber abundanceMin;
+        CountNumber abundanceMax;
     };
 
     template<size_t span> struct Functor  {
 
         typedef typename Kmer<span>::Type  Type;
+        typedef typename Kmer<span>::Count Count;
 
     	void operator ()  (Parameter p){
 
@@ -217,6 +269,26 @@ public:
 				//CountRange range(props->getInt(STR_KMER_ABUNDANCE_MIN), 100000);
 				//config._abundance.push_back(range);
 
+				/*
+				vector<size_t> cacheIndexes;
+				cacheIndexes.resize(p.nbPartitions);
+				vector<vector<Count> > caches;
+	        	caches.resize(p.nbPartitions);
+		    	for(size_t i=0; i<p.nbPartitions; i++){
+		    		caches[i].resize(NB_COUNT_CACHE);
+		    		cacheIndexes[i] = 0;
+		    	}
+				 */
+
+				string outputDir = p.outputDir + "/solid/" + p.bankName;
+				System::file().mkdir(outputDir, -1);
+				vector<BagGzFile<Count>* > bags;
+		    	for(size_t i=0; i<p.nbPartitions; i++){
+		    		BagGzFile<Count>* bag = new BagGzFile<Count>(outputDir + "/" + "part" + Stringify::format("%i", i));
+		        	bags.push_back(bag);
+		    	}
+
+
 				string tempDir = p.outputDir + "/temp/" + p.bankName;
 				System::file().mkdir(tempDir, -1);
 				//cout << i << endl;
@@ -230,27 +302,28 @@ public:
 				LOCAL(filteredBank);
 				//LOCAL(bank);
 
-				Storage* solidStorage = 0;
+				//Storage* solidStorage = 0:
+				//string solidsName = p.outputDir + "/solid/" +  p.bankName + ".h5";
+				//bool autoDelete = false; // (solidsName == "none") || (solidsName == "null");
+				//solidStorage = StorageFactory(STORAGE_HDF5).create (solidsName, true, autoDelete);
+				//LOCAL(solidStorage);
 
-				string solidsName = p.outputDir + "/solid/" +  p.bankName + ".h5";
-				bool autoDelete = false; // (solidsName == "none") || (solidsName == "null");
-				solidStorage = StorageFactory(STORAGE_HDF5).create (solidsName, true, autoDelete);
-				LOCAL(solidStorage);
-
-				solidStorage->root().setCompressLevel (1);
-				//props->add(1, STR_HISTOGRAM_MAX, "0");
-				//props->add(1, STR_KMER_ABUNDANCE_MIN_THRESHOLD, "0");
-				//props->add(1, STR_SOLIDITY_KIND, "sum");
-				//props->add(1, STR_URI_OUTPUT_TMP, tempDir);
-				//cout << tempDir << endl;
-
+				//SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, caches, cacheIndexes, p.abundanceMin, p.abundanceMax);
+				SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, p.abundanceMin, p.abundanceMax);
+				std::vector<ICountProcessor<span>* > procs;
+				procs.push_back(proc);
 				SortingCountAlgorithm<span> algo (filteredBank, config, repartitor,
-						SortingCountAlgorithm<span>::getDefaultProcessorVector (config, props, solidStorage),
+						procs,
 						props);
 
 				algo.execute();
 
 				System::file().rmdir(tempDir);
+
+		    	for(size_t i=0; i<p.nbPartitions; i++){
+		    		bags[i]->flush();
+		    		delete bags[i];
+		    	}
 			}
 
 			//cout << "heo" << endl;

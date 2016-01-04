@@ -211,7 +211,7 @@ public:
 			//cout << "\t-nb-cores = cores per job" << endl;
 			//cout << endl;
 
-			_isClusterMode = true;
+			_isClusterMode = false;
 			_maxJobCount = this->_options->getInt(STR_SIMKA_NB_JOB_COUNT);
 			_maxJobMerge = this->_options->getInt(STR_SIMKA_NB_JOB_MERGE);
 			_jobCountFilename = this->_options->getStr(STR_SIMKA_JOB_COUNT_FILENAME);
@@ -406,7 +406,6 @@ public:
 			_nbPartitions = config._nb_partitions;
 		}*/
 
-		cout << "HAAAAAAAAAAAAAAAA" << endl;
 
         RepartitorAlgorithm<span> repart (bank, storage->getGroup(""), config);
         repart.execute ();
