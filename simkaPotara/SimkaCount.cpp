@@ -19,7 +19,6 @@
  *****************************************************************************/
 
 #include "SimkaPotara.hpp"
-#include "SimkaPotaraCompression.hpp"
 //#include <gatb/gatb_core.hpp>
 
 // We use the required packages
