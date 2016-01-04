@@ -211,7 +211,7 @@ public:
 			//cout << "\t-nb-cores = cores per job" << endl;
 			//cout << endl;
 
-			_isClusterMode = false;
+			_isClusterMode = true;
 			_maxJobCount = this->_options->getInt(STR_SIMKA_NB_JOB_COUNT);
 			_maxJobMerge = this->_options->getInt(STR_SIMKA_NB_JOB_MERGE);
 			_jobCountFilename = this->_options->getStr(STR_SIMKA_JOB_COUNT_FILENAME);
