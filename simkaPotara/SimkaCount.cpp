@@ -221,10 +221,10 @@ public:
 
 
 
-
-
 			IBank* bank = Bank::open(p.outputDir + "/input/" + p.bankName);
 			LOCAL(bank);
+
+			/*
 			u_int64_t nbSeqs = 1;
 	        IBank* sampleBank = new SimkaBankSample(bank, nbSeqs);
 			SortingCountAlgorithm<span> sortingCount (sampleBank, props);
@@ -243,6 +243,7 @@ public:
 				memoryUsageCachedItems = 1LL * config._nb_cached_items_per_core_per_part *config._nb_partitions * config._nbCores * sizeof(Type);
 			}
 			while (memoryUsageCachedItems < config._max_memory * MBYTE / 10);
+			*/
 
 
 
@@ -250,8 +251,7 @@ public:
 
 
 
-
-			//Configuration* config = new Configuration();
+			Configuration config;
 			{
 				Repartitor* repartitor = new Repartitor();
 				LOCAL(repartitor);
@@ -259,7 +259,7 @@ public:
 				{
 					Storage* storage = StorageFactory(STORAGE_HDF5).load (p.outputDir + "/" + "config.h5");
 					LOCAL (storage);
-					//config->load(storage->getGroup(""));
+					config.load(storage->getGroup(""));
 					repartitor->load(storage->getGroup(""));
 				}
 
