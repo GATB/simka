@@ -231,7 +231,7 @@ public:
 		//vector<Iterator<Count>* > partitionIts;
     	for(size_t i=0; i<_nbBanks; i++){
     		string filename = p.outputDir + "/solid/" +  _datasetIds[i] + "/" + "part" + Stringify::format("%i", _partitiontId);
-    		cout << filename << endl;
+    		//cout << filename << endl;
     		IterableGzFile<Count>* partition = new IterableGzFile<Count>(filename);
     		partitions.push_back(partition);
     		its.push_back(new StorageIt<span>(partition->iterator(), i, _partitiontId));
