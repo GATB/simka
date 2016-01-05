@@ -211,7 +211,7 @@ public:
 			//cout << "\t-nb-cores = cores per job" << endl;
 			//cout << endl;
 
-			_isClusterMode = true;
+			_isClusterMode = false;
 			_maxJobCount = this->_options->getInt(STR_SIMKA_NB_JOB_COUNT);
 			_maxJobMerge = this->_options->getInt(STR_SIMKA_NB_JOB_MERGE);
 			_jobCountFilename = this->_options->getStr(STR_SIMKA_JOB_COUNT_FILENAME);
@@ -219,7 +219,11 @@ public:
 			_jobCountCommand = this->_options->getStr(STR_SIMKA_JOB_COUNT_COMMAND);
 			_jobMergeCommand = this->_options->getStr(STR_SIMKA_JOB_MERGE_COMMAND);
 
-			_maxJobMerge = max((int)_maxJobMerge, (int)30);
+			//if(_isClusterMode)
+			//	_maxJobMerge = max((int)_maxJobMerge, (int)30);
+			//else{
+			//	_maxJobMerge = max((int)_maxJobMerge, (int)30);
+			//}
 
 			_coresPerJob = this->_nbCores;
 			_memoryPerJob = this->_maxMemory;
@@ -374,7 +378,10 @@ public:
 
 		Configuration config = sortingCount.getConfig();
 
+
 		_nbPartitions = _maxJobMerge;
+		_nbPartitions = max((int)_nbPartitions, (int)30);
+
 		config._nb_partitions = _nbPartitions;
 
 		uint64_t memoryUsageCachedItems;
@@ -425,6 +432,13 @@ public:
 		//sampleBank->forget();
 	}
 
+	void removeMergeSynchro(){
+
+	    for (size_t i=0; i<this->_bankNames.size(); i++){
+			string finishFilename = this->_outputDirTemp + "/merge_synchro/" +  this->_bankNames[i] + ".ok";
+			if(System::file().doesExist(finishFilename)) System::file().remove(finishFilename);
+	    }
+	}
 
 	void count(){
 
@@ -473,6 +487,8 @@ public:
 
 			cout << "Counting dataset " << i << endl;
 			cout << "\t" << command << endl;
+
+			removeMergeSynchro();
 
 			if(_isClusterMode){
 				string jobFilename = this->_outputDirTemp + "/job_count/job_count_" + SimkaAlgorithm<>::toString(i) + ".bash";
