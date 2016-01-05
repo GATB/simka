@@ -132,7 +132,7 @@ public:
     /** Initialization of the counting for the current kmer. This method should be called
      * when a kmer is seen for the first time.
      * \param[in] idxBank : bank index where the new current kmer has been found. */
-    void init (size_t idxBank, u_int16_t abundance)
+    void init (size_t idxBank, CountNumber abundance)
     {
         for (size_t k=0; k<_abundancePerBank.size(); k++)  { _abundancePerBank[k]=0; }
         _abundancePerBank [idxBank]= abundance;
@@ -140,7 +140,7 @@ public:
 
     /** Increase the abundance of the current kmer for the provided bank index.
      * \param[in] idxBank : index of the bank */
-    void increase (size_t idxBank, u_int16_t abundance)  {  _abundancePerBank [idxBank] += abundance;  }
+    void increase (size_t idxBank, CountNumber abundance)  {  _abundancePerBank [idxBank] += abundance;  }
 
     /** Set the abundance of the current kmer for the provided bank index.
      * \param[in] idxBank : index of the bank */
@@ -293,7 +293,71 @@ public:
 
 		}
 
+		u_int16_t best_p;
+		Type previous_kmer;
+		SimkaCounterBuilderMerge solidCounter(_nbBanks);
 
+
+	    //fill the  priority queue with the first elems
+	    for (int ii=0; ii<_nbBanks; ii++)
+	    {
+	        if(its[ii]->next())  {  pq.push(kxp(ii,its[ii]->value()));  }
+	    }
+
+	    if (pq.size() != 0) // everything empty, no kmer at all
+	    {
+	        //get first pointer
+	        best_p = pq.top().first ; pq.pop();
+
+	        previous_kmer = its[best_p]->value();
+
+	        solidCounter.init (its[best_p]->getBankId(), its[best_p]->abundance());
+
+	        //merge-scan all 'virtual' arrays and output counts
+	        while (1)
+	        {
+	            //go forward in this array or in new array of reaches end of this one
+	            if (! its[best_p]->next())
+	            {
+	                //reaches end of one array
+	                if(pq.size() == 0) break; //everything done
+
+	                //otherwise get new best
+	                best_p = pq.top().first ; pq.pop();
+	            }
+
+	            if (its[best_p]->value() != previous_kmer )
+	            {
+	                //if diff, changes to new array, get new min pointer
+	                pq.push(kxp(best_p,its[best_p]->value())); //push new val of this pointer in pq, will be counted later
+
+	                best_p = pq.top().first ; pq.pop();
+
+	                //if new best is diff, this is the end of this kmer
+	                if(its[best_p]->value()!=previous_kmer )
+	                {
+	                    this->insert (previous_kmer, solidCounter);
+
+	                    solidCounter.init (its[best_p]->getBankId(), its[best_p]->abundance());
+	                    previous_kmer = its[best_p]->value();
+	                }
+	                else
+	                {
+	                    solidCounter.increase (its[best_p]->getBankId(), its[best_p]->abundance());
+	                }
+	            }
+	            else
+	            {
+	                solidCounter.increase (its[best_p]->getBankId(), its[best_p]->abundance());
+	            }
+	        }
+
+	        //last elem
+	        this->insert (previous_kmer, solidCounter);
+	    }
+
+
+/*
 		//for(size_t i=0; i<nbPartitions; i++){
 
 
@@ -383,7 +447,7 @@ public:
 				//last elem
 				//this->insert (previous_kmer, solidCounter);
 			}
-		//}
+		//}*/
 
 			cout << "end merging" << endl;
 		_progress->finish();

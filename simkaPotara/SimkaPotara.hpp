@@ -457,6 +457,7 @@ public:
 
 			string finishFilename = this->_outputDirTemp + "/count_synchro/" +  this->_bankNames[i] + ".ok";
 			if(System::file().doesExist(finishFilename)){
+				_progress->inc(1);
 				cout << "\t" << this->_bankNames[i] << " already counted (remove file " << finishFilename << " to count again)" << endl;
 				continue;
 			}
@@ -593,6 +594,7 @@ public:
 			string finishFilename = this->_outputDirTemp + "/merge_synchro/" +  datasetId + ".ok";
 
 			if(System::file().doesExist(finishFilename)){
+				_progress->inc(1);
 				cout << "\t" << datasetId << " already merged (remove file " << finishFilename << " to merge again)" << endl;
 			}
 			else{
