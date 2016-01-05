@@ -64,9 +64,12 @@ SimkaCountProcessor<span>::~SimkaCountProcessor () {
 template<size_t span>
 void SimkaCountProcessor<span>::finishClones (std::vector<ICountProcessor<span>*>& clones)
 {
+	cout << "finish clones" << endl;
 	for (size_t i=0; i<clones.size(); i++){
 
+		cout << i << endl;
 		if (SimkaCountProcessor* clone = dynamic_cast<SimkaCountProcessor*> (clones[i])){
+			cout << "cast i" << endl;
 			finishClone(clone);
 			//for (size_t i=0; i<this->_countTotal.size(); i++)  { this->_countTotal[i] += clone->_countTotal[i];  }
 		}
@@ -75,6 +78,7 @@ void SimkaCountProcessor<span>::finishClones (std::vector<ICountProcessor<span>*
 
 template<size_t span>
 void SimkaCountProcessor<span>::finishClone(SimkaCountProcessor<span>* clone){
+	cout << "finish clone" << endl;
 	//cout << _stats << "   " << &clone->_stats << endl;
 	_stats += *clone->_localStats;
 }

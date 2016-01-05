@@ -727,7 +727,7 @@ public:
 			SimkaStatistics stats(this->_nbBanks, distanceParams);
 			stats.load(storage->getGroup(""));
 
-			cout << stats._nbDistinctKmers << endl;
+			cout << stats._nbDistinctKmers << "   " << stats._nbKmers << endl;
 			mainStats += stats;
 		}
 

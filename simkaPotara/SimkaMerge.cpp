@@ -438,10 +438,10 @@ public:
 		_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, p.minShannonIndex);
 		_processor->use();
 
-		ICountProcessor<span>* proc = _processor->clone();
-		proc->use();
+		//ICountProcessor<span>* proc = _processor->clone();
+		//proc->use();
 
-		_processors.push_back(proc);
+		//_processors.push_back(proc);
 	}
 
 	void insert(const Type& kmer, const SimkaCounterBuilderMerge& counter){
@@ -468,7 +468,7 @@ public:
 		}*/
 
 		//cout <<_partitiontId << " "<< kmer.toString(31) << endl;
-		_processors[0]->process (_partitiontId, kmer, counter.get(), 0);
+		_processor->process (_partitiontId, kmer, counter.get(), 0);
 	}
 
 	void removeStorage(Parameter& p){
@@ -479,15 +479,16 @@ public:
 
 	void saveStats(Parameter& p){
 
-		_processor->finishClones(_processors);
+		//_processor->finishClones(_processors);
 		cout << "create stats storage" << endl;
 		Storage* storage = 0;
 		storage = StorageFactory(STORAGE_HDF5).create (p.outputDir + "/stats/part_" + SimkaAlgorithm<>::toString(p.partitionId) + ".stats", true, false);
 		LOCAL (storage);
 
 		cout << "save stats in storage" << endl;
-		_stats->save(storage->getGroup(""));
+		_processor->_localStats->save(storage->getGroup(""));
 
+		//cout << _stats->_nbKmers << endl;
 
 		cout << "forget procs" << endl;
 		//_processors[0]->forget();
@@ -508,7 +509,7 @@ private:
 	size_t _partitiontId;
 	SimkaStatistics* _stats;
 	SimkaCountProcessor<span>* _processor;
-	vector<ICountProcessor<span>*> _processors;
+	//vector<ICountProcessor<span>*> _processors;
 
 	IteratorListener* _progress;
 

@@ -97,11 +97,14 @@ _distanceParams(distanceParams)
 
 
 SimkaStatistics& SimkaStatistics::operator+=  (const SimkaStatistics& other){
+
+	cout << "+=" << endl;
 	_nbKmers += other._nbKmers;
 	_nbDistinctKmers += other._nbDistinctKmers;
 	_nbSolidKmers += other._nbSolidKmers;
 	_nbErroneousKmers += other._nbErroneousKmers;
 
+	cout << "+=" << endl;
 	for(size_t i=0; i<_nbBanks; i++){
 		_nbKmersPerBank[i] += other._nbKmersPerBank[i];
 		_nbSolidDistinctKmersPerBank[i] += other._nbSolidDistinctKmersPerBank[i];
@@ -114,6 +117,8 @@ SimkaStatistics& SimkaStatistics::operator+=  (const SimkaStatistics& other){
 			_chord_N2[i] += other._chord_N2[i];
 
 	}
+
+	cout << "+=" << endl;
 
 	for(size_t i=0; i<_nbBanks; i++){
 		for(size_t j=0; j<_nbBanks; j++){
@@ -137,6 +142,7 @@ SimkaStatistics& SimkaStatistics::operator+=  (const SimkaStatistics& other){
 		}
 	}
 
+	cout << "+=" << endl;
 
 	return *this;
 }

@@ -164,6 +164,8 @@ public:
 	double getShannonIndex(const Type&  kmer);
 
 
+    SimkaStatistics* _localStats;
+
 private:
 
     size_t         _nbBanks;
@@ -176,7 +178,6 @@ private:
     //vector<size_t> _countTotal;
 
 	//u_int64_t _nbBanks;
-    SimkaStatistics* _localStats;
     SimkaStatistics& _stats;
     u_int64_t _totalAbundance;
 

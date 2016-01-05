@@ -20,7 +20,7 @@ using namespace std;
 using namespace gatb::core::system;
 using namespace gatb::core::system::impl;
 
-const u_int64_t MAX_MEMORY_PER_BLOCK = 50000000;
+const u_int64_t MAX_MEMORY_PER_BLOCK = 100000;
 //#define INDEXING
 #define MONO_BANK
 
