@@ -521,8 +521,6 @@ void SimkaAlgorithm<span>::execute() {
 template<size_t span>
 bool SimkaAlgorithm<span>::setup() {
 
-	parseArgs();
-
 	if(! createDirs() ) return false;
 
 	try{
@@ -542,7 +540,6 @@ bool SimkaAlgorithm<span>::setup() {
 
 template<size_t span>
 void SimkaAlgorithm<span>::parseArgs() {
-
 
 	_maxMemory = _options->getInt(STR_MAX_MEMORY);
     _nbCores = _options->getInt(STR_NB_CORES);
@@ -666,7 +663,15 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 
 
 			for(size_t i=0; i<linepartDatasets.size(); i++){
-				subBankContents += linepartDatasets[i] + "\n";
+				string filename = linepartDatasets[i];
+				if(filename.at(0) == '/'){
+					subBankContents +=  filename + "\n";
+				}
+				else{
+					string dir = System::file().getRealPath(_inputFilename);
+					dir = System::file().getDirectory(dir);
+					subBankContents +=  dir + "/" + filename + "\n";
+				}
 			}
 
 		}

@@ -160,6 +160,8 @@ public:
 
 	void execute(){
 
+		parseArgs();
+
 		setup();
 
 		//System::file().rmdir(_outputDirTemp + "/input/");
@@ -192,41 +194,26 @@ public:
 
 	}
 
-	void setup(){
-		SimkaAlgorithm<span>::setup();
-		parseArgs();
-		createDirs();
-		layoutInputFilename();
-		createConfig();
-	}
-
 	void parseArgs() {
 
-		//_isClusterMode = true;
+		SimkaAlgorithm<span>::parseArgs();
 
-		//if(this->_options->get(STR_SIMKA_CLUSTER_MODE)){
-
-			//cout << "cluster mode activated" << endl;
-			//cout << "\t-max-memory = memory per job" << endl;
-			//cout << "\t-nb-cores = cores per job" << endl;
-			//cout << endl;
-
-			_isClusterMode = false;
-			_maxJobCount = this->_options->getInt(STR_SIMKA_NB_JOB_COUNT);
-			_maxJobMerge = this->_options->getInt(STR_SIMKA_NB_JOB_MERGE);
+		if(this->_options->get(STR_SIMKA_JOB_COUNT_FILENAME) || this->_options->get(STR_SIMKA_JOB_MERGE_FILENAME) || this->_options->get(STR_SIMKA_JOB_COUNT_COMMAND) || this->_options->get(STR_SIMKA_JOB_MERGE_COMMAND)){
+			_isClusterMode = true;
 			_jobCountFilename = this->_options->getStr(STR_SIMKA_JOB_COUNT_FILENAME);
 			_jobMergeFilename = this->_options->getStr(STR_SIMKA_JOB_MERGE_FILENAME);
 			_jobCountCommand = this->_options->getStr(STR_SIMKA_JOB_COUNT_COMMAND);
 			_jobMergeCommand = this->_options->getStr(STR_SIMKA_JOB_MERGE_COMMAND);
 
-			//if(_isClusterMode)
-			//	_maxJobMerge = max((int)_maxJobMerge, (int)30);
-			//else{
-			//	_maxJobMerge = max((int)_maxJobMerge, (int)30);
-			//}
+			if(! this->_options->get(STR_SIMKA_NB_JOB_COUNT) || this->_options->get(STR_SIMKA_NB_JOB_MERGE)){
+				//cout << endl;
+				cout << "Cluster mode enable. Be sure to set correctly the following arguments if you have any job submission constraints:" << endl;
+				cout << "\t" << STR_SIMKA_NB_JOB_COUNT << " : the maximum number of simultaneous couting" << endl; //job (each job will use up to " << STR_NB_CORES << " cores and " << STR_MAX_MEMORY << " MB memory)" << endl;
+				cout << "\t" << STR_SIMKA_NB_JOB_MERGE << " : the maximum number of simultaneous merging job" << endl; // (each job will use up to 1 core and " << STR_MAX_MEMORY << " MB memory)" << endl;
+				//cout << endl;
+			}
 
-			_coresPerJob = this->_nbCores;
-			_memoryPerJob = this->_maxMemory;
+
 
 
 			IFile* inputFile = System::file().newFile(_jobCountFilename, "rb");
@@ -250,12 +237,37 @@ public:
 			delete inputFile;
 
 
-		return;
+		}
+		else{
+			_isClusterMode = false;
+		}
+
+
+
+
+
+		//_isClusterMode = true;
+
+		//if(this->_options->get(STR_SIMKA_CLUSTER_MODE)){
+
+			//cout << "cluster mode activated" << endl;
+			//cout << "\t-max-memory = memory per job" << endl;
+			//cout << "\t-nb-cores = cores per job" << endl;
+			//cout << endl;
+
+
+			//if(_isClusterMode)
+			//	_maxJobMerge = max((int)_maxJobMerge, (int)30);
+			//else{
+			//	_maxJobMerge = max((int)_maxJobMerge, (int)30);
+			//}
+
+
+
 		//}
 
 
-		size_t maxCores = System::info().getNbCores();
-
+		/*
 		_maxJobMerge = maxCores-1;
 		size_t maxCoreCount = maxCores-1;
 
@@ -273,9 +285,16 @@ public:
 		cout << "\tMemory per jobs: " << _memoryPerJob << endl;
 		cout << "Nb jobs merge in parallel: " << _maxJobMerge << endl;
 		cout << endl;
+		*/
 	}
 
 
+	void setup(){
+		SimkaAlgorithm<span>::setup();
+		createDirs();
+		layoutInputFilename();
+		createConfig();
+	}
 
 	void layoutInputFilename(){
 
@@ -323,6 +342,63 @@ public:
 	}
 
 	void createConfig(){
+
+		size_t maxCores = this->_nbCores;
+		size_t maxMemory = this->_maxMemory;
+		size_t minMemoryPerJobMB = 500;
+
+		if(this->_options->get(STR_SIMKA_NB_JOB_COUNT)){
+			_maxJobCount = this->_options->getInt(STR_SIMKA_NB_JOB_COUNT);
+		}
+		else{
+			size_t maxjob_byCore = min(maxCores, this->_nbBanks);
+			maxjob_byCore = max(maxjob_byCore, (size_t)1);
+
+			size_t maxjob_byMemory = maxMemory/minMemoryPerJobMB;
+			maxjob_byMemory = max(maxjob_byMemory, (size_t) 1);
+
+			size_t maxJobs = min(maxjob_byCore, maxjob_byMemory);
+			_maxJobCount = maxJobs;
+
+		}
+
+		if(this->_options->get(STR_SIMKA_NB_JOB_MERGE)){
+			_maxJobMerge = this->_options->getInt(STR_SIMKA_NB_JOB_MERGE);
+		}
+		else{
+			_maxJobMerge = maxCores;
+		}
+
+		_coresPerJob = maxCores / _maxJobCount;
+		_coresPerJob = max((size_t)1, _coresPerJob);
+
+		_memoryPerJob = maxMemory / _maxJobCount;
+		_memoryPerJob = max(_memoryPerJob, (size_t)minMemoryPerJobMB);
+
+		cout << endl;
+		cout << "Maximum ressources used by Simka: " << endl;
+		cout << "\t - " << _maxJobCount << " simultaneous processes for counting the kmers (per job: " << _coresPerJob << " cores, " << _memoryPerJob << " MB memory)" << endl;
+		cout << "\t - " << _maxJobMerge << " simultaneous processes for merging the kmer counts (per job: 1 core, memory undefined)" << endl;
+		cout << endl;
+
+
+
+		//_coresPerJob = this->_nbCores;
+		//_memoryPerJob = this->_maxMemory;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 		string filename = this->_outputDirTemp + "/" + "config.h5";
 		if(System::file().doesExist(filename)){
@@ -741,7 +817,7 @@ public:
 
 	//u_int64_t _maxMemory;
 	//size_t _nbCores;
-	u_int64_t _memoryPerJob;
+	size_t _memoryPerJob;
 	size_t _coresPerJob;
 
 	//IBank* _banks;

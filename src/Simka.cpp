@@ -26,31 +26,40 @@ IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
 {
     IOptionsParser* parser = parent; //new OptionsParser ("Simka");
 
+	//Main parser
+    parser->push_front (new OptionOneParam (STR_URI_OUTPUT_TMP, "output directory for temporary files", true));
+    parser->push_front (new OptionOneParam (STR_URI_OUTPUT, "output directory for result files (distance matrices)", false, "./simka_results"));
+    parser->push_front (new OptionOneParam (STR_URI_INPUT, "input file of datasets. One dataset per line: id: filename1...", true));
+    //parser->push_back (new OptionOneParam (STR_URI_OUTPUT_TMP, "output directory for temporary files", true));
 	//IOptionsParser* parser = getParser();
-	IOptionsParser* dskParser = SortingCountAlgorithm<>::getOptionsParser();
-	parser->push_back(dskParser);
-	dskParser->setVisible(false);
+	//IOptionsParser* dskParser = SortingCountAlgorithm<>::getOptionsParser();
+	//parser->push_back(dskParser);
+	//dskParser->setVisible(false);
 	//cout << parser->getParser(STR_NB_CORES) << endl;
 	parser->getParser(STR_NB_CORES)->setVisible(false);
 
-	//Main parser
-	parser->push_front(dskParser->getParser (STR_URI_OUTPUT_TMP));
-	parser->push_front(dskParser->getParser (STR_URI_OUTPUT));
-	parser->getParser (STR_URI_OUTPUT)->setHelp("output directory for result files (similarity matrix, heatmaps)");
-	parser->push_front(dskParser->getParser (STR_URI_INPUT));
-	parser->getParser(STR_URI_INPUT)->setHelp("input file of datasets. One dataset per line: id filename1 filename2...");
+	//parser->push_back(new OptionOneParam(parser->getParser(STR_NB_CORES)->getName(), parser->getParser(STR_NB_CORES)->getHelp(), false, "0"));
+	//parser->push_front(dskParser->getParser (STR_URI_OUTPUT_TMP));
+	//dskParser->getParser (STR_URI_OUTPUT_TMP)->setMandatory
+    //parser->push_front(dskParser->getParser (STR_URI_OUTPUT));
+    //parser->getParser (STR_URI_OUTPUT)->setHelp("output directory for result files (similarity matrix, heatmaps)");
+    //parser->push_front(dskParser->getParser (STR_URI_INPUT));
+    //parser->getParser(STR_URI_INPUT)->setHelp("input file of datasets. One dataset per line: id filename1 filename2...");
 
     //if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_URI_OUTPUT_TMP)))  {  p->s; }
 
 	//Kmer parser
     IOptionsParser* kmerParser = new OptionsParser ("kmer");
-    kmerParser->push_back(dskParser->getParser (STR_KMER_SIZE));
+    kmerParser->push_back (new OptionOneParam (STR_KMER_SIZE, "size of a kmer", false, "31"));
+    //kmerParser->push_back(dskParser->getParser (STR_KMER_SIZE));
     //kmerParser->push_back(new OptionOneParam (STR_KMER_PER_READ.c_str(), "number of selected kmers per read", false, "0"));
-    kmerParser->push_back(dskParser->getParser (STR_KMER_ABUNDANCE_MIN));
-    if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_KMER_ABUNDANCE_MIN)))  {  p->setDefaultValue ("0"); }
-    if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_SOLIDITY_KIND)))  {  p->setDefaultValue ("all"); }
+    kmerParser->push_back (new OptionOneParam (STR_KMER_ABUNDANCE_MIN, "min abundance a kmer need to be considered", false, "2"));
+    kmerParser->push_back (new OptionOneParam (STR_KMER_ABUNDANCE_MAX, "max abundance a kmer can have to be considered", false, "999999999"));
+    //kmerParser->push_back(dskParser->getParser (STR_KMER_ABUNDANCE_MIN));
+    //if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_KMER_ABUNDANCE_MIN)))  {  p->setDefaultValue ("0"); }
+    //if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_SOLIDITY_KIND)))  {  p->setDefaultValue ("all"); }
 
-    kmerParser->push_back(dskParser->getParser (STR_KMER_ABUNDANCE_MAX));
+    //kmerParser->push_back(dskParser->getParser (STR_KMER_ABUNDANCE_MAX));
     //kmerParser->push_back(dskParser->getParser (STR_SOLIDITY_KIND));
     //kmerParser->getParser (STR_SOLIDITY_KIND)->setHelp("TODO");
     //kmerParser->push_back (new OptionNoParam (STR_SIMKA_SOLIDITY_PER_DATASET.c_str(), "do not take into consideration multi-counting when determining solid kmers", false ));
@@ -65,9 +74,10 @@ IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
 
     //Core parser
     IOptionsParser* coreParser = new OptionsParser ("core");
-    coreParser->push_back(new OptionOneParam(parser->getParser(STR_NB_CORES)->getName(), parser->getParser(STR_NB_CORES)->getHelp(), false, "0"));
-    coreParser->push_back(dskParser->getParser (STR_MAX_MEMORY));
-    coreParser->push_back(dskParser->getParser (STR_MAX_DISK));
+    coreParser->push_back(new OptionOneParam(STR_NB_CORES, "number of cores", false, "0"));
+    coreParser->push_back (new OptionOneParam (STR_MAX_MEMORY, "max memory (MB)", false, "5000"));
+    //coreParser->push_back(dskParser->getParser ());
+    //coreParser->push_back(dskParser->getParser (STR_MAX_DISK));
 
     //Distances
     //IOptionsParser* distanceParser = new OptionsParser ("distances");
@@ -83,6 +93,11 @@ IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
 	parser->push_back(coreParser);
 	//parser->push_back(distanceParser);
 
+
+	IOptionsParser* dskParser = SortingCountAlgorithm<>::getOptionsParser();
+	parser->push_back(dskParser);
+	dskParser->setVisible(false);
+    if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_SOLIDITY_KIND)))  {  p->setDefaultValue ("all"); }
 
     return parser;
 }
