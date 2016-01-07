@@ -192,6 +192,12 @@ public:
 
 		stats();
 
+
+		if(this->_options->getInt(STR_VERBOSE) != 0){
+			cout << endl;
+			cout << "Output dir: " << this->_outputDir << endl;
+			cout << endl;
+		}
 	}
 
 	void parseArgs() {
@@ -810,9 +816,9 @@ public:
 			mainStats += stats;
 		}
 
-		mainStats.print();
-
 		mainStats.outputMatrix(this->_outputDir, this->_bankNames);
+
+		if(this->_options->getInt(STR_VERBOSE) != 0) mainStats.print();
 	}
 
 
