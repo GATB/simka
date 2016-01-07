@@ -36,14 +36,14 @@ public:
     typedef typename Kmer<span>::Count Count;
 
     //SimkaCompressedProcessor(vector<BagGzFile<Count>* >& bags, vector<vector<Count> >& caches, vector<size_t>& cacheIndexes, CountNumber abundanceMin, CountNumber abundanceMax) : _bags(bags), _caches(caches), _cacheIndexes(cacheIndexes)
-    SimkaCompressedProcessor(vector<BagGzFile<Count>* >& bags, CountNumber abundanceMin, CountNumber abundanceMax) : _bags(bags)
+    SimkaCompressedProcessor(vector<BagGzFile<Count>* >& bags, vector<u_int64_t>& nbKmerPerParts, CountNumber abundanceMin, CountNumber abundanceMax) : _bags(bags), _nbKmerPerParts(nbKmerPerParts)
     {
     	_abundanceMin = abundanceMin;
     	_abundanceMax = abundanceMax;
     }
 
 	~SimkaCompressedProcessor(){}
-    CountProcessorAbstract<span>* clone ()  {  return new SimkaCompressedProcessor (_bags, _abundanceMin, _abundanceMax);  }
+    CountProcessorAbstract<span>* clone ()  {  return new SimkaCompressedProcessor (_bags, _nbKmerPerParts, _abundanceMin, _abundanceMax);  }
     //CountProcessorAbstract<span>* clone ()  {  return new SimkaCompressedProcessor (_bags, _caches, _cacheIndexes, _abundanceMin, _abundanceMax);  }
 	void finishClones (vector<ICountProcessor<span>*>& clones){}
 
@@ -51,6 +51,7 @@ public:
 		if(count[0] < _abundanceMin || count[0] > _abundanceMax) return false;
 		Count item(kmer, count[0]);
 		_bags[partId]->insert(item);
+		_nbKmerPerParts[partId] += 1;
 		/*
 		size_t index = _cacheIndexes[partId];
 
@@ -70,6 +71,7 @@ public:
 
 
 	vector<BagGzFile<Count>* >& _bags;
+	vector<u_int64_t>& _nbKmerPerParts;
 	CountNumber _abundanceMin;
 	CountNumber _abundanceMax;
 	//vector<vector<Count> >& _caches;
@@ -221,6 +223,7 @@ public:
 
 
 
+
 			IBank* bank = Bank::open(p.outputDir + "/input/" + p.bankName);
 			LOCAL(bank);
 
@@ -247,8 +250,7 @@ public:
 
 
 
-
-
+			vector<u_int64_t> nbKmerPerParts(p.nbPartitions, 0);
 
 
 			Configuration config;
@@ -308,7 +310,7 @@ public:
 				//LOCAL(solidStorage);
 
 				//SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, caches, cacheIndexes, p.abundanceMin, p.abundanceMax);
-				SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, p.abundanceMin, p.abundanceMax);
+				SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, nbKmerPerParts, p.abundanceMin, p.abundanceMax);
 				std::vector<ICountProcessor<span>* > procs;
 				procs.push_back(proc);
 				SortingCountAlgorithm<span> algo (filteredBank, config, repartitor,
@@ -325,6 +327,15 @@ public:
 		    	}
 			}
 
+
+			string contents = "";
+			for(size_t i=0; i<nbKmerPerParts.size(); i++){
+				contents += Stringify::format("%llu", nbKmerPerParts[i]) + "\n";
+			}
+			IFile* nbKmerPerPartFile = System::file().newFile(p.outputDir + "/kmercount_per_partition/" + p.bankName + ".txt", "w");
+			nbKmerPerPartFile->fwrite(contents.c_str(), contents.size(), 1);
+			nbKmerPerPartFile->flush();
+			delete nbKmerPerPartFile;
 			//cout << "heo" << endl;
 			//delete config;
 			//cout << "heo" << endl;

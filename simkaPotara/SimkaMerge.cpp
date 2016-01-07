@@ -203,7 +203,7 @@ public:
 
 		removeStorage(p);
 
-		_partitiontId = p.partitionId;
+		_partitionId = p.partitionId;
 
 		createDatasetIdList(p);
 
@@ -222,21 +222,36 @@ public:
 		std::priority_queue< kxp, vector<kxp>,kxpcomp > pq;
 		//vector<Storage*> storages;
 
+		//size_t nbPartitions;
 		u_int64_t nbKmers = 0;
 		u_int64_t nbKmersProcessed = 0;
-		size_t nbPartitions;
+		string line;
 
 
 		vector<IterableGzFile<Count>* > partitions;
 		//vector<Iterator<Count>* > partitionIts;
     	for(size_t i=0; i<_nbBanks; i++){
-    		string filename = p.outputDir + "/solid/" +  _datasetIds[i] + "/" + "part" + Stringify::format("%i", _partitiontId);
+    		string filename = p.outputDir + "/solid/" +  _datasetIds[i] + "/" + "part" + Stringify::format("%i", _partitionId);
     		//cout << filename << endl;
     		IterableGzFile<Count>* partition = new IterableGzFile<Count>(filename);
     		partitions.push_back(partition);
-    		its.push_back(new StorageIt<span>(partition->iterator(), i, _partitiontId));
-    		nbKmers += partition->estimateNbItems();
+    		its.push_back(new StorageIt<span>(partition->iterator(), i, _partitionId));
+    		//nbKmers += partition->estimateNbItems();
+
+    		size_t currentPart = 0;
+	    	ifstream file((p.outputDir + "/kmercount_per_partition/" +  _datasetIds[i] + ".txt").c_str());
+			while(getline(file, line)){
+				if(line == "") continue;
+				if(currentPart == _partitionId){
+					//cout << stoull(line) << endl;
+					nbKmers += stoull(line);
+					break;
+				}
+				currentPart += 1;
+			}
+			file.close();
     	}
+
 
 
 		//vector<Partition<Count>* > partitions;
@@ -267,6 +282,7 @@ public:
 
 		//partitions.clear();
 
+    	u_int64_t progressStep = nbKmers / 1000;
 		_progress = new ProgressSynchro (
 			createIteratorListener (nbKmers, "Merging kmers"),
 			System::thread().newSynchronizer());
@@ -296,7 +312,7 @@ public:
 		u_int16_t best_p;
 		Type previous_kmer;
 		SimkaCounterBuilderMerge solidCounter(_nbBanks);
-
+		size_t nbBankThatHaveKmer = 0;
 
 	    //fill the  priority queue with the first elems
 	    for (int ii=0; ii<_nbBanks; ii++)
@@ -312,6 +328,7 @@ public:
 	        previous_kmer = its[best_p]->value();
 
 	        solidCounter.init (its[best_p]->getBankId(), its[best_p]->abundance());
+	        nbBankThatHaveKmer = 1;
 
 	        //merge-scan all 'virtual' arrays and output counts
 	        while (1)
@@ -336,19 +353,30 @@ public:
 	                //if new best is diff, this is the end of this kmer
 	                if(its[best_p]->value()!=previous_kmer )
 	                {
+
+						nbKmersProcessed += nbBankThatHaveKmer;
+						if(nbKmersProcessed > progressStep){
+							//cout << "queue size:   " << pq.size() << endl;
+							//cout << nbKmersProcessed << endl;
+							_progress->inc(nbKmersProcessed);
+							nbKmersProcessed = 0;
+						}
 	                    this->insert (previous_kmer, solidCounter);
 
 	                    solidCounter.init (its[best_p]->getBankId(), its[best_p]->abundance());
+	                    nbBankThatHaveKmer = 1;
 	                    previous_kmer = its[best_p]->value();
 	                }
 	                else
 	                {
 	                    solidCounter.increase (its[best_p]->getBankId(), its[best_p]->abundance());
+	                    nbBankThatHaveKmer += 1;
 	                }
 	            }
 	            else
 	            {
 	                solidCounter.increase (its[best_p]->getBankId(), its[best_p]->abundance());
+	                nbBankThatHaveKmer += 1;
 	            }
 	        }
 
@@ -449,11 +477,8 @@ public:
 			}
 		//}*/
 
-			cout << "end merging" << endl;
 		_progress->finish();
-		cout << "saving stats" << endl;
 		saveStats(p);
-		cout << "write finish signal" << endl;
 		writeFinishSignal(p);
 	}
 
@@ -532,7 +557,7 @@ public:
 		}*/
 
 		//cout <<_partitiontId << " "<< kmer.toString(31) << endl;
-		_processor->process (_partitiontId, kmer, counter.get(), 0);
+		_processor->process (_partitionId, kmer, counter.get(), 0);
 	}
 
 	void removeStorage(Parameter& p){
@@ -544,17 +569,13 @@ public:
 	void saveStats(Parameter& p){
 
 		//_processor->finishClones(_processors);
-		cout << "create stats storage" << endl;
 		Storage* storage = 0;
 		storage = StorageFactory(STORAGE_HDF5).create (p.outputDir + "/stats/part_" + SimkaAlgorithm<>::toString(p.partitionId) + ".stats", true, false);
 		LOCAL (storage);
-
-		cout << "save stats in storage" << endl;
 		_processor->_localStats->save(storage->getGroup(""));
 
 		//cout << _stats->_nbKmers << endl;
 
-		cout << "forget procs" << endl;
 		//_processors[0]->forget();
 		//_processor->forget();
 
@@ -570,7 +591,7 @@ private:
 	size_t _nbBanks;
 	pair<size_t, size_t> _abundanceThreshold;
 	vector<string> _datasetIds;
-	size_t _partitiontId;
+	size_t _partitionId;
 	SimkaStatistics* _stats;
 	SimkaCountProcessor<span>* _processor;
 	//vector<ICountProcessor<span>*> _processors;

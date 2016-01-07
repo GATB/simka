@@ -338,6 +338,7 @@ public:
 		System::file().mkdir(this->_outputDirTemp + "/stats/", -1);
 		System::file().mkdir(this->_outputDirTemp + "/job_count/", -1);
 		System::file().mkdir(this->_outputDirTemp + "/job_merge/", -1);
+		System::file().mkdir(this->_outputDirTemp + "/kmercount_per_partition/", -1);
 
 	}
 
