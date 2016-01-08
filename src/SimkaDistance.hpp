@@ -45,11 +45,11 @@ public:
 	SimkaDistanceParam(){}
 
 	SimkaDistanceParam(IProperties* params){
-	    _computeBrayCurtis = true;
-	    _computeChord = true;
-	    _computeHellinger = true;
-	    _computeCanberra = true;
-	    _computeKulczynski = true;
+	    //_computeBrayCurtis = true;
+		//_computeChord = true;
+		//_computeHellinger = true;
+		//_computeCanberra = true;
+		//_computeKulczynski = true;
 		//_computeBrayCurtis = params->get(STR_SIMKA_DISTANCE_BRAYCURTIS);
 		//_computeChord = params->get(STR_SIMKA_DISTANCE_CHORD);
 		//_computeHellinger = params->get(STR_SIMKA_DISTANCE_HELLINGER);
@@ -57,11 +57,11 @@ public:
 		//_computeKulczynski = params->get(STR_SIMKA_DISTANCE_KULCZYNSKI);
 	}
 
-    bool _computeBrayCurtis;
-    bool _computeChord;
-    bool _computeHellinger;
-    bool _computeCanberra;
-    bool _computeKulczynski;
+	//bool _computeBrayCurtis;
+	//bool _computeChord;
+	//bool _computeHellinger;
+	//bool _computeCanberra;
+	//bool _computeKulczynski;
 };
 
 

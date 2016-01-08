@@ -111,7 +111,7 @@ SimkaStatistics& SimkaStatistics::operator+=  (const SimkaStatistics& other){
 		_nbKmersSharedByBanksThreshold[i] += other._nbKmersSharedByBanksThreshold[i];
 
 
-		if(_distanceParams._computeChord)
+		//if(_distanceParams._computeChord)
 			_chord_N2[i] += other._chord_N2[i];
 
 	}
@@ -617,7 +617,7 @@ double SimkaDistance::distance_abundance_chord(size_t i, size_t j){
 	long double unionSize = sqrtl(_stats._chord_N2[i]) * sqrtl(_stats._chord_N2[j]);
 	if(unionSize == 0)  return sqrt(2);
 
-	double chordDistance = sqrt(2 - (intersection / unionSize));
+	double chordDistance = sqrtl(2 - (intersection / unionSize));
 	//chordDistance -= 1;
 	//return chordDistance;
 	return chordDistance;
@@ -649,8 +649,8 @@ double SimkaDistance::distance_abundance_canberra(size_t i, size_t j, u_int64_t&
 //Abundance Kulczynski
 double SimkaDistance::distance_abundance_kulczynski(size_t i, size_t j){
 
-	double numerator = (_stats._nbSolidKmersPerBank[i] + _stats._nbSolidKmersPerBank[j]) * _stats._kulczynski_minNiNj[i][j];
-	double denominator = _stats._nbSolidKmersPerBank[i] * _stats._nbSolidKmersPerBank[j];
+	long double numerator = (_stats._nbSolidKmersPerBank[i] + _stats._nbSolidKmersPerBank[j]) * _stats._kulczynski_minNiNj[i][j];
+	long double denominator = _stats._nbSolidKmersPerBank[i] * _stats._nbSolidKmersPerBank[j];
 
 	double kulczynskiDistance = 1 - 0.5 * (numerator / denominator);
 

@@ -698,12 +698,12 @@ public:
 				command += " " + string(STR_NB_CORES) + " 1";
 				command += " " + string(STR_SIMKA_MIN_KMER_SHANNON_INDEX) + " " + Stringify::format("%f", this->_minKmerShannonIndex);
 
-				SimkaDistanceParam distanceParams(this->_options);
-				if(distanceParams._computeBrayCurtis) command += " " + STR_SIMKA_DISTANCE_BRAYCURTIS + " ";
-				if(distanceParams._computeCanberra) command += " " + STR_SIMKA_DISTANCE_CANBERRA + " ";
-				if(distanceParams._computeChord) command += " " + STR_SIMKA_DISTANCE_CHORD + " ";
-				if(distanceParams._computeHellinger) command += " " + STR_SIMKA_DISTANCE_HELLINGER + " ";
-				if(distanceParams._computeKulczynski) command += " " + STR_SIMKA_DISTANCE_KULCZYNSKI + " ";
+				//SimkaDistanceParam distanceParams(this->_options);
+				//if(distanceParams._computeBrayCurtis) command += " " + STR_SIMKA_DISTANCE_BRAYCURTIS + " ";
+				//if(distanceParams._computeCanberra) command += " " + STR_SIMKA_DISTANCE_CANBERRA + " ";
+				//if(distanceParams._computeChord) command += " " + STR_SIMKA_DISTANCE_CHORD + " ";
+				//if(distanceParams._computeHellinger) command += " " + STR_SIMKA_DISTANCE_HELLINGER + " ";
+				//if(distanceParams._computeKulczynski) command += " " + STR_SIMKA_DISTANCE_KULCZYNSKI + " ";
 
 
 				cout << "Merging partition " << i << endl;
