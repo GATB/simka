@@ -443,6 +443,8 @@ public:
         storage = StorageFactory(STORAGE_HDF5).create (filename, true, false);
         LOCAL (storage);
 
+
+
     	//IBank* bank = Bank::open(this->_banksInputFilename);
 		IBank* bank = Bank::open(this->_outputDirTemp + "/input/" + this->_largerBankId);
 		LOCAL(bank);
@@ -462,8 +464,24 @@ public:
 		Configuration config = sortingCount.getConfig();
 
 
-		_nbPartitions = _maxJobMerge;
-		_nbPartitions = max((int)_nbPartitions, (int)30);
+
+
+
+
+
+        //IBank* inputbank = Bank::open(this->_banksInputFilename);
+		//LOCAL(inputbank);
+		//IBank* sampleBank2 = new SimkaBankSample(inputbank, nbSeqs);
+		//SortingCountAlgorithm<span> sortingCount2 (sampleBank2, this->_options);
+		//SimkaNullProcessor<span>* proc2 = new SimkaNullProcessor<span>();
+		//sortingCount2.addProcessor (proc2);
+		//sortingCount2.execute();
+		//Configuration config2 = sortingCount2.getConfig();
+		//cout << config2._nb_partitions << endl;
+
+
+		_nbPartitions = max((size_t)config._nb_partitions, (size_t)_maxJobMerge);
+		//_nbPartitions = max((int)_nbPartitions, (int)30);
 
 		config._nb_partitions = _nbPartitions;
 

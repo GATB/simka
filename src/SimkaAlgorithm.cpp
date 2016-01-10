@@ -587,6 +587,7 @@ bool SimkaAlgorithm<span>::createDirs(){
 		}
 	}
 
+	_outputDirTemp = System::file().getRealPath(_outputDirTemp);
 	_outputDirTemp += "/simka_output_temp/";
 	System::file().mkdir(_outputDirTemp, -1);
 
@@ -682,7 +683,6 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 		delete subBankFile;
 
 		bankFileContents += inputDir + "/" + bankId + "\n";
-
 		lineIndex += 1;
 
 		_bankNames.push_back(bankId);
