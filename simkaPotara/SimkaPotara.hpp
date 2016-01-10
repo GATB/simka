@@ -28,6 +28,7 @@
 #include <Simka.hpp>
 
 #include <gatb/kmer/impl/RepartitionAlgorithm.hpp>
+#include <gatb/kmer/impl/ConfigurationAlgorithm.hpp>
 
 #include <unistd.h>
 #include <sys/wait.h>
@@ -445,8 +446,59 @@ public:
 
 
 
+
+
+        size_t chosenBankId;
+    	SimkaSequenceFilter dummyFilter(0, 0);
+    	//vector<SimkaBankFiltered<SimkaSequenceFilter>*> banksToDelete;
+
+    	string inputDir = this->_outputDirTemp + "/input/";
+    	u_int64_t maxPart = 0;
+    	for (size_t i=0; i<this->_nbBanks; i++){
+
+    		IBank* bank = Bank::open(inputDir + this->_bankNames[i]);
+    		LOCAL(bank);
+
+
+    		vector<size_t> nbPaired;
+    		nbPaired.push_back(this->_nbBankPerDataset[i]);
+    		SimkaBankFiltered<SimkaSequenceFilter>* simkaBank = new SimkaBankFiltered<SimkaSequenceFilter>(bank, dummyFilter, nbPaired, this->_maxNbReads);
+    		//banksToDelete.push_back(simkaBank);
+    		ConfigurationAlgorithm<span> testConfig(simkaBank, this->_options);
+    		testConfig.execute();
+
+    		size_t part = testConfig.getConfiguration()._nb_partitions;
+    		if(part > maxPart){
+    			maxPart = part;
+    			chosenBankId = i;
+    		}
+
+    		//delete simkaBank;
+/*
+    		u_int64_t nbReads = bank->estimateNbItems();
+    		nbReads /= _nbBankPerDataset[i];
+    		totalReads += nbReads;
+    		if(nbReads < minReads){
+    			minReads = nbReads;
+    			//_smallerBankId = _bankNames[i];
+    		}
+    		if(nbReads > maxReads){
+    			maxReads = nbReads;
+    			_largerBankId = _bankNames[i];
+    		}*/
+
+    	}
+
+    	//for(size_t i=0; i<banksToDelete.size(); i++)
+    	//	delete banksToDelete[i];
+
+
+
+
+
+
     	//IBank* bank = Bank::open(this->_banksInputFilename);
-		IBank* bank = Bank::open(this->_outputDirTemp + "/input/" + this->_largerBankId);
+		IBank* bank = Bank::open(this->_outputDirTemp + "/input/" + this->_bankNames[chosenBankId]);
 		LOCAL(bank);
         //IBank* bank = Bank::open(_outputDirTemp + "/input/" + _bankNames[0]);
         //bank->finalize();
@@ -468,7 +520,6 @@ public:
 
 
 
-
         //IBank* inputbank = Bank::open(this->_banksInputFilename);
 		//LOCAL(inputbank);
 		//IBank* sampleBank2 = new SimkaBankSample(inputbank, nbSeqs);
@@ -480,7 +531,9 @@ public:
 		//cout << config2._nb_partitions << endl;
 
 
-		_nbPartitions = max((size_t)config._nb_partitions, (size_t)_maxJobMerge);
+		_nbPartitions = max((size_t)maxPart, (size_t)_maxJobMerge);
+
+		cout << "Simka will use " << _nbPartitions << " partitions" << endl;
 		//_nbPartitions = max((int)_nbPartitions, (int)30);
 
 		config._nb_partitions = _nbPartitions;
