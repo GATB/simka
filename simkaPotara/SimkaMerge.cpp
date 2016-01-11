@@ -196,8 +196,28 @@ public:
 	}
 
 	pthread_t statThread;
+	vector<u_int64_t> _datasetNbReads;
 
+	void getNbReadsPerDatasets(Parameter& p){
 
+    	for(size_t i=0; i<_nbBanks; i++){
+    		string name = _datasetIds[i];
+    		string countFilename = p.outputDir + "/count_synchro/" +  name + ".ok";
+
+    		string line;
+	    	ifstream file(countFilename.c_str());
+	    	vector<string> lines;
+			while(getline(file, line)){
+				if(line == "") continue;
+				lines.push_back(line);
+			}
+			file.close();
+
+			u_int64_t nbReads = stoull(lines[0]);
+			_datasetNbReads.push_back(nbReads);
+    	}
+
+	}
 
 	void execute(){
 
@@ -206,13 +226,14 @@ public:
 		_partitionId = p.partitionId;
 
 		createDatasetIdList(p);
+		_nbBanks = _datasetIds.size();
 
+		getNbReadsPerDatasets(p);
 		//vector<string> filenames;
 		//for(size_t i=0; i<_datasetIds.size(); i++){
 
 		//}
 
-		_nbBanks = _datasetIds.size();
 		createProcessor(p);
 
 		vector<StorageIt<span>*> its;
@@ -524,7 +545,7 @@ public:
 
 		SimkaDistanceParam distanceParams(p.props);
 		_stats = new SimkaStatistics(_nbBanks, distanceParams);
-		_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, p.minShannonIndex);
+		_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, p.minShannonIndex, _datasetNbReads);
 		_processor->use();
 
 		//ICountProcessor<span>* proc = _processor->clone();

@@ -148,9 +148,9 @@ public:
     typedef typename Kmer<span>::Type  Type;
     //typedef typename Kmer<span>::Count Count;
 
-	SimkaCountProcessor(SimkaStatistics& stats, size_t nbBanks, size_t kmerSize, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, double minKmerShannonIndex);
+	SimkaCountProcessor(SimkaStatistics& stats, size_t nbBanks, size_t kmerSize, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, double minKmerShannonIndex, vector<u_int64_t>& datasetNbReads);
 	~SimkaCountProcessor();
-    CountProcessorAbstract<span>* clone ()  {  return new SimkaCountProcessor (_stats, _nbBanks, _kmerSize, _abundanceThreshold, _solidKind, _soliditySingle, _minKmerShannonIndex);  }
+    CountProcessorAbstract<span>* clone ()  {  return new SimkaCountProcessor (_stats, _nbBanks, _kmerSize, _abundanceThreshold, _solidKind, _soliditySingle, _minKmerShannonIndex, _datasetNbReads);  }
 	//CountProcessorAbstract<span>* clone ();
 	void finishClones (vector<ICountProcessor<span>*>& clones);
 	void finishClone(SimkaCountProcessor<span>* clone);
@@ -179,12 +179,13 @@ private:
 
 	//u_int64_t _nbBanks;
     SimkaStatistics& _stats;
-    u_int64_t _totalAbundance;
+    double _totalAbundance;
 
     u_int64_t _nbKmerCounted;
     double _minKmerShannonIndex;
     CountVector _solidCounts;
-
+    vector<u_int64_t>& _datasetNbReads;
+    double _totalReads;
 };
 
 
@@ -559,7 +560,7 @@ public:
     	//totalSize = _nbReadToProcess*readSize;
     	//maxSize = readSize;
 
-    	//cout << number << endl;
+    	cout << number << endl;
     	//cout << totalSize << endl;
     	//cout << maxSize << endl;
     }

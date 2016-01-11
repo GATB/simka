@@ -118,6 +118,87 @@ private:
 
 
 
+class SimkaBankTemp : public BankDelegate
+{
+public:
+
+	u_int64_t _refNbReads;
+	u_int64_t _refTotalSeqSize;
+	u_int64_t _refMaxReadSize;
+
+	/** Constructor.
+     * \param[in] ref : referred bank.
+     * \param[in] filter : functor that filters sequence.
+     */
+	SimkaBankTemp (IBank* ref, u_int64_t maxReads) : BankDelegate (ref) {
+
+		_maxReads = maxReads;
+		//_nbBanks = ref->getCompositionNb();
+		ref->estimate(_refNbReads, _refTotalSeqSize, _refMaxReadSize);
+
+
+    	//cout << _refNbReads << endl;
+		//cout << _refTotalSeqSize << endl;
+		//cout << _refMaxReadSize << endl;
+	}
+
+
+    void estimate (u_int64_t& number, u_int64_t& totalSize, u_int64_t& maxSize){
+
+
+    	if(_maxReads == 0){
+    		number = _refNbReads;
+    		totalSize = _refTotalSeqSize;
+    		maxSize = _refMaxReadSize;
+    	}
+    	else{
+
+    		u_int64_t maxReads = _maxReads;
+    		//u_int64_t maxReads = 0;
+    		//for(size_t i=0; i<_nbBanks; i++){
+    		//	maxReads += _maxReads * _nbPaireds[i];
+    		//}
+    		//cout << _refNbReads << endl;
+    		//cout << _maxReads*_nbBanks << endl;
+    		maxReads = min (maxReads, _refNbReads);
+			//cout << "ha " <<  maxReads << endl;
+
+			if(maxReads == _refNbReads){
+	    		number = _refNbReads;
+	    		totalSize = _refTotalSeqSize;
+	    		maxSize = _refMaxReadSize;
+			}
+			else{
+				number = maxReads;
+				double factor =  (double)maxReads / (double)_refNbReads;
+				totalSize = _refTotalSeqSize * factor;
+				maxSize = _refMaxReadSize;
+			}
+    	}
+
+    	//number = _maxReads;
+    	//totalSize = (_totalSizeRef*_nbReadToProcess)/_numberRef;
+    	//maxSize = _maxSizeRef;
+
+    	//cout << number2 << endl;
+
+    	//u_int64_t readSize = totalSize2 / number2;
+    	//cout << "lal:" << number2 << endl;
+    	//number = _maxReads;
+
+    	//number = _nbReadToProcess;
+    	//totalSize = _nbReadToProcess*readSize;
+    	//maxSize = readSize;
+
+    	//cout << number << endl;
+    	//cout << totalSize << endl;
+    	//cout << maxSize << endl;
+    }
+
+    u_int64_t _maxReads;
+};
+
+
 template<size_t span>
 class SimkaPotaraAlgorithm : public SimkaAlgorithm<span>{
 public:
@@ -459,10 +540,8 @@ public:
     		IBank* bank = Bank::open(inputDir + this->_bankNames[i]);
     		LOCAL(bank);
 
-
-    		vector<size_t> nbPaired;
-    		nbPaired.push_back(this->_nbBankPerDataset[i]);
-    		SimkaBankFiltered<SimkaSequenceFilter>* simkaBank = new SimkaBankFiltered<SimkaSequenceFilter>(bank, dummyFilter, nbPaired, this->_maxNbReads);
+    		//size_t nbBank_ = bank->getCompositionNb();
+    		SimkaBankTemp* simkaBank = new SimkaBankTemp(bank, this->_maxNbReads*this->_nbBankPerDataset[i]);
     		//banksToDelete.push_back(simkaBank);
     		ConfigurationAlgorithm<span> testConfig(simkaBank, this->_options);
     		testConfig.execute();

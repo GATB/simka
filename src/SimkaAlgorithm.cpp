@@ -25,8 +25,8 @@ static const char* strProgressCounting =      "Simka: Step 2: counting kmers  ";
 
 
 template<size_t span>
-SimkaCountProcessor<span>::SimkaCountProcessor (SimkaStatistics& stats, size_t nbBanks, size_t kmerSize, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, double minKmerShannonIndex) :
-_stats(stats)
+SimkaCountProcessor<span>::SimkaCountProcessor (SimkaStatistics& stats, size_t nbBanks, size_t kmerSize, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, double minKmerShannonIndex, vector<u_int64_t>& datasetNbReads) :
+_stats(stats), _datasetNbReads(datasetNbReads)
 {
 
 	// We configure the vector for the N.(N+1)/2 possible pairs
@@ -45,6 +45,10 @@ _stats(stats)
 	isAbundanceThreshold = _abundanceThreshold.first > 1 || _abundanceThreshold.second < 1000000;
 
 	_solidCounts.resize(_nbBanks);
+
+	_totalReads = 0;
+	for(size_t i=0; i<_datasetNbReads.size(); i++)
+		_totalReads += _datasetNbReads[i];
 }
 
 template<size_t span>
@@ -151,21 +155,26 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 	}
 
 	/*
-	float Ri = 500000;
-	float Rtotal = Ri * _nbBanks;
-	float Ntotal = _totalAbundance;
+	//for(size_t i=0; i<_datasetNbReads.size(); i++)
+	//	cout << i << " " << _datasetNbReads[i] << endl;
+
+	//cout << _totalReads << " " << _totalAbundance << endl;
+	//float Ri = 500000;
+	//float Rtotal = Ri * _nbBanks;
+	//float Ntotal = _totalAbundance;
 	float X2j = 0;
 	for(size_t i=0; i<counts.size(); i++){
 
 		float Ni = counts[i];
 
-		X2j += pow((Ni/Ntotal - Ri/Rtotal), 2) / (Ri / (Rtotal*Ntotal));
+		X2j += pow((Ni/_totalAbundance - _datasetNbReads[i]/_totalReads), 2) / (_datasetNbReads[i] / (_totalReads*_totalAbundance));
 	}
 
+	//cout << X2j << endl;
 	//if(_totalAbundance == 1){
 	//	cout << X2j << endl;
 	//}
-	if(X2j <= (_nbBanks-1)*1.5) return false;
+	if(X2j <= (_nbBanks-1)*1.7) return false;
 	*/
 
 	//cout << X2j << endl;
@@ -914,7 +923,8 @@ void SimkaAlgorithm<span>::count(){
 	SortingCountAlgorithm<span> sortingCount (_banks, _options);
 
 	// We create a custom count processor and give it to the sorting count algorithm
-	_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _kmerSize, _abundanceThreshold, _solidKind, _soliditySingle, _minKmerShannonIndex);
+	vector<u_int64_t> dummyVec;
+	_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, _kmerSize, _abundanceThreshold, _solidKind, _soliditySingle, _minKmerShannonIndex, dummyVec);
 	_processor->use();
 	sortingCount.addProcessor (_processor);
 

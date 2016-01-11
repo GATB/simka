@@ -249,7 +249,7 @@ public:
 			*/
 
 
-
+			string nbReads = "";
 			vector<u_int64_t> nbKmerPerParts(p.nbPartitions, 0);
 
 
@@ -319,6 +319,9 @@ public:
 
 				algo.execute();
 
+
+				nbReads = algo.getInfo()->getStr("seq_number");
+
 				System::file().rmdir(tempDir);
 
 		    	for(size_t i=0; i<p.nbPartitions; i++){
@@ -326,7 +329,6 @@ public:
 		    		delete bags[i];
 		    	}
 			}
-
 
 			string contents = "";
 			for(size_t i=0; i<nbKmerPerParts.size(); i++){
@@ -336,17 +338,24 @@ public:
 			nbKmerPerPartFile->fwrite(contents.c_str(), contents.size(), 1);
 			nbKmerPerPartFile->flush();
 			delete nbKmerPerPartFile;
+
+
 			//cout << "heo" << endl;
 			//delete config;
 			//cout << "heo" << endl;
-			writeFinishSignal(p);
+			writeFinishSignal(p, nbReads);
 			//cout << "heo" << endl;
 		}
 
-		void writeFinishSignal(Parameter& p){
+		void writeFinishSignal(Parameter& p, const string& nbReads){
 
 			string finishFilename = p.outputDir + "/count_synchro/" +  p.bankName + ".ok";
 			IFile* file = System::file().newFile(finishFilename, "w");
+			string contents = "";
+			contents += nbReads + "\n";
+			file->fwrite(contents.c_str(), contents.size(), 1);
+			file->flush();
+
 			delete file;
 		}
 
