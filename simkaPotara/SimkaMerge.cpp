@@ -545,8 +545,8 @@ public:
 
 		SimkaDistanceParam distanceParams(p.props);
 		_stats = new SimkaStatistics(_nbBanks, distanceParams);
-		_processor = new SimkaCountProcessor<span> (*_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, p.minShannonIndex, _datasetNbReads);
-		_processor->use();
+		_processor = new SimkaCountProcessorSimple<span> (_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, p.minShannonIndex, _datasetNbReads);
+		//_processor->use();
 
 		//ICountProcessor<span>* proc = _processor->clone();
 		//proc->use();
@@ -578,7 +578,7 @@ public:
 		}*/
 
 		//cout <<_partitiontId << " "<< kmer.toString(31) << endl;
-		_processor->process (_partitionId, kmer, counter.get(), 0);
+		_processor->process (_partitionId, kmer, counter.get());
 	}
 
 	void removeStorage(Parameter& p){
@@ -593,7 +593,7 @@ public:
 		Storage* storage = 0;
 		storage = StorageFactory(STORAGE_HDF5).create (p.outputDir + "/stats/part_" + SimkaAlgorithm<>::toString(p.partitionId) + ".stats", true, false);
 		LOCAL (storage);
-		_processor->_localStats->save(storage->getGroup(""));
+		_stats->save(storage->getGroup(""));
 
 		//cout << _stats->_nbKmers << endl;
 
@@ -614,7 +614,7 @@ private:
 	vector<string> _datasetIds;
 	size_t _partitionId;
 	SimkaStatistics* _stats;
-	SimkaCountProcessor<span>* _processor;
+	SimkaCountProcessorSimple<span>* _processor;
 	//vector<ICountProcessor<span>*> _processors;
 
 	IteratorListener* _progress;

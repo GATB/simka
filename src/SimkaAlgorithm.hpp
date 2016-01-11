@@ -123,7 +123,223 @@ private:
 
 
 
+/*********************************************************************
+* ** SimkaCountProcessor
+*********************************************************************/
+template<size_t span>
+class SimkaCountProcessorSimple{
 
+public:
+
+    typedef typename Kmer<span>::Type  Type;
+    //typedef typename Kmer<span>::Count Count;
+
+    SimkaCountProcessorSimple(SimkaStatistics* stats, size_t nbBanks, size_t kmerSize, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, double minKmerShannonIndex, vector<u_int64_t>& datasetNbReads) :
+    _stats(stats), _datasetNbReads(datasetNbReads)
+    {
+
+    	// We configure the vector for the N.(N+1)/2 possible pairs
+    	//_countTotal.resize (_nbBanks*(_nbBanks+1)/2);
+
+    	_nbBanks = nbBanks;
+    	_kmerSize = kmerSize;
+    	//_abundanceThreshold = abundanceThreshold;
+    	_minKmerShannonIndex = minKmerShannonIndex;
+
+    	//_localStats = new SimkaStatistics(_nbBanks, _stats._distanceParams);
+
+    	_nbKmerCounted = 0;
+    	//isAbundanceThreshold = _abundanceThreshold.first > 1 || _abundanceThreshold.second < 1000000;
+
+    	_totalReads = 0;
+    	for(size_t i=0; i<_datasetNbReads.size(); i++)
+    		_totalReads += _datasetNbReads[i];
+    }
+
+    void process (size_t partId, const typename Kmer<span>::Type& kmer, const CountVector& counts){
+
+    	_totalAbundance = 0;
+    	_stats->_nbDistinctKmers += 1;
+
+    	for(size_t i=0; i<counts.size(); i++){
+
+    		CountNumber abundance = counts[i];
+    		//_nbKmerCounted += abundance;
+    		//_stats._speciesAbundancePerDataset[i].push_back(abundance);
+
+    		//cout << counts[i] << " ";
+    		_stats->_nbKmers += abundance;
+    		_stats->_nbKmersPerBank[i] += abundance;
+    		_totalAbundance += abundance;
+    	}
+
+    	if(_minKmerShannonIndex != 0){
+    		double shannonIndex = getShannonIndex(kmer);
+    		if(shannonIndex < _minKmerShannonIndex){
+    			return;
+    		}
+    	}
+
+    	/*
+    	//for(size_t i=0; i<_datasetNbReads.size(); i++)
+    	//	cout << i << " " << _datasetNbReads[i] << endl;
+
+    	//cout << _totalReads << " " << _totalAbundance << endl;
+    	//float Ri = 500000;
+    	//float Rtotal = Ri * _nbBanks;
+    	//float Ntotal = _totalAbundance;
+    	float X2j = 0;
+    	for(size_t i=0; i<counts.size(); i++){
+
+    		float Ni = counts[i];
+
+    		X2j += pow((Ni/_totalAbundance - _datasetNbReads[i]/_totalReads), 2) / (_datasetNbReads[i] / (_totalReads*_totalAbundance));
+    	}
+
+    	//cout << X2j << endl;
+    	//if(_totalAbundance == 1){
+    	//	cout << X2j << endl;
+    	//}
+    	if(X2j <= (_nbBanks-1)*1.7) return false;
+    	*/
+
+    	//cout << X2j << endl;
+
+
+    	//cout << kmer.toString(31) << endl;
+
+    	//cout << endl;
+
+    	//if(_progress){ //Simka_min
+    	//	_stats->_nbSolidKmers += 1;
+    	//	computeStats(counts);
+    	//}
+    	//else{
+
+
+		computeStats(counts);
+
+    	_stats->_nbSolidKmers += 1;
+    }
+
+	void computeStats(const CountVector& counts){
+
+		int nbBanksThatHaveKmer = 0;
+		//u_int64_t totalAbundance = 0;
+
+
+
+		for(size_t i=0; i<counts.size(); i++){
+
+			CountNumber abundanceI = counts[i];
+
+			if(abundanceI){
+				nbBanksThatHaveKmer += 1;
+				_stats->_nbSolidDistinctKmersPerBank[i] += 1;
+				_stats->_nbSolidKmersPerBank[i] += abundanceI;
+				_stats->_chord_N2[i] += pow(abundanceI, 2);
+			}
+
+
+			for(size_t j=i+1; j<counts.size(); j++){
+				CountNumber abundanceJ = counts[j];
+
+				/*
+				if(_stats._distanceParams._computeBrayCurtis)
+					_stats->_brayCurtisNumerator[i][j] += abs(abundanceI - abundanceJ);
+
+				if(_stats._distanceParams._computeChord)
+					_stats->_chord_NiNj[i][j] += abundanceI * abundanceJ;
+
+				if(_stats._distanceParams._computeHellinger)
+					_stats->_hellinger_SqrtNiNj[i][j] += sqrt(abundanceI * abundanceJ);
+
+				if(_stats._distanceParams._computeCanberra){
+					if(abundanceI + abundanceJ > 0){
+						_stats->_canberra[i][j] += pow((abundanceI - abundanceJ) / (abundanceI + abundanceJ), 2);
+					}
+				}
+
+				if(_stats._distanceParams._computeKulczynski)
+					_stats->_kulczynski_minNiNj[i][j] += min(abundanceI, abundanceJ);*/
+
+
+				if(abundanceI + abundanceJ > 0){
+					_stats->_canberra[i][j] += abs(abundanceI - abundanceJ) / (abundanceI + abundanceJ);
+					_stats->_brayCurtisNumerator[i][j] += abs(abundanceI - abundanceJ);
+				}
+
+				if(abundanceI && abundanceJ){
+					_stats->_matrixNbSharedKmers[i][j] += abundanceI;
+					_stats->_matrixNbSharedKmers[j][i] += abundanceJ;
+					_stats->_matrixNbDistinctSharedKmers[i][j] += 1;
+
+					_stats->_chord_NiNj[i][j] += abundanceI * abundanceJ;
+					_stats->_hellinger_SqrtNiNj[i][j] += sqrt(abundanceI * abundanceJ);
+					_stats->_kulczynski_minNiNj[i][j] += min(abundanceI, abundanceJ);
+				}
+
+			}
+
+		}
+
+		_stats->_nbDistinctKmersSharedByBanksThreshold[nbBanksThatHaveKmer-1] += 1;
+		_stats->_nbKmersSharedByBanksThreshold[nbBanksThatHaveKmer-1] += _totalAbundance;
+
+		if(_totalAbundance == 1){
+			//if( == 1){
+			_stats->_nbErroneousKmers += 1;
+			//}
+		}
+		//else if(nbBanksThatHaveKmer == counter.size()){
+		//}
+
+
+	}
+
+	//inline bool isSolidVector(const CountVector& counts);
+	double getShannonIndex(const Type&  kmer){
+		float index = 0;
+		//float freq [5];
+
+		vector<float> _freqs(4, 0);
+
+		//char* seqStr = seq.getDataBuffer();
+
+	    for (size_t i=0; i<_kmerSize; i++){
+	    	_freqs[kmer[i]] += 1.0;
+	    	//seq[sizeKmer-i-1] = bin2NT [(*this)[i]];
+	    }
+
+		// Frequency of each letter (A, C, G, T or N)
+		//for(size_t i=0; i < seq.size(); i++)
+		//	_freqs[nt2binTab[(unsigned char)seq[i]]] += 1.0;
+
+		// Shannon index calculation
+		for (size_t i=0; i<_freqs.size(); i++){
+			_freqs[i] /= (float) _kmerSize;
+			if (_freqs[i] != 0)
+				index += _freqs[i] * log (_freqs[i]) / log(2);
+		}
+		return abs(index);
+	}
+
+
+private:
+
+    size_t _nbBanks;
+    size_t _kmerSize;
+	//pair<CountNumber, CountNumber> _abundanceThreshold;
+	//bool isAbundanceThreshold;
+
+    SimkaStatistics* _stats;
+    double _totalAbundance;
+
+    u_int64_t _nbKmerCounted;
+    double _minKmerShannonIndex;
+    vector<u_int64_t>& _datasetNbReads;
+    double _totalReads;
+};
 
 
 
