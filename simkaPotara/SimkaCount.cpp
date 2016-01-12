@@ -25,7 +25,7 @@
 using namespace std;
 
 //#define NB_COUNT_CACHE 1
-
+//#define TRACK_DISK_USAGE
 
 template<size_t span>
 class SimkaCompressedProcessor : public CountProcessorAbstract<span>{
@@ -321,6 +321,11 @@ public:
 
 
 				nbReads = algo.getInfo()->getStr("seq_number");
+
+#ifdef TRACK_DISK_USAGE
+				string command = "du -sh " +  p.outputDir;
+				system(command.c_str());
+#endif
 
 				System::file().rmdir(tempDir);
 
