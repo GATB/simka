@@ -228,7 +228,7 @@ public:
 		createDatasetIdList(p);
 		_nbBanks = _datasetIds.size();
 
-		getNbReadsPerDatasets(p);
+		//getNbReadsPerDatasets(p);
 		//vector<string> filenames;
 		//for(size_t i=0; i<_datasetIds.size(); i++){
 
