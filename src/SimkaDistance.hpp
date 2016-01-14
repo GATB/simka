@@ -23,7 +23,6 @@
 
 #include <gatb/gatb_core.hpp>
 
-
 const string STR_SIMKA_DISTANCE_BRAYCURTIS = "-bray-curtis";
 const string STR_SIMKA_DISTANCE_CHORD = "-chord";
 const string STR_SIMKA_DISTANCE_HELLINGER = "-hellinger";
@@ -72,8 +71,8 @@ public:
 	SimkaStatistics(size_t nbBanks, SimkaDistanceParam& distanceParams);
 	SimkaStatistics& operator+=  (const SimkaStatistics& other);
 	void print();
-	void load(Group& group);
-	void save(Group& group);
+	void load(const string& filename);
+	void save(const string& filename);
 	void outputMatrix(const string& outputDir, const vector<string>& _bankNames);
 
     size_t _nbBanks;

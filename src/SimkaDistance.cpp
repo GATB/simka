@@ -30,6 +30,8 @@ _distanceParams(distanceParams)
 
 	_nbBanks = nbBanks;
 
+	//_nbBanks = 10000;
+
 	_nbKmers = 0;
 	_nbDistinctKmers = 0;
 	_nbSolidKmers = 0;
@@ -97,6 +99,9 @@ _distanceParams(distanceParams)
 
 
 SimkaStatistics& SimkaStatistics::operator+=  (const SimkaStatistics& other){
+
+
+
 
 	_nbKmers += other._nbKmers;
 	_nbDistinctKmers += other._nbDistinctKmers;
@@ -206,8 +211,46 @@ void SimkaStatistics::print(){
    cout << endl << endl;
 }
 
-void SimkaStatistics::load(Group& group){
+void SimkaStatistics::load(const string& filename){
 
+
+	IterableGzFile<u_int64_t>* file = new IterableGzFile<u_int64_t>(filename);
+	Iterator<u_int64_t>* it = file->iterator();
+	it->first();
+
+	//_nbBanks = it->item(); it->next();
+	_nbKmers = it->item(); it->next();
+	_nbErroneousKmers = it->item(); it->next();
+	_nbDistinctKmers = it->item(); it->next();
+	_nbSolidKmers = it->item(); it->next();
+
+
+    for(size_t i=0; i<_nbBanks; i++){ _nbSolidDistinctKmersPerBank[i] = it->item(); it->next();}
+    for(size_t i=0; i<_nbBanks; i++){ _nbKmersPerBank[i] = it->item(); it->next();}
+    for(size_t i=0; i<_nbBanks; i++){ _nbSolidKmersPerBank[i] = it->item(); it->next();}
+    for(size_t i=0; i<_nbBanks; i++){ _nbDistinctKmersSharedByBanksThreshold[i] = it->item(); it->next();}
+    for(size_t i=0; i<_nbBanks; i++){ _nbKmersSharedByBanksThreshold[i] = it->item(); it->next();}
+    for(size_t i=0; i<_nbBanks; i++){ _chord_N2[i] = it->item(); it->next();}
+
+
+    for(size_t i=0; i<_nbBanks; i++){
+    	//cout << i << endl;
+    	//cout << _nbBanks << endl;
+    	//cout << _matrixNbDistinctSharedKmers[i].size() << endl;
+            for(size_t j=0; j<_nbBanks; j++){_matrixNbDistinctSharedKmers[i][j] = it->item(); it->next();}
+            for(size_t j=0; j<_nbBanks; j++){ _matrixNbSharedKmers[i][j] = it->item(); it->next();}
+
+            for(size_t j=0; j<_nbBanks; j++){ _brayCurtisNumerator[i][j] = it->item(); it->next();}
+            for(size_t j=0; j<_nbBanks; j++){ _canberra[i][j] = it->item(); it->next();}
+            for(size_t j=0; j<_nbBanks; j++){ _chord_NiNj[i][j] = it->item(); it->next();}
+            for(size_t j=0; j<_nbBanks; j++){ _hellinger_SqrtNiNj[i][j] = it->item(); it->next();}
+            for(size_t j=0; j<_nbBanks; j++){ _kulczynski_minNiNj[i][j] = it->item(); it->next();}
+    }
+
+
+	delete file;
+
+	/*
     Storage::istream is (group, "simkaStats");
 
     //is.read ((char*)&_nbBanks,                sizeof(_nbBanks));
@@ -256,55 +299,63 @@ void SimkaStatistics::load(Group& group){
         //if(_distanceParams._computeKulczynski)
         for(size_t i=0; i<_nbBanks; i++)
         	is.read ((char*)_kulczynski_minNiNj[i].data(), sizeof(u_int64_t)*_nbBanks);
-	/*
-    tools::storage::impl::Storage::istream is (group, "simkaStats");
-
-    is.read ((char*)&_nbpart,     sizeof(_nbpart));
-    is.read ((char*)&_mm,         sizeof(_mm));
-    is.read ((char*)&_nb_minims,  sizeof(_nb_minims));
-    is.read ((char*)&_nbPass,     sizeof(_nbPass));
-
-    DEBUG (("[Repartitor::load] :  _nbpart=%d  _mm=%d  _nb_minims=%d  _nbPass=%d \n",
-        _nbpart, _mm, _nb_minims, _nbPass
-    ));
-
-    _repart_table.resize (_nb_minims);
-
-    is.read ((char*)_repart_table.data(), sizeof(Value) * _nb_minims);
-
-    is.read ((char*)&hasMinimizerFrequencies, sizeof(bool));
-
-    u_int32_t magic = 0;
-    is.read ((char*)&magic,  sizeof(magic));
-    if (magic != MAGIC_NUMBER)  { throw system::Exception("Unable to load Repartitor (minimRepart), possibly due to bad format."); }
-
-    if (hasMinimizerFrequencies)
-    {
-        tools::storage::impl::Storage::istream is2 (group, "minimFrequency");
-        _freq_order = new uint32_t [_nb_minims];
-        is2.read ((char*)_freq_order,     sizeof(uint32_t)*_nb_minims);
-
-        is2.read ((char*)&magic,  sizeof(magic));
-        if (magic != MAGIC_NUMBER)  { throw system::Exception("Unable to load Repartitor (minimFrequency), possibly due to bad format."); }
-    }*/
+        */
 }
 
-void SimkaStatistics::save (Group& group){
+void SimkaStatistics::save (const string& filename){
 
+
+	BagGzFile<u_int64_t>* file = new BagGzFile<u_int64_t>(filename);
+
+
+	//file->insert(_nbBanks);
+	file->insert(_nbKmers);
+	file->insert(_nbErroneousKmers);
+	file->insert(_nbDistinctKmers);
+	file->insert(_nbSolidKmers);
+
+	file->insert(_nbSolidDistinctKmersPerBank, 0);
+	file->insert(_nbKmersPerBank, 0);
+	file->insert(_nbSolidKmersPerBank, 0);
+	file->insert(_nbDistinctKmersSharedByBanksThreshold, 0);
+	file->insert(_nbKmersSharedByBanksThreshold, 0);
+	file->insert(_chord_N2, 0);
+
+    for(size_t i=0; i<_nbBanks; i++){
+    	file->insert(_matrixNbDistinctSharedKmers[i], 0);
+    	file->insert(_matrixNbSharedKmers[i], 0);
+
+    	file->insert(_brayCurtisNumerator[i], 0);
+    	file->insert(_canberra[i], 0);
+    	file->insert(_chord_NiNj[i], 0);
+    	file->insert(_hellinger_SqrtNiNj[i], 0);
+    	file->insert(_kulczynski_minNiNj[i], 0);
+    }
+
+	file->flush();
+
+	delete file;
+
+
+	/*
+	cout << "loulou2" << endl;
     Storage::ostream os (group, "simkaStats");
 
+	cout << "loulou3" << endl;
     //os.write ((const char*)&_nbBanks,                sizeof(_nbBanks));
     os.write ((const char*)&_nbKmers,                sizeof(_nbKmers));
     os.write ((const char*)&_nbErroneousKmers,                sizeof(_nbErroneousKmers));
     os.write ((const char*)&_nbDistinctKmers,                sizeof(_nbDistinctKmers));
     os.write ((const char*)&_nbSolidKmers,                sizeof(_nbSolidKmers));
 
+	cout << "loulou4" << endl;
     os.write ((const char*)_nbSolidDistinctKmersPerBank.data(), sizeof(u_int64_t)*_nbBanks);
     os.write ((const char*)_nbKmersPerBank.data(), sizeof(u_int64_t)*_nbBanks);
     os.write ((const char*)_nbSolidKmersPerBank.data(), sizeof(u_int64_t)*_nbBanks);
     os.write ((const char*)_nbDistinctKmersSharedByBanksThreshold.data(), sizeof(u_int64_t)*_nbBanks);
     os.write ((const char*)_nbKmersSharedByBanksThreshold.data(), sizeof(u_int64_t)*_nbBanks);
 
+	cout << "loulou5" << endl;
     for(size_t i=0; i<_nbBanks; i++){
         os.write ((const char*)_matrixNbDistinctSharedKmers[i].data(), sizeof(u_int64_t)*_nbBanks);
         os.write ((const char*)_matrixNbSharedKmers[i].data(), sizeof(u_int64_t)*_nbBanks);
@@ -316,15 +367,18 @@ void SimkaStatistics::save (Group& group){
     //os.write ((const char*)&_distanceParams._computeHellinger,                sizeof(_distanceParams._computeHellinger));
     //os.write ((const char*)&_distanceParams._computeKulczynski,                sizeof(_distanceParams._computeKulczynski));
 
+	cout << "loulou6" << endl;
 
     //if(_distanceParams._computeBrayCurtis)
         for(size_t i=0; i<_nbBanks; i++)
             os.write ((const char*)_brayCurtisNumerator[i].data(), sizeof(u_int64_t)*_nbBanks);
 
+    	cout << "loulou7" << endl;
         //if(_distanceParams._computeCanberra)
         for(size_t i=0; i<_nbBanks; i++)
         	os.write ((const char*)_canberra[i].data(), sizeof(u_int64_t)*_nbBanks);
 
+    	cout << "loulou8" << endl;
 
         //if(_distanceParams._computeChord){
         os.write ((const char*)_chord_N2.data(), sizeof(u_int64_t)*_nbBanks);
@@ -332,16 +386,19 @@ void SimkaStatistics::save (Group& group){
         	os.write ((const char*)_chord_NiNj[i].data(), sizeof(u_int64_t)*_nbBanks);
         //}
 
+    	cout << "loulou9" << endl;
         //if(_distanceParams._computeHellinger)
         for(size_t i=0; i<_nbBanks; i++)
         	os.write ((const char*)_hellinger_SqrtNiNj[i].data(), sizeof(u_int64_t)*_nbBanks);
 
+    	cout << "loulou10" << endl;
         //if(_distanceParams._computeKulczynski)
         for(size_t i=0; i<_nbBanks; i++)
         	os.write ((const char*)_kulczynski_minNiNj[i].data(), sizeof(u_int64_t)*_nbBanks);
 
+    	cout << "loulou11" << endl;
 
-    os.flush();
+    os.flush();*/
 }
 
 void SimkaStatistics::outputMatrix(const string& outputDir, const vector<string>& bankNames){

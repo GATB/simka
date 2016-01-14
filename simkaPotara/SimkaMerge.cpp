@@ -228,7 +228,7 @@ public:
 		createDatasetIdList(p);
 		_nbBanks = _datasetIds.size();
 
-		//getNbReadsPerDatasets(p);
+		getNbReadsPerDatasets(p);
 		//vector<string> filenames;
 		//for(size_t i=0; i<_datasetIds.size(); i++){
 
@@ -582,18 +582,19 @@ public:
 	}
 
 	void removeStorage(Parameter& p){
-		Storage* storage = 0;
-		storage = StorageFactory(STORAGE_HDF5).create (p.outputDir + "/stats/part_" + SimkaAlgorithm<>::toString(p.partitionId) + ".stats", true, true);
-		LOCAL (storage);
+		//Storage* storage = 0;
+		//storage = StorageFactory(STORAGE_HDF5).create (p.outputDir + "/stats/part_" + SimkaAlgorithm<>::toString(p.partitionId) + ".stats", true, true);
+		//LOCAL (storage);
 	}
 
 	void saveStats(Parameter& p){
 
+		string filename = p.outputDir + "/stats/part_" + SimkaAlgorithm<>::toString(p.partitionId) + ".gz";
 		//_processor->finishClones(_processors);
-		Storage* storage = 0;
-		storage = StorageFactory(STORAGE_HDF5).create (p.outputDir + "/stats/part_" + SimkaAlgorithm<>::toString(p.partitionId) + ".stats", true, false);
-		LOCAL (storage);
-		_stats->save(storage->getGroup(""));
+		//Storage* storage = 0;
+		//storage = StorageFactory(STORAGE_HDF5).create (p.outputDir + "/stats/part_" + SimkaAlgorithm<>::toString(p.partitionId) + ".stats", true, false);
+		//LOCAL (storage);
+		_stats->save(filename); //storage->getGroup(""));
 
 		//cout << _stats->_nbKmers << endl;
 

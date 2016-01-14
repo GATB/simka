@@ -25,6 +25,7 @@
 #include <gatb/kmer/impl/RepartitionAlgorithm.hpp>
 #include<stdio.h>
 
+//#define CHI2_TEST
 //#define SIMKA_POTARA
 //#define BOOTSTRAP
 #define MAX_BOOTSTRAP 50
@@ -180,6 +181,33 @@ public:
     		}
     	}
 
+#ifdef CHI2_TEST
+    	float X2j = 0;
+    	for(size_t i=0; i<counts.size(); i++){
+
+    		float Ni = counts[i];
+    		//cout << _datasetNbReads[i] << endl;
+    		X2j += pow((Ni/_totalAbundance - _datasetNbReads[i]/_totalReads), 2) / (_datasetNbReads[i] / (_totalReads*_totalAbundance));
+    	}
+
+    	//std::chi_squared_distribution<double> distribution(_nbBanks-1);
+    	double pvalue = chisqr(_nbBanks-1, X2j);
+
+    	/*
+    	cout << kmer.toString(_kmerSize) << "  [";
+    	for(size_t i=0; i<counts.size(); i++)
+    			cout << counts[i] << " ";
+    	cout << "]    ";
+    	cout <<  X2j << "    " << pvalue << endl;
+*/
+
+    	//cout
+    	//cout << X2j << endl;
+    	//if(_totalAbundance == 1){
+    	//	cout << X2j << endl;
+    	//}
+    	if(pvalue > 0.01) return;
+#endif
     	/*
     	//for(size_t i=0; i<_datasetNbReads.size(); i++)
     	//	cout << i << " " << _datasetNbReads[i] << endl;
@@ -324,6 +352,70 @@ public:
 		return abs(index);
 	}
 
+	double approx_gamma(double Z)
+	{
+	    const double RECIP_E = 0.36787944117144232159552377016147;  // RECIP_E = (E^-1) = (1.0 / E)
+	    const double TWOPI = 6.283185307179586476925286766559;  // TWOPI = 2.0 * PI
+
+	    double D = 1.0 / (10.0 * Z);
+	    D = 1.0 / ((12 * Z) - D);
+	    D = (D + Z) * RECIP_E;
+	    D = pow(D, Z);
+	    D *= sqrt(TWOPI / Z);
+
+	    return D;
+	}
+
+	static double igf(double S, double Z)
+	{
+	    if(Z < 0.0)
+	    {
+		return 0.0;
+	    }
+	    double Sc = (1.0 / S);
+	    Sc *= pow(Z, S);
+	    Sc *= exp(-Z);
+
+	    double Sum = 1.0;
+	    double Nom = 1.0;
+	    double Denom = 1.0;
+
+	    for(int I = 0; I < 200; I++)
+	    {
+		Nom *= Z;
+		S++;
+		Denom *= S;
+		Sum += (Nom / Denom);
+	    }
+
+	    return Sum * Sc;
+	}
+
+	double chisqr(int Dof, double Cv)
+	{
+	    if(Cv < 0 || Dof < 1)
+	    {
+	        return 0.0;
+	    }
+	    double K = ((double)Dof) * 0.5;
+	    double X = Cv * 0.5;
+	    if(Dof == 2)
+	    {
+		return exp(-1.0 * X);
+	    }
+
+	    double PValue = igf(K, X);
+	    if(isnan(PValue) || isinf(PValue) || PValue <= 1e-8)
+	    {
+	        return 1e-14;
+	    }
+
+	    PValue /= approx_gamma(K);
+	    //PValue /= tgamma(K);
+
+	    //return PValue;
+	    return (1.0 - PValue);
+	}
 
 private:
 

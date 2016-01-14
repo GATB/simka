@@ -956,11 +956,12 @@ public:
 
 		for(size_t i=0; i<_nbPartitions; i++){
 
-			Storage* storage = StorageFactory(STORAGE_HDF5).load (this->_outputDirTemp + "/stats/part_" + SimkaAlgorithm<>::toString(i) + ".stats");
-			LOCAL (storage);
+			string filename = this->_outputDirTemp + "/stats/part_" + SimkaAlgorithm<>::toString(i) + ".gz";
+			//Storage* storage = StorageFactory(STORAGE_HDF5).load (this->_outputDirTemp + "/stats/part_" + SimkaAlgorithm<>::toString(i) + ".stats");
+			//LOCAL (storage);
 
 			SimkaStatistics stats(this->_nbBanks, distanceParams);
-			stats.load(storage->getGroup(""));
+			stats.load(filename);
 
 			cout << stats._nbDistinctKmers << "   " << stats._nbKmers << endl;
 			mainStats += stats;

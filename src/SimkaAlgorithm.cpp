@@ -116,6 +116,9 @@ bool SimkaCountProcessor<span>::isSolidVector(const CountVector& counts){
 //}
 
 
+
+
+
 template<size_t span>
 bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const CountVector& counts, CountNumber sum){
 
@@ -154,7 +157,7 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 		}
 	}
 
-	/*
+
 	//for(size_t i=0; i<_datasetNbReads.size(); i++)
 	//	cout << i << " " << _datasetNbReads[i] << endl;
 
@@ -162,6 +165,7 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 	//float Ri = 500000;
 	//float Rtotal = Ri * _nbBanks;
 	//float Ntotal = _totalAbundance;
+	/*
 	float X2j = 0;
 	for(size_t i=0; i<counts.size(); i++){
 
@@ -170,6 +174,10 @@ bool SimkaCountProcessor<span>::process (size_t partId, const Type& kmer, const 
 		X2j += pow((Ni/_totalAbundance - _datasetNbReads[i]/_totalReads), 2) / (_datasetNbReads[i] / (_totalReads*_totalAbundance));
 	}
 
+	//std::chi_squared_distribution<double> distribution(_nbBanks-1);
+
+	cout << X2j << " " << chisqr(_nbBanks-1, X2j) << endl;
+	//cout
 	//cout << X2j << endl;
 	//if(_totalAbundance == 1){
 	//	cout << X2j << endl;
