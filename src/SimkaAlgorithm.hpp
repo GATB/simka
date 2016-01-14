@@ -405,10 +405,10 @@ public:
 	    }
 
 	    double PValue = igf(K, X);
-	    if(isnan(PValue) || isinf(PValue) || PValue <= 1e-8)
-	    {
-	        return 1e-14;
-	    }
+	    //if(isnan(PValue) || isinf(PValue) || PValue <= 1e-8)
+	    //{
+	    //    return 1e-14;
+	    //}
 
 	    PValue /= approx_gamma(K);
 	    //PValue /= tgamma(K);
