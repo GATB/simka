@@ -461,13 +461,16 @@ public:
 		_coresPerJob = maxCores / _maxJobCount;
 		_coresPerJob = max((size_t)1, _coresPerJob);
 
-		_memoryPerJob = maxMemory / _maxJobCount;
-		_memoryPerJob = max(_memoryPerJob, (size_t)minMemoryPerJobMB);
+		_memoryPerJobCount = maxMemory / _maxJobCount;
+		_memoryPerJobCount = max(_memoryPerJobCount, (size_t)minMemoryPerJobMB);
+
+		_memoryPerJobMerge = this->_maxMemory / _maxJobMerge;
+		_memoryPerJobMerge = max((u_int64_t)_memoryPerJobMerge, (u_int64_t)20);
 
 		cout << endl;
 		cout << "Maximum ressources used by Simka: " << endl;
-		cout << "\t - " << _maxJobCount << " simultaneous processes for counting the kmers (per job: " << _coresPerJob << " cores, " << _memoryPerJob << " MB memory)" << endl;
-		cout << "\t - " << _maxJobMerge << " simultaneous processes for merging the kmer counts (per job: 1 core, memory undefined)" << endl;
+		cout << "\t - " << _maxJobCount << " simultaneous processes for counting the kmers (per job: " << _coresPerJob << " cores, " << _memoryPerJobCount << " MB memory)" << endl;
+		cout << "\t - " << _maxJobMerge << " simultaneous processes for merging the kmer counts (per job: 1 core, memory " << SimkaAlgorithm<>::toString(_memoryPerJobMerge) << ")" << endl;
 		cout << endl;
 
 
@@ -518,7 +521,7 @@ public:
 		    }
 		}
 
-		this->_options->setInt(STR_MAX_MEMORY, _memoryPerJob);
+		this->_options->setInt(STR_MAX_MEMORY, _memoryPerJobCount);
 		this->_options->setInt(STR_NB_CORES, _coresPerJob);
 
 	    Storage* storage = 0;
@@ -704,7 +707,7 @@ public:
 			command += " " + string("-out-tmp") + " " + tempDir;
 			command += " -bank-name " + this->_bankNames[i];
 			command += " -nb-datasets " + SimkaAlgorithm<>::toString(this->_nbBankPerDataset[i]);
-			command += " " + string(STR_MAX_MEMORY) + " " + SimkaAlgorithm<>::toString(_memoryPerJob);
+			command += " " + string(STR_MAX_MEMORY) + " " + SimkaAlgorithm<>::toString(_memoryPerJobCount);
 			command += " " + string(STR_NB_CORES) + " " + SimkaAlgorithm<>::toString(_coresPerJob);
 			command += " " + string(STR_URI_INPUT) + " dummy ";
 			command += " " + string(STR_KMER_ABUNDANCE_MIN) + " " + SimkaAlgorithm<>::toString(this->_abundanceThreshold.first);
@@ -844,7 +847,7 @@ public:
 				command += " " + string(STR_URI_INPUT) + " " + this->_inputFilename;
 				command += " " + string("-out-tmp-simka") + " " + this->_outputDirTemp;
 				command += " -partition-id " + SimkaAlgorithm<>::toString(i);
-				command += " " + string(STR_MAX_MEMORY) + " " + SimkaAlgorithm<>::toString(this->_maxMemory / this->_nbCores);
+				command += " " + string(STR_MAX_MEMORY) + " " + SimkaAlgorithm<>::toString(_memoryPerJobMerge);
 				command += " " + string(STR_NB_CORES) + " 1";
 				command += " " + string(STR_SIMKA_MIN_KMER_SHANNON_INDEX) + " " + Stringify::format("%f", this->_minKmerShannonIndex);
 
@@ -975,7 +978,8 @@ public:
 
 	//u_int64_t _maxMemory;
 	//size_t _nbCores;
-	size_t _memoryPerJob;
+	size_t _memoryPerJobCount;
+	size_t _memoryPerJobMerge;
 	size_t _coresPerJob;
 
 	//IBank* _banks;

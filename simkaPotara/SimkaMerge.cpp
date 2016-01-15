@@ -34,13 +34,14 @@ using namespace std;
 
 struct Parameter
 {
-    Parameter (IProperties* props, string inputFilename, string outputDir, size_t partitionId, size_t kmerSize, double minShannonIndex) : props(props), inputFilename(inputFilename), outputDir(outputDir), partitionId(partitionId), kmerSize(kmerSize), minShannonIndex(minShannonIndex) {}
+    Parameter (IProperties* props, string inputFilename, string outputDir, size_t partitionId, size_t kmerSize, double minShannonIndex, u_int64_t maxMemory) : props(props), inputFilename(inputFilename), outputDir(outputDir), partitionId(partitionId), kmerSize(kmerSize), minShannonIndex(minShannonIndex), maxMemory(maxMemory) {}
     IProperties* props;
     string inputFilename;
     string outputDir;
     size_t partitionId;
     size_t kmerSize;
     double minShannonIndex;
+    u_int64_t maxMemory;
 };
 
 
@@ -248,13 +249,17 @@ public:
 		u_int64_t nbKmersProcessed = 0;
 		string line;
 
+		//cout << sizeof(Type) << " " << sizeof(CountNumber) << endl;
+		u_int64_t nbCachedItems = (p.maxMemory * MBYTE) / (sizeof(Type)+sizeof(CountNumber)) / _nbBanks;
+		cout << nbCachedItems << endl;
+		nbCachedItems = min(nbCachedItems, (u_int64_t) 127711179);
 
 		vector<IterableGzFile<Count>* > partitions;
 		//vector<Iterator<Count>* > partitionIts;
     	for(size_t i=0; i<_nbBanks; i++){
     		string filename = p.outputDir + "/solid/" +  _datasetIds[i] + "/" + "part" + Stringify::format("%i", _partitionId);
     		//cout << filename << endl;
-    		IterableGzFile<Count>* partition = new IterableGzFile<Count>(filename);
+    		IterableGzFile<Count>* partition = new IterableGzFile<Count>(filename, nbCachedItems);
     		partitions.push_back(partition);
     		its.push_back(new StorageIt<span>(partition->iterator(), i, _partitionId));
     		//nbKmers += partition->estimateNbItems();
@@ -655,8 +660,8 @@ public:
     	string inputFilename =  getInput()->getStr(STR_URI_INPUT);
     	string outputDir =  getInput()->getStr("-out-tmp-simka");
     	double minShannonIndex =   getInput()->getDouble(STR_SIMKA_MIN_KMER_SHANNON_INDEX);
-
-    	Parameter params(getInput(), inputFilename, outputDir, partitionId, kmerSize, minShannonIndex);
+    	u_int64_t maxMemory  =   getInput()->getInt(STR_MAX_MEMORY);
+    	Parameter params(getInput(), inputFilename, outputDir, partitionId, kmerSize, minShannonIndex, maxMemory);
 
         Integer::apply<Functor,Parameter> (kmerSize, params);
 
