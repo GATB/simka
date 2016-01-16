@@ -25,6 +25,7 @@
 #include <gatb/kmer/impl/RepartitionAlgorithm.hpp>
 #include<stdio.h>
 
+//#define PRINT_STATS
 //#define CHI2_TEST
 //#define SIMKA_POTARA
 //#define BOOTSTRAP
@@ -159,8 +160,10 @@ public:
 
     void process (size_t partId, const typename Kmer<span>::Type& kmer, const CountVector& counts){
 
+#ifdef PRINT_STATS
     	_totalAbundance = 0;
     	_stats->_nbDistinctKmers += 1;
+
 
     	for(size_t i=0; i<counts.size(); i++){
 
@@ -173,6 +176,7 @@ public:
     		_stats->_nbKmersPerBank[i] += abundance;
     		_totalAbundance += abundance;
     	}
+#endif
 
     	if(_minKmerShannonIndex != 0){
     		double shannonIndex = getShannonIndex(kmer);
@@ -247,12 +251,20 @@ public:
 
 		computeStats(counts);
 
-    	_stats->_nbSolidKmers += 1;
+
+    	//_stats->_nbSolidKmers += 1;
     }
 
 	void computeStats(const CountVector& counts){
 
+		double xi = 0;
+		double xj = 0;
+		double d1 = 0;
+		double d2 = 0;
+
+#ifdef PRINT_STATS
 		int nbBanksThatHaveKmer = 0;
+#endif
 		//u_int64_t totalAbundance = 0;
 
 
@@ -261,13 +273,14 @@ public:
 
 			CountNumber abundanceI = counts[i];
 
+#ifdef PRINT_STATS
 			if(abundanceI){
 				nbBanksThatHaveKmer += 1;
-				_stats->_nbSolidDistinctKmersPerBank[i] += 1;
-				_stats->_nbSolidKmersPerBank[i] += abundanceI;
-				_stats->_chord_N2[i] += pow(abundanceI, 2);
+				//_stats->_nbSolidDistinctKmersPerBank[i] += 1;
+				//_stats->_nbSolidKmersPerBank[i] += abundanceI;
+				//_stats->_chord_N2[i] += pow(abundanceI, 2);
 			}
-
+#endif
 
 			for(size_t j=i+1; j<counts.size(); j++){
 				CountNumber abundanceJ = counts[j];
@@ -292,10 +305,49 @@ public:
 					_stats->_kulczynski_minNiNj[i][j] += min(abundanceI, abundanceJ);*/
 
 
+
+
 				if(abundanceI + abundanceJ > 0){
+
+					if(abundanceI){
+						xi = (double)abundanceI / _stats->_nbSolidKmersPerBank[i];
+						d1 = xi*log2(2*xi/(xi+xj));
+					}
+					else{
+						xi = 0;
+						d1 = 0;
+					}
+
+					if(abundanceJ){
+						xj = (double)abundanceJ / _stats->_nbSolidKmersPerBank[j];
+						d2 = xj*log2(2*xj/(xi+xj));
+					}
+					else{
+						xj = 0;
+						d2 = 0;
+					}
+
+					_stats->_kullbackLeibler[i][j] += d1 + d2;
+
 					_stats->_canberra[i][j] += abs(abundanceI - abundanceJ) / (abundanceI + abundanceJ);
 					_stats->_brayCurtisNumerator[i][j] += abs(abundanceI - abundanceJ);
+					//cout << _stats->_nbSolidKmersPerBank[i] << endl;
+
+					_stats->_whittaker_minNiNj[i][j] += abs((int)((u_int64_t)(abundanceI*_stats->_nbSolidKmersPerBank[j]) - (u_int64_t)(abundanceJ*_stats->_nbSolidKmersPerBank[i])));
 				}
+
+
+				//cout << d2 << endl;
+				   // d1[np.isnan(d1)] = 0;
+				   // d2[np.isnan(d2)] = 0;
+				   // d = 0.5*np.sum(d1+d2);
+
+
+				//if(xi * xj > 0){
+				//cout << xi << " " << xj << endl;
+				//double xy = (xi + xj) / 2;
+				//_stats->_kullbackLeibler[i][j] += xi*log(xi/xy) + xj*log(xj/xy);
+				//}
 
 				if(abundanceI && abundanceJ){
 					_stats->_matrixNbSharedKmers[i][j] += abundanceI;
@@ -305,12 +357,18 @@ public:
 					_stats->_chord_NiNj[i][j] += abundanceI * abundanceJ;
 					_stats->_hellinger_SqrtNiNj[i][j] += sqrt(abundanceI * abundanceJ);
 					_stats->_kulczynski_minNiNj[i][j] += min(abundanceI, abundanceJ);
+
+
+
+					_stats->_whittaker_minNiNj[i][j] += abs((int)((u_int64_t)(abundanceI*_stats->_nbSolidKmersPerBank[j]) - (u_int64_t)(abundanceJ*_stats->_nbSolidKmersPerBank[i])));
+
 				}
 
 			}
 
 		}
 
+#ifdef PRINT_STATS
 		_stats->_nbDistinctKmersSharedByBanksThreshold[nbBanksThatHaveKmer-1] += 1;
 		_stats->_nbKmersSharedByBanksThreshold[nbBanksThatHaveKmer-1] += _totalAbundance;
 
@@ -321,7 +379,7 @@ public:
 		}
 		//else if(nbBanksThatHaveKmer == counter.size()){
 		//}
-
+#endif
 
 	}
 

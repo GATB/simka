@@ -80,6 +80,16 @@ _distanceParams(distanceParams)
 		for(size_t i=0; i<_nbBanks; i++){
 			_hellinger_SqrtNiNj[i].resize(nbBanks, 0);
 		}
+
+		_whittaker_minNiNj.resize(_nbBanks);
+		for(size_t i=0; i<_nbBanks; i++){
+			_whittaker_minNiNj[i].resize(nbBanks, 0);
+		}
+
+		_kullbackLeibler.resize(_nbBanks);
+		for(size_t i=0; i<_nbBanks; i++){
+			_kullbackLeibler[i].resize(nbBanks, 0);
+		}
 		//}
 
 		//if(_distanceParams._computeCanberra){
@@ -134,6 +144,8 @@ SimkaStatistics& SimkaStatistics::operator+=  (const SimkaStatistics& other){
 
 				//if(_distanceParams._computeHellinger)
 				_hellinger_SqrtNiNj[i][j] += other._hellinger_SqrtNiNj[i][j];
+				_whittaker_minNiNj[i][j] += other._whittaker_minNiNj[i][j];
+				_kullbackLeibler[i][j] += other._kullbackLeibler[i][j];
 
 				//if(_distanceParams._computeCanberra)
 				_canberra[i][j] += other._canberra[i][j];
@@ -214,8 +226,8 @@ void SimkaStatistics::print(){
 void SimkaStatistics::load(const string& filename){
 
 
-	IterableGzFile<u_int64_t>* file = new IterableGzFile<u_int64_t>(filename);
-	Iterator<u_int64_t>* it = file->iterator();
+	IterableGzFile<long double>* file = new IterableGzFile<long double>(filename);
+	Iterator<long double>* it = file->iterator();
 	it->first();
 
 	//_nbBanks = it->item(); it->next();
@@ -244,6 +256,8 @@ void SimkaStatistics::load(const string& filename){
             for(size_t j=0; j<_nbBanks; j++){ _canberra[i][j] = it->item(); it->next();}
             for(size_t j=0; j<_nbBanks; j++){ _chord_NiNj[i][j] = it->item(); it->next();}
             for(size_t j=0; j<_nbBanks; j++){ _hellinger_SqrtNiNj[i][j] = it->item(); it->next();}
+            for(size_t j=0; j<_nbBanks; j++){ _whittaker_minNiNj[i][j] = it->item(); it->next();}
+            for(size_t j=0; j<_nbBanks; j++){ _kullbackLeibler[i][j] = it->item(); it->next();}
             for(size_t j=0; j<_nbBanks; j++){ _kulczynski_minNiNj[i][j] = it->item(); it->next();}
     }
 
@@ -305,16 +319,40 @@ void SimkaStatistics::load(const string& filename){
 void SimkaStatistics::save (const string& filename){
 
 
-	BagGzFile<u_int64_t>* file = new BagGzFile<u_int64_t>(filename);
+	BagGzFile<long double>* file = new BagGzFile<long double>(filename);
 
 
 	//file->insert(_nbBanks);
-	file->insert(_nbKmers);
-	file->insert(_nbErroneousKmers);
-	file->insert(_nbDistinctKmers);
-	file->insert(_nbSolidKmers);
+	file->insert((long double)_nbKmers);
+	file->insert((long double)_nbErroneousKmers);
+	file->insert((long double)_nbDistinctKmers);
+	file->insert((long double)_nbSolidKmers);
 
-	file->insert(_nbSolidDistinctKmersPerBank, 0);
+    for(size_t i=0; i<_nbBanks; i++){ file->insert((long double)_nbSolidDistinctKmersPerBank[i]);}
+    for(size_t i=0; i<_nbBanks; i++){ file->insert((long double)_nbKmersPerBank[i]);}
+    for(size_t i=0; i<_nbBanks; i++){ file->insert((long double)_nbSolidKmersPerBank[i]);}
+    for(size_t i=0; i<_nbBanks; i++){ file->insert((long double)_nbDistinctKmersSharedByBanksThreshold[i]);}
+    for(size_t i=0; i<_nbBanks; i++){ file->insert((long double)_nbKmersSharedByBanksThreshold[i]);}
+    for(size_t i=0; i<_nbBanks; i++){ file->insert((long double)_chord_N2[i]);}
+
+
+    for(size_t i=0; i<_nbBanks; i++){
+    	//cout << i << endl;
+    	//cout << _nbBanks << endl;
+    	//cout << _matrixNbDistinctSharedKmers[i].size() << endl;
+            for(size_t j=0; j<_nbBanks; j++){ file->insert((long double)_matrixNbDistinctSharedKmers[i][j]);}
+            for(size_t j=0; j<_nbBanks; j++){ file->insert((long double)_matrixNbSharedKmers[i][j]);}
+
+            for(size_t j=0; j<_nbBanks; j++){ file->insert((long double)_brayCurtisNumerator[i][j]);}
+            for(size_t j=0; j<_nbBanks; j++){ file->insert((long double)_canberra[i][j]);}
+            for(size_t j=0; j<_nbBanks; j++){ file->insert((long double)_chord_NiNj[i][j]);}
+            for(size_t j=0; j<_nbBanks; j++){ file->insert((long double)_hellinger_SqrtNiNj[i][j]);}
+            for(size_t j=0; j<_nbBanks; j++){ file->insert((long double)_whittaker_minNiNj[i][j]);}
+            for(size_t j=0; j<_nbBanks; j++){ file->insert((long double)_kullbackLeibler[i][j]);}
+            for(size_t j=0; j<_nbBanks; j++){ file->insert((long double)_kulczynski_minNiNj[i][j]);}
+    }
+
+	/*
 	file->insert(_nbKmersPerBank, 0);
 	file->insert(_nbSolidKmersPerBank, 0);
 	file->insert(_nbDistinctKmersSharedByBanksThreshold, 0);
@@ -329,8 +367,15 @@ void SimkaStatistics::save (const string& filename){
     	file->insert(_canberra[i], 0);
     	file->insert(_chord_NiNj[i], 0);
     	file->insert(_hellinger_SqrtNiNj[i], 0);
+    	file->insert(_whittaker_minNiNj[i], 0);
+    	//cout << _kullbackLeibler[i][j] << endl;
+    	//file->insert(_kullbackLeibler[i], 0);
     	file->insert(_kulczynski_minNiNj[i], 0);
-    }
+
+        //for(size_t j=0; j<_nbBanks; j++){
+        //	cout << _kullbackLeibler[i][j] << endl;
+        //}
+    }*/
 
 	file->flush();
 
@@ -433,6 +478,8 @@ void SimkaStatistics::outputMatrix(const string& outputDir, const vector<string>
 
 	dumpMatrix(outputDir, bankNames, "mat_abundance_chord", _simkaDistance._matrixChord);
 	dumpMatrix(outputDir, bankNames, "mat_abundance_hellinger", _simkaDistance._matrixHellinger);
+	dumpMatrix(outputDir, bankNames, "mat_abundance_whittaker", _simkaDistance._matrixWhittaker);
+	dumpMatrix(outputDir, bankNames, "mat_abundance_kullbackLeibler", _simkaDistance._matrixKullbackLeibler);
 	dumpMatrix(outputDir, bankNames, "mat_abundance_brayCurtis", _simkaDistance._matrixBrayCurtis);
 	dumpMatrix(outputDir, bankNames, "mat_abundance_canberra", _simkaDistance._matrixCanberra);
 	dumpMatrix(outputDir, bankNames, "mat_abundance_kulczynski", _simkaDistance._matrixKulczynski);
@@ -512,6 +559,8 @@ SimkaDistance::SimkaDistance(SimkaStatistics& stats, SimkaDistanceParam& distanc
     _matrixBrayCurtis = createSquaredMatrix(_nbBanks);
     _matrixChord = createSquaredMatrix(_nbBanks);
     _matrixHellinger = createSquaredMatrix(_nbBanks);
+    _matrixWhittaker = createSquaredMatrix(_nbBanks);
+    _matrixKullbackLeibler = createSquaredMatrix(_nbBanks);
     _matrixCanberra = createSquaredMatrix(_nbBanks);
     _matrixKulczynski = createSquaredMatrix(_nbBanks);
     _matrixSymJaccardAbundance = createSquaredMatrix(_nbBanks);
@@ -618,6 +667,16 @@ SimkaDistance::SimkaDistance(SimkaStatistics& stats, SimkaDistanceParam& distanc
 			_matrixHellinger[i][j] = dist;
 			_matrixHellinger[j][i] = dist;
 
+			//Abundance Whittaker
+			dist = distance_abundance_whittaker(i, j);
+			_matrixWhittaker[i][j] = dist;
+			_matrixWhittaker[j][i] = dist;
+
+			//Abundance Kullback Leibler
+			dist = distance_abundance_kullbackLeibler(i, j);
+			_matrixKullbackLeibler[i][j] = dist;
+			_matrixKullbackLeibler[j][i] = dist;
+
 			//Abundance Canberra
 			dist = distance_abundance_canberra(i, j, a, b, c);
 			_matrixCanberra[i][j] = dist;
@@ -689,6 +748,23 @@ double SimkaDistance::distance_abundance_hellinger(size_t i, size_t j){
 	double hellingerDistance = sqrt(2 - (intersection / union_));
 
 	return hellingerDistance;
+}
+
+//Abundance Whittaker
+double SimkaDistance::distance_abundance_whittaker(size_t i, size_t j){
+
+	long double intersection = _stats._whittaker_minNiNj[i][j];
+	long double union_ = _stats._nbSolidKmersPerBank[i] * _stats._nbSolidKmersPerBank[j];
+
+	double whittakerDistance = 0.5 * (intersection / union_);
+
+	return whittakerDistance;
+}
+
+//Abundance Kullback Leibler
+double SimkaDistance::distance_abundance_kullbackLeibler(size_t i, size_t j){
+
+	return 0.5 * _stats._kullbackLeibler[i][j];
 }
 
 //Abundance Canberra

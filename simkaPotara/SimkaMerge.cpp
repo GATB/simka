@@ -123,7 +123,7 @@ public:
     /** Constructor.
      * \param[in] nbBanks : number of banks parsed during kmer counting.
      */
-	SimkaCounterBuilderMerge (size_t nbBanks=1)  :  _abundancePerBank(nbBanks)  {}
+	SimkaCounterBuilderMerge (CountVector& abundancePerBank)  :  _abundancePerBank(abundancePerBank)  {}
 
     /** Get the number of banks.
      * \return the number of banks. */
@@ -144,15 +144,15 @@ public:
 
     /** Set the abundance of the current kmer for the provided bank index.
      * \param[in] idxBank : index of the bank */
-    void set (CountNumber val, size_t idxBank=0)  {  _abundancePerBank [idxBank] = val;  }
+    //void set (CountNumber val, size_t idxBank=0)  {  _abundancePerBank [idxBank] = val;  }
 
     /** Get the abundance of the current kmer for the provided bank index.
      * \param[in] idxBank : index of the bank
      * \return the abundance of the current kmer for the given bank. */
-    CountNumber operator[] (size_t idxBank) const  { return _abundancePerBank[idxBank]; }
+    //CountNumber operator[] (size_t idxBank) const  { return _abundancePerBank[idxBank]; }
 
     /** */
-    const CountVector& get () const { return _abundancePerBank; }
+    //const CountVector& get () const { return _abundancePerBank; }
 
     void print(const string& kmer){
 		cout << kmer << ": ";
@@ -163,7 +163,7 @@ public:
     }
 
 private:
-    CountVector _abundancePerBank;
+    CountVector& _abundancePerBank;
 };
 
 
@@ -198,7 +198,7 @@ public:
 	pthread_t statThread;
 	vector<u_int64_t> _datasetNbReads;
 
-	void getNbReadsPerDatasets(Parameter& p){
+	void createInfo(Parameter& p){
 
     	for(size_t i=0; i<_nbBanks; i++){
     		string name = _datasetIds[i];
@@ -215,6 +215,9 @@ public:
 
 			u_int64_t nbReads = stoull(lines[0]);
 			_datasetNbReads.push_back(nbReads);
+			_stats->_nbSolidDistinctKmersPerBank[i] = stoull(lines[1]);
+			_stats->_nbSolidKmersPerBank[i] = stoull(lines[2]);
+			_stats->_chord_N2[i] = stoull(lines[3]);
     	}
 
 	}
@@ -228,11 +231,10 @@ public:
 		createDatasetIdList(p);
 		_nbBanks = _datasetIds.size();
 
-		getNbReadsPerDatasets(p);
-		//vector<string> filenames;
-		//for(size_t i=0; i<_datasetIds.size(); i++){
+		SimkaDistanceParam distanceParams(p.props);
+		_stats = new SimkaStatistics(_nbBanks, distanceParams);
 
-		//}
+		createInfo(p);
 
 		createProcessor(p);
 
@@ -332,7 +334,9 @@ public:
 
 		u_int16_t best_p;
 		Type previous_kmer;
-		SimkaCounterBuilderMerge solidCounter(_nbBanks);
+
+	    CountVector abundancePerBank(_nbBanks, 0);
+		SimkaCounterBuilderMerge solidCounter(abundancePerBank);
 		size_t nbBankThatHaveKmer = 0;
 
 	    //fill the  priority queue with the first elems
@@ -382,7 +386,8 @@ public:
 							_progress->inc(nbKmersProcessed);
 							nbKmersProcessed = 0;
 						}
-	                    this->insert (previous_kmer, solidCounter);
+						_processor->process (_partitionId, previous_kmer, abundancePerBank);
+	                    //this->insert (previous_kmer, solidCounter);
 
 	                    solidCounter.init (its[best_p]->getBankId(), its[best_p]->abundance());
 	                    nbBankThatHaveKmer = 1;
@@ -402,7 +407,8 @@ public:
 	        }
 
 	        //last elem
-	        this->insert (previous_kmer, solidCounter);
+			_processor->process (_partitionId, previous_kmer, abundancePerBank);
+	        //this->insert (previous_kmer, solidCounter);
 	    }
 
 
@@ -543,8 +549,6 @@ public:
 
 	void createProcessor(Parameter& p){
 
-		SimkaDistanceParam distanceParams(p.props);
-		_stats = new SimkaStatistics(_nbBanks, distanceParams);
 		_processor = new SimkaCountProcessorSimple<span> (_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, p.minShannonIndex, _datasetNbReads);
 		//_processor->use();
 
@@ -578,7 +582,7 @@ public:
 		}*/
 
 		//cout <<_partitiontId << " "<< kmer.toString(31) << endl;
-		_processor->process (_partitionId, kmer, counter.get());
+		//_processor->process (_partitionId, kmer, counter.get());
 	}
 
 	void removeStorage(Parameter& p){

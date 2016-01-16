@@ -809,7 +809,6 @@ public:
 	    delete _progress;
 	}
 
-
 	void merge(){
 
 		_progress = new ProgressSynchro (
@@ -946,6 +945,31 @@ public:
 	    delete _progress;
 	}
 
+	void getCountInfo(SimkaStatistics& mainStats){
+
+    	for(size_t i=0; i<this->_nbBanks; i++){
+    		string name = this->_bankNames[i];
+    		string countFilename = this->_outputDirTemp + "/count_synchro/" +  name + ".ok";
+
+    		string line;
+	    	ifstream file(countFilename.c_str());
+	    	vector<string> lines;
+			while(getline(file, line)){
+				if(line == "") continue;
+				lines.push_back(line);
+			}
+			file.close();
+
+			u_int64_t nbReads = stoull(lines[0]);
+			//_datasetNbReads.push_back(nbReads);
+			mainStats._nbSolidDistinctKmersPerBank[i] = stoull(lines[1]);
+			//cout << mainStats._nbSolidDistinctKmersPerBank[i] << endl;
+			mainStats._nbSolidKmersPerBank[i] = stoull(lines[2]);
+			mainStats._chord_N2[i] = stoull(lines[3]);
+    	}
+
+	}
+
 	void stats(){
 		cout << endl << "Computing stats..." << endl;
 		cout << this->_nbBanks << endl;
@@ -963,13 +987,20 @@ public:
 			SimkaStatistics stats(this->_nbBanks, distanceParams);
 			stats.load(filename);
 
-			cout << stats._nbDistinctKmers << "   " << stats._nbKmers << endl;
+			//cout << stats._nbDistinctKmers << "   " << stats._nbKmers << endl;
 			mainStats += stats;
 		}
 
+
+		getCountInfo(mainStats);
+		//for(size_t i=0; i<this->_nbBanks; i++){
+		//	cout << mainStats._nbSolidDistinctKmersPerBank[i] << endl;
+		//}
 		mainStats.outputMatrix(this->_outputDir, this->_bankNames);
 
+#ifdef PRINT_STATS
 		if(this->_options->getInt(STR_VERBOSE) != 0) mainStats.print();
+#endif
 	}
 
 

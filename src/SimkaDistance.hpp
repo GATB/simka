@@ -96,6 +96,8 @@ public:
 
     //Abundance Hellinger
 	vector<vector<u_int64_t> > _hellinger_SqrtNiNj;
+	vector<vector<u_int64_t> > _whittaker_minNiNj;
+	vector<vector<long double> > _kullbackLeibler;
 
     //Abundance Canberra
 	vector<vector<u_int64_t> > _canberra;
@@ -141,6 +143,8 @@ public:
     vector<vector<float> > _matrixBrayCurtis;
     vector<vector<float> > _matrixChord;
     vector<vector<float> > _matrixHellinger;
+    vector<vector<float> > _matrixWhittaker;
+    vector<vector<float> > _matrixKullbackLeibler;
     vector<vector<float> > _matrixCanberra;
     vector<vector<float> > _matrixKulczynski;
     vector<vector<float> > _matrixSymJaccardAbundance;
@@ -169,6 +173,8 @@ private:
     double distance_abundance_brayCurtis(size_t bank1, size_t bank2);
     double distance_abundance_chord(size_t i, size_t j);
     double distance_abundance_hellinger(size_t i, size_t j);
+    double distance_abundance_whittaker(size_t i, size_t j);
+    double distance_abundance_kullbackLeibler(size_t i, size_t j);
     double distance_abundance_canberra(size_t i, size_t j, u_int64_t& ua, u_int64_t& ub, u_int64_t& uc);
     double distance_abundance_kulczynski(size_t i, size_t j);
     double distance_abundance_ochiai(size_t i, size_t j);

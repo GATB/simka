@@ -36,22 +36,28 @@ public:
     typedef typename Kmer<span>::Count Count;
 
     //SimkaCompressedProcessor(vector<BagGzFile<Count>* >& bags, vector<vector<Count> >& caches, vector<size_t>& cacheIndexes, CountNumber abundanceMin, CountNumber abundanceMax) : _bags(bags), _caches(caches), _cacheIndexes(cacheIndexes)
-    SimkaCompressedProcessor(vector<BagGzFile<Count>* >& bags, vector<u_int64_t>& nbKmerPerParts, CountNumber abundanceMin, CountNumber abundanceMax) : _bags(bags), _nbKmerPerParts(nbKmerPerParts)
+    SimkaCompressedProcessor(vector<BagGzFile<Count>* >& bags, vector<u_int64_t>& nbKmerPerParts, vector<u_int64_t>& nbDistinctKmerPerParts, vector<u_int64_t>& chordPerParts, CountNumber abundanceMin, CountNumber abundanceMax) :
+    	_bags(bags), _nbDistinctKmerPerParts(nbDistinctKmerPerParts), _nbKmerPerParts(nbKmerPerParts), _chordPerParts(chordPerParts)
     {
     	_abundanceMin = abundanceMin;
     	_abundanceMax = abundanceMax;
     }
 
 	~SimkaCompressedProcessor(){}
-    CountProcessorAbstract<span>* clone ()  {  return new SimkaCompressedProcessor (_bags, _nbKmerPerParts, _abundanceMin, _abundanceMax);  }
+    CountProcessorAbstract<span>* clone ()  {  return new SimkaCompressedProcessor (_bags, _nbKmerPerParts, _nbDistinctKmerPerParts, _chordPerParts, _abundanceMin, _abundanceMax);  }
     //CountProcessorAbstract<span>* clone ()  {  return new SimkaCompressedProcessor (_bags, _caches, _cacheIndexes, _abundanceMin, _abundanceMax);  }
 	void finishClones (vector<ICountProcessor<span>*>& clones){}
 
 	bool process (size_t partId, const typename Kmer<span>::Type& kmer, const CountVector& count, CountNumber sum){
+
 		if(count[0] < _abundanceMin || count[0] > _abundanceMax) return false;
+
 		Count item(kmer, count[0]);
 		_bags[partId]->insert(item);
-		_nbKmerPerParts[partId] += 1;
+		_nbDistinctKmerPerParts[partId] += 1;
+		_nbKmerPerParts[partId] += count[0];
+		_chordPerParts[partId] += pow(count[0], 2);
+
 		/*
 		size_t index = _cacheIndexes[partId];
 
@@ -71,9 +77,12 @@ public:
 
 
 	vector<BagGzFile<Count>* >& _bags;
+	vector<u_int64_t>& _nbDistinctKmerPerParts;
 	vector<u_int64_t>& _nbKmerPerParts;
+	vector<u_int64_t>& _chordPerParts;
 	CountNumber _abundanceMin;
 	CountNumber _abundanceMax;
+	//_stats->_chord_N2[i] += pow(abundanceI, 2);
 	//vector<vector<Count> >& _caches;
 	//vector<size_t>& _cacheIndexes;
 };
@@ -220,7 +229,7 @@ public:
 
 
 			IProperties* props = p.tool.getInput();
-
+			vector<string> outInfo;
 
 
 
@@ -249,8 +258,9 @@ public:
 			*/
 
 
-			string nbReads = "";
 			vector<u_int64_t> nbKmerPerParts(p.nbPartitions, 0);
+			vector<u_int64_t> nbDistinctKmerPerParts(p.nbPartitions, 0);
+			vector<u_int64_t> chordNiPerParts(p.nbPartitions, 0);
 
 
 			Configuration config;
@@ -310,7 +320,7 @@ public:
 				//LOCAL(solidStorage);
 
 				//SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, caches, cacheIndexes, p.abundanceMin, p.abundanceMax);
-				SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, nbKmerPerParts, p.abundanceMin, p.abundanceMax);
+				SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, nbKmerPerParts, nbDistinctKmerPerParts, chordNiPerParts, p.abundanceMin, p.abundanceMax);
 				std::vector<ICountProcessor<span>* > procs;
 				procs.push_back(proc);
 				SortingCountAlgorithm<span> algo (filteredBank, config, repartitor,
@@ -319,8 +329,20 @@ public:
 
 				algo.execute();
 
+				u_int64_t nbDistinctKmers = 0;
+				u_int64_t nbKmers = 0;
+				u_int64_t chord_N2 = 0;
+				for(size_t i=0; i<p.nbPartitions; i++){
+					nbDistinctKmers += nbDistinctKmerPerParts[i];
+					nbKmers += nbKmerPerParts[i];
+					chord_N2 += chordNiPerParts[i];
+				}
+				cout << nbDistinctKmers << endl;
+				outInfo.push_back(algo.getInfo()->getStr("seq_number"));
+				outInfo.push_back(Stringify::format("%llu", nbDistinctKmers));
+				outInfo.push_back(Stringify::format("%llu", nbKmers));
+				outInfo.push_back(Stringify::format("%llu", chord_N2));
 
-				nbReads = algo.getInfo()->getStr("seq_number");
 
 #ifdef TRACK_DISK_USAGE
 				string command = "du -sh " +  p.outputDir;
@@ -333,11 +355,13 @@ public:
 		    		bags[i]->flush();
 		    		delete bags[i];
 		    	}
+
+		    	//delete proc;
 			}
 
 			string contents = "";
-			for(size_t i=0; i<nbKmerPerParts.size(); i++){
-				contents += Stringify::format("%llu", nbKmerPerParts[i]) + "\n";
+			for(size_t i=0; i<nbDistinctKmerPerParts.size(); i++){
+				contents += Stringify::format("%llu", nbDistinctKmerPerParts[i]) + "\n";
 			}
 			IFile* nbKmerPerPartFile = System::file().newFile(p.outputDir + "/kmercount_per_partition/" + p.bankName + ".txt", "w");
 			nbKmerPerPartFile->fwrite(contents.c_str(), contents.size(), 1);
@@ -348,16 +372,19 @@ public:
 			//cout << "heo" << endl;
 			//delete config;
 			//cout << "heo" << endl;
-			writeFinishSignal(p, nbReads);
+			writeFinishSignal(p, outInfo);
 			//cout << "heo" << endl;
 		}
 
-		void writeFinishSignal(Parameter& p, const string& nbReads){
+		void writeFinishSignal(Parameter& p, const vector<string>& outInfo){
 
 			string finishFilename = p.outputDir + "/count_synchro/" +  p.bankName + ".ok";
 			IFile* file = System::file().newFile(finishFilename, "w");
 			string contents = "";
-			contents += nbReads + "\n";
+
+			for(size_t i=0; i<outInfo.size(); i++){
+				contents += outInfo[i] + "\n";
+			}
 			file->fwrite(contents.c_str(), contents.size(), 1);
 			file->flush();
 
