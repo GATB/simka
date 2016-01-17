@@ -572,7 +572,7 @@ public:
     	//	delete banksToDelete[i];
 
 
-
+    	maxPart += 5;
 
 
 
@@ -581,20 +581,23 @@ public:
 		LOCAL(bank);
         //IBank* bank = Bank::open(_outputDirTemp + "/input/" + _bankNames[0]);
         //bank->finalize();
-		u_int64_t nbSeqs = 1;
-        IBank* sampleBank = new SimkaBankSample(bank, nbSeqs);
-		SortingCountAlgorithm<span> sortingCount (sampleBank, this->_options);
 
-		SimkaNullProcessor<span>* proc = new SimkaNullProcessor<span>();
+		//u_int64_t nbSeqs = 1;
+        //IBank* sampleBank = new SimkaBankSample(bank, nbSeqs);
+		//SortingCountAlgorithm<span> sortingCount (sampleBank, this->_options);
 
-		sortingCount.addProcessor (proc);
+		//SimkaNullProcessor<span>* proc = new SimkaNullProcessor<span>();
+
+		//sortingCount.addProcessor (proc);
 
 		// We launch the algorithm
-		sortingCount.execute();
+		//sortingCount.execute();
 
-		Configuration config = sortingCount.getConfig();
+		//Configuration config = sortingCount.getConfig();
 
-
+		ConfigurationAlgorithm<span> testConfig(bank, this->_options);
+		testConfig.execute();
+		Configuration config = testConfig.getConfiguration();
 
 
 
