@@ -311,8 +311,8 @@ public:
 
 					if(abundanceI){
 						xi = (double)abundanceI / _stats->_nbSolidKmersPerBank[i];
-						//d1 = xi*log2(2*xi/(xi+xj));
-						d1 = xi*log(xi/((xi+xj)/2));
+						d1 = xi*log2(2*xi/(xi+xj));
+						//d1 = xi*log(xi/((xi+xj)/2)); //real kl
 					}
 					else{
 						xi = 0;
@@ -321,8 +321,8 @@ public:
 
 					if(abundanceJ){
 						xj = (double)abundanceJ / _stats->_nbSolidKmersPerBank[j];
-						//d2 = xj*log2(2*xj/(xi+xj));
-						d2 = xj*log(xj/((xi+xj)/2));
+						d2 = xj*log2(2*xj/(xi+xj));
+						//d2 = xj*log(xj/((xi+xj)/2)); //real kl
 					}
 					else{
 						xj = 0;

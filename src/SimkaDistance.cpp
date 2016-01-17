@@ -479,7 +479,7 @@ void SimkaStatistics::outputMatrix(const string& outputDir, const vector<string>
 	dumpMatrix(outputDir, bankNames, "mat_abundance_chord", _simkaDistance._matrixChord);
 	dumpMatrix(outputDir, bankNames, "mat_abundance_hellinger", _simkaDistance._matrixHellinger);
 	dumpMatrix(outputDir, bankNames, "mat_abundance_whittaker", _simkaDistance._matrixWhittaker);
-	dumpMatrix(outputDir, bankNames, "mat_abundance_kullbackLeibler", _simkaDistance._matrixKullbackLeibler);
+	dumpMatrix(outputDir, bankNames, "mat_abundance_jensenShannon", _simkaDistance._matrixKullbackLeibler);
 	dumpMatrix(outputDir, bankNames, "mat_abundance_brayCurtis", _simkaDistance._matrixBrayCurtis);
 	dumpMatrix(outputDir, bankNames, "mat_abundance_canberra", _simkaDistance._matrixCanberra);
 	dumpMatrix(outputDir, bankNames, "mat_abundance_kulczynski", _simkaDistance._matrixKulczynski);
@@ -764,8 +764,8 @@ double SimkaDistance::distance_abundance_whittaker(size_t i, size_t j){
 //Abundance Kullback Leibler
 double SimkaDistance::distance_abundance_kullbackLeibler(size_t i, size_t j){
 
-	//return 0.5 * _stats._kullbackLeibler[i][j];
-	return _stats._kullbackLeibler[i][j];
+	return 0.5 * _stats._kullbackLeibler[i][j];
+	//return _stats._kullbackLeibler[i][j];
 }
 
 //Abundance Canberra
