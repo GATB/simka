@@ -572,7 +572,7 @@ public:
     	//	delete banksToDelete[i];
 
 
-    	maxPart += 5;
+    	//maxPart += 5;
 
 
 

@@ -309,9 +309,30 @@ public:
 
 				if(abundanceI + abundanceJ > 0){
 
+
+					if(abundanceI){
+						double yX = abundanceJ * _stats->_nbSolidKmersPerBank[i];
+						double xY = abundanceI * _stats->_nbSolidKmersPerBank[j];
+						xi = (double)abundanceI / _stats->_nbSolidKmersPerBank[i];
+						d1 = xi * log((2*xY) / (xY + yX));
+					}
+					else{
+						d1 = 0;
+					}
+
+					if(abundanceJ){
+						double xY = abundanceI * _stats->_nbSolidKmersPerBank[j];
+						double yX = abundanceJ * _stats->_nbSolidKmersPerBank[i];
+						xj = (double)abundanceJ / _stats->_nbSolidKmersPerBank[j];
+						d2 = xj * log((2*yX) / (xY + yX));
+					}
+					else{
+						d2 = 0;
+					}
+					/*
 					if(abundanceI){
 						xi = (double)abundanceI / _stats->_nbSolidKmersPerBank[i];
-						d1 = xi*log2(2*xi/(xi+xj));
+						//d1 = xi*log2(2*xi/(xi+xj));
 						//d1 = xi*log(xi/((xi+xj)/2)); //real kl
 					}
 					else{
@@ -321,13 +342,13 @@ public:
 
 					if(abundanceJ){
 						xj = (double)abundanceJ / _stats->_nbSolidKmersPerBank[j];
-						d2 = xj*log2(2*xj/(xi+xj));
+						//d2 = xj*log2(2*xj/(xi+xj));
 						//d2 = xj*log(xj/((xi+xj)/2)); //real kl
 					}
 					else{
 						xj = 0;
 						d2 = 0;
-					}
+					}*/
 
 					_stats->_kullbackLeibler[i][j] += d1 + d2;
 
@@ -352,6 +373,8 @@ public:
 				//}
 
 				if(abundanceI && abundanceJ){
+
+
 					_stats->_matrixNbSharedKmers[i][j] += abundanceI;
 					_stats->_matrixNbSharedKmers[j][i] += abundanceJ;
 					_stats->_matrixNbDistinctSharedKmers[i][j] += 1;
@@ -363,6 +386,7 @@ public:
 
 
 					_stats->_whittaker_minNiNj[i][j] += abs((int)((u_int64_t)(abundanceI*_stats->_nbSolidKmersPerBank[j]) - (u_int64_t)(abundanceJ*_stats->_nbSolidKmersPerBank[i])));
+
 
 				}
 
