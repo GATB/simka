@@ -160,6 +160,18 @@ SimkaStatistics& SimkaStatistics::operator+=  (const SimkaStatistics& other){
 
 void SimkaStatistics::print(){
 
+	u_int64_t nbKmers = 0;
+	u_int64_t nbDistinctKmers = 0;
+	for(size_t i=0; i<_nbBanks; i++){
+		nbKmers += _nbSolidKmersPerBank[i];
+		nbDistinctKmers += _nbSolidDistinctKmersPerBank[i];
+	}
+
+	cout << "Stats:" << endl;
+	cout << "\tDistinct Kmers:    " << nbDistinctKmers << "    " << nbDistinctKmers/1000000 << "M" << "    " << nbDistinctKmers/1000000000 << "G" << endl;
+	cout << "\tKmers:    " << nbKmers << "    " << nbKmers/1000000 << "M" << "    " << nbKmers/1000000000 << "G" << endl;
+
+	return;
 	//cout.precision(4);
     cout << endl << endl;
 

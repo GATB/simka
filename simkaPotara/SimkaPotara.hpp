@@ -568,16 +568,16 @@ public:
 
     	}
 
+
+    	maxPart += 2;
     	//for(size_t i=0; i<banksToDelete.size(); i++)
     	//	delete banksToDelete[i];
 
 
-    	//maxPart += 5;
 
 
-
-    	//IBank* bank = Bank::open(this->_banksInputFilename);
-		IBank* bank = Bank::open(this->_outputDirTemp + "/input/" + this->_bankNames[chosenBankId]);
+    	IBank* bank = Bank::open(this->_banksInputFilename);
+		//IBank* bank = Bank::open(this->_outputDirTemp + "/input/" + this->_bankNames[chosenBankId]);
 		LOCAL(bank);
         //IBank* bank = Bank::open(_outputDirTemp + "/input/" + _bankNames[0]);
         //bank->finalize();
@@ -1001,9 +1001,9 @@ public:
 		//}
 		mainStats.outputMatrix(this->_outputDir, this->_bankNames);
 
-#ifdef PRINT_STATS
+#//ifdef PRINT_STATS
 		if(this->_options->getInt(STR_VERBOSE) != 0) mainStats.print();
-#endif
+#//endif
 	}
 
 
