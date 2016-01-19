@@ -764,7 +764,7 @@ double SimkaDistance::distance_abundance_whittaker(size_t i, size_t j){
 //Abundance Kullback Leibler
 double SimkaDistance::distance_abundance_kullbackLeibler(size_t i, size_t j){
 
-	return 0.5 * _stats._kullbackLeibler[i][j];
+	return sqrt(0.5 * _stats._kullbackLeibler[i][j]);
 	//return _stats._kullbackLeibler[i][j];
 }
 
