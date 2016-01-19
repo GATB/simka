@@ -95,6 +95,8 @@ IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
 
 
 	IOptionsParser* dskParser = SortingCountAlgorithm<>::getOptionsParser();
+
+    if (Option* p = dynamic_cast<Option*> (dskParser->getParser(STR_MINIMIZER_SIZE)))  {  p->setDefaultValue ("7"); }
 	parser->push_back(dskParser);
 	dskParser->setVisible(false);
     if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_SOLIDITY_KIND)))  {  p->setDefaultValue ("all"); }
