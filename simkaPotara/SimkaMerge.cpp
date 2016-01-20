@@ -236,7 +236,9 @@ public:
 
 		createInfo(p);
 
-		createProcessor(p);
+		//createProcessor(p);
+		_processor = new SimkaCountProcessorSimple<span> (_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, p.minShannonIndex, _datasetNbReads);
+		//_processor->use();
 
 		vector<StorageIt<span>*> its;
 		//vector<Partition<Count>*> partitions;
@@ -411,102 +413,13 @@ public:
 	        //this->insert (previous_kmer, solidCounter);
 	    }
 
+		string filename = p.outputDir + "/stats/part_" + SimkaAlgorithm<>::toString(p.partitionId) + ".gz";
+		_stats->save(filename); //storage->getGroup(""));
 
-/*
-		//for(size_t i=0; i<nbPartitions; i++){
 
-
-		//for(size_t j=0; i<nbBanks; i++){
-
-			//fill the  priority queue with the first elems
-			for (size_t i=0; i<_nbBanks; i++)
-			{
-
-				//Iterator<Count>* it = partitionIts[i];
-				StorageIt<span>* it = its[i];
-				//it->_it->first();
-
-				//Count& count = it->_it->item();
-
-				if(!it->_it->isDone()){
-					Count& count = it->_it->item();
-
-					pq.push(kxp(i, count.value));
-					//it->next();
-				}
-				//if(it->next())  {  pq.push(kxp(i, it->value()));  }
-			}
-
-			u_int16_t best_p;
-			Type previous_kmer;
-			SimkaCounterBuilderMerge solidCounter(_nbBanks);
-			//cout << _nbBanks << endl;
-
-			if (pq.size() != 0) // everything empty, no kmer at all
-			{
-				best_p = pq.top().first ; pq.pop();
-
-				previous_kmer = its[best_p]->value();
-
-				solidCounter.init (its[best_p]->getBankId(), its[best_p]->abundance());
-
-				//merge-scan all 'virtual' arrays and output counts
-				while (1)
-				{
-					//go forward in this array or in new array of reaches end of this one
-					if (! its[best_p]->next())
-					{
-						//reaches end of one array
-						if(pq.size() == 0) break; //everything done
-
-						//otherwise get new best
-						best_p = pq.top().first ; pq.pop();
-					}
-
-					if (its[best_p]->value() != previous_kmer )
-					{
-						//if diff, changes to new array, get new min pointer
-						pq.push(kxp(its[best_p]->getBankId(), its[best_p]->value())); //push new val of this pointer in pq, will be counted later
-
-						best_p = pq.top().first ; pq.pop();
-
-						//if new best is diff, this is the end of this kmer
-						if(its[best_p]->value()!=previous_kmer )
-						{
-							nbKmersProcessed += 1;
-							if(nbKmersProcessed > 500000){
-								//cout << "queue size:   " << pq.size() << endl;
-								//cout << nbKmersProcessed << endl;
-								_progress->inc(nbKmersProcessed);
-								nbKmersProcessed = 0;
-							}
-							insert(previous_kmer, solidCounter);
-							//solidCounter.print(previous_kmer.toString(31));
-
-							solidCounter.init (its[best_p]->getBankId(), its[best_p]->abundance());
-							previous_kmer = its[best_p]->value();
-						}
-						else
-						{
-							solidCounter.increase (its[best_p]->getBankId(), its[best_p]->abundance());
-						}
-					}
-					else
-					{
-						solidCounter.increase (its[best_p]->getBankId(), its[best_p]->abundance());
-					}
-				}
-
-				insert(previous_kmer, solidCounter);
-				//solidCounter.print(previous_kmer.toString(31));
-				//last elem
-				//this->insert (previous_kmer, solidCounter);
-			}
-		//}*/
-
-		_progress->finish();
-		saveStats(p);
+		//saveStats(p);
 		writeFinishSignal(p);
+		_progress->finish();
 	}
 
 
@@ -549,8 +462,7 @@ public:
 
 	void createProcessor(Parameter& p){
 
-		_processor = new SimkaCountProcessorSimple<span> (_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, p.minShannonIndex, _datasetNbReads);
-		//_processor->use();
+
 
 		//ICountProcessor<span>* proc = _processor->clone();
 		//proc->use();

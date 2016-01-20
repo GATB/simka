@@ -518,7 +518,7 @@ public:
 		    }
 		}
 
-		this->_options->setInt(STR_MAX_MEMORY, _memoryPerJob);
+		this->_options->setInt(STR_MAX_MEMORY, _memoryPerJob - _memoryPerJob/3);
 		this->_options->setInt(STR_NB_CORES, _coresPerJob);
 
 	    Storage* storage = 0;
@@ -575,6 +575,7 @@ public:
 
 
 
+		this->_options->setInt(STR_MAX_MEMORY, _memoryPerJob);
 
     	IBank* bank = Bank::open(this->_banksInputFilename);
 		//IBank* bank = Bank::open(this->_outputDirTemp + "/input/" + this->_bankNames[chosenBankId]);
