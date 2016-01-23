@@ -162,14 +162,28 @@ void SimkaStatistics::print(){
 
 	u_int64_t nbKmers = 0;
 	u_int64_t nbDistinctKmers = 0;
+	u_int64_t nbSharedDistinctKmers = 0;
+	u_int64_t nbSharedKmers = 0;
+
 	for(size_t i=0; i<_nbBanks; i++){
 		nbKmers += _nbSolidKmersPerBank[i];
 		nbDistinctKmers += _nbSolidDistinctKmersPerBank[i];
+		for(size_t j=i+1; j<_nbBanks; j++){
+			nbSharedDistinctKmers += _matrixNbDistinctSharedKmers[i][j];
+			nbSharedKmers += _matrixNbSharedKmers[i][j];
+		}
 	}
 
-	cout << "Stats:" << endl;
+	cout << endl << "Stats:" << endl;
 	cout << "\tDistinct Kmers:    " << nbDistinctKmers << "    " << nbDistinctKmers/1000000 << "M" << "    " << nbDistinctKmers/1000000000 << "G" << endl;
 	cout << "\tKmers:    " << nbKmers << "    " << nbKmers/1000000 << "M" << "    " << nbKmers/1000000000 << "G" << endl;
+	cout << "\tKmer coverage: " << (long double) nbKmers / (long double)nbDistinctKmers << endl;
+	cout << "\tShared distinct kmers:    " << (int)((long double) nbSharedDistinctKmers / (long double)nbDistinctKmers * 100) << "%    " << nbSharedDistinctKmers << "    " << nbSharedDistinctKmers/1000000 << "M" << "    " << nbSharedDistinctKmers/1000000000 << "G" << endl;
+	cout << "\tShared kmers:    " << (int)((long double) nbSharedKmers / (long double)nbKmers * 100)  << "%    " << nbSharedKmers << "    " << nbSharedKmers/1000000 << "M" << "    " << nbSharedKmers/1000000000 << "G" << endl;
+
+	cout << endl;
+
+
 
 	return;
 	//cout.precision(4);
