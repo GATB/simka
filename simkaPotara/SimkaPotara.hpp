@@ -578,10 +578,15 @@ public:
 
 		this->_options->setInt(STR_MAX_MEMORY, _memoryPerJob);
 
-    	//IBank* bank = Bank::open(this->_banksInputFilename);
+    	IBank* inputbank = Bank::open(this->_banksInputFilename);
+    	LOCAL(inputbank);
+
 		IBank* bank = Bank::open(this->_outputDirTemp + "/input/" + this->_bankNames[chosenBankId]);
 		LOCAL(bank);
-        //IBank* bank = Bank::open(_outputDirTemp + "/input/" + _bankNames[0]);
+
+		//IBank* bank = Bank::open(_outputDirTemp + "/input/" + _bankNames[0]);
+		//LOCAL(inputbank);
+
         //bank->finalize();
 
 		//u_int64_t nbSeqs = 1;
@@ -597,11 +602,14 @@ public:
 
 		//Configuration config = sortingCount.getConfig();
 
-		ConfigurationAlgorithm<span> testConfig(bank, this->_options);
-		testConfig.execute();
-		Configuration config = testConfig.getConfiguration();
+		ConfigurationAlgorithm<span> testConfig1(inputbank, this->_options);
+		testConfig1.execute();
+		Configuration config1 = testConfig1.getConfiguration();
 
 
+		ConfigurationAlgorithm<span> testConfig2(bank, this->_options);
+		testConfig2.execute();
+		Configuration config2 = testConfig2.getConfiguration();
 
 
         //IBank* inputbank = Bank::open(this->_banksInputFilename);
@@ -620,16 +628,21 @@ public:
 		cout << "Simka will use " << _nbPartitions << " partitions" << endl;
 		//_nbPartitions = max((int)_nbPartitions, (int)30);
 
-		config._nb_partitions = _nbPartitions;
+		config1._nb_partitions = _nbPartitions;
+		config2._nb_partitions = _nbPartitions;
+
+        RepartitorAlgorithm<span> repart (inputbank, storage->getGroup(""), config1);
+        repart.execute ();
+
 
 		uint64_t memoryUsageCachedItems;
-		config._nb_cached_items_per_core_per_part = 1 << 8; // cache at least 256 items (128 here, then * 2 in the next while loop)
+		config2._nb_cached_items_per_core_per_part = 1 << 8; // cache at least 256 items (128 here, then * 2 in the next while loop)
 		do
 		{
-			config._nb_cached_items_per_core_per_part *= 2;
-			memoryUsageCachedItems = 1LL * config._nb_cached_items_per_core_per_part *config._nb_partitions * config._nbCores * sizeof(Type);
+			config2._nb_cached_items_per_core_per_part *= 2;
+			memoryUsageCachedItems = 1LL * config2._nb_cached_items_per_core_per_part *config2._nb_partitions * config2._nbCores * sizeof(Type);
 		}
-		while (memoryUsageCachedItems < config._max_memory * MBYTE / 10);
+		while (memoryUsageCachedItems < config2._max_memory * MBYTE / 10);
 		/*
 		if(_isClusterMode){
 			//config._nb_cached_items_per_core_per_part = 100000;
@@ -651,17 +664,19 @@ public:
 			_nbPartitions = config._nb_partitions;
 		}*/
 
-		IBank* inputbank = Bank::open(this->_banksInputFilename);
-		LOCAL(inputbank);
-        RepartitorAlgorithm<span> repart (inputbank, storage->getGroup(""), config);
-        repart.execute ();
+		//IBank* inputbank = Bank::open(this->_banksInputFilename);
+		//LOCAL(inputbank);
+		//ConfigurationAlgorithm<span> inputconfig(inputbank, this->_options);
+		//inputconfig.execute();
+        //RepartitorAlgorithm<span> repart (inputbank, storage->getGroup(""), config);
+        //repart.execute ();
         //setRepartitor (new Repartitor(storage->getGroup("minimizers")));
 		//SortingCountAlgorithm<span> sortingCount (sampleBank, _options);
 
 
 
 
-		config.save(storage->getGroup(""));
+		config2.save(storage->getGroup(""));
 		//sortingCount.getRepartitor()->save(storage->getGroup(""));
 		//delete sampleBank;
 
