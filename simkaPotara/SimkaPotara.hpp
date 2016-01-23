@@ -266,6 +266,7 @@ public:
 
 		count();
 
+		printCountInfo();
 		//sleep(SLEEP_TIME_SEC);
 
 		merge();
@@ -440,7 +441,7 @@ public:
 			_maxJobCount = this->_options->getInt(STR_SIMKA_NB_JOB_COUNT);
 		}
 		else{
-			size_t maxjob_byCore = min(maxCores, this->_nbBanks);
+			size_t maxjob_byCore = min(maxCores/4, this->_nbBanks);
 			maxjob_byCore = max(maxjob_byCore, (size_t)1);
 
 			size_t maxjob_byMemory = maxMemory/minMemoryPerJobMB;
@@ -569,7 +570,7 @@ public:
     	}
 
 
-    	maxPart += 2;
+    	//maxPart += 2;
     	//for(size_t i=0; i<banksToDelete.size(); i++)
     	//	delete banksToDelete[i];
 
@@ -577,8 +578,8 @@ public:
 
 		this->_options->setInt(STR_MAX_MEMORY, _memoryPerJob);
 
-    	IBank* bank = Bank::open(this->_banksInputFilename);
-		//IBank* bank = Bank::open(this->_outputDirTemp + "/input/" + this->_bankNames[chosenBankId]);
+    	//IBank* bank = Bank::open(this->_banksInputFilename);
+		IBank* bank = Bank::open(this->_outputDirTemp + "/input/" + this->_bankNames[chosenBankId]);
 		LOCAL(bank);
         //IBank* bank = Bank::open(_outputDirTemp + "/input/" + _bankNames[0]);
         //bank->finalize();
@@ -650,8 +651,9 @@ public:
 			_nbPartitions = config._nb_partitions;
 		}*/
 
-
-        RepartitorAlgorithm<span> repart (bank, storage->getGroup(""), config);
+		IBank* inputbank = Bank::open(this->_banksInputFilename);
+		LOCAL(inputbank);
+        RepartitorAlgorithm<span> repart (inputbank, storage->getGroup(""), config);
         repart.execute ();
         //setRepartitor (new Repartitor(storage->getGroup("minimizers")));
 		//SortingCountAlgorithm<span> sortingCount (sampleBank, _options);
@@ -675,6 +677,33 @@ public:
 			string finishFilename = this->_outputDirTemp + "/merge_synchro/" +  this->_bankNames[i] + ".ok";
 			if(System::file().doesExist(finishFilename)) System::file().remove(finishFilename);
 	    }
+	}
+
+	void printCountInfo(){
+
+		vector<u_int64_t> kmerPerParts(_nbPartitions, 0);
+
+
+		for(size_t i=0; i<this->_bankNames.size(); i++){
+			//cout << filename << endl;
+
+			string line;
+			size_t currentPart = 0;
+			ifstream file((this->_outputDirTemp + "/kmercount_per_partition/" +  this->_bankNames[i] + ".txt").c_str());
+			size_t j = 0;
+			while(getline(file, line)){
+				if(line == "") continue;
+				kmerPerParts[j] += stoull(line);
+				j += 1;
+			}
+			file.close();
+    	}
+
+		cout << endl << endl << "Kmer repartition" << endl;
+		for(size_t i=0; i<kmerPerParts.size(); i++){
+			cout <<  "\t" << i << ":\t" << kmerPerParts[i] << endl;
+		}
+		cout << endl << endl;
 	}
 
 	void count(){
@@ -965,7 +994,7 @@ public:
 			file.close();
 
 			u_int64_t nbReads = stoull(lines[0]);
-			//_datasetNbReads.push_back(nbReads);
+			mainStats._datasetNbReads.push_back(nbReads);
 			mainStats._nbSolidDistinctKmersPerBank[i] = stoull(lines[1]);
 			//cout << mainStats._nbSolidDistinctKmersPerBank[i] << endl;
 			mainStats._nbSolidKmersPerBank[i] = stoull(lines[2]);

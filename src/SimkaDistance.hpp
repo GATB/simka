@@ -116,6 +116,8 @@ public:
 	u_int64_t _nbSolidKmers;
 
 	SimkaDistanceParam _distanceParams;
+
+	vector<u_int64_t> _datasetNbReads;
 	//u_int64_t _nbKmersInCoupleBankSupRatio;
 
 	//unordered_map<string, histo_t> _histos;

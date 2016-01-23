@@ -195,8 +195,7 @@ public:
 		delete _progress;
 	}
 
-	pthread_t statThread;
-	vector<u_int64_t> _datasetNbReads;
+	//pthread_t statThread;_datasetNbReads
 
 	void createInfo(Parameter& p){
 
@@ -214,7 +213,7 @@ public:
 			file.close();
 
 			u_int64_t nbReads = stoull(lines[0]);
-			_datasetNbReads.push_back(nbReads);
+			_stats->_datasetNbReads.push_back(nbReads);
 			_stats->_nbSolidDistinctKmersPerBank[i] = stoull(lines[1]);
 			_stats->_nbSolidKmersPerBank[i] = stoull(lines[2]);
 			_stats->_chord_N2[i] = stoull(lines[3]);
@@ -237,7 +236,7 @@ public:
 		createInfo(p);
 
 		//createProcessor(p);
-		_processor = new SimkaCountProcessorSimple<span> (_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, p.minShannonIndex, _datasetNbReads);
+		_processor = new SimkaCountProcessorSimple<span> (_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, p.minShannonIndex);
 		//_processor->use();
 
 		vector<StorageIt<span>*> its;
