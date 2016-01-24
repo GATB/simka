@@ -305,7 +305,7 @@ public:
 
 
 
-				if(counts[i] + counts[j] > 0){
+				if(counts[i] || counts[j]){
 
 					CountNumber abundanceI = counts[i];
 					CountNumber abundanceJ = counts[j];
