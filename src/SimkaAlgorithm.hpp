@@ -271,7 +271,6 @@ public:
 
 		for(size_t i=0; i<counts.size(); i++){
 
-			CountNumber abundanceI = counts[i];
 
 #ifdef PRINT_STATS
 			if(abundanceI){
@@ -283,7 +282,6 @@ public:
 #endif
 
 			for(size_t j=i+1; j<counts.size(); j++){
-				CountNumber abundanceJ = counts[j];
 
 				/*
 				if(_stats._distanceParams._computeBrayCurtis)
@@ -307,8 +305,28 @@ public:
 
 
 
-				if(abundanceI + abundanceJ > 0){
+				if(counts[i] + counts[j] > 0){
 
+					CountNumber abundanceI = counts[i];
+					CountNumber abundanceJ = counts[j];
+
+					if(abundanceI && abundanceJ){
+
+
+						_stats->_matrixNbSharedKmers[i][j] += abundanceI;
+						_stats->_matrixNbSharedKmers[j][i] += abundanceJ;
+						_stats->_matrixNbDistinctSharedKmers[i][j] += 1;
+
+						_stats->_chord_NiNj[i][j] += abundanceI * abundanceJ;
+						_stats->_hellinger_SqrtNiNj[i][j] += sqrt(abundanceI * abundanceJ);
+						_stats->_kulczynski_minNiNj[i][j] += min(abundanceI, abundanceJ);
+
+
+
+						_stats->_whittaker_minNiNj[i][j] += abs((int)((u_int64_t)(abundanceI*_stats->_nbSolidKmersPerBank[j]) - (u_int64_t)(abundanceJ*_stats->_nbSolidKmersPerBank[i])));
+
+
+					}
 
 					if(abundanceI){
 						double yX = abundanceJ * _stats->_nbSolidKmersPerBank[i];
@@ -372,23 +390,7 @@ public:
 				//_stats->_kullbackLeibler[i][j] += xi*log(xi/xy) + xj*log(xj/xy);
 				//}
 
-				if(abundanceI && abundanceJ){
 
-
-					_stats->_matrixNbSharedKmers[i][j] += abundanceI;
-					_stats->_matrixNbSharedKmers[j][i] += abundanceJ;
-					_stats->_matrixNbDistinctSharedKmers[i][j] += 1;
-
-					_stats->_chord_NiNj[i][j] += abundanceI * abundanceJ;
-					_stats->_hellinger_SqrtNiNj[i][j] += sqrt(abundanceI * abundanceJ);
-					_stats->_kulczynski_minNiNj[i][j] += min(abundanceI, abundanceJ);
-
-
-
-					_stats->_whittaker_minNiNj[i][j] += abs((int)((u_int64_t)(abundanceI*_stats->_nbSolidKmersPerBank[j]) - (u_int64_t)(abundanceJ*_stats->_nbSolidKmersPerBank[i])));
-
-
-				}
 
 			}
 
