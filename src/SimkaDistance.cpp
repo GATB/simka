@@ -24,11 +24,11 @@
 
 
 
-SimkaStatistics::SimkaStatistics(size_t nbBanks, SimkaDistanceParam& distanceParams) :
-_distanceParams(distanceParams)
+SimkaStatistics::SimkaStatistics(size_t nbBanks, bool computeEcologyDistances)
 {
 
 	_nbBanks = nbBanks;
+	_computeEcologyDistances = computeEcologyDistances;
 
 	//_nbBanks = 10000;
 
@@ -66,7 +66,7 @@ _distanceParams(distanceParams)
 
 		//if(_distanceParams._computeChord){
 		_chord_NiNj.resize(_nbBanks);
-		_chord_N2.resize(_nbBanks);
+		_chord_sqrt_N2.resize(_nbBanks);
 		//_chord_N2j.resize(_nbBanks);
 		for(size_t i=0; i<_nbBanks; i++){
 			_chord_NiNj[i].resize(nbBanks, 0);
@@ -127,7 +127,7 @@ SimkaStatistics& SimkaStatistics::operator+=  (const SimkaStatistics& other){
 
 
 		//if(_distanceParams._computeChord)
-			_chord_N2[i] += other._chord_N2[i];
+			_chord_sqrt_N2[i] += other._chord_sqrt_N2[i];
 
 	}
 
@@ -294,7 +294,7 @@ void SimkaStatistics::load(const string& filename){
     for(size_t i=0; i<_nbBanks; i++){ _nbSolidKmersPerBank[i] = it->item(); it->next();}
     for(size_t i=0; i<_nbBanks; i++){ _nbDistinctKmersSharedByBanksThreshold[i] = it->item(); it->next();}
     for(size_t i=0; i<_nbBanks; i++){ _nbKmersSharedByBanksThreshold[i] = it->item(); it->next();}
-    for(size_t i=0; i<_nbBanks; i++){ _chord_N2[i] = it->item(); it->next();}
+    for(size_t i=0; i<_nbBanks; i++){ _chord_sqrt_N2[i] = it->item(); it->next();}
 
 
     for(size_t i=0; i<_nbBanks; i++){
@@ -385,7 +385,7 @@ void SimkaStatistics::save (const string& filename){
     for(size_t i=0; i<_nbBanks; i++){ file->insert((long double)_nbSolidKmersPerBank[i]);}
     for(size_t i=0; i<_nbBanks; i++){ file->insert((long double)_nbDistinctKmersSharedByBanksThreshold[i]);}
     for(size_t i=0; i<_nbBanks; i++){ file->insert((long double)_nbKmersSharedByBanksThreshold[i]);}
-    for(size_t i=0; i<_nbBanks; i++){ file->insert((long double)_chord_N2[i]);}
+    for(size_t i=0; i<_nbBanks; i++){ file->insert((long double)_chord_sqrt_N2[i]);}
 
 
     for(size_t i=0; i<_nbBanks; i++){
@@ -501,7 +501,7 @@ void SimkaStatistics::save (const string& filename){
 void SimkaStatistics::outputMatrix(const string& outputDir, const vector<string>& bankNames){
 
 
-	SimkaDistance _simkaDistance(*this, _distanceParams);
+	SimkaDistance _simkaDistance(*this);
 
 	_outputFilenameSuffix = "";
 
@@ -528,13 +528,15 @@ void SimkaStatistics::outputMatrix(const string& outputDir, const vector<string>
 	dumpMatrix(outputDir, bankNames, "mat_abundance_sorensen", _simkaDistance._matrixSorensen);
 	dumpMatrix(outputDir, bankNames, "mat_abundance_jaccard", _simkaDistance._matrixJaccardAbundance);
 
-	dumpMatrix(outputDir, bankNames, "mat_abundance_chord", _simkaDistance._matrixChord);
-	dumpMatrix(outputDir, bankNames, "mat_abundance_hellinger", _simkaDistance._matrixHellinger);
-	dumpMatrix(outputDir, bankNames, "mat_abundance_whittaker", _simkaDistance._matrixWhittaker);
-	dumpMatrix(outputDir, bankNames, "mat_abundance_jensenShannon", _simkaDistance._matrixKullbackLeibler);
-	dumpMatrix(outputDir, bankNames, "mat_abundance_brayCurtis", _simkaDistance._matrixBrayCurtis);
-	dumpMatrix(outputDir, bankNames, "mat_abundance_canberra", _simkaDistance._matrixCanberra);
-	dumpMatrix(outputDir, bankNames, "mat_abundance_kulczynski", _simkaDistance._matrixKulczynski);
+	if(_computeEcologyDistances){
+		dumpMatrix(outputDir, bankNames, "mat_abundance_chord", _simkaDistance._matrixChord);
+		dumpMatrix(outputDir, bankNames, "mat_abundance_hellinger", _simkaDistance._matrixHellinger);
+		dumpMatrix(outputDir, bankNames, "mat_abundance_whittaker", _simkaDistance._matrixWhittaker);
+		dumpMatrix(outputDir, bankNames, "mat_abundance_jensenShannon", _simkaDistance._matrixKullbackLeibler);
+		dumpMatrix(outputDir, bankNames, "mat_abundance_brayCurtis", _simkaDistance._matrixBrayCurtis);
+		dumpMatrix(outputDir, bankNames, "mat_abundance_canberra", _simkaDistance._matrixCanberra);
+		dumpMatrix(outputDir, bankNames, "mat_abundance_kulczynski", _simkaDistance._matrixKulczynski);
+	}
 }
 
 
@@ -595,8 +597,9 @@ void SimkaStatistics::dumpMatrix(const string& outputDir, const vector<string>& 
 
 
 
-SimkaDistance::SimkaDistance(SimkaStatistics& stats, SimkaDistanceParam& distanceParams) : _stats(stats), _distanceParams(distanceParams){
+SimkaDistance::SimkaDistance(SimkaStatistics& stats) : _stats(stats){
 	_nbBanks = _stats._nbBanks;
+	//_computeEcologyDistances = _stats.computeEcologyDistances;
 
 	u_int64_t a;
 	u_int64_t b;
@@ -779,13 +782,15 @@ double SimkaDistance::distance_abundance_brayCurtis(size_t i, size_t j){
 //Abundance Chord
 double SimkaDistance::distance_abundance_chord(size_t i, size_t j){
 
+	long double chordDistance =  sqrtl(2 - 2*_stats._chord_NiNj[i][j]);
+	/*
 	long double intersection = 2*_stats._chord_NiNj[i][j];
 	if(intersection == 0) return sqrt(2);
 
 	long double unionSize = sqrtl(_stats._chord_N2[i]) * sqrtl(_stats._chord_N2[j]);
 	if(unionSize == 0)  return sqrt(2);
 
-	double chordDistance = sqrtl(2 - (intersection / unionSize));
+	double chordDistance = sqrtl(2 - (intersection / unionSize));*/
 	//chordDistance -= 1;
 	//return chordDistance;
 	return chordDistance;

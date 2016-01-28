@@ -37,6 +37,7 @@ enum SIMKA_MATRIX_TYPE{
 	ASYMETRICAL,
 };
 
+/*
 class SimkaDistanceParam{
 
 public:
@@ -61,14 +62,14 @@ public:
 	//bool _computeHellinger;
 	//bool _computeCanberra;
 	//bool _computeKulczynski;
-};
+};*/
 
 
 class SimkaStatistics{
 
 public:
 
-	SimkaStatistics(size_t nbBanks, SimkaDistanceParam& distanceParams);
+	SimkaStatistics(size_t nbBanks, bool computeEcologyDistances);
 	SimkaStatistics& operator+=  (const SimkaStatistics& other);
 	void print();
 	void load(const string& filename);
@@ -76,6 +77,7 @@ public:
 	void outputMatrix(const string& outputDir, const vector<string>& _bankNames);
 
     size_t _nbBanks;
+    bool _computeEcologyDistances;
 
 	vector<u_int64_t> _nbSolidDistinctKmersPerBank;
 	vector<u_int64_t> _nbSolidKmersPerBank;
@@ -91,8 +93,8 @@ public:
 
 
     //Abundance Chord
-	vector<vector<u_int64_t> > _chord_NiNj;
-	vector<u_int64_t> _chord_N2;
+	vector<vector<long double> > _chord_NiNj;
+	vector<long double> _chord_sqrt_N2;
 
     //Abundance Hellinger
 	vector<vector<u_int64_t> > _hellinger_SqrtNiNj;
@@ -115,7 +117,7 @@ public:
 	u_int64_t _nbDistinctKmers;
 	u_int64_t _nbSolidKmers;
 
-	SimkaDistanceParam _distanceParams;
+	//SimkaDistanceParam _distanceParams;
 
 	vector<u_int64_t> _datasetNbReads;
 	//u_int64_t _nbKmersInCoupleBankSupRatio;
@@ -132,7 +134,7 @@ class SimkaDistance {
 
 public:
 
-	SimkaDistance(SimkaStatistics& stats, SimkaDistanceParam& distanceParams);
+	SimkaDistance(SimkaStatistics& stats);
 	//virtual ~SimkaDistance();
 
 	//vector<vector<float> > getMatrixSorensen(SIMKA_MATRIX_TYPE type);
@@ -196,7 +198,7 @@ private:
     double distance_presenceAbsence_jaccard_simka(size_t i, size_t j, SIMKA_MATRIX_TYPE type);
 
 	SimkaStatistics& _stats;
-	SimkaDistanceParam _distanceParams;
+	//SimkaDistanceParam _distanceParams;
 	size_t _nbBanks;
 
 };

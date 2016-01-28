@@ -894,7 +894,7 @@ public:
 				command += " " + string(STR_MAX_MEMORY) + " " + SimkaAlgorithm<>::toString(this->_maxMemory / this->_nbCores);
 				command += " " + string(STR_NB_CORES) + " 1";
 				command += " " + string(STR_SIMKA_MIN_KMER_SHANNON_INDEX) + " " + Stringify::format("%f", this->_minKmerShannonIndex);
-
+				if(this->_computeEcologyDistances) command += " " + string(STR_SIMKA_COMPUTE_ECOLOGY_DISTANCES);
 				//SimkaDistanceParam distanceParams(this->_options);
 				//if(distanceParams._computeBrayCurtis) command += " " + STR_SIMKA_DISTANCE_BRAYCURTIS + " ";
 				//if(distanceParams._computeCanberra) command += " " + STR_SIMKA_DISTANCE_CANBERRA + " ";
@@ -1013,7 +1013,7 @@ public:
 			mainStats._nbSolidDistinctKmersPerBank[i] = stoull(lines[1]);
 			//cout << mainStats._nbSolidDistinctKmersPerBank[i] << endl;
 			mainStats._nbSolidKmersPerBank[i] = stoull(lines[2]);
-			mainStats._chord_N2[i] = stoull(lines[3]);
+			mainStats._chord_sqrt_N2[i] = sqrt(stoull(lines[3]));
     	}
 
 	}
@@ -1023,8 +1023,8 @@ public:
 		cout << this->_nbBanks << endl;
 
 
-		SimkaDistanceParam distanceParams(this->_options);
-		SimkaStatistics mainStats(this->_nbBanks, distanceParams);
+		//SimkaDistanceParam distanceParams(this->_options);
+		SimkaStatistics mainStats(this->_nbBanks, this->_computeEcologyDistances);
 
 		for(size_t i=0; i<_nbPartitions; i++){
 
@@ -1032,7 +1032,7 @@ public:
 			//Storage* storage = StorageFactory(STORAGE_HDF5).load (this->_outputDirTemp + "/stats/part_" + SimkaAlgorithm<>::toString(i) + ".stats");
 			//LOCAL (storage);
 
-			SimkaStatistics stats(this->_nbBanks, distanceParams);
+			SimkaStatistics stats(this->_nbBanks, this->_computeEcologyDistances);
 			stats.load(filename);
 
 			//cout << stats._nbDistinctKmers << "   " << stats._nbKmers << endl;

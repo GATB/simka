@@ -27,6 +27,7 @@ IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
     IOptionsParser* parser = parent; //new OptionsParser ("Simka");
 
 	//Main parser
+    parser->push_front (new OptionNoParam (STR_SIMKA_COMPUTE_ECOLOGY_DISTANCES, "compute ecology distances (Bray-Curtis, Jensen-Shannon...)", false));
     parser->push_front (new OptionOneParam (STR_URI_OUTPUT_TMP, "output directory for temporary files", true));
     parser->push_front (new OptionOneParam (STR_URI_OUTPUT, "output directory for result files (distance matrices)", false, "./simka_results"));
     parser->push_front (new OptionOneParam (STR_URI_INPUT, "input file of datasets. One dataset per line: id: filename1...", true));

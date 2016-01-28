@@ -47,7 +47,7 @@ SimkaPotara::SimkaPotara()  : Tool ("SimkaPotara")
     clusterParser->push_back (new OptionOneParam (STR_SIMKA_JOB_MERGE_FILENAME, "filename to the merging job template", false ));
 
 
-	getParser()->push_back(coreParser);
+	//getParser()->push_back(coreParser);
 	getParser()->push_back(clusterParser);
 	//getParser()->getParser("core")->getParser(STR_NB_CORES)->setHelp("number of cores per counting job");
     //if (Option* p = dynamic_cast<Option*> (getParser()->getParser(STR_MAX_MEMORY)))  {  p->setHelp("max memory per counting job (in MBytes) "); }

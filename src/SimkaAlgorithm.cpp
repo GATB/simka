@@ -25,7 +25,7 @@ static const char* strProgressCounting =      "Simka: Step 2: counting kmers  ";
 
 
 template<size_t span>
-SimkaCountProcessor<span>::SimkaCountProcessor (SimkaStatistics& stats, size_t nbBanks, size_t kmerSize, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, double minKmerShannonIndex) :
+SimkaCountProcessor<span>::SimkaCountProcessor(SimkaStatistics& stats, size_t nbBanks, size_t kmerSize, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, double minKmerShannonIndex) :
 _stats(stats)
 {
 
@@ -39,7 +39,7 @@ _stats(stats)
 	_soliditySingle = soliditySingle;
 	_minKmerShannonIndex = minKmerShannonIndex;
 
-	_localStats = new SimkaStatistics(_nbBanks, _stats._distanceParams);
+	_localStats = new SimkaStatistics(_nbBanks, _stats._computeEcologyDistances);
 
 	_nbKmerCounted = 0;
 	isAbundanceThreshold = _abundanceThreshold.first > 1 || _abundanceThreshold.second < 1000000;
@@ -255,7 +255,7 @@ void SimkaCountProcessor<span>::computeStats(const CountVector& counts){
 			nbBanksThatHaveKmer += 1;
 			_localStats->_nbSolidDistinctKmersPerBank[i] += 1;
 			_localStats->_nbSolidKmersPerBank[i] += abundanceI;
-			_localStats->_chord_N2[i] += pow(abundanceI, 2);
+			_localStats->_chord_sqrt_N2[i] += pow(abundanceI, 2);
 		}
 
 
@@ -558,6 +558,7 @@ bool SimkaAlgorithm<span>::setup() {
 template<size_t span>
 void SimkaAlgorithm<span>::parseArgs() {
 
+	_computeEcologyDistances = _options->get(STR_SIMKA_COMPUTE_ECOLOGY_DISTANCES);
 	_maxMemory = _options->getInt(STR_MAX_MEMORY);
     _nbCores = _options->getInt(STR_NB_CORES);
 	_inputFilename = _options->getStr(STR_URI_INPUT);
@@ -924,9 +925,9 @@ template<size_t span>
 void SimkaAlgorithm<span>::count(){
 
 
-	SimkaDistanceParam distanceParams(_options);
+	//SimkaDistanceParam distanceParams(_options);
 
-	_stats = new SimkaStatistics(_nbBanks, distanceParams);
+	_stats = new SimkaStatistics(_nbBanks, _computeEcologyDistances);
 
 	SortingCountAlgorithm<span> sortingCount (_banks, _options);
 

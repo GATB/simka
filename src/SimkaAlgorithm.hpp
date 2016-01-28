@@ -43,7 +43,7 @@ const string STR_SIMKA_MIN_READ_SIZE = "-min-read-size";
 const string STR_SIMKA_MIN_READ_SHANNON_INDEX = "-read-shannon-index";
 const string STR_SIMKA_MIN_KMER_SHANNON_INDEX = "-kmer-shannon-index";
 const string STR_KMER_PER_READ = "-kmer-per-read";
-
+const string STR_SIMKA_COMPUTE_ECOLOGY_DISTANCES = "-ecology";
 
 enum SIMKA_SOLID_KIND{
 	RANGE,
@@ -248,14 +248,43 @@ public:
     	//}
     	//else{
 
-
-		computeStats(counts);
+    	if(_stats->_computeEcologyDistances)
+    		computeStatsEcology(counts);
+    	else
+    		computeStats(counts);
 
 
     	//_stats->_nbSolidKmers += 1;
     }
 
+
 	void computeStats(const CountVector& counts){
+
+		_sharedBanks.clear();
+
+		for(size_t i=0; i<counts.size(); i++)
+			if(counts[i]) _sharedBanks.push_back(i);
+
+		for(size_t ii=0; ii<_sharedBanks.size(); ii++){
+			for(size_t jj=ii+1; jj<_sharedBanks.size(); jj++){
+
+				u_int16_t i = _sharedBanks[ii];
+				u_int16_t j = _sharedBanks[jj];
+
+				CountNumber abundanceI = counts[i];
+				CountNumber abundanceJ = counts[j];
+
+				_stats->_matrixNbSharedKmers[i][j] += abundanceI;
+				_stats->_matrixNbSharedKmers[j][i] += abundanceJ;
+				_stats->_matrixNbDistinctSharedKmers[i][j] += 1;
+			}
+		}
+
+	}
+
+	void computeStatsEcology(const CountVector& counts){
+
+
 
 		double xi = 0;
 		double xj = 0;
@@ -283,32 +312,11 @@ public:
 
 			for(size_t j=i+1; j<counts.size(); j++){
 
-				/*
-				if(_stats._distanceParams._computeBrayCurtis)
-					_stats->_brayCurtisNumerator[i][j] += abs(abundanceI - abundanceJ);
-
-				if(_stats._distanceParams._computeChord)
-					_stats->_chord_NiNj[i][j] += abundanceI * abundanceJ;
-
-				if(_stats._distanceParams._computeHellinger)
-					_stats->_hellinger_SqrtNiNj[i][j] += sqrt(abundanceI * abundanceJ);
-
-				if(_stats._distanceParams._computeCanberra){
-					if(abundanceI + abundanceJ > 0){
-						_stats->_canberra[i][j] += pow((abundanceI - abundanceJ) / (abundanceI + abundanceJ), 2);
-					}
-				}
-
-				if(_stats._distanceParams._computeKulczynski)
-					_stats->_kulczynski_minNiNj[i][j] += min(abundanceI, abundanceJ);*/
-
-
-
 
 				if(counts[i] || counts[j]){
 
-					CountNumber abundanceI = counts[i];
-					CountNumber abundanceJ = counts[j];
+					double abundanceI = counts[i];
+					double abundanceJ = counts[j];
 
 					if(abundanceI && abundanceJ){
 
@@ -317,7 +325,8 @@ public:
 						_stats->_matrixNbSharedKmers[j][i] += abundanceJ;
 						_stats->_matrixNbDistinctSharedKmers[i][j] += 1;
 
-						_stats->_chord_NiNj[i][j] += abundanceI * abundanceJ;
+						//_stats->_chord_NiNj[i][j] += abundanceI * abundanceJ;
+						_stats->_chord_NiNj[i][j] += (abundanceI * abundanceJ) / (_stats->_chord_sqrt_N2[i]*_stats->_chord_sqrt_N2[j]);
 						_stats->_hellinger_SqrtNiNj[i][j] += sqrt(abundanceI * abundanceJ);
 						_stats->_kulczynski_minNiNj[i][j] += min(abundanceI, abundanceJ);
 
@@ -347,26 +356,6 @@ public:
 					else{
 						d2 = 0;
 					}
-					/*
-					if(abundanceI){
-						xi = (double)abundanceI / _stats->_nbSolidKmersPerBank[i];
-						//d1 = xi*log2(2*xi/(xi+xj));
-						//d1 = xi*log(xi/((xi+xj)/2)); //real kl
-					}
-					else{
-						xi = 0;
-						d1 = 0;
-					}
-
-					if(abundanceJ){
-						xj = (double)abundanceJ / _stats->_nbSolidKmersPerBank[j];
-						//d2 = xj*log2(2*xj/(xi+xj));
-						//d2 = xj*log(xj/((xi+xj)/2)); //real kl
-					}
-					else{
-						xj = 0;
-						d2 = 0;
-					}*/
 
 					_stats->_kullbackLeibler[i][j] += d1 + d2;
 
@@ -376,20 +365,6 @@ public:
 
 					_stats->_whittaker_minNiNj[i][j] += abs((int)((u_int64_t)(abundanceI*_stats->_nbSolidKmersPerBank[j]) - (u_int64_t)(abundanceJ*_stats->_nbSolidKmersPerBank[i])));
 				}
-
-
-				//cout << d2 << endl;
-				   // d1[np.isnan(d1)] = 0;
-				   // d2[np.isnan(d2)] = 0;
-				   // d = 0.5*np.sum(d1+d2);
-
-
-				//if(xi * xj > 0){
-				//cout << xi << " " << xj << endl;
-				//double xy = (xi + xj) / 2;
-				//_stats->_kullbackLeibler[i][j] += xi*log(xi/xy) + xj*log(xj/xy);
-				//}
-
 
 
 			}
@@ -516,6 +491,9 @@ private:
     u_int64_t _nbKmerCounted;
     double _minKmerShannonIndex;
     double _totalReads;
+    //vector<size_t> _banksOks;
+
+    vector<u_int16_t> _sharedBanks;
 };
 
 
@@ -1127,7 +1105,7 @@ protected:
     vector<size_t> _nbBankPerDataset;
 
 	string _largerBankId;
-
+	bool _computeEcologyDistances;
 
 	//string _matDksNormFilename;
 	//string _matDksPercFilename;

@@ -337,7 +337,7 @@ public:
 					nbKmers += nbKmerPerParts[i];
 					chord_N2 += chordNiPerParts[i];
 				}
-				cout << nbDistinctKmers << endl;
+				//cout << nbDistinctKmers << endl;
 				outInfo.push_back(algo.getInfo()->getStr("seq_number"));
 				outInfo.push_back(Stringify::format("%llu", nbDistinctKmers));
 				outInfo.push_back(Stringify::format("%llu", nbKmers));
