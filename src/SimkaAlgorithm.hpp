@@ -178,12 +178,13 @@ public:
     	}
 #endif
 
+    	/* A DEPLACER PENDANT LE COMPTAGE DES KMERS
     	if(_minKmerShannonIndex != 0){
     		double shannonIndex = getShannonIndex(kmer);
     		if(shannonIndex < _minKmerShannonIndex){
     			return;
     		}
-    	}
+    	}*/
 
 #ifdef CHI2_TEST
     	float X2j = 0;
@@ -271,11 +272,8 @@ public:
 				u_int16_t i = _sharedBanks[ii];
 				u_int16_t j = _sharedBanks[jj];
 
-				CountNumber abundanceI = counts[i];
-				CountNumber abundanceJ = counts[j];
-
-				_stats->_matrixNbSharedKmers[i][j] += abundanceI;
-				_stats->_matrixNbSharedKmers[j][i] += abundanceJ;
+				_stats->_matrixNbSharedKmers[i][j] += counts[i];
+				_stats->_matrixNbSharedKmers[j][i] += counts[j];
 				_stats->_matrixNbDistinctSharedKmers[i][j] += 1;
 			}
 		}

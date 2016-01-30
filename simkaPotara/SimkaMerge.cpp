@@ -388,7 +388,9 @@ public:
 							_progress->inc(nbKmersProcessed);
 							nbKmersProcessed = 0;
 						}
-						_processor->process (_partitionId, previous_kmer, abundancePerBank);
+
+						if(nbBankThatHaveKmer > 1)
+							_processor->process (_partitionId, previous_kmer, abundancePerBank);
 	                    //this->insert (previous_kmer, solidCounter);
 
 	                    solidCounter.init (its[best_p]->getBankId(), its[best_p]->abundance());
@@ -409,7 +411,8 @@ public:
 	        }
 
 	        //last elem
-			_processor->process (_partitionId, previous_kmer, abundancePerBank);
+	        if(nbBankThatHaveKmer > 1)
+	        	_processor->process (_partitionId, previous_kmer, abundancePerBank);
 	        //this->insert (previous_kmer, solidCounter);
 	    }
 

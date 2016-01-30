@@ -441,7 +441,7 @@ public:
 			_maxJobCount = this->_options->getInt(STR_SIMKA_NB_JOB_COUNT);
 		}
 		else{
-			size_t maxjob_byCore = min(maxCores/4, this->_nbBanks);
+			size_t maxjob_byCore = min(maxCores/2, this->_nbBanks);
 			maxjob_byCore = max(maxjob_byCore, (size_t)1);
 
 			size_t maxjob_byMemory = maxMemory/minMemoryPerJobMB;

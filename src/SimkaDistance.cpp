@@ -168,10 +168,10 @@ void SimkaStatistics::print(){
 	for(size_t i=0; i<_nbBanks; i++){
 		nbKmers += _nbSolidKmersPerBank[i];
 		nbDistinctKmers += _nbSolidDistinctKmersPerBank[i];
-		for(size_t j=i+1; j<_nbBanks; j++){
-			nbSharedDistinctKmers += _matrixNbDistinctSharedKmers[i][j];
-			nbSharedKmers += _matrixNbSharedKmers[i][j];
-		}
+		//for(size_t j=i+1; j<_nbBanks; j++){
+		//	nbSharedDistinctKmers += _matrixNbDistinctSharedKmers[i][j];
+		//	nbSharedKmers += _matrixNbSharedKmers[i][j];
+		//}
 	}
 
 	u_int64_t totalReads = 0;
@@ -203,8 +203,8 @@ void SimkaStatistics::print(){
 	cout << "\t\tDistinct Kmers:    " << nbDistinctKmers << "    " << nbDistinctKmers/1000000 << "M" << "    " << nbDistinctKmers/1000000000 << "G" << endl;
 	cout << "\t\tKmers:    " << nbKmers << "    " << nbKmers/1000000 << "M" << "    " << nbKmers/1000000000 << "G" << endl;
 	cout << "\t\tKmer coverage: " << (long double) nbKmers / (long double)nbDistinctKmers << endl;
-	cout << "\t\tShared distinct kmers:    " << (int)((long double) nbSharedDistinctKmers / (long double)nbDistinctKmers * 100) << "%    " << nbSharedDistinctKmers << "    " << nbSharedDistinctKmers/1000000 << "M" << "    " << nbSharedDistinctKmers/1000000000 << "G" << endl;
-	cout << "\t\tShared kmers:    " << (int)((long double) nbSharedKmers / (long double)nbKmers * 100)  << "%    " << nbSharedKmers << "    " << nbSharedKmers/1000000 << "M" << "    " << nbSharedKmers/1000000000 << "G" << endl;
+	//cout << "\t\tShared distinct kmers:    " << (int)((long double) nbSharedDistinctKmers / (long double)nbDistinctKmers * 100) << "%    " << nbSharedDistinctKmers << "    " << nbSharedDistinctKmers/1000000 << "M" << "    " << nbSharedDistinctKmers/1000000000 << "G" << endl;
+	//cout << "\t\tShared kmers:    " << (int)((long double) nbSharedKmers / (long double)nbKmers * 100)  << "%    " << nbSharedKmers << "    " << nbSharedKmers/1000000 << "M" << "    " << nbSharedKmers/1000000000 << "G" << endl;
 
 
 	cout << endl;

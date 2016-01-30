@@ -117,6 +117,8 @@ public:
 	u_int64_t _nbDistinctKmers;
 	u_int64_t _nbSolidKmers;
 
+	u_int64_t _nbSharedKmers;
+	u_int64_t _nbDistinctSharedKmers;
 	//SimkaDistanceParam _distanceParams;
 
 	vector<u_int64_t> _datasetNbReads;
