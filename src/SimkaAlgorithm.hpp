@@ -261,6 +261,7 @@ public:
 
 	void computeStats(const CountVector& counts){
 
+
 		_sharedBanks.clear();
 
 		for(size_t i=0; i<counts.size(); i++)
@@ -278,11 +279,141 @@ public:
 			}
 		}
 
+
+
+
 	}
 
 	void computeStatsEcology(const CountVector& counts){
 
 
+		_sharedBanks.clear();
+
+		for(size_t i=0; i<counts.size(); i++)
+			if(counts[i]) _sharedBanks.push_back(i);
+
+		double xi = 0;
+		double xj = 0;
+		double d1 = 0;
+		double d2 = 0;
+
+		for(size_t i=0; i<counts.size(); i++){
+					if(counts[i]){
+						for(size_t j=i+1; j<counts.size(); j++){
+
+
+							double abundanceI = counts[i];
+							double abundanceJ = counts[j];
+
+							if(abundanceI && abundanceJ){
+
+
+								_stats->_matrixNbSharedKmers[i][j] += abundanceI;
+								_stats->_matrixNbSharedKmers[j][i] += abundanceJ;
+								_stats->_matrixNbDistinctSharedKmers[i][j] += 1;
+
+								//_stats->_chord_NiNj[i][j] += abundanceI * abundanceJ;
+								_stats->_chord_NiNj[i][j] += (abundanceI * abundanceJ) / (_stats->_chord_sqrt_N2[i]*_stats->_chord_sqrt_N2[j]);
+								_stats->_hellinger_SqrtNiNj[i][j] += sqrt(abundanceI * abundanceJ);
+								_stats->_kulczynski_minNiNj[i][j] += min(abundanceI, abundanceJ);
+
+
+
+								_stats->_whittaker_minNiNj[i][j] += abs((int)((u_int64_t)(abundanceI*_stats->_nbSolidKmersPerBank[j]) - (u_int64_t)(abundanceJ*_stats->_nbSolidKmersPerBank[i])));
+
+
+
+								double yX = abundanceJ * _stats->_nbSolidKmersPerBank[i];
+								double xY = abundanceI * _stats->_nbSolidKmersPerBank[j];
+								xi = (double)abundanceI / _stats->_nbSolidKmersPerBank[i];
+								d1 = xi * log((2*xY) / (xY + yX));
+
+
+								//xY = abundanceI * _stats->_nbSolidKmersPerBank[j];
+								//yX = abundanceJ * _stats->_nbSolidKmersPerBank[i];
+								xj = (double)abundanceJ / _stats->_nbSolidKmersPerBank[j];
+								d2 = xj * log((2*yX) / (xY + yX));
+							}
+							else{
+								d2 = 0;
+								double yX = abundanceJ * _stats->_nbSolidKmersPerBank[i];
+								double xY = abundanceI * _stats->_nbSolidKmersPerBank[j];
+								xi = (double)abundanceI / _stats->_nbSolidKmersPerBank[i];
+								d1 = xi * log((2*xY) / (xY + yX));
+							}
+
+							/*
+							if(abundanceI){
+								double yX = abundanceJ * _stats->_nbSolidKmersPerBank[i];
+								double xY = abundanceI * _stats->_nbSolidKmersPerBank[j];
+								xi = (double)abundanceI / _stats->_nbSolidKmersPerBank[i];
+								d1 = xi * log((2*xY) / (xY + yX));
+							}
+							else{
+								d1 = 0;
+							}
+
+							if(abundanceJ){
+								double xY = abundanceI * _stats->_nbSolidKmersPerBank[j];
+								double yX = abundanceJ * _stats->_nbSolidKmersPerBank[i];
+								xj = (double)abundanceJ / _stats->_nbSolidKmersPerBank[j];
+								d2 = xj * log((2*yX) / (xY + yX));
+							}
+							else{
+								d2 = 0;
+							}*/
+
+							_stats->_kullbackLeibler[i][j] += d1 + d2;
+
+							_stats->_canberra[i][j] += abs(abundanceI - abundanceJ) / (abundanceI + abundanceJ);
+							_stats->_brayCurtisNumerator[i][j] += abs(abundanceI - abundanceJ);
+							//cout << _stats->_nbSolidKmersPerBank[i] << endl;
+
+							_stats->_whittaker_minNiNj[i][j] += abs((int)((u_int64_t)(abundanceI*_stats->_nbSolidKmersPerBank[j]) - (u_int64_t)(abundanceJ*_stats->_nbSolidKmersPerBank[i])));
+
+						}
+					}
+					else{
+						for(size_t jj=0; jj<_sharedBanks.size(); jj++){
+
+							u_int16_t j = _sharedBanks[jj];
+							if(i > j) continue;
+
+							double abundanceI = counts[i];
+							double abundanceJ = counts[j];
+
+							d1 = 0;
+							double xY = abundanceI * _stats->_nbSolidKmersPerBank[j];
+							double yX = abundanceJ * _stats->_nbSolidKmersPerBank[i];
+							xj = (double)abundanceJ / _stats->_nbSolidKmersPerBank[j];
+							d2 = xj * log((2*yX) / (xY + yX));
+
+							_stats->_kullbackLeibler[i][j] += d1 + d2;
+
+							_stats->_canberra[i][j] += abs(abundanceI - abundanceJ) / (abundanceI + abundanceJ);
+							_stats->_brayCurtisNumerator[i][j] += abs(abundanceI - abundanceJ);
+							//cout << _stats->_nbSolidKmersPerBank[i] << endl;
+
+							_stats->_whittaker_minNiNj[i][j] += abs((int)((u_int64_t)(abundanceI*_stats->_nbSolidKmersPerBank[j]) - (u_int64_t)(abundanceJ*_stats->_nbSolidKmersPerBank[i])));
+
+						}
+					}
+				}
+
+
+
+
+
+
+
+
+
+
+
+
+
+		/*
+		return;
 
 		double xi = 0;
 		double xj = 0;
@@ -367,7 +498,7 @@ public:
 
 			}
 
-		}
+		}*/
 
 #ifdef PRINT_STATS
 		_stats->_nbDistinctKmersSharedByBanksThreshold[nbBanksThatHaveKmer-1] += 1;
