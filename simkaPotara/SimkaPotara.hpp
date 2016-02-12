@@ -206,11 +206,18 @@ public:
 
     typedef typename Kmer<span>::Type  Type;
 
-	SimkaPotaraAlgorithm(IProperties* options):
+	SimkaPotaraAlgorithm(IProperties* options, const string& execFilename):
 		SimkaAlgorithm<span>(options)
 	{
 
 		_isClusterMode = false;
+
+		//cout << "lala" << endl;
+		//cout << _execDir << endl;
+
+		_execDir = System::file().getRealPath(execFilename);
+		_execDir = System::file().getDirectory(_execDir) + "/";
+
 		//_options = options;
 
 		//_inputFilename = _options->getStr(STR_URI_INPUT);
@@ -330,7 +337,6 @@ public:
 		else{
 			_isClusterMode = false;
 		}
-
 
 
 
@@ -746,7 +752,7 @@ public:
 
 			string tempDir = this->_outputDirTemp + "/temp/" + this->_bankNames[i];
 
-			string command = "./simkaCount ";
+			string command = _execDir + "/simkaCount ";
 			command += " " + string(STR_KMER_SIZE) + " " + SimkaAlgorithm<>::toString(this->_kmerSize);
 			command += " " + string("-out-tmp-simka") + " " + this->_outputDirTemp;
 			command += " " + string("-out-tmp") + " " + tempDir;
@@ -886,7 +892,7 @@ public:
 
 				filenameQueue.push_back(datasetId);
 
-				string command = "./simkaMerge ";
+				string command = _execDir + "/simkaMerge ";
 				command += " " + string(STR_KMER_SIZE) + " " + SimkaAlgorithm<>::toString(this->_kmerSize);
 				command += " " + string(STR_URI_INPUT) + " " + this->_inputFilename;
 				command += " " + string("-out-tmp-simka") + " " + this->_outputDirTemp;
@@ -1070,6 +1076,7 @@ public:
     //u_int64_t _maxNbReads;
 	//IBank* _sampleBank;
 
+    string _execDir;
     bool _isClusterMode;
 	size_t _maxJobCount;
 	size_t _maxJobMerge;
@@ -1100,8 +1107,10 @@ class SimkaPotara : public Tool{
 
 public:
 
-	SimkaPotara();
+	SimkaPotara(const string& execFilename);
 	void execute();
+
+	string _execFilename;
 };
 
 #endif

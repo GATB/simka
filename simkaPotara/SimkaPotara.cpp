@@ -26,8 +26,10 @@ TODO:
 	- Verifier les paramètre passer au jobs généré (nbcores, maxmemory...)
 
 */
-SimkaPotara::SimkaPotara()  : Tool ("SimkaPotara")
+SimkaPotara::SimkaPotara(const string& execFilename)  : Tool ("Simka")
 {
+
+	_execFilename = execFilename;
 
 	Simka::createOptionsParser(getParser());
 
@@ -94,9 +96,10 @@ SimkaPotara::SimkaPotara()  : Tool ("SimkaPotara")
 struct Parameter
 {
     //Parameter (Simka& simka, IProperties* props) : props(props) {}
-    Parameter (IProperties* props) : _props(props) {}
+    Parameter (IProperties* props, const string& execFilename) : _props(props), _execFilename(execFilename) {}
     //Simka& _simka;
     IProperties* _props;
+    string _execFilename;
     /*
     string _inputFilename;
     string _outputDir;
@@ -116,7 +119,7 @@ template<size_t span> struct Functor  {  void operator ()  (Parameter p)
 	simkaFusion->execute();
 	return;*/
 
-	SimkaPotaraAlgorithm<span> simkaAlgorithm (p._props);
+	SimkaPotaraAlgorithm<span> simkaAlgorithm (p._props, p._execFilename);
 	simkaAlgorithm.execute();
 
 	/*
@@ -130,7 +133,7 @@ void SimkaPotara::execute ()
 {
 	IProperties* input = getInput();
 	//Parameter params(*this, getInput());
-	Parameter params(input);
+	Parameter params(input, _execFilename);
 
 	size_t kmerSize = getInput()->getInt (STR_KMER_SIZE);
 
@@ -146,7 +149,9 @@ int main (int argc, char* argv[])
     try
     {
         // We run the tool with the provided command line arguments.
-        SimkaPotara().run (argc, argv);
+
+		//cout << argv[0] << endl;
+        SimkaPotara(string(argv[0])).run (argc, argv);
     }
     catch (Exception& e)
     {

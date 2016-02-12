@@ -55,14 +55,14 @@ ENDFOREACH ()
 file (GLOB_RECURSE  ProjectFiles  src/Simka*  ${PROJECT_BINARY_DIR}/src/template/*.cpp)
 
 # we define the artifact to be built: the project binary
-add_executable        (${PROJECT_NAME}  src/main.cpp ${ProjectFiles})
+#add_executable        (${PROJECT_NAME}  src/main.cpp ${ProjectFiles})
 
 # we define which libraries to be linked with project binary
-target_link_libraries (${PROJECT_NAME}  ${gatb-core-libraries})
+#target_link_libraries (${PROJECT_NAME}  ${gatb-core-libraries})
 
 
-add_executable        (simkaPotara  ../simkaPotara/SimkaPotara.cpp ${ProjectFiles})
-target_link_libraries (simkaPotara  ${gatb-core-libraries})
+add_executable        (simka  ../simkaPotara/SimkaPotara.cpp ${ProjectFiles})
+target_link_libraries (simka  ${gatb-core-libraries})
 
 add_executable        (simkaCount  ../simkaPotara/SimkaCount.cpp ${ProjectFiles})
 target_link_libraries (simkaCount  ${gatb-core-libraries})
