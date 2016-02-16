@@ -8,11 +8,7 @@ cd build
 cmake -DMAJOR=1 -DMINOR=0 -DPATCH=0 ..
 # Run the newly created makefile:
 make
-# Copy the created binaries in directory:
-cp simka ../
-# Go back at the installation root directory
-cd ..
-#toy example
-./simka -in example/simka_input -out example/
+#run the toy example
+./simka -in ../example/simka_input.txt -out output/ -out-tmp temp_output
 
  

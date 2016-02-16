@@ -1,7 +1,10 @@
-Simka: Fast kmer-based method for estimating the similarity between numerous metagenomic datasets
-Gaetan Benoit, Pierre Perterlongo, Dominique Lavenier, Claire Lemaitre	  		  
-May 2015
+Simka
+Developper: Gaëtan Benoit
+Contact: gaetan.benoit@inria.fr
 
+Reference
+	Multiple comparative metagenomics using multiset k-mer counting
+	Gaëtan Benoit, Pierre Peterlongo, Mahendra Mariadassou, Erwan Drezen, Sophie Schbath, Dominique Lavenier, Claire Lemaitre
 
 LICENSE
 	*  GNU AFFERO GENERAL PUBLIC LICENSE
@@ -14,50 +17,86 @@ INSTALL
 	NOTE: If you retrieved a source archive, you can compile the project with 'sh INSTALL’
 
 	compilation was tested with gcc and g++ version>=4.5 and clang version>=4.1
+
+	The installation creates 3 executables:
+		- simka
+		- simkaCount
+		- simkaMerge
+	simkaCount and simkaMerge are used internally by simka. They must stay in the same folder than simka.
 	
 CHANGELOG
 
+-version 1  Feb 16, 2016  
+ stable version
 -version 0.1  May 28, 2015  
  initial public release
 
+TABLE OF CONTENTS
+1/ Description
+2/ Input
+3/ Output
+4/ Generating heatmaps
+5/ Usage for simka
+6/ The options of simka by command examples
+7/ Cluster options
+
+TODO:
+	option -keep-tmp-files
 
 MANUAL	 
 								
 1/ Description
-Simka estimates the similarity of two datasets based on their shared kmers.
-To scale on N large datasets, we use the multiset kmer counting algorithm of GATB-DSK.
+	Simka computes several ecology distances between N metagenomic read sets at the k-mer level.
+	Simka was implemented with the GATB library.
+
 
 2/ Input
-	The input file (-in) lists the datasets.
-	One dataset per line with the following syntax:
-		ID filename
-		ID filename1 filename2 filename3 ...
-	If multiple filenames are defined, the dataset is the concatenation of each file. Except if
-	-max-reads option is used, we get maxReads/N reads in each files (where N is the number
-	of filenames).
+	The input file (-in) lists the samples. This sample can be in fasta, fastq and in
+	gzip compressed format (.gz).
+	One sample per line with the following syntax:
+		ID1: filename.fasta
+		ID2: filename.fasta
+		ID3: filename.fasta
+	The sample ID in the name that will appear in the headers of the distance matrices.
 
-	You can see an input example in the folder «example»
-	Ex:
-		dataset_1_name /path/to/dataset1
-		dataset_2_name ../path/to/dataset2
-		paired_dataset /path/to/dataset_1 /path/to/dataset_2
-		n_dataset /path/to/dataset_1 /path/to/dataset_2 /path/to/dataset_3 /path/to/dataset_N
-		…
-		dataset_N_name ./path/to/datasetN
+	Simka supports the management of paired and concatenated files.
 
+	If you have paired files, you can list them separated by a ‘;’:
+		ID1_paired: filename_pair1.fasta ; filename_pair2.fasta
+
+	If you want to concatenate some files (for example, if you have multiple experiment
+	for a single environment), you can list them separated by a ‘,’:
+		ID1_concat: filenameX.fasta.gz , filenameY.fasta.gz
+	
+	You can combine concatenated and paired operations:
+		ID1_concat: filenameX_1.fasta.gz , filenameY_1.fasta.gz ; filenameX_2.fasta.gz , filenameY_2.fasta.gz
+	
+	There is a difference between paired and concatenated files depending on the value of the option -max-reads.
+	Example:
+		If -max-reads is set to 100. Simka will considered the 100 first reads of the first
+		paired files and the 100 first reads of the second paired files…
 
 3/ Output
-	By default, Simka provides two similarity function:
-		- presenceAbsence_jaccard
-			Based on the amount of distinct kmers shared by two datasets.
-			Informed about presence/abscence of species.
-		- abundance_jaccard
-			Based on the total kmers shared by two datasets
-			Informed about abundance of species.
 
-		Two matrix per similarity functions are provided:
-			- asymmetrical (asym): Result of Sim(A,B) is different than Sim(B,A). Useful to visualize absolute similarity (heatmap colors)
-			- symmetrical (sym): Useful to visualize relative similarity (heatmap dendrogram/clustering)
+	Temporary output
+
+		The option -out-tmp controls where the temporary files of Simka will be stored.
+		This option is mandatory since the disk usage of Simka can be high depending on the input size.
+		This option must target a directory on your faster disk with some free space.
+
+		At the end of an execution, Simka does not remove the temporary files.
+		These files can be re-used in case you want to add new samples in the input files.
+		In this case, Simka will not count again the samples already counted.
+
+	Results output
+
+		The option -out is the directory which will hold the distances matrices.
+		By default, Simka provides simple ecology abundance-based distance and several presence-absence-based distances.
+		To compute more complex ecology distance, you must add the option -ecology.
+
+		NOTE:
+			The distance matrices containing ‘simka-jaccard’ are distances introduces by the compared method (See equation 1 of the Simka paper).
+			This distances have the advantage of having a symmetrical and asymmetrical version.
 
 4/ Generating heatmaps
 	Required python
@@ -65,7 +104,7 @@ To scale on N large datasets, we use the multiset kmer counting algorithm of GAT
 
 	Run the script create_heatmaps.py in the scripts folder.
 		python create_heatmaps.py matrixFolder
-		where matrixFolder in the folder containing the results (output) of Simka
+		where matrixFolder in the folder containing the distances matrices of Simka (-out)
 		
 
 5/ Usage for simka
@@ -74,21 +113,53 @@ To scale on N large datasets, we use the multiset kmer counting algorithm of GAT
 		./simka
 
 
-6/ Examples:
+6/ The options of simka by command examples:
 
 	Run the toy example:
-		./simka -in example/simka_input -out example/
+		./simka -in example/simka_input.txt -out results -out-tmp temp_output
+
+	Compute all distances
+		./simka … -ecology
 
 	Changing kmer size
-		./simka -in example/simka_input -out example/ -kmer-size 22
+		./simka … -kmer-size 22
 
-	Filtering uniq kmers (potentially erroneous) and very high abundance kmers (potentially contaminants):
-		./simka -in example/simka_input -out example/ -abundance-min 2 -abundance-max 200
+	Filtering kmers seen one time (potentially erroneous) and very high abundance kmers (potentially contaminants):
+		./simka … -abundance-min 2 -abundance-max 200
+
+ 	Filtering over the sequences of the reads and k-mers:
+		Minimum read size of 90. Discards low complexity reads and k-mers (shannon index < 1.5)
+		./simka … -min-read-size 90 -read-shannon-index 1.5 -kmer-shannon-index 1.5
+          
+ 	Used only the first 1000 reads of each samples:
+		./simka … -max-reads 1000
 
 	Allowing more memory and cores improve the execution time:
-		./simka -in example/simka_input -out example/ -max-memory 60000 -nb-cores 8
+		./simka … -max-memory 20000 -nb-cores 8
+		 
 
- 	Filtering input reads:
-		Minimum read size of 90. Discards low complexity reads (shannon index < 1.5). 10000 reads maximum used per dataset
-		./simka -in example/simka_input -out example/ -min-read-size 90 -read-shannon-index 1.5 -max-reads 10000
-          
+7/ Cluster options
+
+	Simka can be ran on computer cluster equipped of a job scheduling system such as SGE.
+	Giving a job file template and a submission command, Simka will take care of creating and
+	synchronizing the jobs until the end of the execution.
+
+	You must provide the filenames to two job templates, one for counting and one for merging (-count-file -count-merge).
+	There are example of file templates in the folder ‘example/potara_job’.
+
+	And you must provide a submission command for both job (-count-cmd -merge-cmd)
+	Example for age:
+		-count-cmd qsub  -pe make 8 -merge-cmd qsub
+
+	The option -max-count and -max-merge controls the maximum of simultaneous jobs.
+	They have to be fixed if you system have a maximum of jobs restriction.
+
+	Command example:
+		./simka … -count-file example/potara_job/sge/job_count -merge-file example/potara_job/sge/job_merge
+                          -count-cmd qsub -pe make 34 -merge-cmd qsub
+			  -max-count 6 -max-merge 18 -nb-cores 200 -max-memory 500000
+                Simka will run a maximum of 6 simultaneous counting jobs, each using 200/6 cores and 500000/6 MB of memory.
+		Simka will run a maximum of 18 merging jobs. A merging job can not be ran on more than 1 core and use very low memory.
+		by default Simka use -nb-cores/2 counting jobs simultaneously and -nb-cores merging jobs simultaneously.
+
+
