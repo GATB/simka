@@ -559,6 +559,7 @@ template<size_t span>
 void SimkaAlgorithm<span>::parseArgs() {
 
 	_computeEcologyDistances = _options->get(STR_SIMKA_COMPUTE_ECOLOGY_DISTANCES);
+	_keepTmpFiles = _options->get(STR_SIMKA_KEEP_TMP_FILES);
 	_maxMemory = _options->getInt(STR_MAX_MEMORY);
     _nbCores = _options->getInt(STR_NB_CORES);
 	_inputFilename = _options->getStr(STR_URI_INPUT);

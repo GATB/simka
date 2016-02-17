@@ -288,6 +288,14 @@ public:
 			cout << "Output dir: " << this->_outputDir << endl;
 			cout << endl;
 		}
+
+		//bool keepTempFiles = false;
+		if(!this->_keepTmpFiles){
+			string command = "rm -rf " + this->_outputDirTemp;
+			system(command.c_str());
+			//cout << command << endl;
+			//System::file().rmdir(this->_outputDirTemp);
+		}
 	}
 
 	void parseArgs() {

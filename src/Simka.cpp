@@ -27,7 +27,7 @@ IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
     IOptionsParser* parser = parent; //new OptionsParser ("Simka");
 
 	//Main parser
-    parser->push_front (new OptionNoParam (STR_SIMKA_COMPUTE_ECOLOGY_DISTANCES, "compute ecology distances (Bray-Curtis, Jensen-Shannon...)", false));
+    parser->push_front (new OptionNoParam (STR_SIMKA_KEEP_TMP_FILES, "keep temporary files", false));
     parser->push_front (new OptionOneParam (STR_URI_OUTPUT_TMP, "output directory for temporary files", true));
     parser->push_front (new OptionOneParam (STR_URI_OUTPUT, "output directory for result files (distance matrices)", false, "./simka_results"));
     parser->push_front (new OptionOneParam (STR_URI_INPUT, "input file of datasets. One dataset per line: id: filename1...", true));
@@ -48,6 +48,10 @@ IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
     //parser->getParser(STR_URI_INPUT)->setHelp("input file of datasets. One dataset per line: id filename1 filename2...");
 
     //if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_URI_OUTPUT_TMP)))  {  p->s; }
+
+	//Distance parser
+    IOptionsParser* distanceParser = new OptionsParser ("distance");
+    distanceParser->push_back (new OptionNoParam (STR_SIMKA_COMPUTE_ECOLOGY_DISTANCES, "compute ecology distances (Bray-Curtis, Jensen-Shannon...)", false));
 
 	//Kmer parser
     IOptionsParser* kmerParser = new OptionsParser ("kmer");
@@ -89,6 +93,7 @@ IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
     //distanceParser->push_back (new OptionNoParam (STR_SIMKA_DISTANCE_KULCZYNSKI.c_str(), "compute Kulczynski distance"));
 
 
+	parser->push_back(distanceParser);
 	parser->push_back(kmerParser);
 	parser->push_back(readParser);
 	parser->push_back(coreParser);

@@ -44,6 +44,7 @@ const string STR_SIMKA_MIN_READ_SHANNON_INDEX = "-read-shannon-index";
 const string STR_SIMKA_MIN_KMER_SHANNON_INDEX = "-kmer-shannon-index";
 const string STR_KMER_PER_READ = "-kmer-per-read";
 const string STR_SIMKA_COMPUTE_ECOLOGY_DISTANCES = "-ecology";
+const string STR_SIMKA_KEEP_TMP_FILES = "-keep-tmp";
 
 enum SIMKA_SOLID_KIND{
 	RANGE,
@@ -1235,7 +1236,7 @@ protected:
 
 	string _largerBankId;
 	bool _computeEcologyDistances;
-
+	bool _keepTmpFiles;
 	//string _matDksNormFilename;
 	//string _matDksPercFilename;
 	//string _matAksNormFilename;
