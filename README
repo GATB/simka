@@ -40,9 +40,6 @@ TABLE OF CONTENTS
 6/ The options of simka by command examples
 7/ Cluster options
 
-TODO:
-	option -keep-tmp-files
-
 MANUAL	 
 								
 1/ Description
@@ -95,7 +92,8 @@ MANUAL
 		To compute more complex ecology distance, you must add the option -ecology.
 
 		NOTE:
-			The distance matrices containing ‘simka-jaccard’ are distances introduces by the compared method (See equation 1 of the Simka paper).
+			The distance matrices containing ‘simka-jaccard’ are distances introduces by the compared
+			method (See equation 1 of the Simka paper).
 			This distances have the advantage of having a symmetrical and asymmetrical version.
 
 4/ Generating heatmaps
