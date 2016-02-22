@@ -5,10 +5,8 @@ mkdir  build
 # Go in the 'build' directory
 cd build
 # Prepare the makefile
-cmake -DMAJOR=1 -DMINOR=0 -DPATCH=0 ..
+cmake ..
 # Run the newly created makefile:
 make
 #run the toy example
 ./simka -in ../example/simka_input.txt -out output/ -out-tmp temp_output
-
- 

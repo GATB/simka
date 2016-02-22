@@ -41,33 +41,32 @@ endif()
 #       - from project source 
 #       - from GATB-CORE source
 #       - from dsk source 
-include_directories (include ${gatb-core-includes} ${PROJECT_SOURCE_DIR}/src)
+include_directories (include ${gatb-core-includes} ${PROJECT_SOURCE_DIR}/src/core ${PROJECT_SOURCE_DIR}/src)
 
 # we generate one file per template specialization
 FOREACH (KSIZE ${gatb-core-klist})
     configure_file (
-        ${PROJECT_SOURCE_DIR}/src/SimkaAlgorithmTemplate.cpp.in
-        ${PROJECT_BINARY_DIR}/src/template/SimkaAlgorithmTemplate_${KSIZE}.cpp
+        ${PROJECT_SOURCE_DIR}/src/core/SimkaAlgorithmTemplate.cpp.in
+        ${PROJECT_BINARY_DIR}/src/core/template/SimkaAlgorithmTemplate_${KSIZE}.cpp
     )
 ENDFOREACH ()
 
 # we define the files to be compiled
-file (GLOB_RECURSE  ProjectFiles  src/Simka*  ${PROJECT_BINARY_DIR}/src/template/*.cpp)
+file (GLOB_RECURSE  ProjectFiles  src/core/Simka*  ${PROJECT_BINARY_DIR}/src/core/template/*.cpp)
 
 # we define the artifact to be built: the project binary
 #add_executable        (${PROJECT_NAME}  src/main.cpp ${ProjectFiles})
-
 # we define which libraries to be linked with project binary
 #target_link_libraries (${PROJECT_NAME}  ${gatb-core-libraries})
 
 
-add_executable        (simka  ../simkaPotara/SimkaPotara.cpp ${ProjectFiles})
+add_executable        (simka  src/SimkaPotara.cpp ${ProjectFiles})
 target_link_libraries (simka  ${gatb-core-libraries})
 
-add_executable        (simkaCount  ../simkaPotara/SimkaCount.cpp ${ProjectFiles})
+add_executable        (simkaCount  src/SimkaCount.cpp ${ProjectFiles})
 target_link_libraries (simkaCount  ${gatb-core-libraries})
 
-add_executable        (simkaMerge  ../simkaPotara/SimkaMerge.cpp ${ProjectFiles})
+add_executable        (simkaMerge  src/SimkaMerge.cpp ${ProjectFiles})
 target_link_libraries (simkaMerge  ${gatb-core-libraries})
 
 ################################################################################
