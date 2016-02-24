@@ -35,16 +35,17 @@ TABLE OF CONTENTS
 1/ Description
 2/ Input
 3/ Output
-4/ Generating heatmaps
+4/ Generating heatmaps and clustering
 5/ Usage for simka
 6/ The options of simka by command examples
-7/ Cluster options
+7/ Computer cluster options
+8/ Possible issues with Simka
 
 MANUAL	 
 								
 1/ Description
 	Simka computes several ecology distances between N metagenomic read sets at the k-mer level.
-	Simka was implemented with the GATB library.
+	Simka was implemented with the GATB library (http://gatb.inria.fr/)
 
 
 2/ Input
@@ -91,18 +92,20 @@ MANUAL
 		By default, Simka provides simple ecology abundance-based distance and several presence-absence-based distances.
 		To compute more complex ecology distance, you must add the option -ecology.
 
-		NOTE:
-			The distance matrices containing ‘simka-jaccard’ are distances introduces by the compared
-			method (See equation 1 of the Simka paper).
-			This distances have the advantage of having a symmetrical and asymmetrical version.
+		The matrice names follow this template:
+			mat_[abundance|presenceAbsence]_[distanceName].csv
 
-4/ Generating heatmaps
+			The distance matrices containing ‘simka’ are distances introduces by the comparead
+			method (See equation 1 of the Simka paper).
+			These distances have the advantage of having a symmetrical and asymmetrical version.
+
+4/ Generating heatmaps and clustering
 	Required python
 	Required R and gplots package
 
 	Run the script create_heatmaps.py in the scripts folder.
-		python create_heatmaps.py matrixFolder
-		where matrixFolder in the folder containing the distances matrices of Simka (-out)
+		Ex: python create_heatmaps.py matricesFolder
+		where matricesFolder in the folder containing the distances matrices of Simka (-out)
 		
 
 5/ Usage for simka
@@ -141,7 +144,7 @@ MANUAL
 		./simka … -max-memory 20000 -nb-cores 8
 		 
 
-7/ Cluster options
+7/ Computer cluster options
 
 	Simka can be ran on computer cluster equipped of a job scheduling system such as SGE.
 	Giving a job file template and a submission command, Simka will take care of creating and
@@ -151,8 +154,8 @@ MANUAL
 	There are example of file templates in the folder ‘example/potara_job’.
 
 	And you must provide a submission command for both job (-count-cmd -merge-cmd)
-	Example for age:
-		-count-cmd qsub  -pe make 8 -merge-cmd qsub
+	Example for SGE:
+		-count-cmd ‘qsub  -pe make 8’ -merge-cmd qsub
 
 	The option -max-count and -max-merge controls the maximum of simultaneous jobs.
 	They have to be fixed if you system have a maximum of jobs restriction.
@@ -166,3 +169,11 @@ MANUAL
 		by default Simka use -nb-cores/2 counting jobs simultaneously and -nb-cores merging jobs simultaneously.
 
 
+8/ Possible issues with Simka
+	
+	- TOO MUCH OPENED FILES
+		Simka is a disk-based method. Depending on the chosen options (-nb-cores -max-memory), it is possible that Simka
+		required a lot of open files.
+		You can fix this issue in two ways:
+			- increasing the maximum open files limit imposed by your system: ulimit -n maxFiles
+			- reducing the number of files opened by Simka by using the option -max-count and -max-merge

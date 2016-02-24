@@ -512,11 +512,11 @@ void SimkaStatistics::outputMatrix(const string& outputDir, const vector<string>
 	//strKmerSize += string(buffer);
 	//_outputFilenameSuffix += strKmerSize;
 
-	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_chord-hellinger", _simkaDistance._matrix_presenceAbsence_chordHellinger);
+	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_chord", _simkaDistance._matrix_presenceAbsence_chordHellinger);
 	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_whittaker", _simkaDistance._matrix_presenceAbsence_Whittaker);
 	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_kulczynski", _simkaDistance._matrix_presenceAbsence_kulczynski);
-	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_sorensen-brayCurtis", _simkaDistance._matrix_presenceAbsence_sorensenBrayCurtis);
-	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_jaccard-canberra", _simkaDistance._matrix_presenceAbsence_jaccardCanberra);
+	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_braycurtis", _simkaDistance._matrix_presenceAbsence_sorensenBrayCurtis);
+	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_jaccard", _simkaDistance._matrix_presenceAbsence_jaccardCanberra);
 	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_simka-jaccard", _simkaDistance._matrix_presenceAbsence_jaccard_simka);
 	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_simka-jaccard_asym", _simkaDistance._matrix_presenceAbsence_jaccard_simka_asym);
 	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_ochiai", _simkaDistance._matrix_presenceAbsence_ochiai);
@@ -524,16 +524,16 @@ void SimkaStatistics::outputMatrix(const string& outputDir, const vector<string>
 
 	dumpMatrix(outputDir, bankNames, "mat_abundance_simka-jaccard", _simkaDistance._matrixSymJaccardAbundance);
 	dumpMatrix(outputDir, bankNames, "mat_abundance_simka-jaccard_asym", _simkaDistance._matrixAsymJaccardAbundance);
-	dumpMatrix(outputDir, bankNames, "mat_abundance_ochiai", _simkaDistance._matrixOchiai);
-	dumpMatrix(outputDir, bankNames, "mat_abundance_sorensen", _simkaDistance._matrixSorensen);
-	dumpMatrix(outputDir, bankNames, "mat_abundance_jaccard", _simkaDistance._matrixJaccardAbundance);
+	dumpMatrix(outputDir, bankNames, "mat_abundance_ab-ochiai", _simkaDistance._matrixOchiai);
+	dumpMatrix(outputDir, bankNames, "mat_abundance_ab-sorensen", _simkaDistance._matrixSorensen);
+	dumpMatrix(outputDir, bankNames, "mat_abundance_ab-jaccard", _simkaDistance._matrixJaccardAbundance);
 
 	if(_computeEcologyDistances){
 		dumpMatrix(outputDir, bankNames, "mat_abundance_chord", _simkaDistance._matrixChord);
 		dumpMatrix(outputDir, bankNames, "mat_abundance_hellinger", _simkaDistance._matrixHellinger);
 		dumpMatrix(outputDir, bankNames, "mat_abundance_whittaker", _simkaDistance._matrixWhittaker);
-		dumpMatrix(outputDir, bankNames, "mat_abundance_jensenShannon", _simkaDistance._matrixKullbackLeibler);
-		dumpMatrix(outputDir, bankNames, "mat_abundance_brayCurtis", _simkaDistance._matrixBrayCurtis);
+		dumpMatrix(outputDir, bankNames, "mat_abundance_jensenshannon", _simkaDistance._matrixKullbackLeibler);
+		dumpMatrix(outputDir, bankNames, "mat_abundance_braycurtis", _simkaDistance._matrixBrayCurtis);
 		dumpMatrix(outputDir, bankNames, "mat_abundance_canberra", _simkaDistance._matrixCanberra);
 		dumpMatrix(outputDir, bankNames, "mat_abundance_kulczynski", _simkaDistance._matrixKulczynski);
 	}
