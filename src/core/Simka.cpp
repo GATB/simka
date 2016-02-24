@@ -30,7 +30,7 @@ IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
     parser->push_front (new OptionNoParam (STR_SIMKA_KEEP_TMP_FILES, "keep temporary files", false));
     parser->push_front (new OptionOneParam (STR_URI_OUTPUT_TMP, "output directory for temporary files", true));
     parser->push_front (new OptionOneParam (STR_URI_OUTPUT, "output directory for result files (distance matrices)", false, "./simka_results"));
-    parser->push_front (new OptionOneParam (STR_URI_INPUT, "input file of datasets. One dataset per line: id: filename1...", true));
+    parser->push_front (new OptionOneParam (STR_URI_INPUT, "input file of samples. One sample per line: id1: filename1...", true));
     //parser->push_back (new OptionOneParam (STR_URI_OUTPUT_TMP, "output directory for temporary files", true));
 	//IOptionsParser* parser = getParser();
 	//IOptionsParser* dskParser = SortingCountAlgorithm<>::getOptionsParser();
@@ -73,7 +73,7 @@ IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
 
     //Read filter parser
     IOptionsParser* readParser = new OptionsParser ("read");
-    readParser->push_back (new OptionOneParam (STR_SIMKA_MAX_READS.c_str(), "maximum number of reads per dataset to process. Can be -1: use all reads. Can be 0: estimate it", false, "0" ));
+    readParser->push_back (new OptionOneParam (STR_SIMKA_MAX_READS.c_str(), "maximum number of reads per sample to process. Can be -1: use all reads. Can be 0: estimate it", false, "-1" ));
     readParser->push_back (new OptionOneParam (STR_SIMKA_MIN_READ_SIZE.c_str(), "minimal size a read should have to be kept", false, "0" ));
     readParser->push_back (new OptionOneParam (STR_SIMKA_MIN_READ_SHANNON_INDEX.c_str(), "minimal Shannon index a read should have to be kept. Float in [0,2]", false, "0" ));
 

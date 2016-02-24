@@ -30,8 +30,9 @@
 #include <gatb/kmer/impl/RepartitionAlgorithm.hpp>
 #include <gatb/kmer/impl/ConfigurationAlgorithm.hpp>
 
-#include <unistd.h>
-#include <sys/wait.h>
+//#include <unistd.h>
+//#include <sys/wait.h>
+#include <cstdlib>
 
 //#define CLUSTER
 //#define SERIAL
@@ -544,7 +545,7 @@ public:
 
 
 
-        size_t chosenBankId;
+        size_t chosenBankId = 0;
     	SimkaSequenceFilter dummyFilter(0, 0);
     	//vector<SimkaBankFiltered<SimkaSequenceFilter>*> banksToDelete;
 
@@ -639,7 +640,7 @@ public:
 
 		_nbPartitions = max((size_t)maxPart, (size_t)_maxJobMerge);
 
-		cout << "Simka will use " << _nbPartitions << " partitions" << endl;
+		cout << "Nb partitions: " << _nbPartitions << " partitions" << endl << endl << endl;
 		//_nbPartitions = max((int)_nbPartitions, (int)30);
 
 		config1._nb_partitions = _nbPartitions;
@@ -710,6 +711,7 @@ public:
 
 	void printCountInfo(){
 
+		char * pEnd;
 		vector<u_int64_t> kmerPerParts(_nbPartitions, 0);
 
 
@@ -722,7 +724,7 @@ public:
 			size_t j = 0;
 			while(getline(file, line)){
 				if(line == "") continue;
-				kmerPerParts[j] += stoull(line);
+				kmerPerParts[j] += strtoull(line.c_str(), NULL, 10);
 				j += 1;
 			}
 			file.close();
@@ -1022,12 +1024,12 @@ public:
 			}
 			file.close();
 
-			u_int64_t nbReads = stoull(lines[0]);
+			u_int64_t nbReads = strtoull(lines[0].c_str(), NULL, 10) ;
 			mainStats._datasetNbReads.push_back(nbReads);
-			mainStats._nbSolidDistinctKmersPerBank[i] = stoull(lines[1]);
+			mainStats._nbSolidDistinctKmersPerBank[i] = strtoull(lines[1].c_str(), NULL, 10);
 			//cout << mainStats._nbSolidDistinctKmersPerBank[i] << endl;
-			mainStats._nbSolidKmersPerBank[i] = stoull(lines[2]);
-			mainStats._chord_sqrt_N2[i] = sqrt(stoull(lines[3]));
+			mainStats._nbSolidKmersPerBank[i] = strtoull(lines[2].c_str(), NULL, 10);
+			mainStats._chord_sqrt_N2[i] = sqrt(strtoull(lines[3].c_str(), NULL, 10));
     	}
 
 	}

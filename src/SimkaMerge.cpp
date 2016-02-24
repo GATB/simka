@@ -213,11 +213,11 @@ public:
 			}
 			file.close();
 
-			u_int64_t nbReads = stoull(lines[0]);
+			u_int64_t nbReads = strtoull(lines[0].c_str(), NULL, 10);
 			_stats->_datasetNbReads.push_back(nbReads);
-			_stats->_nbSolidDistinctKmersPerBank[i] = stoull(lines[1]);
-			_stats->_nbSolidKmersPerBank[i] = stoull(lines[2]);
-			_stats->_chord_sqrt_N2[i] = sqrt(stoull(lines[3]));
+			_stats->_nbSolidDistinctKmersPerBank[i] = strtoull(lines[1].c_str(), NULL, 10);
+			_stats->_nbSolidKmersPerBank[i] = strtoull(lines[2].c_str(), NULL, 10);
+			_stats->_chord_sqrt_N2[i] = sqrt(strtoull(lines[3].c_str(), NULL, 10));
     	}
 
 	}
@@ -269,7 +269,7 @@ public:
 				if(line == "") continue;
 				if(currentPart == _partitionId){
 					//cout << stoull(line) << endl;
-					nbKmers += stoull(line);
+					nbKmers += strtoull(line.c_str(), NULL, 10);
 					break;
 				}
 				currentPart += 1;
@@ -342,7 +342,7 @@ public:
 		size_t nbBankThatHaveKmer = 0;
 
 	    //fill the  priority queue with the first elems
-	    for (int ii=0; ii<_nbBanks; ii++)
+	    for (size_t ii=0; ii<_nbBanks; ii++)
 	    {
 	        if(its[ii]->next())  {  pq.push(kxp(ii,its[ii]->value()));  }
 	    }

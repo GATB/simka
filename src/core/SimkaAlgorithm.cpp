@@ -789,26 +789,26 @@ void SimkaAlgorithm<span>::computeMaxReads(){
 	u_int64_t meanReads = totalReads / _nbBanks;
 
 	if(_options->getInt(STR_VERBOSE) != 0){
-		cout << "Smaller datasets contains: " << minReads << " reads" << endl;
-		cout << "Larger datasets contains: " << maxReads << " reads" << endl;
-		cout << "Whole datasets contains a mean of: " << meanReads << " reads" << endl << endl;
+		cout << "Smaller sample contains: " << minReads << " reads" << endl;
+		cout << "Larger sample contains: " << maxReads << " reads" << endl;
+		cout << "Whole dataset contains a mean of: " << meanReads << " reads" << endl << endl;
 	}
 
 
 	if(_maxNbReads == 0){
 		_maxNbReads = (minReads + meanReads) / 2;
 		if(_options->getInt(STR_VERBOSE) != 0){
-			cout << "Simka will use: " << _maxNbReads << " reads per dataset"<< endl << endl;
+			cout << "Reads per sample used up to: " << _maxNbReads << endl << endl;
 		}
 	}
 	else if(_maxNbReads == -1){
 		if(_options->getInt(STR_VERBOSE) != 0)
-			cout << "Simka will use all reads"<< endl << endl;
+			cout << "Reads per sample used: all"<< endl << endl;
 		_maxNbReads = 0;
 	}
 	else{
 		if(_options->getInt(STR_VERBOSE) != 0){
-			cout << "Simka will use: " << _maxNbReads << " reads per dataset"<< endl << endl;
+			cout << "Reads per sample used up to: " << _maxNbReads << endl << endl;
 		}
 	}
 

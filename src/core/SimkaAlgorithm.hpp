@@ -1210,7 +1210,7 @@ protected:
 	pair<size_t, size_t> _abundanceThreshold;
 	SIMKA_SOLID_KIND _solidKind;
 	bool _soliditySingle;
-	size_t _maxNbReads;
+	int64_t _maxNbReads;
 	size_t _minReadSize;
 	double _minReadShannonIndex;
 	double _minKmerShannonIndex;
