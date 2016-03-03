@@ -642,6 +642,7 @@ public:
 
 
 		_nbPartitions = max((size_t)maxPart, (size_t)_maxJobMerge);
+		_nbPartitions = max(_nbPartitions, (size_t)32);
 
 		cout << "Nb partitions: " << _nbPartitions << " partitions" << endl << endl << endl;
 		//_nbPartitions = max((int)_nbPartitions, (int)30);
