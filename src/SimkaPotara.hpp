@@ -474,6 +474,9 @@ public:
 			_maxJobMerge = maxCores;
 		}
 
+		_maxJobCount = min(_maxJobCount, maxCores);
+		_maxJobMerge = min(_maxJobMerge, maxCores);
+
 		_coresPerJob = maxCores / _maxJobCount;
 		_coresPerJob = max((size_t)1, _coresPerJob);
 
