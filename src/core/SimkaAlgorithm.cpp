@@ -39,7 +39,7 @@ _stats(stats)
 	_soliditySingle = soliditySingle;
 	_minKmerShannonIndex = minKmerShannonIndex;
 
-	_localStats = new SimkaStatistics(_nbBanks, _stats._computeEcologyDistances);
+	_localStats = new SimkaStatistics(_nbBanks, _stats._computeSimpleDistances,  _stats._computeComplexDistances);
 
 	_nbKmerCounted = 0;
 	isAbundanceThreshold = _abundanceThreshold.first > 1 || _abundanceThreshold.second < 1000000;
@@ -558,7 +558,8 @@ bool SimkaAlgorithm<span>::setup() {
 template<size_t span>
 void SimkaAlgorithm<span>::parseArgs() {
 
-	_computeEcologyDistances = _options->get(STR_SIMKA_COMPUTE_ECOLOGY_DISTANCES);
+	_computeSimpleDistances = _options->get(STR_SIMKA_COMPUTE_ALL_SIMPLE_DISTANCES);
+	_computeComplexDistances = _options->get(STR_SIMKA_COMPUTE_ALL_COMPLEX_DISTANCES);
 	_keepTmpFiles = _options->get(STR_SIMKA_KEEP_TMP_FILES);
 	_maxMemory = _options->getInt(STR_MAX_MEMORY);
     _nbCores = _options->getInt(STR_NB_CORES);
@@ -928,7 +929,7 @@ void SimkaAlgorithm<span>::count(){
 
 	//SimkaDistanceParam distanceParams(_options);
 
-	_stats = new SimkaStatistics(_nbBanks, _computeEcologyDistances);
+	_stats = new SimkaStatistics(_nbBanks, _computeSimpleDistances, _computeComplexDistances);
 
 	SortingCountAlgorithm<span> sortingCount (_banks, _options);
 

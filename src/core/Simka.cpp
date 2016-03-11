@@ -51,7 +51,8 @@ IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
 
 	//Distance parser
     IOptionsParser* distanceParser = new OptionsParser ("distance");
-    distanceParser->push_back (new OptionNoParam (STR_SIMKA_COMPUTE_ECOLOGY_DISTANCES, "compute ecology distances (Bray-Curtis, Jensen-Shannon...)", false));
+    distanceParser->push_back (new OptionNoParam (STR_SIMKA_COMPUTE_ALL_SIMPLE_DISTANCES, "compute all simple distances (Chord, Hellinger...)", false));
+    distanceParser->push_back (new OptionNoParam (STR_SIMKA_COMPUTE_ALL_COMPLEX_DISTANCES, "compute all complex distances (Bray-Curtis, Jensen-Shannon...)", false));
 
 	//Kmer parser
     IOptionsParser* kmerParser = new OptionsParser ("kmer");

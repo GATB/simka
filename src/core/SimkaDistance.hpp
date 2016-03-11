@@ -69,7 +69,7 @@ class SimkaStatistics{
 
 public:
 
-	SimkaStatistics(size_t nbBanks, bool computeEcologyDistances);
+	SimkaStatistics(size_t nbBanks, bool computeSimpleDistances, bool computeComplexDistances);
 	SimkaStatistics& operator+=  (const SimkaStatistics& other);
 	void print();
 	void load(const string& filename);
@@ -77,7 +77,8 @@ public:
 	void outputMatrix(const string& outputDir, const vector<string>& _bankNames);
 
     size_t _nbBanks;
-    bool _computeEcologyDistances;
+    bool _computeSimpleDistances;
+    bool _computeComplexDistances;
 
 	vector<u_int64_t> _nbSolidDistinctKmersPerBank;
 	vector<u_int64_t> _nbSolidKmersPerBank;

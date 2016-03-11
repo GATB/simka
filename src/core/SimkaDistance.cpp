@@ -24,11 +24,12 @@
 
 
 
-SimkaStatistics::SimkaStatistics(size_t nbBanks, bool computeEcologyDistances)
+SimkaStatistics::SimkaStatistics(size_t nbBanks, bool computeSimpleDistances, bool computeComplexDistances)
 {
 
 	_nbBanks = nbBanks;
-	_computeEcologyDistances = computeEcologyDistances;
+	_computeSimpleDistances = computeSimpleDistances;
+	_computeComplexDistances = computeComplexDistances;
 
 	//_nbBanks = 10000;
 
@@ -528,14 +529,18 @@ void SimkaStatistics::outputMatrix(const string& outputDir, const vector<string>
 	dumpMatrix(outputDir, bankNames, "mat_abundance_ab-sorensen", _simkaDistance._matrixSorensen);
 	dumpMatrix(outputDir, bankNames, "mat_abundance_ab-jaccard", _simkaDistance._matrixJaccardAbundance);
 
-	if(_computeEcologyDistances){
+
+	if(_computeSimpleDistances){
 		dumpMatrix(outputDir, bankNames, "mat_abundance_chord", _simkaDistance._matrixChord);
 		dumpMatrix(outputDir, bankNames, "mat_abundance_hellinger", _simkaDistance._matrixHellinger);
+		dumpMatrix(outputDir, bankNames, "mat_abundance_kulczynski", _simkaDistance._matrixKulczynski);
+	}
+
+	if(_computeComplexDistances){
 		dumpMatrix(outputDir, bankNames, "mat_abundance_whittaker", _simkaDistance._matrixWhittaker);
 		dumpMatrix(outputDir, bankNames, "mat_abundance_jensenshannon", _simkaDistance._matrixKullbackLeibler);
 		dumpMatrix(outputDir, bankNames, "mat_abundance_braycurtis", _simkaDistance._matrixBrayCurtis);
 		dumpMatrix(outputDir, bankNames, "mat_abundance_canberra", _simkaDistance._matrixCanberra);
-		dumpMatrix(outputDir, bankNames, "mat_abundance_kulczynski", _simkaDistance._matrixKulczynski);
 	}
 }
 
@@ -599,7 +604,6 @@ void SimkaStatistics::dumpMatrix(const string& outputDir, const vector<string>& 
 
 SimkaDistance::SimkaDistance(SimkaStatistics& stats) : _stats(stats){
 	_nbBanks = _stats._nbBanks;
-	//_computeEcologyDistances = _stats.computeEcologyDistances;
 
 	u_int64_t a;
 	u_int64_t b;

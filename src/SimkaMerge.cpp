@@ -34,14 +34,15 @@ using namespace std;
 
 struct Parameter
 {
-    Parameter (IProperties* props, string inputFilename, string outputDir, size_t partitionId, size_t kmerSize, double minShannonIndex, bool computeEcologyDistances) : props(props), inputFilename(inputFilename), outputDir(outputDir), partitionId(partitionId), kmerSize(kmerSize), minShannonIndex(minShannonIndex), computeEcologyDistances(computeEcologyDistances) {}
+    Parameter (IProperties* props, string inputFilename, string outputDir, size_t partitionId, size_t kmerSize, double minShannonIndex, bool computeSimpleDistances, bool computeComplexDistances) : props(props), inputFilename(inputFilename), outputDir(outputDir), partitionId(partitionId), kmerSize(kmerSize), minShannonIndex(minShannonIndex), computeSimpleDistances(computeSimpleDistances), computeComplexDistances(computeComplexDistances) {}
     IProperties* props;
     string inputFilename;
     string outputDir;
     size_t partitionId;
     size_t kmerSize;
     double minShannonIndex;
-    bool computeEcologyDistances;
+    bool computeSimpleDistances;
+    bool computeComplexDistances;
 };
 
 
@@ -232,7 +233,7 @@ public:
 		_nbBanks = _datasetIds.size();
 
 		//SimkaDistanceParam distanceParams(p.props);
-		_stats = new SimkaStatistics(_nbBanks, p.computeEcologyDistances);
+		_stats = new SimkaStatistics(_nbBanks, p.computeSimpleDistances, p.computeComplexDistances);
 
 		createInfo(p);
 
@@ -558,7 +559,8 @@ public:
         getParser()->push_back (new OptionOneParam ("-max-memory",   "bank name", true));
         getParser()->push_back (new OptionOneParam (STR_SIMKA_MIN_KMER_SHANNON_INDEX,   "bank name", true));
 
-        getParser()->push_back (new OptionNoParam (STR_SIMKA_COMPUTE_ECOLOGY_DISTANCES.c_str(), "compute ecology distances"));
+        getParser()->push_back (new OptionNoParam (STR_SIMKA_COMPUTE_ALL_SIMPLE_DISTANCES.c_str(), "compute simple distances"));
+        getParser()->push_back (new OptionNoParam (STR_SIMKA_COMPUTE_ALL_COMPLEX_DISTANCES.c_str(), "compute complex distances"));
     }
 
     void execute ()
@@ -570,9 +572,10 @@ public:
     	string inputFilename =  getInput()->getStr(STR_URI_INPUT);
     	string outputDir =  getInput()->getStr("-out-tmp-simka");
     	double minShannonIndex =   getInput()->getDouble(STR_SIMKA_MIN_KMER_SHANNON_INDEX);
-    	bool computeEcologyDistances =   getInput()->get(STR_SIMKA_COMPUTE_ECOLOGY_DISTANCES);
+    	bool computeSimpleDistances =   getInput()->get(STR_SIMKA_COMPUTE_ALL_SIMPLE_DISTANCES);
+    	bool computeComplexDistances =   getInput()->get(STR_SIMKA_COMPUTE_ALL_COMPLEX_DISTANCES);
 
-    	Parameter params(getInput(), inputFilename, outputDir, partitionId, kmerSize, minShannonIndex, computeEcologyDistances);
+    	Parameter params(getInput(), inputFilename, outputDir, partitionId, kmerSize, minShannonIndex, computeSimpleDistances, computeComplexDistances);
 
         Integer::apply<Functor,Parameter> (kmerSize, params);
 

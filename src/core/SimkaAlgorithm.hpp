@@ -43,7 +43,8 @@ const string STR_SIMKA_MIN_READ_SIZE = "-min-read-size";
 const string STR_SIMKA_MIN_READ_SHANNON_INDEX = "-read-shannon-index";
 const string STR_SIMKA_MIN_KMER_SHANNON_INDEX = "-kmer-shannon-index";
 const string STR_KMER_PER_READ = "-kmer-per-read";
-const string STR_SIMKA_COMPUTE_ECOLOGY_DISTANCES = "-ecology";
+const string STR_SIMKA_COMPUTE_ALL_SIMPLE_DISTANCES= "-simple-dist";
+const string STR_SIMKA_COMPUTE_ALL_COMPLEX_DISTANCES = "-complex-dist";
 const string STR_SIMKA_KEEP_TMP_FILES = "-keep-tmp";
 
 enum SIMKA_SOLID_KIND{
@@ -256,10 +257,13 @@ public:
 		for(size_t i=0; i<counts.size(); i++)
 			if(counts[i]) _sharedBanks.push_back(i);
 
-		computeStats(counts);
+		updateDistanceDefault(counts);
 
-    	if(_stats->_computeEcologyDistances)
-    		computeStatsEcology(counts);
+    	if(_stats->_computeSimpleDistances)
+    		updateDistanceSimple(counts);
+
+    	if(_stats->_computeComplexDistances)
+    		updateDistanceComplex(counts);
     	//else
     	//	computeStats(counts);
 
@@ -268,7 +272,7 @@ public:
     }
 
 
-	void computeStats(const CountVector& counts){
+	void updateDistanceDefault(const CountVector& counts){
 
 
 		for(size_t ii=0; ii<_sharedBanks.size(); ii++){
@@ -284,6 +288,23 @@ public:
 				_stats->_matrixNbSharedKmers[j][i] += counts[j];
 				_stats->_matrixNbDistinctSharedKmers[i][j] += 1;
 
+			}
+		}
+
+	}
+
+	void updateDistanceSimple(const CountVector& counts){
+
+
+		for(size_t ii=0; ii<_sharedBanks.size(); ii++){
+			for(size_t jj=ii+1; jj<_sharedBanks.size(); jj++){
+
+				u_int16_t i = _sharedBanks[ii];
+				u_int16_t j = _sharedBanks[jj];
+
+				u_int64_t abundanceI = counts[i];
+				u_int64_t abundanceJ = counts[j];
+
 				//_stats->_chord_NiNj[i][j] += abundanceI * abundanceJ;
 				_stats->_chord_NiNj[i][j] += (abundanceI * abundanceJ) / (_stats->_chord_sqrt_N2[i]*_stats->_chord_sqrt_N2[j]);
 				_stats->_hellinger_SqrtNiNj[i][j] += sqrt(abundanceI * abundanceJ);
@@ -291,12 +312,9 @@ public:
 			}
 		}
 
-
-
-
 	}
 
-	void computeStatsEcology(const CountVector& counts){
+	void updateDistanceComplex(const CountVector& counts){
 
 
 		//_sharedBanks.clear();
@@ -1244,7 +1262,8 @@ protected:
     vector<size_t> _nbBankPerDataset;
 
 	string _largerBankId;
-	bool _computeEcologyDistances;
+	bool _computeSimpleDistances;
+	bool _computeComplexDistances;
 	bool _keepTmpFiles;
 	//string _matDksNormFilename;
 	//string _matDksPercFilename;
