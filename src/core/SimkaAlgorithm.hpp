@@ -190,16 +190,22 @@ public:
 
 #ifdef CHI2_TEST
     	float X2j = 0;
+
+    	_totalAbundance = 0;
+    	for(size_t i=0; i<counts.size(); i++){
+    		_totalAbundance += counts[i];
+    	}
+
     	for(size_t i=0; i<counts.size(); i++){
 
     		float Ni = counts[i];
-    		//cout << _datasetNbReads[i] << endl;
-    		X2j += pow((Ni/_totalAbundance - _datasetNbReads[i]/_totalReads), 2) / (_datasetNbReads[i] / (_totalReads*_totalAbundance));
+    		X2j += pow((Ni/_totalAbundance - _stats->_datasetNbReads[i]/_totalReads), 2) / (_stats->_datasetNbReads[i] / (_totalReads*_totalAbundance));
     	}
 
     	//std::chi_squared_distribution<double> distribution(_nbBanks-1);
     	double pvalue = chisqr(_nbBanks-1, X2j);
 
+    	cout <<  X2j << "    " << pvalue << endl;
     	/*
     	cout << kmer.toString(_kmerSize) << "  [";
     	for(size_t i=0; i<counts.size(); i++)
