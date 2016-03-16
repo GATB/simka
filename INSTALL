@@ -10,3 +10,4 @@ cmake ..
 make
 #run the toy example
 ./simka -in ../example/simka_input.txt -out output/ -out-tmp temp_output
+
