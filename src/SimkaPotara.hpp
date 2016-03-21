@@ -642,7 +642,7 @@ public:
 
 
 		_nbPartitions = max((size_t)maxPart, (size_t)_maxJobMerge);
-		_nbPartitions = max(_nbPartitions, (size_t)32);
+		//_nbPartitions = max(_nbPartitions, (size_t)32);
 
 		cout << "Nb partitions: " << _nbPartitions << " partitions" << endl << endl << endl;
 		//_nbPartitions = max((int)_nbPartitions, (int)30);
@@ -781,7 +781,7 @@ public:
 			command += " " + string(STR_SIMKA_MIN_READ_SHANNON_INDEX) + " " + Stringify::format("%f", this->_minReadShannonIndex);
 			command += " " + string(STR_SIMKA_MAX_READS) + " " + SimkaAlgorithm<>::toString(this->_maxNbReads);
 			command += " -nb-partitions " + SimkaAlgorithm<>::toString(_nbPartitions);
-			//command += " -verbose 0";
+			command += " -verbose " + Stringify::format("%d", this->_options->getInt(STR_VERBOSE));
 
 
 			filenameQueue.push_back(this->_bankNames[i]);
@@ -914,6 +914,7 @@ public:
 				command += " " + string(STR_MAX_MEMORY) + " " + SimkaAlgorithm<>::toString(this->_maxMemory / this->_nbCores);
 				command += " " + string(STR_NB_CORES) + " 1";
 				command += " " + string(STR_SIMKA_MIN_KMER_SHANNON_INDEX) + " " + Stringify::format("%f", this->_minKmerShannonIndex);
+				command += " -verbose " + Stringify::format("%d", this->_options->getInt(STR_VERBOSE));
 				if(this->_computeSimpleDistances) command += " " + string(STR_SIMKA_COMPUTE_ALL_SIMPLE_DISTANCES);
 				if(this->_computeComplexDistances) command += " " + string(STR_SIMKA_COMPUTE_ALL_COMPLEX_DISTANCES);
 				//SimkaDistanceParam distanceParams(this->_options);
@@ -979,7 +980,7 @@ public:
 			}
 	    }
 
-	    cout << nbJobs << endl;
+	    //cout << nbJobs << endl;
 
 	    while(nbJobs > 0){
 			bool isJobAvailbale = false;
@@ -1008,7 +1009,7 @@ public:
 		}
 
 
-	    cout << nbJobs << endl;
+	    //cout << nbJobs << endl;
 
 	    _progress->finish();
 	    delete _progress;
@@ -1041,8 +1042,9 @@ public:
 
 	void stats(){
 		cout << endl << "Computing stats..." << endl;
-		cout << this->_nbBanks << endl;
+		//cout << this->_nbBanks << endl;
 
+		//u_int64_t nbKmers = 0;
 
 		//SimkaDistanceParam distanceParams(this->_options);
 		SimkaStatistics mainStats(this->_nbBanks, this->_computeSimpleDistances, this->_computeComplexDistances);
@@ -1058,8 +1060,11 @@ public:
 
 			//cout << stats._nbDistinctKmers << "   " << stats._nbKmers << endl;
 			mainStats += stats;
+
+			//nbKmers += stats._nbKmers;
 		}
 
+		//cout << "Nb kmers: " << nbKmers << endl;
 
 		getCountInfo(mainStats);
 		//for(size_t i=0; i<this->_nbBanks; i++){

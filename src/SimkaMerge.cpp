@@ -345,8 +345,11 @@ public:
 	    //fill the  priority queue with the first elems
 	    for (size_t ii=0; ii<_nbBanks; ii++)
 	    {
-	        if(its[ii]->next())  {  pq.push(kxp(ii,its[ii]->value()));  }
+	        //if(its[ii]->next())  {  pq.push(kxp(ii,its[ii]->value()));  }
+	    	pq.push(kxp(ii,its[ii]->value()));
 	    }
+
+    	//cout << "lala " << pq.size() << endl;
 
 	    if (pq.size() != 0) // everything empty, no kmer at all
 	    {
@@ -390,6 +393,12 @@ public:
 							nbKmersProcessed = 0;
 						}
 
+						//cout << previous_kmer.toString(p.kmerSize) << endl;
+						//for(size_t i=0; i<abundancePerBank.size(); i++){
+						//	cout << abundancePerBank[i] << " ";
+						//}
+						//cout << endl;
+
 						if(nbBankThatHaveKmer > 1)
 							_processor->process (_partitionId, previous_kmer, abundancePerBank);
 	                    //this->insert (previous_kmer, solidCounter);
@@ -411,9 +420,18 @@ public:
 	            }
 	        }
 
+        	//cout << nbBankThatHaveKmer << endl;
+
+	    	//cout << previous_kmer.toString(p.kmerSize) << endl;
+	        //for(size_t i=0; i<abundancePerBank.size(); i++){
+	        //	cout << abundancePerBank[i] << " ";
+	        //}
+	        //cout << endl;
+
 	        //last elem
-	        if(nbBankThatHaveKmer > 1)
+	        if(nbBankThatHaveKmer > 1){
 	        	_processor->process (_partitionId, previous_kmer, abundancePerBank);
+	        }
 	        //this->insert (previous_kmer, solidCounter);
 	    }
 

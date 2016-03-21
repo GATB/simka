@@ -162,6 +162,12 @@ public:
 
     void process (size_t partId, const typename Kmer<span>::Type& kmer, const CountVector& counts){
 
+    	//cout << kmer.toString(_kmerSize) << endl;
+    	//for(size_t i=0; i<counts.size(); i++){
+    	//	cout << counts[i] << " ";
+    	//}
+    	//cout << endl;
+
 #ifdef PRINT_STATS
     	_totalAbundance = 0;
     	_stats->_nbDistinctKmers += 1;
