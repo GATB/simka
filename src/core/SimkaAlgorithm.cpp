@@ -568,7 +568,10 @@ void SimkaAlgorithm<span>::parseArgs() {
 	_outputDirTemp = _options->get(STR_URI_OUTPUT_TMP) ? _options->getStr(STR_URI_OUTPUT_TMP) : "./";
 	_kmerSize = _options->getInt(STR_KMER_SIZE);
 	_abundanceThreshold.first = _options->getInt(STR_KMER_ABUNDANCE_MIN);
-	_abundanceThreshold.second = _options->getInt(STR_KMER_ABUNDANCE_MAX);
+	_abundanceThreshold.second = min((u_int64_t)_options->getInt(STR_KMER_ABUNDANCE_MAX), (u_int64_t)std::numeric_limits<CountNumber>::max());
+
+	//cout << _options->getInt(STR_KMER_ABUNDANCE_MAX) << endl;
+	//cout << _abundanceThreshold.second << endl;
 	_soliditySingle = _options->get(STR_SIMKA_SOLIDITY_PER_DATASET);
 	//_nbMinimizers = _options->getInt(STR_KMER_PER_READ);
 	//_maxDisk = getInput()->getInt(STR_MAX_DISK);

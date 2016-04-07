@@ -1246,7 +1246,7 @@ protected:
 	size_t _nbBanks;
 	string _inputFilename;
 	size_t _kmerSize;
-	pair<size_t, size_t> _abundanceThreshold;
+	pair<CountNumber, CountNumber> _abundanceThreshold;
 	SIMKA_SOLID_KIND _solidKind;
 	bool _soliditySingle;
 	int64_t _maxNbReads;
