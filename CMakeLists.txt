@@ -106,6 +106,7 @@ SET (CPACK_SOURCE_IGNORE_FILES
     "^${PROJECT_SOURCE_DIR}/\\.gitmodules" ;
     "^${PROJECT_SOURCE_DIR}/\\.gitignore" ;
     "^${PROJECT_SOURCE_DIR}/build/"  ;
+    "^${PROJECT_SOURCE_DIR}/dependency/"  ;
     "^${GATB_CORE_HOME}/\\.cproject" ;
     "^${GATB_CORE_HOME}/\\.git/"     ;
     "^${GATB_CORE_HOME}/\\.project"  ;
