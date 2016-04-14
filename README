@@ -1,48 +1,85 @@
-Simka
+#Simka
+
 Developper: Gaëtan Benoit
 Contact: gaetan.benoit@inria.fr
 
-Reference
+#Reference
 	Multiple comparative metagenomics using multiset k-mer counting
 	Gaëtan Benoit, Pierre Peterlongo, Mahendra Mariadassou, Erwan Drezen, Sophie Schbath, Dominique Lavenier, Claire Lemaitre
 
-LICENSE
+#License
 	*  GNU AFFERO GENERAL PUBLIC LICENSE
 	*  Copyright (C) 2015 INRIA
 	see the LICENSE file
-	
-INSTALL
-	CMake is required to compile sitka (http://www.cmake.org/cmake/resources/software.html)
-	See the INSTALL file.
-	NOTE: If you retrieved a source archive, you can compile the project with 'sh INSTALL’
 
-	compilation was tested with gcc and g++ version>=4.5 and clang version>=4.1
+#Install a binary release
 
-	The installation creates 3 executables:
+Retrieve the binary archive file from one of the official simka releases (see "Releases" tab on the Github web page of the simka project); file name is "simka-xyz-bin-Darwin.tar.gz" or "simka-xyz-bin-Linux.tar.gz" (where xyz is a release version).
+
+Then, from the command-line:
+
+	     gunzip simka-xyz-bin-Dawrin.tar.gz
+			 tar -xf simka-xyz-bin-Dawrin.tar
+			 cd simka-xyz-Dawrin
+	     chmod +x bin/* example/*.sh
+
+Binary of simka is in folder "bin". You can try the software on your computer, as follows:
+
+	    cd example
+			./simple_test.sh
+
+In case the software does not run appropriately on your system, you should consider to install it from its source code, as explained below.
+
+For further instructions on using simka, see User Manual, below.
+
+#Install from source code: git clone
+
+Requirements: cmake 2.6+ and gcc 4.5+ (Linux) or clang 4.1+ (Mac OSX).
+
+From the command-line:
+
+     git clone https://github.com/GATB/simka.git
+		 cd simka
+     sh INSTALL
+
+See the INSTALL file for more information.
+
+The installation creates 3 executables (./build/bin directory):
+
 		- simka
 		- simkaCount
 		- simkaMerge
-	simkaCount and simkaMerge are used internally by simka. They must stay in the same folder than simka.
-	
-CHANGELOG
 
--version 1  Feb 16, 2016  
+simkaCount and simkaMerge are used internally by simka. They must stay in the same folder than simka.
+
+For further instructions on using simka, see User Manual, below.
+
+#Install from source code: using a source release archive
+
+Requirements: cmake 2.6+ and gcc 4.5+ (Linux) or clang 4.1+ (Mac OSX).
+
+Retrieve the source code archive file from one of the official simka releases (see "Releases" tab on the Github web page of the simka project); file name is "simka-xyz-Source.tar.gz" (where xyz is a release version).
+
+Then, from the command-line:
+
+     gunzip simka-xyz-Source.tar.gz
+		 tar -xf simka-xyz-Source.tar
+		 cd simka-xyz-Source
+     sh INSTALL
+
+For further instructions on using simka, see User Manual, below.
+
+#Changelog
+
+-version 1.0.1  March 16, 2016
+ minor updates
+-version 1  Feb 16, 2016
  stable version
--version 0.1  May 28, 2015  
+-version 0.1  May 28, 2015
  initial public release
 
-TABLE OF CONTENTS
-1/ Description
-2/ Input
-3/ Output
-4/ Generating heatmaps and clustering
-5/ Usage for simka
-6/ The options of simka by command examples
-7/ Computer cluster options
-8/ Possible issues with Simka
+# User manual
 
-MANUAL	 
-								
 1/ Description
 	Simka computes several ecology distances between N metagenomic read sets at the k-mer level.
 	Simka was implemented with the GATB library (http://gatb.inria.fr/)
@@ -65,10 +102,10 @@ MANUAL
 	If you want to concatenate some files (for example, if you have multiple experiment
 	for a single environment), you can list them separated by a ‘,’:
 		ID1_concat: filenameX.fasta.gz , filenameY.fasta.gz
-	
+
 	You can combine concatenated and paired operations:
 		ID1_concat: filenameX_1.fasta.gz , filenameY_1.fasta.gz ; filenameX_2.fasta.gz , filenameY_2.fasta.gz
-	
+
 	There is a difference between paired and concatenated files depending on the value of the option -max-reads.
 	Example:
 		If -max-reads is set to 100. Simka will considered the 100 first reads of the first
@@ -107,43 +144,43 @@ MANUAL
 	Run the script create_heatmaps.py in the scripts folder.
 		Ex: python create_heatmaps.py matricesFolder
 		where matricesFolder in the folder containing the distances matrices of Simka (-out)
-		
+
 
 5/ Usage for simka
 
 	See help:
-		./simka
+		./bin/simka
 
 
 6/ The options of simka by command examples:
 
 	Run the toy example:
-		./simka -in example/simka_input.txt -out results -out-tmp temp_output
+		./bin/simka -in ../example/simka_input.txt -out results -out-tmp temp_output
 
 	Compute all the distances that Simka can provide (Bray-Curtis, Jensen-Shannon…)
-		./simka … -simple-dist -complex-dist
+		./bin/simka … -simple-dist -complex-dist
 
 	Change the kmer size
-		./simka … -kmer-size 31
+		./bin/simka … -kmer-size 31
 
 	Filter kmers seen one time (potentially erroneous) and very high abundance kmers (potentially contaminants):
-		./simka … -abundance-min 2 -abundance-max 200
+		./bin/simka … -abundance-min 2 -abundance-max 200
 
  	Filter over the sequences of the reads and k-mers:
 		Minimum read size of 90. Discards low complexity reads and k-mers (shannon index < 1.5)
-		./simka … -min-read-size 90 -read-shannon-index 1.5 -kmer-shannon-index 1.5
-          
+		./bin/simka … -min-read-size 90 -read-shannon-index 1.5 -kmer-shannon-index 1.5
+
 	Consider a subset of the reads of the input dataset (for dataset with non-uniform reads per sample):
 		Considers all the reads of each samples (default)
-			./simka … -max-reads -1
+			./bin/simka … -max-reads -1
 		Let Simka compute automatically the maximum of read per samples (normalization)
-			./simka … -max-reads 0 
+			./bin/simka … -max-reads 0
  		Used only the first 1000 reads of each samples:
-			./simka … -max-reads 1000
-		
+			./bin/simka … -max-reads 1000
+
 	Allow more memory and cores improve the execution time:
-		./simka … -max-memory 20000 -nb-cores 8
-		 
+		./bin/simka … -max-memory 20000 -nb-cores 8
+
 
 7/ Computer cluster options
 
@@ -162,7 +199,7 @@ MANUAL
 	They have to be fixed if you system have a maximum of jobs restriction.
 
 	Command example:
-		./simka … -count-file example/potara_job/sge/job_count -merge-file example/potara_job/sge/job_merge
+		./bin/simka … -count-file example/potara_job/sge/job_count -merge-file example/potara_job/sge/job_merge
                           -count-cmd qsub -pe make 34 -merge-cmd qsub
 			  -max-count 6 -max-merge 18 -nb-cores 200 -max-memory 500000
                 Simka will run a maximum of 6 simultaneous counting jobs, each using 200/6 cores and 500000/6 MB of memory.
@@ -171,7 +208,7 @@ MANUAL
 
 
 8/ Possible issues with Simka
-	
+
 	- TOO MUCH OPENED FILES
 		Simka is a disk-based method. Depending on the chosen options (-nb-cores -max-memory), it is possible that Simka
 		required a lot of open files.

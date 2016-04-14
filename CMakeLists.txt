@@ -3,13 +3,34 @@ project(simka)
 cmake_minimum_required(VERSION 2.6)
 
 ################################################################################
+# The version number.
+################################################################################
+SET (gatb-tool_VERSION_MAJOR 1)
+SET (gatb-tool_VERSION_MINOR 0)
+SET (gatb-tool_VERSION_PATCH 1)
+
+IF (DEFINED MAJOR)
+    SET (gatb-tool_VERSION_MAJOR ${MAJOR})
+ENDIF()
+IF (DEFINED MINOR)
+    SET (gatb-tool_VERSION_MINOR ${MINOR})
+ENDIF()
+IF (DEFINED PATCH)
+    SET (gatb-tool_VERSION_PATCH ${PATCH})
+ENDIF()
+
+set (gatb-tool-version ${gatb-tool_VERSION_MAJOR}.${gatb-tool_VERSION_MINOR}.${gatb-tool_VERSION_PATCH})
+
+# However, continuous integration has priority over local compilation
+IF (DEFINED JENKINS_TAG)
+    SET (gatb-tool-version ${JENKINS_TAG})
+ENDIF()
+
+################################################################################
 # Define cmake modules directory
 ################################################################################
-FOREACH (path "cmake" "../../cmake")
-    IF (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${path}")
-        SET (CMAKE_MODULE_PATH  "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/${path}")
-    ENDIF()
-ENDFOREACH(path)
+SET (GATB_CORE_HOME  ${PROJECT_SOURCE_DIR}/dependency/gatb-core/gatb-core)
+SET (CMAKE_MODULE_PATH ${GATB_CORE_HOME}/cmake)
 
 ################################################################################
 # THIRD PARTIES
@@ -35,12 +56,10 @@ if (PRINTALL)
 SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DPRINTALL" )
 endif()
 
-#SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -pg" )
-
-# we give the headers directories from : 
-#       - from project source 
+# we give the headers directories from :
+#       - from project source
 #       - from GATB-CORE source
-#       - from dsk source 
+#       - from simka source
 include_directories (include ${gatb-core-includes} ${PROJECT_SOURCE_DIR}/src/core ${PROJECT_SOURCE_DIR}/src)
 
 # we generate one file per template specialization
@@ -54,11 +73,8 @@ ENDFOREACH ()
 # we define the files to be compiled
 file (GLOB_RECURSE  ProjectFiles  src/core/Simka*  ${PROJECT_BINARY_DIR}/src/core/template/*.cpp)
 
-# we define the artifact to be built: the project binary
-#add_executable        (${PROJECT_NAME}  src/main.cpp ${ProjectFiles})
-# we define which libraries to be linked with project binary
-#target_link_libraries (${PROJECT_NAME}  ${gatb-core-libraries})
-
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
+set(PROJECT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/bin)
 
 add_executable        (simka  src/SimkaPotara.cpp ${ProjectFiles})
 target_link_libraries (simka  ${gatb-core-libraries})
@@ -70,24 +86,47 @@ add_executable        (simkaMerge  src/SimkaMerge.cpp ${ProjectFiles})
 target_link_libraries (simkaMerge  ${gatb-core-libraries})
 
 ################################################################################
-#  UTILS 
+#  UTILS
 ################################################################################
 #add_subdirectory (src_simkaMerge)
 #add_executable        (simkaCount  src/SimkaCount.cpp ${ProjectFiles})
 
 ################################################################################
-#  PACKAGING 
+#  PACKAGING
 ################################################################################
+
+SET (CPACK_PACKAGE_DESCRIPTION_SUMMARY  "gatb-tool ${PROJECT_NAME}")
+SET (CPACK_PACKAGE_VENDOR               "Genscale team (INRIA)")
+SET (CPACK_PACKAGE_VERSION_MAJOR        "${gatb-tool_VERSION_MAJOR}")
+SET (CPACK_PACKAGE_VERSION_MINOR        "${gatb-tool_VERSION_MINOR}")
+SET (CPACK_PACKAGE_VERSION_PATCH        "${gatb-tool_VERSION_PATCH}")
+SET (CPACK_PACKAGE_VERSION              "${gatb-tool-version}")
 
 # We chose the kind of archive we want to generate
 SET (CPACK_GENERATOR            "TGZ")
 SET (CPACK_SOURCE_GENERATOR     "TGZ")
 
-# We copy the project binary to the 'bin' directory
-INSTALL (TARGETS ${PROJECT_NAME} DESTINATION bin)
+# We ignore unwanted files for the source archive
+SET (CPACK_SOURCE_IGNORE_FILES
+    "^${PROJECT_SOURCE_DIR}/\\.git/"     ;
+    "^${PROJECT_SOURCE_DIR}/\\.gitmodules" ;
+    "^${PROJECT_SOURCE_DIR}/\\.gitignore" ;
+    "^${PROJECT_SOURCE_DIR}/build/"  ;
+    "^${GATB_CORE_HOME}/\\.cproject" ;
+    "^${GATB_CORE_HOME}/\\.git/"     ;
+    "^${GATB_CORE_HOME}/\\.project"  ;
+    "^${GATB_CORE_HOME}/\\.gitignore"
+)
 
-# For the source archive, we exclude some unwanted directories.
-SET (CPACK_SOURCE_IGNORE_FILES  ${CPACK_SOURCE_IGNORE_FILES} "/build/" ".gitignore$")
+# For creating the BINARY package we include the files we want
+INSTALL (DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin                            DESTINATION .)
+INSTALL (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/example                        DESTINATION .)
+INSTALL (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/scripts                        DESTINATION .)
+INSTALL (FILES     ${CMAKE_CURRENT_SOURCE_DIR}/README                         DESTINATION .)
+INSTALL (FILES     ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE                        DESTINATION .)
 
-# To be done at the end. 
-INCLUDE (Delivery)
+# We include the "bin" tag into binary archive file name
+set (CPACK_PACKAGE_FILE_NAME  ${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}-bin-${CMAKE_SYSTEM_NAME})
+
+# To be done at the end.
+INCLUDE (CPack)
