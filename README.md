@@ -1,4 +1,11 @@
-#Simka
+# Simka
+| **Linux** | **Mac OSX** |
+|-----------|-------------|
+[![Build Status](https://ci.inria.fr/gatb-core/view/Simka/job/tool-simka-build-debian7-64bits-gcc-4.7/badge/icon)](https://ci.inria.fr/gatb-core/view/Simka/job/tool-simka-build-debian7-64bits-gcc-4.7/) | [![Build Status](https://ci.inria.fr/gatb-core/view/Simka/job/tool-simka-build-macos-10.9.5-gcc-4.2.1/badge/icon)](https://ci.inria.fr/gatb-core/view/Simka/job/tool-simka-build-macos-10.9.5-gcc-4.2.1/)
+
+[![License](http://img.shields.io/:license-affero-blue.svg)](http://www.gnu.org/licenses/agpl-3.0.en.html)
+
+# What is Simka?
 
 Simka is a comparative metagenomics method dedicated to NGS datasets. It computes a large collection of distances classically used in ecology to compare communities by approximating species counts by k-mer counts.
 
@@ -10,13 +17,6 @@ Contact: gaetan.benoit@inria.fr
 G. Benoit, P. Peterlongo, D. Lavenier, C. Lemaitre. (2015) [Simka: fast kmer-based method for estimating the similarity between numerous metagenomic datasets](https://hal.inria.fr/hal-01180603). Hal-Inria
 
 G. Benoit, P. Peterlongo, M. Mariadassou, E Drezen, S. Schbath, D. Lavenier, C. Lemaitre. Multiple comparative metagenomics using multiset k-mer counting. *Submitted*.
-
-
-#License
-
-    GNU AFFERO GENERAL PUBLIC LICENSE
-    Copyright (C) 2015 INRIA
-    see the LICENSE file for more information
 
 #Install a binary release of simka
 
