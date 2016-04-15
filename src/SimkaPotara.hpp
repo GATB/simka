@@ -254,32 +254,18 @@ public:
 
 		setup();
 
-		//System::file().rmdir(_outputDirTemp + "/input/");
-		//System::file().rmdir(_outputDirTemp + "/solid/");
-		//System::file().rmdir(_outputDir + "/temp/");
-		//System::file().rmdir(_outputDir);
+		if(!SimkaAlgorithm<span>::isInputValid()) exit(1);
 
+		SimkaAlgorithm<span>::computeMaxReads();
 
-		//_stats = new SimkaStatistics(_nbBanks);
+		createConfig();
 
-
-		//createDirs();
-		//layoutInputFilename(_outputDirTemp + "/input/");
-		//layoutInputFilename();
-
-		//return;
-		//if(!computeMaxReads()) return;
-
-		//sleep(SLEEP_TIME_SEC);
 
 		count();
 
 		printCountInfo();
-		//sleep(SLEEP_TIME_SEC);
 
 		merge();
-
-		//sleep(SLEEP_TIME_SEC);
 
 		stats();
 
@@ -395,9 +381,10 @@ public:
 
 	void setup(){
 		SimkaAlgorithm<span>::setup();
+
 		createDirs();
 		layoutInputFilename();
-		createConfig();
+
 	}
 
 	void layoutInputFilename(){

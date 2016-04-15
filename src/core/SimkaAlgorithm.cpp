@@ -515,6 +515,7 @@ SimkaAlgorithm<span>::~SimkaAlgorithm() {
 template<size_t span>
 void SimkaAlgorithm<span>::execute() {
 
+	/*
 	if(!setup()) return;
 	if(!isInputValid()) return;
 
@@ -531,7 +532,7 @@ void SimkaAlgorithm<span>::execute() {
 		print();
 	}
 
-	clear();
+	clear();*/
 }
 
 
@@ -549,7 +550,6 @@ bool SimkaAlgorithm<span>::setup() {
 	}
 
 	_nbBanks = _bankNames.size();
-	computeMaxReads();
 
 	return true;
 }
@@ -587,6 +587,10 @@ void SimkaAlgorithm<span>::parseArgs() {
 	_minKmerShannonIndex = std::max(_minKmerShannonIndex, 0.0);
 	_minKmerShannonIndex = std::min(_minKmerShannonIndex, 2.0);
 
+	if(!System::file().doesExist(_inputFilename)){
+		cerr << "ERROR: Input filename does not exist" << endl;
+		exit(1);
+	}
 }
 
 template<size_t span>
@@ -742,7 +746,7 @@ bool SimkaAlgorithm<span>::isInputValid(){
 			LOCAL(bank);
 		}
 		catch (Exception& e){
-			cout << "Can't open dataset: " << _bankNames[i] << endl;
+			cerr << "ERROR: Can't open dataset: " << _bankNames[i] << endl;
 			return false;
 		}
 
