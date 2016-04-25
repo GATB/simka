@@ -30,6 +30,7 @@ IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
     parser->push_front (new OptionNoParam (STR_SIMKA_KEEP_TMP_FILES, "keep temporary files", false));
     parser->push_front (new OptionOneParam (STR_URI_OUTPUT_TMP, "output directory for temporary files", true));
     parser->push_front (new OptionOneParam (STR_URI_OUTPUT, "output directory for result files (distance matrices)", false, "./simka_results"));
+    parser->push_front (new OptionOneParam (STR_SIMKA_INPUT_QUERY, "input file (fasta) of known sequences (gene, genomes...)", false));
     parser->push_front (new OptionOneParam (STR_URI_INPUT, "input file of samples. One sample per line: id1: filename1...", true));
     //parser->push_back (new OptionOneParam (STR_URI_OUTPUT_TMP, "output directory for temporary files", true));
 	//IOptionsParser* parser = getParser();

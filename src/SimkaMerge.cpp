@@ -34,7 +34,7 @@ using namespace std;
 
 struct Parameter
 {
-    Parameter (IProperties* props, string inputFilename, string outputDir, size_t partitionId, size_t kmerSize, double minShannonIndex, bool computeSimpleDistances, bool computeComplexDistances) : props(props), inputFilename(inputFilename), outputDir(outputDir), partitionId(partitionId), kmerSize(kmerSize), minShannonIndex(minShannonIndex), computeSimpleDistances(computeSimpleDistances), computeComplexDistances(computeComplexDistances) {}
+    Parameter (IProperties* props, string inputFilename, string outputDir, size_t partitionId, size_t kmerSize, double minShannonIndex, bool computeSimpleDistances, bool computeComplexDistances, size_t nbPartitions) : props(props), inputFilename(inputFilename), outputDir(outputDir), partitionId(partitionId), kmerSize(kmerSize), minShannonIndex(minShannonIndex), computeSimpleDistances(computeSimpleDistances), computeComplexDistances(computeComplexDistances), nbPartitions(nbPartitions) {}
     IProperties* props;
     string inputFilename;
     string outputDir;
@@ -43,6 +43,7 @@ struct Parameter
     double minShannonIndex;
     bool computeSimpleDistances;
     bool computeComplexDistances;
+    size_t nbPartitions;
 };
 
 
@@ -236,6 +237,7 @@ public:
 		_stats = new SimkaStatistics(_nbBanks, p.computeSimpleDistances, p.computeComplexDistances);
 
 		createInfo(p);
+		createBloom(p);
 
 		//createProcessor(p);
 		_processor = new SimkaCountProcessorSimple<span> (_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, p.minShannonIndex);
@@ -319,6 +321,8 @@ public:
 
 
 
+		vector<u_int64_t> queryAbundances(_nbBanks, 0);
+		vector<u_int64_t> queryAbundancesCoverages(_nbBanks, 0);
 
 		for(size_t i=0; i<_nbBanks; i++){
 
@@ -334,6 +338,7 @@ public:
 			//}
 
 		}
+
 
 		u_int16_t best_p;
 		Type previous_kmer;
@@ -399,6 +404,20 @@ public:
 						//}
 						//cout << endl;
 
+
+						if(_queryKmerBloom->contains(previous_kmer)){
+							//cout << previous_kmer.toString(p.kmerSize) << endl;
+							for(size_t i=0; i<abundancePerBank.size(); i++){
+
+								if(abundancePerBank[i]){
+									queryAbundances[i] += abundancePerBank[i];
+									queryAbundancesCoverages[i] += 1;
+								}
+								//cout << abundancePerBank[i] << " ";
+							}
+							//cout << endl;
+						}
+
 						if(nbBankThatHaveKmer > 1)
 							_processor->process (_partitionId, previous_kmer, abundancePerBank);
 	                    //this->insert (previous_kmer, solidCounter);
@@ -442,6 +461,11 @@ public:
 		//saveStats(p);
 		writeFinishSignal(p);
 		_progress->finish();
+
+		for(size_t i=0; i<queryAbundances.size(); i++){
+			cout << queryAbundances[i] / queryAbundancesCoverages[i] << " ";
+		}
+		cout << endl;
 	}
 
 
@@ -547,6 +571,37 @@ public:
 		delete file;
 	}
 
+	void createBloom(Parameter& p){
+
+		string h5filename = p.outputDir + "/" + "query_kmers.h5";
+
+		Storage* storage = StorageFactory(STORAGE_HDF5).load (h5filename);
+		LOCAL (storage);
+
+		Partition<Count>& solidCollection = storage->root().getGroup("dsk").getPartition<Count> ("solid");
+
+		Collection<Count>& collection  = solidCollection[p.partitionId];
+
+		//u_int64_t solidFileSize = collection.iterable().getNbItems();
+		u_int64_t nb_kmers_infile = collection.iterable()->getNbItems();
+
+
+		size_t NBITS_PER_KMER = 12;
+		u_int64_t estimatedBloomSize = (u_int64_t) ((double)nb_kmers_infile * NBITS_PER_KMER);
+		if (estimatedBloomSize ==0 ) { estimatedBloomSize = 1000; }
+
+		Iterator<Count>* itKmers = createIterator<Count> (
+				collection.iterable()->iterator(),
+																		nb_kmers_infile,
+																		"Indexing queries"
+																		);
+		LOCAL (itKmers);
+
+		BloomBuilder<span> builder (estimatedBloomSize, 7, p.kmerSize, gatb::core::tools::misc::BLOOM_CACHE, 1, 0);
+		_queryKmerBloom = builder.build (itKmers);
+	}
+
+
 private:
 	size_t _nbBanks;
 	pair<size_t, size_t> _abundanceThreshold;
@@ -557,6 +612,7 @@ private:
 	//vector<ICountProcessor<span>*> _processors;
 
 	IteratorListener* _progress;
+	IBloom<Type>* _queryKmerBloom;
 
 
 };
@@ -579,6 +635,7 @@ public:
 
         getParser()->push_back (new OptionNoParam (STR_SIMKA_COMPUTE_ALL_SIMPLE_DISTANCES.c_str(), "compute simple distances"));
         getParser()->push_back (new OptionNoParam (STR_SIMKA_COMPUTE_ALL_COMPLEX_DISTANCES.c_str(), "compute complex distances"));
+        getParser()->push_back (new OptionOneParam ("-nb-partitions",   "bank name", true));
     }
 
     void execute ()
@@ -592,8 +649,9 @@ public:
     	double minShannonIndex =   getInput()->getDouble(STR_SIMKA_MIN_KMER_SHANNON_INDEX);
     	bool computeSimpleDistances =   getInput()->get(STR_SIMKA_COMPUTE_ALL_SIMPLE_DISTANCES);
     	bool computeComplexDistances =   getInput()->get(STR_SIMKA_COMPUTE_ALL_COMPLEX_DISTANCES);
+    	size_t nbPartitions =   getInput()->getInt("-nb-partitions");
 
-    	Parameter params(getInput(), inputFilename, outputDir, partitionId, kmerSize, minShannonIndex, computeSimpleDistances, computeComplexDistances);
+    	Parameter params(getInput(), inputFilename, outputDir, partitionId, kmerSize, minShannonIndex, computeSimpleDistances, computeComplexDistances, nbPartitions);
 
         Integer::apply<Functor,Parameter> (kmerSize, params);
 

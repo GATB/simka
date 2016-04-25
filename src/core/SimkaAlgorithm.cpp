@@ -564,6 +564,11 @@ void SimkaAlgorithm<span>::parseArgs() {
 	_maxMemory = _options->getInt(STR_MAX_MEMORY);
     _nbCores = _options->getInt(STR_NB_CORES);
 	_inputFilename = _options->getStr(STR_URI_INPUT);
+
+	_isQuery = _options->get(STR_SIMKA_INPUT_QUERY);
+	if(_isQuery){
+		_queryFilename = _options->getStr(STR_SIMKA_INPUT_QUERY);
+	}
 	_outputDir = _options->get(STR_URI_OUTPUT) ? _options->getStr(STR_URI_OUTPUT) : "./";
 	_outputDirTemp = _options->get(STR_URI_OUTPUT_TMP) ? _options->getStr(STR_URI_OUTPUT_TMP) : "./";
 	_kmerSize = _options->getInt(STR_KMER_SIZE);
@@ -822,102 +827,6 @@ void SimkaAlgorithm<span>::computeMaxReads(){
 
 }
 
-/*
-
-template<size_t span>
-void SimkaAlgorithm<span>::layoutInputFilename(){
-
-	if(_options->getInt(STR_VERBOSE) != 0){
-		cout << endl << "Creating input" << endl;
-	}
-
-	_banksInputFilename = _inputFilename + "_dsk_dataset_temp__";
-	ifstream inputFile(_inputFilename.c_str());
-	IFile* bankFile = System::file().newFile(_banksInputFilename, "wb");
-
-	string line;
-	string linePart;
-	vector<string> linePartList;
-
-	string bankFileContents = "";
-
-	u_int64_t lineIndex = 0;
-
-	while(getline(inputFile, line)){
-
-		if(line == "") continue;
-
-		stringstream lineStream(line);
-		linePartList.clear();
-		//vector<string> filenames;
-
-		while(getline(lineStream, linePart, ' ')){
-
-			if(linePart != ""){
-				linePartList.push_back(linePart);
-			}
-		}
-
-
-
-		string bankId = linePartList[0];
-		_bankNames.push_back(bankId);
-
-
-		 //ID and one filename
-		if(linePartList.size() == 2){
-			bankFileContents += linePartList[1] + "\n";
-			_nbBankPerDataset.push_back(1);
-		}
-		//ID and list of filename (paired files for example)
-		else{
-			char buffer[200];
-			snprintf(buffer,200,"%llu", lineIndex);
-			string subBankFilename = _banksInputFilename + "_" + string(buffer);
-			_tempFilenamesToDelete.push_back(subBankFilename);
-			IFile* subBankFile = System::file().newFile(subBankFilename, "wb");
-			string subBankContents = "";
-
-			for(size_t i=1; i<linePartList.size(); i++){
-				subBankContents += linePartList[i] + "\n";
-			}
-			subBankContents.erase(subBankContents.size()-1);
-			//subBankContents.pop_back(); // "remove last /n
-			subBankFile->fwrite(subBankContents.c_str(), subBankContents.size(), 1);
-			subBankFile->flush();
-			delete subBankFile;
-
-			bankFileContents += subBankFilename + "\n";
-			_nbBankPerDataset.push_back(linePartList.size() - 1); //linePartList.size() - 1 = nb sub banks
-			//_nbReadsPerDataset.push_back(ceil(_maxNbReads / (float)()));
-		}
-
-		lineIndex += 1;
-	}
-
-	bankFileContents.erase(bankFileContents.size()-1);
-	//bankFileContents.pop_back(); // "remove last /n
-
-	bankFile->fwrite(bankFileContents.c_str(), bankFileContents.size(), 1);
-
-	inputFile.close();
-	//delete inputFile;
-	bankFile->flush();
-	delete bankFile;
-
-	//for(int i=0; i<_nbBanksOfDataset.size(); i++){
-	//	cout << i << "   "  << _nbBanksOfDataset[i] << endl;
-	//}
-
-	if(_options->getInt(STR_VERBOSE) != 0){
-		cout << "\tNb input datasets: " << _bankNames.size() << endl;
-	}
-
-	cout << endl;
-
-
-}*/
-
 
 template<size_t span>
 void SimkaAlgorithm<span>::createBank(){
@@ -929,6 +838,9 @@ void SimkaAlgorithm<span>::createBank(){
 	_banks = new SimkaBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, _nbBankPerDataset, _maxNbReads);
 
 }
+
+
+
 
 template<size_t span>
 void SimkaAlgorithm<span>::count(){

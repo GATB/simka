@@ -260,6 +260,7 @@ public:
 
 		createConfig();
 
+		if(this->_isQuery) createQuery();
 
 		count();
 
@@ -728,6 +729,46 @@ public:
 		cout << endl << endl;
 	}
 
+
+	void createQuery() {
+
+		string h5filename = this->_outputDirTemp + "/" + "query_kmers";
+
+		IBank* queryBank = Bank::open(this->_queryFilename);
+		LOCAL(queryBank);
+
+		IProperties* props = this->_options->clone();
+		props->setStr(STR_URI_OUTPUT, h5filename);
+		props->setInt(STR_KMER_ABUNDANCE_MIN, 1);
+
+		Configuration config;
+		Repartitor* repartitor = new Repartitor();
+		LOCAL(repartitor);
+		Storage* storage = StorageFactory(STORAGE_HDF5).load (this->_outputDirTemp + "/" + "config.h5");
+		LOCAL (storage);
+		config.load(storage->getGroup(""));
+		repartitor->load(storage->getGroup(""));
+
+		Storage* kmerStorage = StorageFactory(STORAGE_HDF5).create(h5filename, true, false);
+		LOCAL (kmerStorage);
+
+		//vector<CountRange>
+		//config._abundance = vector;
+		//config._abundanceUserNb = 1;
+		config._abundance[0] = CountRange(0, 10000000);
+
+		//SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, caches, cacheIndexes, p.abundanceMin, p.abundanceMax);
+		//SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, nbKmerPerParts, nbDistinctKmerPerParts, chordNiPerParts, p.abundanceMin, p.abundanceMax);
+		std::vector<ICountProcessor<span>* > procs = SortingCountAlgorithm<span>::getDefaultProcessorVector(config, props, kmerStorage);
+		//procs.push_back(proc);
+		SortingCountAlgorithm<span> algo (queryBank, config, repartitor,
+				procs,
+				props);
+		algo.getInput()->add (0, STR_VERBOSE, props->getStr(STR_VERBOSE));
+
+		algo.execute();
+	}
+
 	void count(){
 
 		vector<string> commands;
@@ -901,6 +942,7 @@ public:
 				command += " " + string(STR_MAX_MEMORY) + " " + SimkaAlgorithm<>::toString(this->_maxMemory / this->_nbCores);
 				command += " " + string(STR_NB_CORES) + " 1";
 				command += " " + string(STR_SIMKA_MIN_KMER_SHANNON_INDEX) + " " + Stringify::format("%f", this->_minKmerShannonIndex);
+				command += " -nb-partitions " + SimkaAlgorithm<>::toString(_nbPartitions);
 				command += " -verbose " + Stringify::format("%d", this->_options->getInt(STR_VERBOSE));
 				if(this->_computeSimpleDistances) command += " " + string(STR_SIMKA_COMPUTE_ALL_SIMPLE_DISTANCES);
 				if(this->_computeComplexDistances) command += " " + string(STR_SIMKA_COMPUTE_ALL_COMPLEX_DISTANCES);
