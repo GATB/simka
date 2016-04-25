@@ -406,6 +406,7 @@ public:
 
 
 						if(_queryKmerBloom->contains(previous_kmer)){
+							//lala
 							//cout << previous_kmer.toString(p.kmerSize) << endl;
 							for(size_t i=0; i<abundancePerBank.size(); i++){
 
