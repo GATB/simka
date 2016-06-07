@@ -405,7 +405,7 @@ public:
 						//cout << endl;
 
 
-						if(_queryKmerBloom->contains(previous_kmer)){
+						if(_queryKmerHash->contains(previous_kmer)){
 							//lala
 							//cout << previous_kmer.toString(p.kmerSize) << endl;
 							for(size_t i=0; i<abundancePerBank.size(); i++){
@@ -463,8 +463,21 @@ public:
 		writeFinishSignal(p);
 		_progress->finish();
 
+		cout << endl << endl;
+		cout << "Reference Breadth: " << endl;
 		for(size_t i=0; i<queryAbundances.size(); i++){
-			cout << queryAbundances[i] / queryAbundancesCoverages[i] << " ";
+                        cout << "\t" + _datasetIds[i] + ":  " << (float) queryAbundancesCoverages[i] / 4564814 << endl;
+                }
+
+		cout << endl << "Kmers's abundance" << endl;
+		for(size_t i=0; i<queryAbundances.size(); i++){                
+                        cout << "\t" + _datasetIds[i] + ":  " << queryAbundances[i]<< endl;
+                }
+
+		cout << endl;
+		cout << "Reference depth" << endl;
+		for(size_t i=0; i<queryAbundances.size(); i++){
+                        cout << "\t" + _datasetIds[i] + ":  " << (float) queryAbundances[i] / (float) queryAbundancesCoverages[i] << endl;
 		}
 		cout << endl;
 	}
@@ -597,9 +610,19 @@ public:
 																		"Indexing queries"
 																		);
 		LOCAL (itKmers);
-
-		BloomBuilder<span> builder (estimatedBloomSize, 7, p.kmerSize, gatb::core::tools::misc::BLOOM_CACHE, 1, 0);
-		_queryKmerBloom = builder.build (itKmers);
+		_queryKmerHash = new Hash16<Type, bool>(100);
+		bool lala = true;	
+		for(itKmers->first(); !itKmers->isDone(); itKmers->next()){
+			
+			if(lala){
+				cout << itKmers->item().value.toString(31) << endl;
+				lala = false;
+			}
+			_queryKmerHash->insert(itKmers->item().value, true);
+		}
+		cout << _queryKmerHash->size() << endl;
+		//BloomBuilder<span> builder (estimatedBloomSize, 7, p.kmerSize, gatb::core::tools::misc::BLOOM_CACHE, 1, 0);
+		//_queryKmerBloom = builder.build (itKmers);
 	}
 
 
@@ -614,7 +637,7 @@ private:
 
 	IteratorListener* _progress;
 	IBloom<Type>* _queryKmerBloom;
-
+	Hash16<Type, bool>* _queryKmerHash;
 
 };
 
