@@ -23,6 +23,9 @@
 #include <SimkaAlgorithm.hpp>
 #include <SimkaDistance.hpp>
 
+#include "../thirdparty/IteratorKmerH5/IteratorKmerH5.hpp"
+#include "../thirdparty/quasi_dictionary/src/quasidictionary.h"
+
 // We use the required packages
 using namespace std;
 
@@ -34,7 +37,7 @@ using namespace std;
 
 struct Parameter
 {
-    Parameter (IProperties* props, string inputFilename, string outputDir, size_t partitionId, size_t kmerSize, double minShannonIndex, bool computeSimpleDistances, bool computeComplexDistances, size_t nbPartitions) : props(props), inputFilename(inputFilename), outputDir(outputDir), partitionId(partitionId), kmerSize(kmerSize), minShannonIndex(minShannonIndex), computeSimpleDistances(computeSimpleDistances), computeComplexDistances(computeComplexDistances), nbPartitions(nbPartitions) {}
+    Parameter (IProperties* props, string inputFilename, string outputDir, size_t partitionId, size_t kmerSize, double minShannonIndex, bool computeSimpleDistances, bool computeComplexDistances, size_t nbPartitions, string inputQueryFilename) : props(props), inputFilename(inputFilename), outputDir(outputDir), partitionId(partitionId), kmerSize(kmerSize), minShannonIndex(minShannonIndex), computeSimpleDistances(computeSimpleDistances), computeComplexDistances(computeComplexDistances), nbPartitions(nbPartitions), inputQueryFilename(inputQueryFilename) {}
     IProperties* props;
     string inputFilename;
     string outputDir;
@@ -44,6 +47,7 @@ struct Parameter
     bool computeSimpleDistances;
     bool computeComplexDistances;
     size_t nbPartitions;
+    string inputQueryFilename;
 };
 
 
@@ -226,6 +230,7 @@ public:
 
 	void execute(){
 
+		_isQuery = p.inputQueryFilename != "__0__";
 		removeStorage(p);
 
 		_partitionId = p.partitionId;
@@ -237,7 +242,11 @@ public:
 		_stats = new SimkaStatistics(_nbBanks, p.computeSimpleDistances, p.computeComplexDistances);
 
 		createInfo(p);
-		createBloom(p);
+
+		if(_isQuery){
+			createQuery(p);
+		}
+		//createBloom(p);
 
 		//createProcessor(p);
 		_processor = new SimkaCountProcessorSimple<span> (_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, p.minShannonIndex);
@@ -321,8 +330,6 @@ public:
 
 
 
-		vector<u_int64_t> queryAbundances(_nbBanks, 0);
-		vector<u_int64_t> queryAbundancesCoverages(_nbBanks, 0);
 
 		for(size_t i=0; i<_nbBanks; i++){
 
@@ -398,30 +405,7 @@ public:
 							nbKmersProcessed = 0;
 						}
 
-						//cout << previous_kmer.toString(p.kmerSize) << endl;
-						//for(size_t i=0; i<abundancePerBank.size(); i++){
-						//	cout << abundancePerBank[i] << " ";
-						//}
-						//cout << endl;
-
-
-						if(_queryKmerHash->contains(previous_kmer)){
-							//lala
-							//cout << previous_kmer.toString(p.kmerSize) << endl;
-							for(size_t i=0; i<abundancePerBank.size(); i++){
-
-								if(abundancePerBank[i]){
-									queryAbundances[i] += abundancePerBank[i];
-									queryAbundancesCoverages[i] += 1;
-								}
-								//cout << abundancePerBank[i] << " ";
-							}
-							//cout << endl;
-						}
-
-						if(nbBankThatHaveKmer > 1)
-							_processor->process (_partitionId, previous_kmer, abundancePerBank);
-	                    //this->insert (previous_kmer, solidCounter);
+	                    insert (previous_kmer, abundancePerBank, nbBankThatHaveKmer);
 
 	                    solidCounter.init (its[best_p]->getBankId(), its[best_p]->abundance());
 	                    nbBankThatHaveKmer = 1;
@@ -449,9 +433,10 @@ public:
 	        //cout << endl;
 
 	        //last elem
-	        if(nbBankThatHaveKmer > 1){
-	        	_processor->process (_partitionId, previous_kmer, abundancePerBank);
-	        }
+            insert (previous_kmer, abundancePerBank, nbBankThatHaveKmer);
+	        //if(nbBankThatHaveKmer > 1){
+	        //	_processor->process (_partitionId, previous_kmer, abundancePerBank);
+	        //}
 	        //this->insert (previous_kmer, solidCounter);
 	    }
 
@@ -463,23 +448,25 @@ public:
 		writeFinishSignal(p);
 		_progress->finish();
 
+
+		/*
 		cout << endl << endl;
 		cout << "Reference Breadth: " << endl;
-		for(size_t i=0; i<queryAbundances.size(); i++){
-                        cout << "\t" + _datasetIds[i] + ":  " << (float) queryAbundancesCoverages[i] / 4564814 << endl;
-                }
+		for(size_t i=0; i<_queriesPresenceAbsences.size(); i++){
+			cout << "\t" + _datasetIds[i] + ":  " << (float) _queriesPresenceAbsences[i] / 4564814 << endl;
+		}
 
 		cout << endl << "Kmers's abundance" << endl;
-		for(size_t i=0; i<queryAbundances.size(); i++){                
-                        cout << "\t" + _datasetIds[i] + ":  " << queryAbundances[i]<< endl;
-                }
+		for(size_t i=0; i<_queriesAbundances.size(); i++){
+			cout << "\t" + _datasetIds[i] + ":  " << _queriesAbundances[i]<< endl;
+		}
 
 		cout << endl;
 		cout << "Reference depth" << endl;
-		for(size_t i=0; i<queryAbundances.size(); i++){
-                        cout << "\t" + _datasetIds[i] + ":  " << (float) queryAbundances[i] / (float) queryAbundancesCoverages[i] << endl;
+		for(size_t i=0; i<_queriesAbundances.size(); i++){
+			cout << "\t" + _datasetIds[i] + ":  " << (float) _queriesAbundances[i] / (float) _queriesPresenceAbsences[i] << endl;
 		}
-		cout << endl;
+		cout << endl;*/
 	}
 
 
@@ -530,31 +517,33 @@ public:
 		//_processors.push_back(proc);
 	}
 
-	void insert(const Type& kmer, const SimkaCounterBuilderMerge& counter){
+	void insert(const Type& kmer, const CountVector& abundancePerBank, size_t nbBankThatHaveKmer){
 
-		/*
-		size_t nbBanks = 0;
-		for(size_t i=0; i<counter.get().size(); i++){
+		if(_isQuery){
+			bool exists;
+			_queryKmers->get_value(kmer.getVal(), exists, _queryIds);
 
-			//if(counts[i] >= _abundanceThreshold.first && counts[i] <= _abundanceThreshold.second)
-			//	return true;
+			if(exists){
 
-			if(counter.get()[i] > 0) nbBanks += 1;
+				for(size_t i=0; i<abundancePerBank.size(); i++){
+					CountNumber abundance = abundancePerBank[i];
+					if(abundance == 0) continue;
 
+					for(size_t j=0; j<_queryIds.size(); j++){
+						u_int32_t queryId = _queryIds[j];
+						_queriesAbundances[queryId][i] += abundance;
+						_queriesPresenceAbsences[queryId][i] += 1;
+					}
+				}
+			}
+			//cout << exists << endl;
 		}
 
-		if(nbBanks == _nbBanks){
-			cout << nbBanks << endl;
 
-			cout << kmer.toString(31) << endl;
-			for(size_t i=0; i<counter.get().size(); i++){
-				cout << counter.get()[i] << " ";
-			}
-			cout << endl;
-		}*/
+		if(nbBankThatHaveKmer > 1)
+			_processor->process (_partitionId, kmer, abundancePerBank);
 
-		//cout <<_partitiontId << " "<< kmer.toString(31) << endl;
-		//_processor->process (_partitionId, kmer, counter.get());
+
 	}
 
 	void removeStorage(Parameter& p){
@@ -580,11 +569,40 @@ public:
 	}
 
 	void writeFinishSignal(Parameter& p){
+
+		if(_isQuery){
+			writeQueryResults(p);
+		}
+
 		string finishFilename = p.outputDir + "/merge_synchro/" +  SimkaAlgorithm<>::toString(p.partitionId) + ".ok";
 		IFile* file = System::file().newFile(finishFilename, "w");
 		delete file;
 	}
 
+	void writeQueryResults(Parameter& p){
+
+		string filename = p.outputDir + "/merge_synchro/" +  SimkaAlgorithm<>::toString(p.partitionId) + ".query";
+
+		BagGzFile<long double>* file = new BagGzFile<long double>(filename);
+
+	    for(size_t i=0; i<_nbQueries; i++){
+			for(size_t j=0; j<_nbBanks; j++){
+				file->insert((long double)_queriesAbundances[i][j]);
+			}
+	    }
+
+	    for(size_t i=0; i<_nbQueries; i++){
+			for(size_t j=0; j<_nbBanks; j++){
+				file->insert((long double)_queriesPresenceAbsences[i][j]);
+			}
+	    }
+
+		file->flush();
+
+		delete file;
+	}
+
+	/*
 	void createBloom(Parameter& p){
 
 		string h5filename = p.outputDir + "/" + "query_kmers.h5";
@@ -623,7 +641,101 @@ public:
 		cout << _queryKmerHash->size() << endl;
 		//BloomBuilder<span> builder (estimatedBloomSize, 7, p.kmerSize, gatb::core::tools::misc::BLOOM_CACHE, 1, 0);
 		//_queryKmerBloom = builder.build (itKmers);
+	}*/
+
+
+	void createQuery(Parameter& p){
+		indexQueryKmers(p);
+
+		_queriesAbundances.resize(_nbQueries);
+		for(size_t i=0; i<_nbQueries; i++){
+			_queriesAbundances[i] = vector<u_int32_t>(_nbBanks, 0);
+		}
+
+
+		_queriesPresenceAbsences.resize(_nbQueries);
+		for(size_t i=0; i<_nbQueries; i++){
+			_queriesPresenceAbsences[i] = vector<u_int32_t>(_nbBanks, 0);
+		}
+
 	}
+
+	void indexQueryKmers(Parameter& p){
+
+		string h5filename = p.outputDir + "/" + "query_kmers.h5";
+
+		Storage* storage = StorageFactory(STORAGE_HDF5).load (h5filename);
+		LOCAL (storage);
+
+		Partition<Count>& solidCollection = storage->root().getGroup("dsk").getPartition<Count> ("solid");
+
+		Collection<Count>& collection  = solidCollection[p.partitionId];
+
+		//u_int64_t solidFileSize = collection.iterable().getNbItems();
+		u_int64_t nbSolidKmers = collection.iterable()->getNbItems();
+
+
+		//size_t NBITS_PER_KMER = 12;
+		//u_int64_t estimatedBloomSize = (u_int64_t) ((double)nb_kmers_infile * NBITS_PER_KMER);
+		//if (estimatedBloomSize ==0 ) { estimatedBloomSize = 1000; }
+
+		//Iterator<Count>* itKmers = createIterator<Count> (
+		//		collection.iterable()->iterator(),
+		//		nbSolidKmers,
+		//		"Indexing queries"
+		//);
+		Iterator<Count>* itKmers = collection.iterable()->iterator();
+		LOCAL (itKmers);
+
+
+		if(nbSolidKmers==0){
+			cout<<"No solid kmers in bank -- exit"<<endl;
+			exit(0);
+		}
+		IteratorKmerH5Wrapper<span> iteratorOnKmers (itKmers);
+		_queryKmers = new quasidictionaryVectorKeyGeneric<IteratorKmerH5Wrapper<span>, u_int32_t> (nbSolidKmers, iteratorOnKmers, 8, 2);
+
+		fillQueryKmers(p);
+	}
+
+	void fillQueryKmers(Parameter& p){
+
+		IBank* queryBank = Bank::open(p.inputQueryFilename);
+		LOCAL(queryBank);
+
+		//Iterator<Sequence>* itSeq = queryBank->iterator();
+		Iterator<Sequence>* itSeq = createIterator(queryBank->iterator(), queryBank->estimateNbItems(), "Filling index");
+		LOCAL(itSeq);
+
+		//Model definition of a kmer iterator (this one put kmer in cannonical form)
+		Kmer<>::ModelCanonical model(p.kmerSize);
+		Kmer<>::ModelCanonical::Iterator kmerIt(model);
+
+		Sequence* sequence;
+		_nbQueries = 0;
+
+		for (itSeq->first(); !itSeq->isDone(); itSeq->next()){
+			sequence = &itSeq->item();
+			kmerIt.setData (sequence->getData());
+
+			for (kmerIt.first(); !kmerIt.isDone(); kmerIt.next()){
+
+				//cout << _kmerIt->value().toString(kmerSize) << endl;
+
+				u_int64_t kmer = kmerIt->value().getVal();
+
+				u_int32_t value = sequence->getIndex();
+				_queryKmers->set_value(kmer, value);
+			}
+
+			_nbQueries += 1;
+		}
+	}
+
+
+
+
+
 
 
 private:
@@ -638,7 +750,15 @@ private:
 	IteratorListener* _progress;
 	IBloom<Type>* _queryKmerBloom;
 	Hash16<Type, bool>* _queryKmerHash;
+	quasidictionaryVectorKeyGeneric<IteratorKmerH5Wrapper<span>, u_int32_t>* _queryKmers;
 
+	vector<vector<u_int32_t>> _queriesAbundances;
+	vector<vector<u_int32_t>> _queriesPresenceAbsences;
+	bool _isQuery;
+	u_int64_t _nbQueries;
+	vector<u_int32_t> _queryIds;
+	//vector<u_int64_t> queryAbundances(_nbBanks, 0);
+	//vector<u_int64_t> queryAbundancesCoverages(_nbBanks, 0);
 };
 
 
@@ -660,6 +780,7 @@ public:
         getParser()->push_back (new OptionNoParam (STR_SIMKA_COMPUTE_ALL_SIMPLE_DISTANCES.c_str(), "compute simple distances"));
         getParser()->push_back (new OptionNoParam (STR_SIMKA_COMPUTE_ALL_COMPLEX_DISTANCES.c_str(), "compute complex distances"));
         getParser()->push_back (new OptionOneParam ("-nb-partitions",   "bank name", true));
+        getParser()->push_back (new OptionOneParam ("-in-query",   "bank name", true));
     }
 
     void execute ()
@@ -674,8 +795,9 @@ public:
     	bool computeSimpleDistances =   getInput()->get(STR_SIMKA_COMPUTE_ALL_SIMPLE_DISTANCES);
     	bool computeComplexDistances =   getInput()->get(STR_SIMKA_COMPUTE_ALL_COMPLEX_DISTANCES);
     	size_t nbPartitions =   getInput()->getInt("-nb-partitions");
+    	string inputQueryFilename =   getInput()->getStr("-in-query");
 
-    	Parameter params(getInput(), inputFilename, outputDir, partitionId, kmerSize, minShannonIndex, computeSimpleDistances, computeComplexDistances, nbPartitions);
+    	Parameter params(getInput(), inputFilename, outputDir, partitionId, kmerSize, minShannonIndex, computeSimpleDistances, computeComplexDistances, nbPartitions, inputQueryFilename);
 
         Integer::apply<Functor,Parameter> (kmerSize, params);
 

@@ -756,7 +756,9 @@ public:
 		//config._abundance = vector;
 		//config._abundanceUserNb = 1;
 		config._abundance[0] = CountRange(0, 10000000);
-
+		config._nbCores = this->_nbCores;
+		config._nbCores_per_partition = this->_nbCores;
+		config._max_memory = this->_maxMemory;
 		//SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, caches, cacheIndexes, p.abundanceMin, p.abundanceMax);
 		//SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, nbKmerPerParts, nbDistinctKmerPerParts, chordNiPerParts, p.abundanceMin, p.abundanceMax);
 		std::vector<ICountProcessor<span>* > procs = SortingCountAlgorithm<span>::getDefaultProcessorVector(config, props, kmerStorage);
@@ -767,6 +769,7 @@ public:
 		algo.getInput()->add (0, STR_VERBOSE, props->getStr(STR_VERBOSE));
 
 		algo.execute();
+		_nbQueries = algo.getInfo()->getInt("seq_number");
 	}
 
 	void count(){
@@ -943,6 +946,10 @@ public:
 				command += " " + string(STR_NB_CORES) + " 1";
 				command += " " + string(STR_SIMKA_MIN_KMER_SHANNON_INDEX) + " " + Stringify::format("%f", this->_minKmerShannonIndex);
 				command += " -nb-partitions " + SimkaAlgorithm<>::toString(_nbPartitions);
+				if(this->_isQuery)
+					command += " -in-query " + this->_queryFilename;
+				else
+					command += " -in-query __0__";
 				command += " -verbose " + Stringify::format("%d", this->_options->getInt(STR_VERBOSE));
 				if(this->_computeSimpleDistances) command += " " + string(STR_SIMKA_COMPUTE_ALL_SIMPLE_DISTANCES);
 				if(this->_computeComplexDistances) command += " " + string(STR_SIMKA_COMPUTE_ALL_COMPLEX_DISTANCES);
@@ -1073,6 +1080,12 @@ public:
 		cout << endl << "Computing stats..." << endl;
 		//cout << this->_nbBanks << endl;
 
+
+
+		if(this->_isQuery){
+			loadQueryResults();
+		}
+
 		//u_int64_t nbKmers = 0;
 
 		//SimkaDistanceParam distanceParams(this->_options);
@@ -1107,6 +1120,101 @@ public:
 	}
 
 
+	void loadQueryResults(){
+
+		cout << _nbQueries << endl;
+
+
+
+
+		IBank* queryBank = Bank::open(this->_queryFilename);
+		LOCAL(queryBank);
+		Iterator<Sequence>* itSeq = queryBank->iterator();
+		LOCAL(itSeq);
+		Sequence* sequence;
+		for (itSeq->first(); !itSeq->isDone(); itSeq->next()){
+			sequence = &itSeq->item();
+			_querySizes.push_back(sequence->getDataSize());
+		}
+
+
+
+
+		vector<vector<u_int64_t>> _queriesAbundances;
+		_queriesAbundances.resize(_nbQueries);
+		for(size_t i=0; i<_nbQueries; i++){
+			_queriesAbundances[i] = vector<u_int64_t>(this->_nbBanks, 0);
+		}
+
+
+		vector<vector<u_int64_t>> _queriesPresenceAbsences;
+		_queriesPresenceAbsences.resize(_nbQueries);
+		for(size_t i=0; i<_nbQueries; i++){
+			_queriesPresenceAbsences[i] = vector<u_int64_t>(this->_nbBanks, 0);
+		}
+
+
+		for(size_t i=0; i<_nbPartitions; i++){
+			string filename = this->_outputDirTemp + "/merge_synchro/" + SimkaAlgorithm<>::toString(i) + ".query";
+
+			IterableGzFile<long double>* file = new IterableGzFile<long double>(filename);
+			Iterator<long double>* it = file->iterator();
+			it->first();
+
+			for(size_t i=0; i<_nbQueries; i++){
+				for(size_t j=0; j<this->_nbBanks; j++){
+					_queriesAbundances[i][j] += it->item(); it->next();
+				}
+			}
+
+			for(size_t i=0; i<_nbQueries; i++){
+				for(size_t j=0; j<this->_nbBanks; j++){
+					_queriesPresenceAbsences[i][j] += it->item(); it->next();
+				}
+			}
+
+			delete file;
+		}
+
+		size_t i = 0;
+		for (itSeq->first(); !itSeq->isDone(); itSeq->next()){
+			sequence = &itSeq->item();
+
+			cout << sequence->getComment() << endl;
+
+			cout << "\tBreadth" << endl;
+			cout << "\t\t";
+			for(size_t j=0; j<this->_nbBanks; j++){
+				double breadth = (double)_queriesPresenceAbsences[i][j] / (double)_querySizes[i];
+				if(breadth < 0.1) cout << 0 << " ";
+				else cout << breadth << " ";
+			}
+			cout << endl;
+
+			cout << "\tDepth" << endl;
+			cout << "\t\t";
+			for(size_t j=0; j<this->_nbBanks; j++){
+				if(_queriesPresenceAbsences[i][j] == 0){
+					cout << 0 << " ";
+					continue;
+				}
+				double breadth = (double)_queriesPresenceAbsences[i][j] / (double)_querySizes[i];
+				double depth = (double)_queriesAbundances[i][j] / (double)_queriesPresenceAbsences[i][j];
+				double depthCorrected = depth * breadth;
+				if(depthCorrected < 0.1) cout << 0 << " ";
+				else cout << depthCorrected << " ";
+			}
+			cout << endl << endl;
+
+			i += 1;
+		}
+
+
+	}
+
+	u_int64_t _nbQueries;
+	vector<u_int64_t> _querySizes;
+
 	//u_int64_t _maxMemory;
 	//size_t _nbCores;
 	size_t _memoryPerJob;
@@ -1139,6 +1247,7 @@ public:
 	string _jobMergeContents;
 
 	IteratorListener* _progress;
+
 };
 
 
