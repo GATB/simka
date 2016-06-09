@@ -969,6 +969,7 @@ struct SimkaSequenceFilter
 	}
 
 	bool isShannonIndexValid(Sequence& seq){
+		//cout << getShannonIndex(seq) << endl;
 		if(_minShannonIndex == 0) return true;
 		return getShannonIndex(seq) >= _minShannonIndex;
 	}

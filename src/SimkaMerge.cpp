@@ -583,17 +583,17 @@ public:
 
 		string filename = p.outputDir + "/merge_synchro/" +  SimkaAlgorithm<>::toString(p.partitionId) + ".query";
 
-		BagGzFile<long double>* file = new BagGzFile<long double>(filename);
+		BagGzFile<u_int32_t>* file = new BagGzFile<u_int32_t>(filename);
 
 	    for(size_t i=0; i<_nbQueries; i++){
 			for(size_t j=0; j<_nbBanks; j++){
-				file->insert((long double)_queriesAbundances[i][j]);
+				file->insert(_queriesAbundances[i][j]);
 			}
 	    }
 
 	    for(size_t i=0; i<_nbQueries; i++){
 			for(size_t j=0; j<_nbBanks; j++){
-				file->insert((long double)_queriesPresenceAbsences[i][j]);
+				file->insert(_queriesPresenceAbsences[i][j]);
 			}
 	    }
 

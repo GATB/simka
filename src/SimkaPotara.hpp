@@ -756,9 +756,9 @@ public:
 		//config._abundance = vector;
 		//config._abundanceUserNb = 1;
 		config._abundance[0] = CountRange(0, 10000000);
-		config._nbCores = this->_nbCores;
-		config._nbCores_per_partition = this->_nbCores;
-		config._max_memory = this->_maxMemory;
+		//config._nbCores = this->_nbCores;
+		//config._nbCores_per_partition = this->_nbCores;
+		//config._max_memory = this->_maxMemory;
 		//SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, caches, cacheIndexes, p.abundanceMin, p.abundanceMax);
 		//SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, nbKmerPerParts, nbDistinctKmerPerParts, chordNiPerParts, p.abundanceMin, p.abundanceMax);
 		std::vector<ICountProcessor<span>* > procs = SortingCountAlgorithm<span>::getDefaultProcessorVector(config, props, kmerStorage);
@@ -1114,10 +1114,13 @@ public:
 		//}
 		mainStats.outputMatrix(this->_outputDir, this->_bankNames);
 
-#//ifdef PRINT_STATS
+//#ifdef PRINT_STATS
 		if(this->_options->getInt(STR_VERBOSE) != 0) mainStats.print();
-#//endif
+//#endif
 	}
+
+
+
 
 
 	void loadQueryResults(){
@@ -1125,17 +1128,6 @@ public:
 		cout << _nbQueries << endl;
 
 
-
-
-		IBank* queryBank = Bank::open(this->_queryFilename);
-		LOCAL(queryBank);
-		Iterator<Sequence>* itSeq = queryBank->iterator();
-		LOCAL(itSeq);
-		Sequence* sequence;
-		for (itSeq->first(); !itSeq->isDone(); itSeq->next()){
-			sequence = &itSeq->item();
-			_querySizes.push_back(sequence->getDataSize());
-		}
 
 
 
@@ -1153,12 +1145,11 @@ public:
 			_queriesPresenceAbsences[i] = vector<u_int64_t>(this->_nbBanks, 0);
 		}
 
-
 		for(size_t i=0; i<_nbPartitions; i++){
 			string filename = this->_outputDirTemp + "/merge_synchro/" + SimkaAlgorithm<>::toString(i) + ".query";
 
-			IterableGzFile<long double>* file = new IterableGzFile<long double>(filename);
-			Iterator<long double>* it = file->iterator();
+			IterableGzFile<u_int32_t>* file = new IterableGzFile<u_int32_t>(filename);
+			Iterator<u_int32_t>* it = file->iterator();
 			it->first();
 
 			for(size_t i=0; i<_nbQueries; i++){
@@ -1176,6 +1167,14 @@ public:
 			delete file;
 		}
 
+
+		dumpQueryTable(_queriesAbundances, _queriesPresenceAbsences);
+		/*
+
+
+
+
+
 		size_t i = 0;
 		for (itSeq->first(); !itSeq->isDone(); itSeq->next()){
 			sequence = &itSeq->item();
@@ -1186,7 +1185,8 @@ public:
 			cout << "\t\t";
 			for(size_t j=0; j<this->_nbBanks; j++){
 				double breadth = (double)_queriesPresenceAbsences[i][j] / (double)_querySizes[i];
-				if(breadth < 0.1) cout << 0 << " ";
+				breadth *= 100;
+				if(breadth < 0.01) cout << 0 << " ";
 				else cout << breadth << " ";
 			}
 			cout << endl;
@@ -1207,9 +1207,171 @@ public:
 			cout << endl << endl;
 
 			i += 1;
+		}*/
+
+
+	}
+
+
+
+	void dumpQueryTable(const vector<vector<u_int64_t>>& _queriesAbundances, const vector<vector<u_int64_t>> _queriesPresenceAbsences){
+
+		gatb::core::system::IFile* breadthFile = gatb::core::system::impl::System::file().newFile(this->_outputDir + "/" + "table_breadth.csv", "wb");
+		gatb::core::system::IFile* depthFile = gatb::core::system::impl::System::file().newFile(this->_outputDir + "/" + "table_depth.csv", "wb");
+
+		IBank* queryBank = Bank::open(this->_queryFilename);
+		LOCAL(queryBank);
+		Iterator<Sequence>* itSeq = queryBank->iterator();
+		LOCAL(itSeq);
+		Sequence* sequence;
+		for (itSeq->first(); !itSeq->isDone(); itSeq->next()){
+			sequence = &itSeq->item();
+			_querySizes.push_back(sequence->getDataSize());
 		}
 
+		string str;
 
+		for(size_t i=0; i<this->_nbBanks; i++){
+			str += ";" + this->_bankNames[i];
+			//str += ";" + datasetInfos[i]._name;
+		}
+		str += '\n';
+
+
+		breadthFile->fwrite(str.c_str(), str.size(), 1);
+		depthFile->fwrite(str.c_str(), str.size(), 1);
+
+		string breadthStr = "";
+		string depthStr = "";
+
+		size_t i = 0;
+		for (itSeq->first(); !itSeq->isDone(); itSeq->next()){
+			sequence = &itSeq->item();
+
+			breadthStr.clear();
+			depthStr.clear();
+
+			//>BACT_1000|gi|260060589|ref|NC_013222.1| Robiginitalea biformata HTCC2501, complete genome
+			std::vector<std::string> elems;
+			string header = sequence->getComment();
+			string refName = "";
+			if (header.find('|') == std::string::npos){
+				refName = header;
+			}
+			else{
+
+				//cout << header << endl;
+				std::stringstream ss(header);
+				std::string item;
+				while (std::getline(ss, item, '|')) {
+					elems.push_back(item);
+					//cout << item << endl;
+				}
+
+				string refNameLong = elems[elems.size()-1];
+
+				elems.clear();
+				std::stringstream ss2(refNameLong);
+				while (std::getline(ss2, item, ',')) {
+					elems.push_back(item);
+				}
+
+				refName = elems[0];
+			}
+
+			breadthStr += refName + ";";
+			depthStr += refName + ";";
+
+			for(size_t j=0; j<this->_nbBanks; j++){
+				double breadth = (double)_queriesPresenceAbsences[i][j] / (double)_querySizes[i];
+				breadth *= 100;
+				if(breadth < 0.01) breadth = 0;
+				breadthStr += Stringify::format("%f", breadth) + ";";
+			}
+			for(size_t j=0; j<this->_nbBanks; j++){
+				double depth = 0;
+				if(_queriesPresenceAbsences[i][j] == 0){
+					depth = 0;
+				}
+				else{
+					depth = (double)_queriesAbundances[i][j] / (double)_queriesPresenceAbsences[i][j];
+					if(depth < 0.1) depth = 0;
+					//double breadth = (double)_queriesPresenceAbsences[i][j] / (double)_querySizes[i];
+					//double depth = (double)_queriesAbundances[i][j] / (double)_queriesPresenceAbsences[i][j];
+					//double depthCorrected = depth * breadth;
+					//if(depthCorrected < 0.1) cout << 0 << " ";
+					//else cout << depthCorrected << " ";
+				}
+				depthStr += Stringify::format("%f", depth) + ";";
+			}
+
+			breadthStr.erase(breadthStr.size()-1);
+			depthStr.erase(depthStr.size()-1);
+			breadthStr += '\n';
+			depthStr += '\n';
+
+
+			breadthFile->fwrite(breadthStr.c_str(), breadthStr.size(), 1);
+			depthFile->fwrite(depthStr.c_str(), depthStr.size(), 1);
+			//cout << breadthStr << endl;
+			//cout << depthStr << endl;
+
+			/*
+			cout << sequence->getComment() << endl;
+
+			cout << "\tBreadth" << endl;
+			cout << "\t\t";
+			for(size_t j=0; j<this->_nbBanks; j++){
+				double breadth = (double)_queriesPresenceAbsences[i][j] / (double)_querySizes[i];
+				breadth *= 100;
+				if(breadth < 0.01) cout << 0 << " ";
+				else cout << breadth << " ";
+			}
+			cout << endl;
+
+			cout << "\tDepth" << endl;
+			cout << "\t\t";
+			for(size_t j=0; j<this->_nbBanks; j++){
+				if(_queriesPresenceAbsences[i][j] == 0){
+					cout << 0 << " ";
+					continue;
+				}
+				double breadth = (double)_queriesPresenceAbsences[i][j] / (double)_querySizes[i];
+				double depth = (double)_queriesAbundances[i][j] / (double)_queriesPresenceAbsences[i][j];
+				double depthCorrected = depth * breadth;
+				if(depthCorrected < 0.1) cout << 0 << " ";
+				else cout << depthCorrected << " ";
+			}
+			cout << endl << endl;
+			*/
+			i += 1;
+		}
+
+		/*
+		for(size_t i=0; i<matrix.size(); i++){
+
+			str += bankNames[i] + ";";
+			//str += datasetInfos[i]._name + ";";
+			for(size_t j=0; j<matrix.size(); j++){
+
+				//snprintf(buffer,200,"%.2f", matrix[i][j]);
+				snprintf(buffer,200,"%f", matrix[i][j]);
+				str += string(buffer) + ";";
+
+				//str += to_string(matrix[i][j]) + ";";
+			}
+
+			//matrixNormalizedStr.erase(matrixNormalizedStr.end()-1);
+			str.erase(str.size()-1);
+			//str.pop_back(); //remove ; at the end of the line
+			str += '\n';
+		}*/
+
+
+		breadthFile->flush();
+		depthFile->flush();
+		delete depthFile;
+		delete breadthFile;
 	}
 
 	u_int64_t _nbQueries;
