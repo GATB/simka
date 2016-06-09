@@ -23,6 +23,7 @@
 #include <SimkaAlgorithm.hpp>
 #include <SimkaDistance.hpp>
 
+#include <unordered_set>
 #include "../thirdparty/IteratorKmerH5/IteratorKmerH5.hpp"
 #include "../thirdparty/quasi_dictionary/src/quasidictionary.h"
 
@@ -525,6 +526,8 @@ public:
 
 			if(exists){
 
+				u_int32_t pos = _queryKmerPos[kmer.getVal()];
+
 				for(size_t i=0; i<abundancePerBank.size(); i++){
 					CountNumber abundance = abundancePerBank[i];
 					if(abundance == 0) continue;
@@ -533,6 +536,10 @@ public:
 						u_int32_t queryId = _queryIds[j];
 						_queriesAbundances[queryId][i] += abundance;
 						_queriesPresenceAbsences[queryId][i] += 1;
+					}
+
+					for(size_t p=pos; p<pos+31; p++){
+						_uniqQueryKmerPos[i].insert(p);
 					}
 				}
 			}
@@ -570,6 +577,12 @@ public:
 
 	void writeFinishSignal(Parameter& p){
 
+
+		for(size_t i=0; i<_nbBanks; i++){
+			cout << _datasetIds[i] << ": " << _uniqQueryKmerPos[i].size() << endl;
+		}
+
+		//cout << _uniqQueryKmerPos
 		if(_isQuery){
 			writeQueryResults(p);
 		}
@@ -662,6 +675,12 @@ public:
 
 	void indexQueryKmers(Parameter& p){
 
+
+		for(size_t i=0; i<_nbBanks; i++){
+			_uniqQueryKmerPos.push_back(unordered_set<u_int32_t>());
+		}
+
+		//_queryKmerPos = new Hash16<Type, u_int32_t>(100);
 		string h5filename = p.outputDir + "/" + "query_kmers.h5";
 
 		Storage* storage = StorageFactory(STORAGE_HDF5).load (h5filename);
@@ -714,10 +733,13 @@ public:
 		Sequence* sequence;
 		_nbQueries = 0;
 
+		vector<u_int32_t> values;
 		for (itSeq->first(); !itSeq->isDone(); itSeq->next()){
 			sequence = &itSeq->item();
 			kmerIt.setData (sequence->getData());
 
+
+			size_t i=0;
 			for (kmerIt.first(); !kmerIt.isDone(); kmerIt.next()){
 
 				//cout << _kmerIt->value().toString(kmerSize) << endl;
@@ -726,6 +748,16 @@ public:
 
 				u_int32_t value = sequence->getIndex();
 				_queryKmers->set_value(kmer, value);
+				bool exists;
+
+				_queryKmers->get_value(kmer, exists, values);
+				if(exists){
+					_queryKmerPos[kmer] = i;
+					//Type kmer = kmerIt->va;
+					//_queryKmerPos->insert(, i);
+				}
+
+				i += 1;
 			}
 
 			_nbQueries += 1;
@@ -757,6 +789,8 @@ private:
 	bool _isQuery;
 	u_int64_t _nbQueries;
 	vector<u_int32_t> _queryIds;
+	unordered_map<u_int64_t, u_int32_t> _queryKmerPos;
+	vector<unordered_set<u_int32_t>> _uniqQueryKmerPos;
 	//vector<u_int64_t> queryAbundances(_nbBanks, 0);
 	//vector<u_int64_t> queryAbundancesCoverages(_nbBanks, 0);
 };
