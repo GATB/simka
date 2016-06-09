@@ -693,7 +693,7 @@ public:
 			exit(0);
 		}
 		IteratorKmerH5Wrapper<span> iteratorOnKmers (itKmers);
-		_queryKmers = new quasidictionaryVectorKeyGeneric<IteratorKmerH5Wrapper<span>, u_int32_t> (nbSolidKmers, iteratorOnKmers, 8, 2);
+		_queryKmers = new quasidictionaryVectorKeyGeneric<IteratorKmerH5Wrapper<span>, u_int32_t> (nbSolidKmers, iteratorOnKmers, 16, 2);
 
 		fillQueryKmers(p);
 	}

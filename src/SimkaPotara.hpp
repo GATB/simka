@@ -1294,7 +1294,7 @@ public:
 					depth = 0;
 				}
 				else{
-					depth = (double)_queriesAbundances[i][j] / (double)_queriesPresenceAbsences[i][j];
+					depth = (double)_queriesAbundances[i][j] / (double)_querySizes[i];
 					if(depth < 0.1) depth = 0;
 					//double breadth = (double)_queriesPresenceAbsences[i][j] / (double)_querySizes[i];
 					//double depth = (double)_queriesAbundances[i][j] / (double)_queriesPresenceAbsences[i][j];
