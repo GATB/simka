@@ -77,19 +77,34 @@ public:
     //void add(Type& kmer, CountVector& counts){
     //	_bufferIndex +=
     //}
-    //void setup(vector<Type>& bufferKmers, vector<CountVector>& bufferCounts){
-    //	_bufferKmers = bufferKmers;
-    //	_bufferCounts = bufferCounts;
-    //}
+    void setup(size_t bufferIndex, vector<Type>& bufferKmers, vector<CountVector>& bufferCounts){
+
+    	//cout << "hey  " << bufferIndex << endl;
+    	_bufferIndex = bufferIndex;
+
+    	for(size_t i=0; i<_bufferIndex; i++){
+    		_bufferKmers[i] = bufferKmers[i];
+    		_bufferCounts[i] = bufferCounts[i];
+    	}
+    }
 
     void execute (){
-		//cout << _bufferKmers.size() << endl;
     	for(size_t i=0; i<_bufferIndex; i++){
     		_processor->process(_partitionId, _bufferKmers[i], _bufferCounts[i]);
     	}
     }
 
 };
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -234,6 +249,317 @@ private:
 
 
 
+
+
+
+
+
+
+
+
+
+template<size_t span>
+class MergeCommand : public gatb::core::tools::dp::ICommand, public gatb::core::system::SmartPointer
+{
+public:
+
+    /** Shortcut. */
+    typedef typename Kmer<span>::Type           Type;
+    typedef typename Kmer<span>::Count          Count;
+
+
+	typedef std::pair<u_int16_t, Type> kxp; //id pointer in vec_pointer , value
+	struct kxpcomp { bool operator() (kxp l,kxp r) { return ((r.second) < (l.second)); } } ;
+
+	size_t _currentBuffer;
+	u_int64_t _progressStep;
+	vector<vector<Type>> _bufferKmers;
+	vector<vector<CountVector>> _bufferCounts;
+	vector<size_t> _bufferIndex;
+
+    /** Constructor. */
+	MergeCommand (
+    		size_t partitionId,
+    		size_t nbBanks,
+			IteratorListener* progress,
+			vector<StorageIt<span>*>& its,
+			u_int64_t progressStep,
+			size_t nbCores
+    ) :
+    	its(its)
+	{
+		_nbBanks = nbBanks;
+    	_partitionId = partitionId;
+    	_progress = progress;
+    	_progressStep = progressStep;
+    	_nbCores = nbCores;
+
+		init();
+    }
+
+    //void add(Type& kmer, CountVector& counts){
+    //	_bufferIndex +=
+    //}
+    //void setup(vector<Type>& bufferKmers, vector<CountVector>& bufferCounts){
+    //	_bufferKmers = bufferKmers;
+    //	_bufferCounts = bufferCounts;
+    //}
+
+	size_t _nbCores;
+	size_t _partitionId;
+	size_t _nbBanks;
+	vector<StorageIt<span>*>& its;
+	std::priority_queue< kxp, vector<kxp>,kxpcomp > pq;
+	u_int64_t nbKmersProcessed;
+	IteratorListener* _progress;
+
+	u_int16_t best_p;
+	Type previous_kmer;
+    CountVector abundancePerBank;
+	size_t nbBankThatHaveKmer;
+	SimkaCounterBuilderMerge* solidCounter;
+	bool _isDone;
+
+	void init(){
+
+		_isDone = false;
+		solidCounter = new SimkaCounterBuilderMerge(abundancePerBank);
+		for(size_t i=0; i<_nbCores; i++){
+			vector<Type> vec = vector<Type>(MERGE_BUFFER_SIZE);
+			_bufferKmers.push_back(vec);
+			vector<CountVector> vec2 = vector<CountVector>(MERGE_BUFFER_SIZE);
+			_bufferCounts.push_back(vec2);
+			_bufferIndex.push_back(0);
+		}
+
+
+		nbBankThatHaveKmer = 0;
+		abundancePerBank.resize(_nbBanks, 0);
+		_currentBuffer = 0;
+		//_bufferIndex = 0;
+		//_bufferSize = 1000;
+
+		nbKmersProcessed = 0;
+		//vector<Partition<Count>*> partitions;
+		//vector<Collection<Count>*> collections;
+		//vector<Iterator<Count>*> its;
+		//vector<Storage*> storages;
+
+		//size_t nbPartitions;
+
+
+
+
+
+
+
+		for(size_t i=0; i<_nbBanks; i++){
+
+			StorageIt<span>* it = its[i];
+			it->_it->first();
+
+			//partitionIts[i]->first();
+
+			//while(!it->_it->isDone()){
+
+			//	it->_it->next();
+			//	cout << it->_it->item().value.toString(_kmerSize) << " " << it->_it->item().abundance << endl;
+			//}
+
+		}
+
+
+
+	    //fill the  priority queue with the first elems
+	    for (size_t ii=0; ii<_nbBanks; ii++)
+	    {
+	        //if(its[ii]->next())  {  pq.push(kxp(ii,its[ii]->value()));  }
+	    	pq.push(kxp(ii,its[ii]->value()));
+	    }
+
+	    if (pq.size() != 0) // everything empty, no kmer at all
+	    {
+	        //get first pointer
+	        best_p = pq.top().first ; pq.pop();
+
+	        previous_kmer = its[best_p]->value();
+
+	        solidCounter->init (its[best_p]->getBankId(), its[best_p]->abundance());
+	        nbBankThatHaveKmer = 1;
+	    }
+	}
+
+
+	void reset(){
+		for(size_t i=0; i<_bufferIndex.size(); i++){
+			_bufferIndex[i] = 0;
+		}
+	}
+
+
+    void execute (){
+
+    	//cout << "lala " << pq.size() << endl;
+
+
+
+	        //merge-scan all 'virtual' arrays and output counts
+	        while (_currentBuffer < _nbCores)
+	        {
+
+	        	//cout << _currentBuffer << endl;
+	            //go forward in this array or in new array of reaches end of this one
+	            if (! its[best_p]->next())
+	            {
+	                //reaches end of one array
+	                if(pq.size() == 0){
+	                	_isDone = true;
+	                	break;
+	                }
+
+	                //otherwise get new best
+	                best_p = pq.top().first ; pq.pop();
+	            }
+
+	            if (its[best_p]->value() != previous_kmer )
+	            {
+	                //if diff, changes to new array, get new min pointer
+	                pq.push(kxp(best_p,its[best_p]->value())); //push new val of this pointer in pq, will be counted later
+
+	                best_p = pq.top().first ; pq.pop();
+
+	                //if new best is diff, this is the end of this kmer
+	                if(its[best_p]->value()!=previous_kmer )
+	                {
+
+						nbKmersProcessed += nbBankThatHaveKmer;
+						if(nbKmersProcessed > _progressStep){
+							//cout << "queue size:   " << pq.size() << endl;
+							//cout << nbKmersProcessed << endl;
+							_progress->inc(nbKmersProcessed);
+							nbKmersProcessed = 0;
+						}
+
+						//cout << previous_kmer.toString(p.kmerSize) << endl;
+						//for(size_t i=0; i<abundancePerBank.size(); i++){
+						//	cout << abundancePerBank[i] << " ";
+						//}
+						//cout << endl;
+
+				        insert(previous_kmer, abundancePerBank, nbBankThatHaveKmer);
+						//if(nbBankThatHaveKmer > 1)
+						//	_processor->process (_partitionId, previous_kmer, abundancePerBank);
+	                    //this->insert (previous_kmer, solidCounter);
+
+	                    solidCounter->init (its[best_p]->getBankId(), its[best_p]->abundance());
+	                    nbBankThatHaveKmer = 1;
+	                    previous_kmer = its[best_p]->value();
+	                }
+	                else
+	                {
+	                    solidCounter->increase (its[best_p]->getBankId(), its[best_p]->abundance());
+	                    nbBankThatHaveKmer += 1;
+	                }
+	            }
+	            else
+	            {
+	                solidCounter->increase (its[best_p]->getBankId(), its[best_p]->abundance());
+	                nbBankThatHaveKmer += 1;
+	            }
+	        }
+
+	        if(_isDone){
+		        insert(previous_kmer, abundancePerBank, nbBankThatHaveKmer);
+	        }
+	        else{
+	        }
+
+			_currentBuffer = 0;
+			//_bufferIndex = 0;
+        	//cout << nbBankThatHaveKmer << endl;
+
+	    	//cout << previous_kmer.toString(p.kmerSize) << endl;
+	        //for(size_t i=0; i<abundancePerBank.size(); i++){
+	        //	cout << abundancePerBank[i] << " ";
+	        //}
+	        //cout << endl;
+
+	        //last elem
+	        //insert(previous_kmer, abundancePerBank, nbBankThatHaveKmer);
+	        //this->insert (previous_kmer, solidCounter);
+	   // }
+
+
+	    	//cout << "end " << endl;
+    }
+
+
+
+
+
+
+	void insert(const Type& kmer, const CountVector& counts, size_t nbBankThatHaveKmer){
+
+
+        if(nbBankThatHaveKmer > 1){
+			//DistanceCommand<span>* cmd = dynamic_cast<DistanceCommand<span>*>(_cmds[_currentBuffer]);
+			//cmd->_bufferKmers[cmd->_bufferIndex] = kmer;
+			//cmd->_bufferCounts[cmd->_bufferIndex] = counts;
+        	_bufferKmers[_currentBuffer][_bufferIndex[_currentBuffer]] = kmer;
+        	_bufferCounts[_currentBuffer][_bufferIndex[_currentBuffer]] = counts;
+
+			_bufferIndex[_currentBuffer] += 1;
+        	if(_bufferIndex[_currentBuffer] >= MERGE_BUFFER_SIZE){
+				//DistanceCommand<span>* cmd = dynamic_cast<DistanceCommand<span>*>(_cmds[_currentBuffer]);
+				//cmd->setup(_bufferKmers[_currentBuffer], _bufferCounts[_currentBuffer]);
+
+        		_currentBuffer += 1;
+        		if(_currentBuffer >= _nbCores){
+        			//dispatch();
+        		}
+        		else{
+        			//_bufferIndex = 0;
+        		}
+        	}
+        	//_processor->process (_partitionId, kmer, counts);
+        }
+
+    	//_processor->process (_partitionId, kmer, counts);
+		/*
+		size_t nbBanks = 0;
+		for(size_t i=0; i<counter.get().size(); i++){
+
+			//if(counts[i] >= _abundanceThreshold.first && counts[i] <= _abundanceThreshold.second)
+			//	return true;
+
+			if(counter.get()[i] > 0) nbBanks += 1;
+
+		}
+
+		if(nbBanks == _nbBanks){
+			cout << nbBanks << endl;
+
+			cout << kmer.toString(31) << endl;
+			for(size_t i=0; i<counter.get().size(); i++){
+				cout << counter.get()[i] << " ";
+			}
+			cout << endl;
+		}*/
+
+		//cout <<_partitiontId << " "<< kmer.toString(31) << endl;
+		//_processor->process (_partitionId, kmer, counter.get());
+	}
+
+
+};
+
+
+
+
+
+
+
+
 template<size_t span>
 class SimkaMergeAlgorithm : public Algorithm
 {
@@ -243,8 +569,6 @@ public:
 	typedef typename Kmer<span>::Type                                       Type;
 	typedef typename Kmer<span>::Count                                      Count;
 
-	typedef std::pair<u_int16_t, Type> kxp; //id pointer in vec_pointer , value
-	struct kxpcomp { bool operator() (kxp l,kxp r) { return ((r.second) < (l.second)); } } ;
 
 	Parameter& p;
 
@@ -326,16 +650,9 @@ public:
 
 	void execute(){
 
-		_currentBuffer = 0;
-		//_bufferIndex = 0;
-		_bufferSize = 1000;
 		_nbCores = p.nbCores;
-		//for(size_t i=0; i<_nbCores; i++){
-		//	vector<Type> vec = vector<Type>(_bufferSize);
-		//	_bufferKmers.push_back(vec);
-		//	vector<CountVector> vec2 = vector<CountVector>(_bufferSize);
-		//	_bufferCounts.push_back(vec2);
-		//}
+
+
 
 
 
@@ -364,20 +681,17 @@ public:
 		//_processor = new SimkaCountProcessorSimple<span> (_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, p.minShannonIndex);
 		//_processor->use();
 
-		vector<StorageIt<span>*> its;
-		//vector<Partition<Count>*> partitions;
-		//vector<Collection<Count>*> collections;
-		//vector<Iterator<Count>*> its;
-		std::priority_queue< kxp, vector<kxp>,kxpcomp > pq;
-		//vector<Storage*> storages;
 
-		//size_t nbPartitions;
-		u_int64_t nbKmers = 0;
-		u_int64_t nbKmersProcessed = 0;
+
+
+
+
 		string line;
-
-
 		vector<IterableGzFile<Count>* > partitions;
+		vector<StorageIt<span>*> its;
+		u_int64_t nbKmers = 0;
+
+
 		//vector<Iterator<Count>* > partitionIts;
     	for(size_t i=0; i<_nbBanks; i++){
     		string filename = p.outputDir + "/solid/" +  _datasetIds[i] + "/" + "part" + Stringify::format("%i", _partitionId);
@@ -401,36 +715,6 @@ public:
 			file.close();
     	}
 
-
-
-		//vector<Partition<Count>* > partitions;
-		//for(size_t i=0; i<_nbBanks; i++){
-
-			/*
-			string solidH5Filename = p.outputDir + "/solid/" +  _datasetIds[i] + ".h5";
-			Storage* storage1 = StorageFactory(STORAGE_HDF5).load (solidH5Filename);
-			Group& dskGroup1 = storage1->root().getGroup("dsk");
-			string nbPartitionsStrg = dskGroup1.getGroup("solid").getProperty ("nb_partitions");
-			nbPartitions = atol (nbPartitionsStrg.c_str());
-			Partition<Count>* partition1 = &dskGroup1.getPartition<Count>("solid");
-
-			partitions.push_back(partition1);*/
-		//}
-
-    	/*
-		for(size_t i=0; i<_nbBanks; i++){
-
-			//string solidH5Filename = p.outputDir + "/solid/" +  _datasetIds[i] + ".h5";
-			StorageIt<span>* it = new StorageIt<span>(partitions[i], i, p.partitionId, nbPartitions);
-			its.push_back(it);
-			nbKmers += it->getNbKmers();
-
-			//partitions[i]->remove();
-			//partitions[i]->forget();
-		}*/
-
-		//partitions.clear();
-
     	u_int64_t progressStep = nbKmers / 1000;
 		_progress = new ProgressSynchro (
 			createIteratorListener (nbKmers, "Merging kmers"),
@@ -438,123 +722,27 @@ public:
 		_progress->init ();
 
 
+		_mergeCommand = new MergeCommand<span>(
+    		_partitionId,
+    		_nbBanks,
+			_progress,
+			its,
+			progressStep,
+			_nbCores);
+		_mergeCommand->use();
+		_cmds.push_back(_mergeCommand);
 
 
+		cout << "CMDS SIZE:" << _cmds.size() << endl;
 
+		MergeCommand<span>* mergeCmd = dynamic_cast<MergeCommand<span>*>(_mergeCommand);
+		mergeCmd->execute();
 
-		for(size_t i=0; i<_nbBanks; i++){
-
-			StorageIt<span>* it = its[i];
-			it->_it->first();
-
-			//partitionIts[i]->first();
-
-			//while(!it->_it->isDone()){
-
-			//	it->_it->next();
-			//	cout << it->_it->item().value.toString(_kmerSize) << " " << it->_it->item().abundance << endl;
-			//}
-
+		while(!mergeCmd->_isDone){
+			//cout << mergeCmd->_isDone << endl;
+			//mergeCmd->execute();
+			dispatch();
 		}
-
-		u_int16_t best_p;
-		Type previous_kmer;
-
-	    CountVector abundancePerBank(_nbBanks, 0);
-		SimkaCounterBuilderMerge solidCounter(abundancePerBank);
-		size_t nbBankThatHaveKmer = 0;
-
-	    //fill the  priority queue with the first elems
-	    for (size_t ii=0; ii<_nbBanks; ii++)
-	    {
-	        //if(its[ii]->next())  {  pq.push(kxp(ii,its[ii]->value()));  }
-	    	pq.push(kxp(ii,its[ii]->value()));
-	    }
-
-    	//cout << "lala " << pq.size() << endl;
-
-	    if (pq.size() != 0) // everything empty, no kmer at all
-	    {
-	        //get first pointer
-	        best_p = pq.top().first ; pq.pop();
-
-	        previous_kmer = its[best_p]->value();
-
-	        solidCounter.init (its[best_p]->getBankId(), its[best_p]->abundance());
-	        nbBankThatHaveKmer = 1;
-
-	        //merge-scan all 'virtual' arrays and output counts
-	        while (1)
-	        {
-	            //go forward in this array or in new array of reaches end of this one
-	            if (! its[best_p]->next())
-	            {
-	                //reaches end of one array
-	                if(pq.size() == 0) break; //everything done
-
-	                //otherwise get new best
-	                best_p = pq.top().first ; pq.pop();
-	            }
-
-	            if (its[best_p]->value() != previous_kmer )
-	            {
-	                //if diff, changes to new array, get new min pointer
-	                pq.push(kxp(best_p,its[best_p]->value())); //push new val of this pointer in pq, will be counted later
-
-	                best_p = pq.top().first ; pq.pop();
-
-	                //if new best is diff, this is the end of this kmer
-	                if(its[best_p]->value()!=previous_kmer )
-	                {
-
-						nbKmersProcessed += nbBankThatHaveKmer;
-						if(nbKmersProcessed > progressStep){
-							//cout << "queue size:   " << pq.size() << endl;
-							//cout << nbKmersProcessed << endl;
-							_progress->inc(nbKmersProcessed);
-							nbKmersProcessed = 0;
-						}
-
-						//cout << previous_kmer.toString(p.kmerSize) << endl;
-						//for(size_t i=0; i<abundancePerBank.size(); i++){
-						//	cout << abundancePerBank[i] << " ";
-						//}
-						//cout << endl;
-
-				        insert(previous_kmer, abundancePerBank, nbBankThatHaveKmer);
-						//if(nbBankThatHaveKmer > 1)
-						//	_processor->process (_partitionId, previous_kmer, abundancePerBank);
-	                    //this->insert (previous_kmer, solidCounter);
-
-	                    solidCounter.init (its[best_p]->getBankId(), its[best_p]->abundance());
-	                    nbBankThatHaveKmer = 1;
-	                    previous_kmer = its[best_p]->value();
-	                }
-	                else
-	                {
-	                    solidCounter.increase (its[best_p]->getBankId(), its[best_p]->abundance());
-	                    nbBankThatHaveKmer += 1;
-	                }
-	            }
-	            else
-	            {
-	                solidCounter.increase (its[best_p]->getBankId(), its[best_p]->abundance());
-	                nbBankThatHaveKmer += 1;
-	            }
-	        }
-
-        	//cout << nbBankThatHaveKmer << endl;
-
-	    	//cout << previous_kmer.toString(p.kmerSize) << endl;
-	        //for(size_t i=0; i<abundancePerBank.size(); i++){
-	        //	cout << abundancePerBank[i] << " ";
-	        //}
-	        //cout << endl;
-
-	        //last elem
-	        insert(previous_kmer, abundancePerBank, nbBankThatHaveKmer);
-	        //this->insert (previous_kmer, solidCounter);
-	    }
 
 	    dispatch();
 
@@ -616,69 +804,34 @@ public:
 			DistanceCommand<span>* cmd = dynamic_cast<DistanceCommand<span>*>(_cmds[i]);
 			cmd->_bufferIndex = 0;
 		}
+
 	}
 
 	void dispatch(){
 
 
+		MergeCommand<span>* mergeCommand = dynamic_cast<MergeCommand<span>*>(_mergeCommand);
+		for (size_t i=0; i<_nbCores; i++){
+			//cout << mergeCommand->_bufferKmers.size() << endl;
+			//cout << i << endl;
+			DistanceCommand<span>* cmd = dynamic_cast<DistanceCommand<span>*>(_cmds[i]);
+			cmd->setup(mergeCommand->_bufferIndex[i], mergeCommand->_bufferKmers[i], mergeCommand->_bufferCounts[i]);
+		}
 
+
+		//MergeCommand<span>* mergeCommand = dynamic_cast<MergeCommand<span>*>(_mergeCommand);
+		mergeCommand->reset();
 
 		//cout << "start dispatch" << endl;
 	    getDispatcher()->dispatchCommands(_cmds, 0);
+
+
 		//cout << "end dispatch" << endl;
 	    resetCommands();
 
+
 	}
 
-	void insert(const Type& kmer, const CountVector& counts, size_t nbBankThatHaveKmer){
-
-
-        if(nbBankThatHaveKmer > 1){
-			DistanceCommand<span>* cmd = dynamic_cast<DistanceCommand<span>*>(_cmds[_currentBuffer]);
-			cmd->_bufferKmers[cmd->_bufferIndex] = kmer;
-			cmd->_bufferCounts[cmd->_bufferIndex] = counts;
-        	//_bufferKmers[_currentBuffer][_bufferIndex] = kmer;
-        	//_bufferCounts[_currentBuffer][_bufferIndex] = counts;
-
-			cmd->_bufferIndex += 1;
-        	if(cmd->_bufferIndex >= _bufferSize){
-				//DistanceCommand<span>* cmd = dynamic_cast<DistanceCommand<span>*>(_cmds[_currentBuffer]);
-				//cmd->setup(_bufferKmers[_currentBuffer], _bufferCounts[_currentBuffer]);
-        		//_bufferIndex = 0;
-        		_currentBuffer += 1;
-        		if(_currentBuffer >= _nbCores){
-        			_currentBuffer = 0;
-        			dispatch();
-        		}
-        	}
-        	//_processor->process (_partitionId, kmer, counts);
-        }
-
-    	//_processor->process (_partitionId, kmer, counts);
-		/*
-		size_t nbBanks = 0;
-		for(size_t i=0; i<counter.get().size(); i++){
-
-			//if(counts[i] >= _abundanceThreshold.first && counts[i] <= _abundanceThreshold.second)
-			//	return true;
-
-			if(counter.get()[i] > 0) nbBanks += 1;
-
-		}
-
-		if(nbBanks == _nbBanks){
-			cout << nbBanks << endl;
-
-			cout << kmer.toString(31) << endl;
-			for(size_t i=0; i<counter.get().size(); i++){
-				cout << counter.get()[i] << " ";
-			}
-			cout << endl;
-		}*/
-
-		//cout <<_partitiontId << " "<< kmer.toString(31) << endl;
-		//_processor->process (_partitionId, kmer, counter.get());
-	}
 
 	void removeStorage(Parameter& p){
 		//Storage* storage = 0;
@@ -737,12 +890,8 @@ private:
 	IteratorListener* _progress;
 
     vector<ICommand*> _cmds;
+	ICommand* _mergeCommand;
 	size_t _nbCores;
-	//size_t _bufferIndex;
-	size_t _bufferSize;
-	size_t _currentBuffer;
-	//vector<vector<Type>> _bufferKmers;
-	//vector<vector<CountVector>> _bufferCounts;
 
 
 	SimkaStatistics* _stats;
