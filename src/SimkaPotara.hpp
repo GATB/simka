@@ -443,7 +443,7 @@ public:
 			_maxJobCount = this->_options->getInt(STR_SIMKA_NB_JOB_COUNT);
 		}
 		else{
-			size_t maxjob_byCore = min(maxCores/2, this->_nbBanks);
+			size_t maxjob_byCore = min(maxCores/4, this->_nbBanks);
 			maxjob_byCore = max(maxjob_byCore, (size_t)1);
 
 			size_t maxjob_byMemory = maxMemory/minMemoryPerJobMB;
@@ -458,7 +458,18 @@ public:
 			_maxJobMerge = this->_options->getInt(STR_SIMKA_NB_JOB_MERGE);
 		}
 		else{
-			_maxJobMerge = maxCores;
+			if(this->_computeComplexDistances && this->_computeSimpleDistances){
+				_maxJobMerge = max((size_t)maxCores/4, (size_t)1);
+			}
+			else if(this->_computeSimpleDistances){
+				_maxJobMerge = max((size_t)maxCores/2, (size_t)1);
+			}
+			else if(this->_computeComplexDistances){
+				_maxJobMerge = max((size_t)maxCores/3, (size_t)1);
+			}
+			else{
+				_maxJobMerge = maxCores;
+			}
 		}
 
 		_maxJobCount = min(_maxJobCount, maxCores);
@@ -470,10 +481,13 @@ public:
 		_memoryPerJob = maxMemory / _maxJobCount;
 		_memoryPerJob = max(_memoryPerJob, (size_t)minMemoryPerJobMB);
 
+		_coresPerMergeJob = maxCores / _maxJobMerge;
+		_coresPerMergeJob = max((size_t)1, _coresPerMergeJob);
+
 		cout << endl;
 		cout << "Maximum ressources used by Simka: " << endl;
 		cout << "\t - " << _maxJobCount << " simultaneous processes for counting the kmers (per job: " << _coresPerJob << " cores, " << _memoryPerJob << " MB memory)" << endl;
-		cout << "\t - " << _maxJobMerge << " simultaneous processes for merging the kmer counts (per job: 1 core, memory undefined)" << endl;
+		cout << "\t - " << _maxJobMerge << " simultaneous processes for merging the kmer counts (per job: " << _coresPerMergeJob << " cores, memory undefined)" << endl;
 		cout << endl;
 
 
@@ -899,7 +913,7 @@ public:
 				command += " " + string("-out-tmp-simka") + " " + this->_outputDirTemp;
 				command += " -partition-id " + SimkaAlgorithm<>::toString(i);
 				command += " " + string(STR_MAX_MEMORY) + " " + SimkaAlgorithm<>::toString(this->_maxMemory / this->_nbCores);
-				command += " " + string(STR_NB_CORES) + " 1";
+				command += " " + string(STR_NB_CORES) + " " + SimkaAlgorithm<>::toString(_coresPerMergeJob);
 				command += " " + string(STR_SIMKA_MIN_KMER_SHANNON_INDEX) + " " + Stringify::format("%f", this->_minKmerShannonIndex);
 				command += " -verbose " + Stringify::format("%d", this->_options->getInt(STR_VERBOSE));
 				if(this->_computeSimpleDistances) command += " " + string(STR_SIMKA_COMPUTE_ALL_SIMPLE_DISTANCES);
@@ -1069,6 +1083,7 @@ public:
 	//size_t _nbCores;
 	size_t _memoryPerJob;
 	size_t _coresPerJob;
+	size_t _coresPerMergeJob;
 
 	//IBank* _banks;
 	//IProperties* _options;

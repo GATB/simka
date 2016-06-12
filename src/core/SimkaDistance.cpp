@@ -41,6 +41,7 @@ SimkaStatistics::SimkaStatistics(size_t nbBanks, bool computeSimpleDistances, bo
 	//_abundanceMin = abundanceMin;
 	//_mutex = mutex;
 	//_outputDir = outputDir;
+	_datasetNbReads.resize(_nbBanks, 0);
 
 	_nbSolidDistinctKmersPerBank.resize(_nbBanks, 0);
 	_nbSolidKmersPerBank.resize(_nbBanks, 0);

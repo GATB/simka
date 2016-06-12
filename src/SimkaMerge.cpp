@@ -28,13 +28,74 @@ using namespace std;
 
 
 
+using namespace gatb::core::system;
+using namespace gatb::core::system::impl;
 
+
+#define MERGE_BUFFER_SIZE 1000
+
+
+template<size_t span>
+class DistanceCommand : public gatb::core::tools::dp::ICommand, public gatb::core::system::SmartPointer
+{
+public:
+
+    /** Shortcut. */
+    typedef typename Kmer<span>::Type           Type;
+    typedef typename Kmer<span>::Count          Count;
+
+
+    size_t _bufferIndex;
+	size_t _partitionId;
+	SimkaStatistics* _stats;
+	SimkaCountProcessorSimple<span>* _processor;
+
+	vector<Type> _bufferKmers;
+	vector<CountVector> _bufferCounts;
+
+    /** Constructor. */
+    DistanceCommand (
+    		size_t partitionId,
+    		size_t nbBanks,
+			bool computeSimpleDistances,
+			bool computeComplexDistances,
+			size_t kmerSize,
+			pair<size_t, size_t>& abundanceThreshold,
+			float minShannonIndex
+    )
+	{
+    	_partitionId = partitionId;
+		_stats = new SimkaStatistics(nbBanks, computeSimpleDistances, computeComplexDistances);
+		_processor = new SimkaCountProcessorSimple<span> (_stats, nbBanks, kmerSize, abundanceThreshold, SUM, false, minShannonIndex);
+
+		_bufferKmers.resize(MERGE_BUFFER_SIZE);
+		_bufferCounts.resize(MERGE_BUFFER_SIZE);
+
+		_bufferIndex = 0;
+    }
+
+    //void add(Type& kmer, CountVector& counts){
+    //	_bufferIndex +=
+    //}
+    //void setup(vector<Type>& bufferKmers, vector<CountVector>& bufferCounts){
+    //	_bufferKmers = bufferKmers;
+    //	_bufferCounts = bufferCounts;
+    //}
+
+    void execute (){
+		//cout << _bufferKmers.size() << endl;
+    	for(size_t i=0; i<_bufferIndex; i++){
+    		_processor->process(_partitionId, _bufferKmers[i], _bufferCounts[i]);
+    	}
+    }
+
+};
 
 
 
 struct Parameter
 {
-    Parameter (IProperties* props, string inputFilename, string outputDir, size_t partitionId, size_t kmerSize, double minShannonIndex, bool computeSimpleDistances, bool computeComplexDistances) : props(props), inputFilename(inputFilename), outputDir(outputDir), partitionId(partitionId), kmerSize(kmerSize), minShannonIndex(minShannonIndex), computeSimpleDistances(computeSimpleDistances), computeComplexDistances(computeComplexDistances) {}
+    Parameter (IProperties* props, string inputFilename, string outputDir, size_t partitionId, size_t kmerSize, double minShannonIndex, bool computeSimpleDistances, bool computeComplexDistances, size_t nbCores) : props(props), inputFilename(inputFilename), outputDir(outputDir), partitionId(partitionId), kmerSize(kmerSize), minShannonIndex(minShannonIndex), computeSimpleDistances(computeSimpleDistances), computeComplexDistances(computeComplexDistances), nbCores(nbCores) {}
     IProperties* props;
     string inputFilename;
     string outputDir;
@@ -43,6 +104,7 @@ struct Parameter
     double minShannonIndex;
     bool computeSimpleDistances;
     bool computeComplexDistances;
+    size_t nbCores;
 };
 
 
@@ -187,10 +249,15 @@ public:
 	Parameter& p;
 
 	SimkaMergeAlgorithm(Parameter& p) :
-		Algorithm("SimkaMergeAlgorithm", 1, p.props), p(p)
+		Algorithm("SimkaMergeAlgorithm", p.nbCores, p.props), p(p)
 	{
 		_abundanceThreshold.first = 0;
 		_abundanceThreshold.second = 999999999;
+
+		_computeSimpleDistances = p.computeSimpleDistances;
+		_computeComplexDistances = p.computeComplexDistances;
+		_kmerSize = p.kmerSize;
+		_minShannonIndex = p.minShannonIndex;
 	}
 
 	~SimkaMergeAlgorithm(){
@@ -215,15 +282,62 @@ public:
 			file.close();
 
 			u_int64_t nbReads = strtoull(lines[0].c_str(), NULL, 10);
-			_stats->_datasetNbReads.push_back(nbReads);
+
+			/*
+			_stats->_datasetNbReads[i] = nbReads;
 			_stats->_nbSolidDistinctKmersPerBank[i] = strtoull(lines[1].c_str(), NULL, 10);
 			_stats->_nbSolidKmersPerBank[i] = strtoull(lines[2].c_str(), NULL, 10);
-			_stats->_chord_sqrt_N2[i] = sqrt(strtoull(lines[3].c_str(), NULL, 10));
+			_stats->_chord_sqrt_N2[i] = sqrt(strtoull(lines[3].c_str(), NULL, 10));*/
+
+			for (size_t j=0; j<_nbCores; j++){
+				DistanceCommand<span>* cmd = dynamic_cast<DistanceCommand<span>*>(_cmds[j]);
+				cmd->_stats->_datasetNbReads[i] = nbReads;
+				cmd->_stats->_nbSolidDistinctKmersPerBank[i] = strtoull(lines[1].c_str(), NULL, 10);
+				cmd->_stats->_nbSolidKmersPerBank[i] = strtoull(lines[2].c_str(), NULL, 10);
+				cmd->_stats->_chord_sqrt_N2[i] = sqrt(strtoull(lines[3].c_str(), NULL, 10));
+			}
     	}
 
 	}
 
+	void loadCountInfo(){
+    	for(size_t i=0; i<_nbBanks; i++){
+    		string name = _datasetIds[i];
+    		string countFilename = p.outputDir + "/count_synchro/" +  name + ".ok";
+
+    		string line;
+	    	ifstream file(countFilename.c_str());
+	    	vector<string> lines;
+			while(getline(file, line)){
+				if(line == "") continue;
+				lines.push_back(line);
+			}
+			file.close();
+
+			u_int64_t nbReads = strtoull(lines[0].c_str(), NULL, 10);
+
+			_stats->_datasetNbReads[i] = nbReads;
+			_stats->_nbSolidDistinctKmersPerBank[i] = strtoull(lines[1].c_str(), NULL, 10);
+			_stats->_nbSolidKmersPerBank[i] = strtoull(lines[2].c_str(), NULL, 10);
+			_stats->_chord_sqrt_N2[i] = sqrt(strtoull(lines[3].c_str(), NULL, 10));
+			//cout << _stats->_chord_sqrt_N2[i] << endl;
+    	}
+	}
+
 	void execute(){
+
+		_currentBuffer = 0;
+		//_bufferIndex = 0;
+		_bufferSize = 1000;
+		_nbCores = p.nbCores;
+		//for(size_t i=0; i<_nbCores; i++){
+		//	vector<Type> vec = vector<Type>(_bufferSize);
+		//	_bufferKmers.push_back(vec);
+		//	vector<CountVector> vec2 = vector<CountVector>(_bufferSize);
+		//	_bufferCounts.push_back(vec2);
+		//}
+
+
 
 		removeStorage(p);
 
@@ -232,13 +346,22 @@ public:
 		createDatasetIdList(p);
 		_nbBanks = _datasetIds.size();
 
-		//SimkaDistanceParam distanceParams(p.props);
-		_stats = new SimkaStatistics(_nbBanks, p.computeSimpleDistances, p.computeComplexDistances);
 
+
+		for (size_t i=0; i<_nbCores; i++)
+	    {
+	        ICommand* cmd = 0;
+	        cmd = new DistanceCommand<span>(_partitionId, _nbBanks, _computeSimpleDistances, _computeComplexDistances, _kmerSize, _abundanceThreshold, _minShannonIndex);
+	        cmd->use();
+	        _cmds.push_back (cmd);
+	    }
+		resetCommands();
+
+		//SimkaDistanceParam distanceParams(p.props);
 		createInfo(p);
 
 		//createProcessor(p);
-		_processor = new SimkaCountProcessorSimple<span> (_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, p.minShannonIndex);
+		//_processor = new SimkaCountProcessorSimple<span> (_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, p.minShannonIndex);
 		//_processor->use();
 
 		vector<StorageIt<span>*> its;
@@ -259,7 +382,7 @@ public:
     	for(size_t i=0; i<_nbBanks; i++){
     		string filename = p.outputDir + "/solid/" +  _datasetIds[i] + "/" + "part" + Stringify::format("%i", _partitionId);
     		//cout << filename << endl;
-    		IterableGzFile<Count>* partition = new IterableGzFile<Count>(filename);
+    		IterableGzFile<Count>* partition = new IterableGzFile<Count>(filename, 1000);
     		partitions.push_back(partition);
     		its.push_back(new StorageIt<span>(partition->iterator(), i, _partitionId));
     		//nbKmers += partition->estimateNbItems();
@@ -313,7 +436,6 @@ public:
 			createIteratorListener (nbKmers, "Merging kmers"),
 			System::thread().newSynchronizer());
 		_progress->init ();
-
 
 
 
@@ -399,8 +521,9 @@ public:
 						//}
 						//cout << endl;
 
-						if(nbBankThatHaveKmer > 1)
-							_processor->process (_partitionId, previous_kmer, abundancePerBank);
+				        insert(previous_kmer, abundancePerBank, nbBankThatHaveKmer);
+						//if(nbBankThatHaveKmer > 1)
+						//	_processor->process (_partitionId, previous_kmer, abundancePerBank);
 	                    //this->insert (previous_kmer, solidCounter);
 
 	                    solidCounter.init (its[best_p]->getBankId(), its[best_p]->abundance());
@@ -429,17 +552,13 @@ public:
 	        //cout << endl;
 
 	        //last elem
-	        if(nbBankThatHaveKmer > 1){
-	        	_processor->process (_partitionId, previous_kmer, abundancePerBank);
-	        }
+	        insert(previous_kmer, abundancePerBank, nbBankThatHaveKmer);
 	        //this->insert (previous_kmer, solidCounter);
 	    }
 
-		string filename = p.outputDir + "/stats/part_" + SimkaAlgorithm<>::toString(p.partitionId) + ".gz";
-		_stats->save(filename); //storage->getGroup(""));
+	    dispatch();
 
-
-		//saveStats(p);
+		saveStats(p);
 		writeFinishSignal(p);
 		_progress->finish();
 	}
@@ -492,8 +611,50 @@ public:
 		//_processors.push_back(proc);
 	}
 
-	void insert(const Type& kmer, const SimkaCounterBuilderMerge& counter){
+	void resetCommands(){
+		for (size_t i=0; i<_nbCores; i++){
+			DistanceCommand<span>* cmd = dynamic_cast<DistanceCommand<span>*>(_cmds[i]);
+			cmd->_bufferIndex = 0;
+		}
+	}
 
+	void dispatch(){
+
+
+
+
+		//cout << "start dispatch" << endl;
+	    getDispatcher()->dispatchCommands(_cmds, 0);
+		//cout << "end dispatch" << endl;
+	    resetCommands();
+
+	}
+
+	void insert(const Type& kmer, const CountVector& counts, size_t nbBankThatHaveKmer){
+
+
+        if(nbBankThatHaveKmer > 1){
+			DistanceCommand<span>* cmd = dynamic_cast<DistanceCommand<span>*>(_cmds[_currentBuffer]);
+			cmd->_bufferKmers[cmd->_bufferIndex] = kmer;
+			cmd->_bufferCounts[cmd->_bufferIndex] = counts;
+        	//_bufferKmers[_currentBuffer][_bufferIndex] = kmer;
+        	//_bufferCounts[_currentBuffer][_bufferIndex] = counts;
+
+			cmd->_bufferIndex += 1;
+        	if(cmd->_bufferIndex >= _bufferSize){
+				//DistanceCommand<span>* cmd = dynamic_cast<DistanceCommand<span>*>(_cmds[_currentBuffer]);
+				//cmd->setup(_bufferKmers[_currentBuffer], _bufferCounts[_currentBuffer]);
+        		//_bufferIndex = 0;
+        		_currentBuffer += 1;
+        		if(_currentBuffer >= _nbCores){
+        			_currentBuffer = 0;
+        			dispatch();
+        		}
+        	}
+        	//_processor->process (_partitionId, kmer, counts);
+        }
+
+    	//_processor->process (_partitionId, kmer, counts);
 		/*
 		size_t nbBanks = 0;
 		for(size_t i=0; i<counter.get().size(); i++){
@@ -525,14 +686,28 @@ public:
 		//LOCAL (storage);
 	}
 
+
 	void saveStats(Parameter& p){
 
+		_stats = new SimkaStatistics(_nbBanks, p.computeSimpleDistances, p.computeComplexDistances);
+
+		for (size_t i=0; i<_nbCores; i++){
+			DistanceCommand<span>* cmd = dynamic_cast<DistanceCommand<span>*>(_cmds[i]);
+			(*_stats) += (*cmd->_stats);
+		}
+		loadCountInfo();
+
 		string filename = p.outputDir + "/stats/part_" + SimkaAlgorithm<>::toString(p.partitionId) + ".gz";
+
+		_stats->save(filename); //storage->getGroup(""));
+
+
+		//string filename = p.outputDir + "/stats/part_" + SimkaAlgorithm<>::toString(p.partitionId) + ".gz";
 		//_processor->finishClones(_processors);
 		//Storage* storage = 0;
 		//storage = StorageFactory(STORAGE_HDF5).create (p.outputDir + "/stats/part_" + SimkaAlgorithm<>::toString(p.partitionId) + ".stats", true, false);
 		//LOCAL (storage);
-		_stats->save(filename); //storage->getGroup(""));
+		//_stats->save(filename); //storage->getGroup(""));
 
 		//cout << _stats->_nbKmers << endl;
 
@@ -549,17 +724,52 @@ public:
 
 private:
 	size_t _nbBanks;
+	bool _computeSimpleDistances;
+	bool _computeComplexDistances;
+	size_t _kmerSize;
+	float _minShannonIndex;
+
 	pair<size_t, size_t> _abundanceThreshold;
 	vector<string> _datasetIds;
 	size_t _partitionId;
-	SimkaStatistics* _stats;
-	SimkaCountProcessorSimple<span>* _processor;
 	//vector<ICountProcessor<span>*> _processors;
 
 	IteratorListener* _progress;
 
+    vector<ICommand*> _cmds;
+	size_t _nbCores;
+	//size_t _bufferIndex;
+	size_t _bufferSize;
+	size_t _currentBuffer;
+	//vector<vector<Type>> _bufferKmers;
+	//vector<vector<CountVector>> _bufferCounts;
 
+
+	SimkaStatistics* _stats;
+	SimkaCountProcessorSimple<span>* _processor;
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 class SimkaMerge : public Tool
@@ -569,6 +779,7 @@ public:
 	SimkaMerge () : Tool ("SimkaMerge")
     {
 		//Original input filename given to simka. Used to recreate dataset id list
+        getParser()->push_back (new OptionOneParam (STR_NB_CORES,   "nb cores", true));
         getParser()->push_back (new OptionOneParam (STR_KMER_SIZE,   "kmer size", true));
         getParser()->push_back (new OptionOneParam (STR_URI_INPUT,   "input filename", true));
         getParser()->push_back (new OptionOneParam ("-out-tmp-simka",   "tmp output", true));
@@ -585,6 +796,7 @@ public:
     {
 
 
+    	size_t nbCores =  getInput()->getInt(STR_NB_CORES);
     	size_t kmerSize =  getInput()->getInt(STR_KMER_SIZE);
     	size_t partitionId =  getInput()->getInt("-partition-id");
     	string inputFilename =  getInput()->getStr(STR_URI_INPUT);
@@ -593,7 +805,7 @@ public:
     	bool computeSimpleDistances =   getInput()->get(STR_SIMKA_COMPUTE_ALL_SIMPLE_DISTANCES);
     	bool computeComplexDistances =   getInput()->get(STR_SIMKA_COMPUTE_ALL_COMPLEX_DISTANCES);
 
-    	Parameter params(getInput(), inputFilename, outputDir, partitionId, kmerSize, minShannonIndex, computeSimpleDistances, computeComplexDistances);
+    	Parameter params(getInput(), inputFilename, outputDir, partitionId, kmerSize, minShannonIndex, computeSimpleDistances, computeComplexDistances, nbCores);
 
         Integer::apply<Functor,Parameter> (kmerSize, params);
 
@@ -629,3 +841,9 @@ int main (int argc, char* argv[])
 
 
 //! [snippet1]
+
+
+
+
+
+

@@ -317,6 +317,8 @@ public:
 				u_int64_t abundanceI = counts[i];
 				u_int64_t abundanceJ = counts[j];
 
+
+				//cout << _stats->_chord_sqrt_N2[i] << endl;
 				//_stats->_chord_NiNj[i][j] += abundanceI * abundanceJ;
 				_stats->_chord_NiNj[i][j] += (abundanceI * abundanceJ) / (_stats->_chord_sqrt_N2[i]*_stats->_chord_sqrt_N2[j]);
 				_stats->_hellinger_SqrtNiNj[i][j] += sqrt(abundanceI * abundanceJ);
