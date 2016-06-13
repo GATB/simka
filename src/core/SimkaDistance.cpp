@@ -83,6 +83,13 @@ SimkaStatistics::SimkaStatistics(size_t nbBanks, bool computeSimpleDistances, bo
 			_hellinger_SqrtNiNj[i].resize(nbBanks, 0);
 		}
 
+
+		_abundance_jaccard_intersection.resize(_nbBanks);
+		for(size_t i=0; i<_nbBanks; i++){
+			_abundance_jaccard_intersection[i].resize(nbBanks, 0);
+		}
+
+
 		_whittaker_minNiNj.resize(_nbBanks);
 		for(size_t i=0; i<_nbBanks; i++){
 			_whittaker_minNiNj[i].resize(nbBanks, 0);
@@ -145,6 +152,7 @@ SimkaStatistics& SimkaStatistics::operator+=  (const SimkaStatistics& other){
 				_chord_NiNj[i][j] += other._chord_NiNj[i][j];
 
 				//if(_distanceParams._computeHellinger)
+				_abundance_jaccard_intersection[i][j] += other._abundance_jaccard_intersection[i][j];
 				_hellinger_SqrtNiNj[i][j] += other._hellinger_SqrtNiNj[i][j];
 				_whittaker_minNiNj[i][j] += other._whittaker_minNiNj[i][j];
 				_kullbackLeibler[i][j] += other._kullbackLeibler[i][j];
@@ -310,6 +318,7 @@ void SimkaStatistics::load(const string& filename){
             for(size_t j=0; j<_nbBanks; j++){ _canberra[i][j] = it->item(); it->next();}
             for(size_t j=0; j<_nbBanks; j++){ _chord_NiNj[i][j] = it->item(); it->next();}
             for(size_t j=0; j<_nbBanks; j++){ _hellinger_SqrtNiNj[i][j] = it->item(); it->next();}
+            for(size_t j=0; j<_nbBanks; j++){ _abundance_jaccard_intersection[i][j] = it->item(); it->next();}
             for(size_t j=0; j<_nbBanks; j++){ _whittaker_minNiNj[i][j] = it->item(); it->next();}
             for(size_t j=0; j<_nbBanks; j++){ _kullbackLeibler[i][j] = it->item(); it->next();}
             for(size_t j=0; j<_nbBanks; j++){ _kulczynski_minNiNj[i][j] = it->item(); it->next();}
@@ -401,6 +410,7 @@ void SimkaStatistics::save (const string& filename){
             for(size_t j=0; j<_nbBanks; j++){ file->insert((long double)_canberra[i][j]);}
             for(size_t j=0; j<_nbBanks; j++){ file->insert((long double)_chord_NiNj[i][j]);}
             for(size_t j=0; j<_nbBanks; j++){ file->insert((long double)_hellinger_SqrtNiNj[i][j]);}
+            for(size_t j=0; j<_nbBanks; j++){ file->insert((long double)_abundance_jaccard_intersection[i][j]);}
             for(size_t j=0; j<_nbBanks; j++){ file->insert((long double)_whittaker_minNiNj[i][j]);}
             for(size_t j=0; j<_nbBanks; j++){ file->insert((long double)_kullbackLeibler[i][j]);}
             for(size_t j=0; j<_nbBanks; j++){ file->insert((long double)_kulczynski_minNiNj[i][j]);}
@@ -532,6 +542,7 @@ void SimkaStatistics::outputMatrix(const string& outputDir, const vector<string>
 
 
 	if(_computeSimpleDistances){
+		dumpMatrix(outputDir, bankNames, "mat_abundance_jaccard-intersection", _simkaDistance._matrixJaccardIntersection);
 		dumpMatrix(outputDir, bankNames, "mat_abundance_chord", _simkaDistance._matrixChord);
 		dumpMatrix(outputDir, bankNames, "mat_abundance_hellinger", _simkaDistance._matrixHellinger);
 		dumpMatrix(outputDir, bankNames, "mat_abundance_kulczynski", _simkaDistance._matrixKulczynski);
@@ -619,6 +630,7 @@ SimkaDistance::SimkaDistance(SimkaStatistics& stats) : _stats(stats){
     _matrixBrayCurtis = createSquaredMatrix(_nbBanks);
     _matrixChord = createSquaredMatrix(_nbBanks);
     _matrixHellinger = createSquaredMatrix(_nbBanks);
+    _matrixJaccardIntersection = createSquaredMatrix(_nbBanks);
     _matrixWhittaker = createSquaredMatrix(_nbBanks);
     _matrixKullbackLeibler = createSquaredMatrix(_nbBanks);
     _matrixCanberra = createSquaredMatrix(_nbBanks);
@@ -727,6 +739,11 @@ SimkaDistance::SimkaDistance(SimkaStatistics& stats) : _stats(stats){
 			_matrixHellinger[i][j] = dist;
 			_matrixHellinger[j][i] = dist;
 
+			//Abundance Jaccard Intersection
+			dist = distance_abundance_jaccard_intersection(i, j);
+			_matrixJaccardIntersection[i][j] = dist;
+			_matrixJaccardIntersection[j][i] = dist;
+
 			//Abundance Whittaker
 			dist = distance_abundance_whittaker(i, j);
 			_matrixWhittaker[i][j] = dist;
@@ -810,6 +827,17 @@ double SimkaDistance::distance_abundance_hellinger(size_t i, size_t j){
 	double hellingerDistance = sqrt(2 - (intersection / union_));
 
 	return hellingerDistance;
+}
+
+//Abundance Jaccard Intersection
+double SimkaDistance::distance_abundance_jaccard_intersection(size_t i, size_t j){
+
+	double intersection = _stats._abundance_jaccard_intersection[i][j];
+	double union_ = _stats._nbSolidKmersPerBank[i] + _stats._nbSolidKmersPerBank[j];
+
+	double jaccard = 1 - intersection / union_;
+
+	return jaccard;
 }
 
 //Abundance Whittaker
