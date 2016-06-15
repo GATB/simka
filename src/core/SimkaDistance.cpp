@@ -873,10 +873,15 @@ double SimkaDistance::distance_abundance_canberra(size_t i, size_t j, u_int64_t&
 //Abundance Kulczynski
 double SimkaDistance::distance_abundance_kulczynski(size_t i, size_t j){
 
-	long double numerator = (_stats._nbSolidKmersPerBank[i] + _stats._nbSolidKmersPerBank[j]) * _stats._kulczynski_minNiNj[i][j];
-	long double denominator = _stats._nbSolidKmersPerBank[i] * _stats._nbSolidKmersPerBank[j];
 
-	double kulczynskiDistance = 1 - 0.5 * (numerator / denominator);
+	long double n1 = (double) _stats._kulczynski_minNiNj[i][j] / (double) _stats._nbSolidKmersPerBank[i];
+	long double n2 = (double) _stats._kulczynski_minNiNj[j][i] / (double) _stats._nbSolidKmersPerBank[j];
+
+	//long double numerator = (_stats._nbSolidKmersPerBank[i] + _stats._nbSolidKmersPerBank[j]) * _stats._kulczynski_minNiNj[i][j];
+	//long double denominator = _stats._nbSolidKmersPerBank[i] * _stats._nbSolidKmersPerBank[j];
+	//double kulczynskiDistance = 1 - 0.5 * (numerator / denominator);
+
+	double kulczynskiDistance = 1 - 0.5 * (n1 + n2);
 
 	return kulczynskiDistance;
 }
