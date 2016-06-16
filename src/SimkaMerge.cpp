@@ -593,6 +593,7 @@ public:
 	void createInfo(Parameter& p){
 
     	for(size_t i=0; i<_nbBanks; i++){
+
     		string name = _datasetIds[i];
     		string countFilename = p.outputDir + "/count_synchro/" +  name + ".ok";
 
@@ -672,10 +673,13 @@ public:
 	        cmd->use();
 	        _cmds.push_back (cmd);
 	    }
+
 		resetCommands();
+
 
 		//SimkaDistanceParam distanceParams(p.props);
 		createInfo(p);
+
 
 		//createProcessor(p);
 		//_processor = new SimkaCountProcessorSimple<span> (_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, p.minShannonIndex);
@@ -733,7 +737,7 @@ public:
 		_cmds.push_back(_mergeCommand);
 
 
-		cout << "CMDS SIZE:" << _cmds.size() << endl;
+		//cout << "CMDS SIZE:" << _cmds.size() << endl;
 
 		MergeCommand<span>* mergeCmd = dynamic_cast<MergeCommand<span>*>(_mergeCommand);
 		mergeCmd->execute();

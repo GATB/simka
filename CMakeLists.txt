@@ -60,7 +60,7 @@ endif()
 #       - from project source
 #       - from GATB-CORE source
 #       - from simka source
-include_directories (include ${gatb-core-includes} ${PROJECT_SOURCE_DIR}/src/core ${PROJECT_SOURCE_DIR}/src)
+include_directories (include ${gatb-core-includes} ${PROJECT_SOURCE_DIR}/src/core ${PROJECT_SOURCE_DIR}/src/minikc ${PROJECT_SOURCE_DIR}/src)
 
 # we generate one file per template specialization
 FOREACH (KSIZE ${gatb-core-klist})

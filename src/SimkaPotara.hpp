@@ -1032,7 +1032,7 @@ public:
 			file.close();
 
 			u_int64_t nbReads = strtoull(lines[0].c_str(), NULL, 10) ;
-			mainStats._datasetNbReads.push_back(nbReads);
+			mainStats._datasetNbReads[i] = nbReads;
 			mainStats._nbSolidDistinctKmersPerBank[i] = strtoull(lines[1].c_str(), NULL, 10);
 			//cout << mainStats._nbSolidDistinctKmersPerBank[i] << endl;
 			mainStats._nbSolidKmersPerBank[i] = strtoull(lines[2].c_str(), NULL, 10);

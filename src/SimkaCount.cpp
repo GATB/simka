@@ -19,6 +19,7 @@
  *****************************************************************************/
 
 #include "SimkaPotara.hpp"
+#include "minikc/MiniKC.hpp"
 //#include <gatb/gatb_core.hpp>
 
 // We use the required packages
@@ -27,65 +28,6 @@ using namespace std;
 //#define NB_COUNT_CACHE 1
 //#define TRACK_DISK_USAGE
 
-template<size_t span>
-class SimkaCompressedProcessor : public CountProcessorAbstract<span>{
-
-public:
-
-    typedef typename Kmer<span>::Type  Type;
-    typedef typename Kmer<span>::Count Count;
-
-    //SimkaCompressedProcessor(vector<BagGzFile<Count>* >& bags, vector<vector<Count> >& caches, vector<size_t>& cacheIndexes, CountNumber abundanceMin, CountNumber abundanceMax) : _bags(bags), _caches(caches), _cacheIndexes(cacheIndexes)
-    SimkaCompressedProcessor(vector<BagGzFile<Count>* >& bags, vector<u_int64_t>& nbKmerPerParts, vector<u_int64_t>& nbDistinctKmerPerParts, vector<u_int64_t>& chordPerParts, CountNumber abundanceMin, CountNumber abundanceMax) :
-    	_bags(bags), _nbDistinctKmerPerParts(nbDistinctKmerPerParts), _nbKmerPerParts(nbKmerPerParts), _chordPerParts(chordPerParts)
-    {
-    	_abundanceMin = abundanceMin;
-    	_abundanceMax = abundanceMax;
-    }
-
-	~SimkaCompressedProcessor(){}
-    CountProcessorAbstract<span>* clone ()  {  return new SimkaCompressedProcessor (_bags, _nbKmerPerParts, _nbDistinctKmerPerParts, _chordPerParts, _abundanceMin, _abundanceMax);  }
-    //CountProcessorAbstract<span>* clone ()  {  return new SimkaCompressedProcessor (_bags, _caches, _cacheIndexes, _abundanceMin, _abundanceMax);  }
-	void finishClones (vector<ICountProcessor<span>*>& clones){}
-
-	bool process (size_t partId, const typename Kmer<span>::Type& kmer, const CountVector& count, CountNumber sum){
-
-		if(count[0] < _abundanceMin || count[0] > _abundanceMax) return false;
-
-		Count item(kmer, count[0]);
-		_bags[partId]->insert(item);
-		_nbDistinctKmerPerParts[partId] += 1;
-		_nbKmerPerParts[partId] += count[0];
-		_chordPerParts[partId] += pow(count[0], 2);
-
-		/*
-		size_t index = _cacheIndexes[partId];
-
-		_caches[partId][index] = item;
-		index += 1;
-
-		if(index == NB_COUNT_CACHE){
-			_bags[partId]->insert(_caches[partId], index);
-			_cacheIndexes[partId] = 0;
-		}
-		else{
-			_cacheIndexes[partId] = index;
-		}*/
-
-		return true;
-	}
-
-
-	vector<BagGzFile<Count>* >& _bags;
-	vector<u_int64_t>& _nbDistinctKmerPerParts;
-	vector<u_int64_t>& _nbKmerPerParts;
-	vector<u_int64_t>& _chordPerParts;
-	CountNumber _abundanceMin;
-	CountNumber _abundanceMax;
-	//_stats->_chord_N2[i] += pow(abundanceI, 2);
-	//vector<vector<Count> >& _caches;
-	//vector<size_t>& _cacheIndexes;
-};
 
 
 
@@ -319,15 +261,29 @@ public:
 				//solidStorage = StorageFactory(STORAGE_HDF5).create (solidsName, true, autoDelete);
 				//LOCAL(solidStorage);
 
-				//SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, caches, cacheIndexes, p.abundanceMin, p.abundanceMax);
 				SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, nbKmerPerParts, nbDistinctKmerPerParts, chordNiPerParts, p.abundanceMin, p.abundanceMax);
-				std::vector<ICountProcessor<span>* > procs;
-				procs.push_back(proc);
-				SortingCountAlgorithm<span> algo (filteredBank, config, repartitor,
-						procs,
-						props);
 
-				algo.execute();
+				u_int64_t nbReads = 0;
+
+				if(p.kmerSize <= 15){
+					MiniKC<span> miniKc(p.tool.getInput(), p.kmerSize, filteredBank, *repartitor, proc);
+					miniKc.execute();
+
+					nbReads = miniKc._nbReads;
+				}
+				else{
+					//SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, caches, cacheIndexes, p.abundanceMin, p.abundanceMax);
+					std::vector<ICountProcessor<span>* > procs;
+					procs.push_back(proc);
+					SortingCountAlgorithm<span> algo (filteredBank, config, repartitor,
+							procs,
+							props);
+
+					algo.execute();
+
+					nbReads = algo.getInfo()->getInt("seq_number");
+				}
+
 
 				u_int64_t nbDistinctKmers = 0;
 				u_int64_t nbKmers = 0;
@@ -338,10 +294,13 @@ public:
 					chord_N2 += chordNiPerParts[i];
 				}
 				//cout << nbDistinctKmers << endl;
-				outInfo.push_back(algo.getInfo()->getStr("seq_number"));
+
+				//cout << "CHECK NB READS PER DATASET:  " << nbReads << endl;
+				outInfo.push_back(Stringify::format("%llu", nbReads));
 				outInfo.push_back(Stringify::format("%llu", nbDistinctKmers));
 				outInfo.push_back(Stringify::format("%llu", nbKmers));
 				outInfo.push_back(Stringify::format("%llu", chord_N2));
+
 
 
 #ifdef TRACK_DISK_USAGE
@@ -390,6 +349,8 @@ public:
 
 			delete file;
 		}
+
+
 
 
     };
