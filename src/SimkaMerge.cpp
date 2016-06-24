@@ -284,7 +284,8 @@ public:
 			IteratorListener* progress,
 			vector<StorageIt<span>*>& its,
 			u_int64_t progressStep,
-			size_t nbCores
+			size_t nbCores,
+			bool computeComplexDistances
     ) :
     	its(its)
 	{
@@ -293,6 +294,7 @@ public:
     	_progress = progress;
     	_progressStep = progressStep;
     	_nbCores = nbCores;
+    	_computeComplexDistances = computeComplexDistances;
 
 		init();
     }
@@ -312,6 +314,7 @@ public:
 	std::priority_queue< kxp, vector<kxp>,kxpcomp > pq;
 	u_int64_t nbKmersProcessed;
 	IteratorListener* _progress;
+	bool _computeComplexDistances;
 
 	u_int16_t best_p;
 	Type previous_kmer;
@@ -319,6 +322,7 @@ public:
 	size_t nbBankThatHaveKmer;
 	SimkaCounterBuilderMerge* solidCounter;
 	bool _isDone;
+
 
 	void init(){
 
@@ -501,7 +505,7 @@ public:
 	void insert(const Type& kmer, const CountVector& counts, size_t nbBankThatHaveKmer){
 
 
-        if(nbBankThatHaveKmer > 1){
+        if(_computeComplexDistances || nbBankThatHaveKmer > 1){
 			//DistanceCommand<span>* cmd = dynamic_cast<DistanceCommand<span>*>(_cmds[_currentBuffer]);
 			//cmd->_bufferKmers[cmd->_bufferIndex] = kmer;
 			//cmd->_bufferCounts[cmd->_bufferIndex] = counts;
@@ -732,7 +736,8 @@ public:
 			_progress,
 			its,
 			progressStep,
-			_nbCores);
+			_nbCores,
+			p.computeComplexDistances);
 		_mergeCommand->use();
 		_cmds.push_back(_mergeCommand);
 

@@ -322,7 +322,7 @@ public:
 				//_stats->_chord_NiNj[i][j] += abundanceI * abundanceJ;
 				_stats->_chord_NiNj[i][j] += (abundanceI * abundanceJ) / (_stats->_chord_sqrt_N2[i]*_stats->_chord_sqrt_N2[j]);
 				_stats->_hellinger_SqrtNiNj[i][j] += sqrt(abundanceI * abundanceJ);
-				_stats->_abundance_jaccard_intersection[i][j] += min(abundanceI, abundanceJ);
+				_stats->_brayCurtisNumerator[i][j] += min(abundanceI, abundanceJ);
 				_stats->_kulczynski_minNiNj[i][j] += min(abundanceI, abundanceJ);
 			}
 		}
@@ -405,7 +405,7 @@ public:
 					_stats->_kullbackLeibler[i][j] += d1 + d2;
 
 					_stats->_canberra[i][j] += abs(abundanceI - abundanceJ) / (abundanceI + abundanceJ);
-					_stats->_brayCurtisNumerator[i][j] += abs(abundanceI - abundanceJ);
+					//_stats->_brayCurtisNumerator[i][j] += abs(abundanceI - abundanceJ);
 					_stats->_whittaker_minNiNj[i][j] += abs((int)((u_int64_t)(abundanceI*_stats->_nbSolidKmersPerBank[j]) - (u_int64_t)(abundanceJ*_stats->_nbSolidKmersPerBank[i])));
 
 					//cout << _stats->_nbSolidKmersPerBank[i] << endl;
@@ -434,7 +434,7 @@ public:
 					_stats->_kullbackLeibler[i][j] += d1 + d2;
 
 					_stats->_canberra[i][j] += abs(abundanceI - abundanceJ) / (abundanceI + abundanceJ);
-					_stats->_brayCurtisNumerator[i][j] += abs(abundanceI - abundanceJ);
+					//_stats->_brayCurtisNumerator[i][j] += abs(abundanceI - abundanceJ);
 					//cout << _stats->_nbSolidKmersPerBank[i] << endl;
 
 					_stats->_whittaker_minNiNj[i][j] += abs((int)((u_int64_t)(abundanceI*_stats->_nbSolidKmersPerBank[j]) - (u_int64_t)(abundanceJ*_stats->_nbSolidKmersPerBank[i])));
