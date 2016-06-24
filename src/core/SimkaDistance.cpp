@@ -542,7 +542,7 @@ void SimkaStatistics::outputMatrix(const string& outputDir, const vector<string>
 
 
 	if(_computeSimpleDistances){
-		dumpMatrix(outputDir, bankNames, "mat_abundance_jaccard-intersection", _simkaDistance._matrixJaccardIntersection);
+		dumpMatrix(outputDir, bankNames, "mat_abundance_braycurtis-simple", _simkaDistance._matrixJaccardIntersection);
 		dumpMatrix(outputDir, bankNames, "mat_abundance_chord", _simkaDistance._matrixChord);
 		dumpMatrix(outputDir, bankNames, "mat_abundance_hellinger", _simkaDistance._matrixHellinger);
 		dumpMatrix(outputDir, bankNames, "mat_abundance_kulczynski", _simkaDistance._matrixKulczynski);
@@ -829,11 +829,13 @@ double SimkaDistance::distance_abundance_hellinger(size_t i, size_t j){
 	return hellingerDistance;
 }
 
-//Abundance Jaccard Intersection
+//Abundance Jaccard Intersection - Bray curtis with min()
 double SimkaDistance::distance_abundance_jaccard_intersection(size_t i, size_t j){
 
-	double intersection = _stats._abundance_jaccard_intersection[i][j];
+	//double intersection = _stats._abundance_jaccard_intersection[i][j];
 	double union_ = _stats._nbSolidKmersPerBank[i] + _stats._nbSolidKmersPerBank[j];
+
+	double intersection = 2 * _stats._abundance_jaccard_intersection[i][j];
 
 	double jaccard = 1 - intersection / union_;
 
