@@ -543,6 +543,7 @@ void SimkaStatistics::outputMatrix(const string& outputDir, const vector<string>
 
 	if(_computeSimpleDistances){
 		//dumpMatrix(outputDir, bankNames, "mat_abundance_braycurtis-simple", _simkaDistance._matrixJaccardIntersection);
+		dumpMatrix(outputDir, bankNames, "mat_abundance_braycurtis", _simkaDistance._matrixBrayCurtis);
 		dumpMatrix(outputDir, bankNames, "mat_abundance_chord", _simkaDistance._matrixChord);
 		dumpMatrix(outputDir, bankNames, "mat_abundance_hellinger", _simkaDistance._matrixHellinger);
 		dumpMatrix(outputDir, bankNames, "mat_abundance_kulczynski", _simkaDistance._matrixKulczynski);
@@ -551,7 +552,6 @@ void SimkaStatistics::outputMatrix(const string& outputDir, const vector<string>
 	if(_computeComplexDistances){
 		dumpMatrix(outputDir, bankNames, "mat_abundance_whittaker", _simkaDistance._matrixWhittaker);
 		dumpMatrix(outputDir, bankNames, "mat_abundance_jensenshannon", _simkaDistance._matrixKullbackLeibler);
-		dumpMatrix(outputDir, bankNames, "mat_abundance_braycurtis", _simkaDistance._matrixBrayCurtis);
 		dumpMatrix(outputDir, bankNames, "mat_abundance_canberra", _simkaDistance._matrixCanberra);
 	}
 }
