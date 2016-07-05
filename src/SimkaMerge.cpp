@@ -36,7 +36,7 @@ using namespace gatb::core::system::impl;
 
 
 template<size_t span>
-class DistanceCommand : public gatb::core::tools::dp::ICommand, public gatb::core::system::SmartPointer
+class DistanceCommand : public gatb::core::tools::dp::ICommand //, public gatb::core::system::SmartPointer
 {
 public:
 
@@ -74,6 +74,11 @@ public:
 		_bufferIndex = 0;
     }
 
+	~DistanceCommand(){
+		delete _processor;
+		delete _stats;
+	}
+
     //void add(Type& kmer, CountVector& counts){
     //	_bufferIndex +=
     //}
@@ -94,6 +99,8 @@ public:
     	}
     }
 
+	void use () {}
+	void forget () {}
 };
 
 
@@ -158,7 +165,7 @@ public:
     }
 
     ~StorageIt(){
-
+	delete _it;
     }
 
     //void setPartitionId(size_t partitionId){
@@ -259,11 +266,14 @@ private:
 
 
 template<size_t span>
-class MergeCommand : public gatb::core::tools::dp::ICommand, public gatb::core::system::SmartPointer
+class MergeCommand : public gatb::core::tools::dp::ICommand //, public gatb::core::system::SmartPointer
 {
 public:
 
-    /** Shortcut. */
+        void use () {}
+        void forget () {}
+
+    /** cut. */
     typedef typename Kmer<span>::Type           Type;
     typedef typename Kmer<span>::Count          Count;
 
@@ -298,6 +308,10 @@ public:
 
 		init();
     }
+
+	~MergeCommand(){
+		delete solidCounter;	
+	}
 
     //void add(Type& kmer, CountVector& counts){
     //	_bufferIndex +=
@@ -672,10 +686,13 @@ public:
 
 		for (size_t i=0; i<_nbCores; i++)
 	    {
+		//cout << i << endl;
 	        ICommand* cmd = 0;
 	        cmd = new DistanceCommand<span>(_partitionId, _nbBanks, _computeSimpleDistances, _computeComplexDistances, _kmerSize, _abundanceThreshold, _minShannonIndex);
-	        cmd->use();
+	        //cmd->use();
 	        _cmds.push_back (cmd);
+
+                        //cout << _cmds[i] << endl;
 	    }
 
 		resetCommands();
@@ -738,7 +755,7 @@ public:
 			progressStep,
 			_nbCores,
 			p.computeComplexDistances);
-		_mergeCommand->use();
+		//_mergeCommand->use();
 		_cmds.push_back(_mergeCommand);
 
 
@@ -755,9 +772,32 @@ public:
 
 	    dispatch();
 
+		//cout << "lala" << endl;
+		for(size_t i=0; i<partitions.size(); i++){
+			delete partitions[i];
+		}
+		//for(size_t i=0; i<its.size(); i++){
+		//	delete its[i];
+		//}
+
 		saveStats(p);
+
+		//cout << _cmds.size() << endl;
+		for(size_t i=0; i<_cmds.size(); i++){
+			//cout << _cmds[i] << endl;
+			//_cmds[i]->forget();
+			delete _cmds[i];		
+		}
+		//_cmds.clear();
+		//delete _mergeCommand;
+
+		for(size_t i=0; i<its.size(); i++){
+                        delete its[i];
+                }
+
 		writeFinishSignal(p);
 		_progress->finish();
+
 	}
 
 
@@ -863,7 +903,8 @@ public:
 
 		_stats->save(filename); //storage->getGroup(""));
 
-
+		
+		delete _stats;
 		//string filename = p.outputDir + "/stats/part_" + SimkaAlgorithm<>::toString(p.partitionId) + ".gz";
 		//_processor->finishClones(_processors);
 		//Storage* storage = 0;
