@@ -39,6 +39,8 @@ template<typename Filter> class SimkaPotaraBankFiltered : public BankDelegate
 {
 public:
 
+	Iterator<Sequence>* _it;
+
 	SimkaPotaraBankFiltered (IBank* ref, const Filter& filter, u_int64_t maxReads, size_t nbDatasets) : BankDelegate (ref), _filter(filter)  {
 		//_nbReadsPerDataset = nbReadsPerDataset;
 		_maxReads = maxReads;
@@ -46,12 +48,16 @@ public:
 	}
 
 
+	~SimkaPotaraBankFiltered(){
+		delete _it;
+	}
+
     Iterator<Sequence>* iterator ()
     {
 
-        Iterator<Sequence>* it = _ref->iterator ();
+        _it = _ref->iterator ();
         //std::vector<Iterator<Sequence>*> iterators = it->getComposition();
-        return new SimkaInputIterator<Sequence, Filter> (it, _nbDatasets, _maxReads, _filter);
+        return new SimkaInputIterator<Sequence, Filter> (_it, _nbDatasets, _maxReads, _filter);
     	//return filterIt;
 
     }

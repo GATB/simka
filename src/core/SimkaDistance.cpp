@@ -290,6 +290,7 @@ void SimkaStatistics::load(const string& filename){
 
 	IterableGzFile<long double>* file = new IterableGzFile<long double>(filename);
 	Iterator<long double>* it = file->iterator();
+	LOCAL(it);
 	it->first();
 
 	//_nbBanks = it->item(); it->next();
