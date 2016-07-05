@@ -767,7 +767,7 @@ public:
 
 			string tempDir = this->_outputDirTemp + "/temp/" + this->_bankNames[i];
 
-			string command = _execDir + "/simkaCount ";
+			string command = "nohup " + _execDir + "/simkaCount ";
 			command += " " + string(STR_KMER_SIZE) + " " + SimkaAlgorithm<>::toString(this->_kmerSize);
 			command += " " + string("-out-tmp-simka") + " " + this->_outputDirTemp;
 			command += " " + string("-out-tmp") + " " + tempDir;
@@ -907,7 +907,7 @@ public:
 
 				filenameQueue.push_back(datasetId);
 
-				string command = _execDir + "/simkaMerge ";
+				string command = "nohup " + _execDir + "/simkaMerge ";
 				command += " " + string(STR_KMER_SIZE) + " " + SimkaAlgorithm<>::toString(this->_kmerSize);
 				command += " " + string(STR_URI_INPUT) + " " + this->_inputFilename;
 				command += " " + string("-out-tmp-simka") + " " + this->_outputDirTemp;
