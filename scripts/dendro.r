@@ -32,4 +32,4 @@ cr3 = cr3*100
 #inv_cr3 = matrix(100, ncol=dim(cr3)[1], nrow=dim(cr3)[1]) - cr3
 Commet_distance = as.dist(cr3)
 dendo_cr3 = hclust(Commet_distance, method="ward.D2")
-plot(dendo_cr3, main="Commet normalized analysis", cex = 0.3, sub = NA, xlab = paste("Complete clusterization of ",args[1]))
+plot(dendo_cr3, main="Simka hierarchical clustering", cex = 0.3, sub = NA, xlab = paste("hierarchical clustering of ",args[1]))
