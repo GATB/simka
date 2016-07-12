@@ -286,6 +286,7 @@ public:
 	vector<vector<Type>> _bufferKmers;
 	vector<vector<CountVector>> _bufferCounts;
 	vector<size_t> _bufferIndex;
+	u_int64_t _nbDistinctKmers;
 
     /** Constructor. */
 	MergeCommand (
@@ -305,6 +306,7 @@ public:
     	_progressStep = progressStep;
     	_nbCores = nbCores;
     	_computeComplexDistances = computeComplexDistances;
+    	_nbDistinctKmers = 0;
 
 		init();
     }
@@ -518,6 +520,7 @@ public:
 
 	void insert(const Type& kmer, const CountVector& counts, size_t nbBankThatHaveKmer){
 
+		_nbDistinctKmers += 1;
 
         if(_computeComplexDistances || nbBankThatHaveKmer > 1){
 			//DistanceCommand<span>* cmd = dynamic_cast<DistanceCommand<span>*>(_cmds[_currentBuffer]);
@@ -780,7 +783,8 @@ public:
 		//	delete its[i];
 		//}
 
-		saveStats(p);
+		saveStats(p, mergeCmd->_nbDistinctKmers);
+
 
 		//cout << _cmds.size() << endl;
 		for(size_t i=0; i<_cmds.size(); i++){
@@ -889,7 +893,7 @@ public:
 	}
 
 
-	void saveStats(Parameter& p){
+	void saveStats(Parameter& p, const u_int64_t nbDistinctKmers){
 
 		_stats = new SimkaStatistics(_nbBanks, p.computeSimpleDistances, p.computeComplexDistances);
 
@@ -901,6 +905,7 @@ public:
 
 		string filename = p.outputDir + "/stats/part_" + SimkaAlgorithm<>::toString(p.partitionId) + ".gz";
 
+		_stats->_nbDistinctKmers = nbDistinctKmers;
 		_stats->save(filename); //storage->getGroup(""));
 
 		

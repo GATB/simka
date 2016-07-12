@@ -305,6 +305,7 @@ public:
 
 	}
 
+
 	void updateDistanceSimple(const CountVector& counts){
 
 

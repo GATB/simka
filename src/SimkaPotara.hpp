@@ -424,6 +424,7 @@ public:
 		//System::file().mkdir(_outputDirTemp, -1);
 		System::file().mkdir(this->_outputDirTemp + "/solid/", -1);
 		System::file().mkdir(this->_outputDirTemp + "/temp/", -1);
+		System::file().mkdir(this->_outputDirTemp + "/log/", -1);
 		System::file().mkdir(this->_outputDirTemp + "/count_synchro/", -1);
 		System::file().mkdir(this->_outputDirTemp + "/merge_synchro/", -1);
 		System::file().mkdir(this->_outputDirTemp + "/stats/", -1);
@@ -744,6 +745,7 @@ public:
 
 	void count(){
 
+		cout << endl << "Counting k-mers... (log files are in tmp_dir/simka_output_temp/log/count_...)" << endl;
 		vector<string> commands;
 
 		_progress = new ProgressSynchro (
@@ -756,6 +758,8 @@ public:
 		size_t nbJobs = 0;
 
 	    for (size_t i=0; i<this->_bankNames.size(); i++){
+
+			string logFilename = this->_outputDirTemp + "/log/count_" + this->_bankNames[i] + ".txt";
 
 			string finishFilename = this->_outputDirTemp + "/count_synchro/" +  this->_bankNames[i] + ".ok";
 			if(System::file().doesExist(finishFilename)){
@@ -782,14 +786,18 @@ public:
 			command += " " + string(STR_SIMKA_MIN_READ_SHANNON_INDEX) + " " + Stringify::format("%f", this->_minReadShannonIndex);
 			command += " " + string(STR_SIMKA_MAX_READS) + " " + SimkaAlgorithm<>::toString(this->_maxNbReads);
 			command += " -nb-partitions " + SimkaAlgorithm<>::toString(_nbPartitions);
-			command += " -verbose " + Stringify::format("%d", this->_options->getInt(STR_VERBOSE));
-
+			//command += " -verbose " + Stringify::format("%d", this->_options->getInt(STR_VERBOSE));
+			command += " >> " + logFilename;
 
 			filenameQueue.push_back(this->_bankNames[i]);
 			System::file().mkdir(tempDir, -1);
 
-			cout << "Counting dataset " << i << endl;
-			cout << "\t" << command << endl;
+			string str = "Counting dataset " + SimkaAlgorithm<>::toString(i) + "\n";
+			str += "\t" + command + "\n\n\n";
+			system(("echo \"" + str + "\" > " + logFilename).c_str());
+
+			//cout << "Counting dataset " << i << endl;
+			//cout << "\t" << command << endl;
 
 			removeMergeSynchro();
 
@@ -880,6 +888,8 @@ public:
 
 	void merge(){
 
+		cout << endl << "Merging k-mer counts and computing distances... (log files are in tmp_dir/simka_output_temp/log/merge_...)" << endl;
+
 		_progress = new ProgressSynchro (
 			this->createIteratorListener (_nbPartitions, "Merging datasets"),
 			System::thread().newSynchronizer());
@@ -891,8 +901,12 @@ public:
 
 	    for (size_t i=0; i<_nbPartitions; i++){
 
+
+
 	    	string datasetId = SimkaAlgorithm<>::toString(i);
 			string finishFilename = this->_outputDirTemp + "/merge_synchro/" +  datasetId + ".ok";
+
+			string logFilename = this->_outputDirTemp + "/log/merge_" + datasetId + ".txt";
 
 			if(System::file().doesExist(finishFilename)){
 				_progress->inc(1);
@@ -918,6 +932,7 @@ public:
 				command += " -verbose " + Stringify::format("%d", this->_options->getInt(STR_VERBOSE));
 				if(this->_computeSimpleDistances) command += " " + string(STR_SIMKA_COMPUTE_ALL_SIMPLE_DISTANCES);
 				if(this->_computeComplexDistances) command += " " + string(STR_SIMKA_COMPUTE_ALL_COMPLEX_DISTANCES);
+				command += " >> " + logFilename;
 				//SimkaDistanceParam distanceParams(this->_options);
 				//if(distanceParams._computeBrayCurtis) command += " " + STR_SIMKA_DISTANCE_BRAYCURTIS + " ";
 				//if(distanceParams._computeCanberra) command += " " + STR_SIMKA_DISTANCE_CANBERRA + " ";
@@ -926,8 +941,10 @@ public:
 				//if(distanceParams._computeKulczynski) command += " " + STR_SIMKA_DISTANCE_KULCZYNSKI + " ";
 
 
-				cout << "Merging partition " << i << endl;
-				cout << "\t" << command << endl;
+				string str = "Merging partition " + SimkaAlgorithm<>::toString(i) + "\n";
+				str += "\t" + command + "\n\n\n";
+				system(("echo \"" + str + "\" > " + logFilename).c_str());
+
 
 				if(_isClusterMode){
 					string jobFilename = this->_outputDirTemp + "/job_merge/job_merge_" + SimkaAlgorithm<>::toString(i) + ".bash";
