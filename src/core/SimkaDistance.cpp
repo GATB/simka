@@ -37,6 +37,7 @@ SimkaStatistics::SimkaStatistics(size_t nbBanks, bool computeSimpleDistances, bo
 	_nbDistinctKmers = 0;
 	_nbSolidKmers = 0;
 	_nbErroneousKmers = 0;
+	_nbSharedKmers = 0;
 
 	//_abundanceMin = abundanceMin;
 	//_mutex = mutex;
