@@ -787,7 +787,7 @@ public:
 			command += " " + string(STR_SIMKA_MAX_READS) + " " + SimkaAlgorithm<>::toString(this->_maxNbReads);
 			command += " -nb-partitions " + SimkaAlgorithm<>::toString(_nbPartitions);
 			//command += " -verbose " + Stringify::format("%d", this->_options->getInt(STR_VERBOSE));
-			command += " >> " + logFilename;
+			command += " >> " + logFilename + " 2>&1";
 
 			filenameQueue.push_back(this->_bankNames[i]);
 			System::file().mkdir(tempDir, -1);
@@ -932,7 +932,7 @@ public:
 				command += " -verbose " + Stringify::format("%d", this->_options->getInt(STR_VERBOSE));
 				if(this->_computeSimpleDistances) command += " " + string(STR_SIMKA_COMPUTE_ALL_SIMPLE_DISTANCES);
 				if(this->_computeComplexDistances) command += " " + string(STR_SIMKA_COMPUTE_ALL_COMPLEX_DISTANCES);
-				command += " >> " + logFilename;
+				command += " >> " + logFilename + " 2>&1";
 				//SimkaDistanceParam distanceParams(this->_options);
 				//if(distanceParams._computeBrayCurtis) command += " " + STR_SIMKA_DISTANCE_BRAYCURTIS + " ";
 				//if(distanceParams._computeCanberra) command += " " + STR_SIMKA_DISTANCE_CANBERRA + " ";
