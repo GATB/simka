@@ -126,6 +126,7 @@ SimkaStatistics& SimkaStatistics::operator+=  (const SimkaStatistics& other){
 	_nbDistinctKmers += other._nbDistinctKmers;
 	_nbSolidKmers += other._nbSolidKmers;
 	_nbErroneousKmers += other._nbErroneousKmers;
+	_nbSharedKmers += other._nbSharedKmers;
 
 	for(size_t i=0; i<_nbBanks; i++){
 		_nbKmersPerBank[i] += other._nbKmersPerBank[i];
@@ -171,17 +172,19 @@ SimkaStatistics& SimkaStatistics::operator+=  (const SimkaStatistics& other){
 void SimkaStatistics::print(){
 
 	u_int64_t nbKmers = 0;
-	u_int64_t nbDistinctKmers = _nbDistinctKmers;
-	u_int64_t nbSharedDistinctKmers = 0;
+	u_int64_t nbDistinctKmersAfterMerging = _nbDistinctKmers;
+	u_int64_t nbDistinctKmers = 0;
+	u_int64_t nbSharedDistinctKmers = _nbSharedKmers;
 	u_int64_t nbSharedKmers = 0;
 
 	double meanCoverage = 0;
 
 	for(size_t i=0; i<_nbBanks; i++){
 		nbKmers += _nbSolidKmersPerBank[i];
+		nbDistinctKmers += _nbSolidDistinctKmersPerBank[i];
 
 		float coverage = (double)_nbSolidKmersPerBank[i] / (double)_nbSolidDistinctKmersPerBank[i];
-		cout << coverage << endl;
+		//cout << coverage << endl;
 		meanCoverage += coverage;
 		//nbDistinctKmers += _nbDistinctKmers;
 		//for(size_t j=i+1; j<_nbBanks; j++){
@@ -218,7 +221,9 @@ void SimkaStatistics::print(){
 	cout << "\t\tMax:    " << maxReads << "    " << maxReads/1000000 << "M" << "    " << maxReads/1000000000 << "G" << endl;
 	cout << "\t\tAverage:    " << meanReads << "    " << meanReads/1000000 << "M" << "    " << meanReads/1000000000 << "G" << endl;
 	cout << "\tKmers" << endl;
-	cout << "\t\tDistinct Kmers:    " << nbDistinctKmers << "    " << nbDistinctKmers/1000000 << "M" << "    " << nbDistinctKmers/1000000000 << "G" << endl;
+	cout << "\t\tDistinct Kmers (before merging):    " << nbDistinctKmers << "    " << nbDistinctKmers/1000000 << "M" << "    " << nbDistinctKmers/1000000000 << "G" << endl;
+	cout << "\t\tDistinct Kmers (after merging):    " << nbDistinctKmersAfterMerging << "    " << nbDistinctKmersAfterMerging/1000000 << "M" << "    " << nbDistinctKmersAfterMerging/1000000000 << "G" << endl;
+	cout << "\t\tShared distinct Kmers:    " << nbSharedDistinctKmers << "    " << nbSharedDistinctKmers/1000000 << "M" << "    " << nbSharedDistinctKmers/1000000000 << "G" << endl;
 	cout << "\t\tKmers:    " << nbKmers << "    " << nbKmers/1000000 << "M" << "    " << nbKmers/1000000000 << "G" << endl;
 	cout << "\t\tMean k-mer coverage: " << meanCoverage << endl;
 	//cout << "\t\tShared distinct kmers:    " << (int)((long double) nbSharedDistinctKmers / (long double)nbDistinctKmers * 100) << "%    " << nbSharedDistinctKmers << "    " << nbSharedDistinctKmers/1000000 << "M" << "    " << nbSharedDistinctKmers/1000000000 << "G" << endl;
@@ -306,7 +311,7 @@ void SimkaStatistics::load(const string& filename){
 	_nbErroneousKmers = it->item(); it->next();
 	_nbDistinctKmers = it->item(); it->next();
 	_nbSolidKmers = it->item(); it->next();
-
+	_nbSharedKmers = it->item(); it->next();
 
     for(size_t i=0; i<_nbBanks; i++){ _nbSolidDistinctKmersPerBank[i] = it->item(); it->next();}
     for(size_t i=0; i<_nbBanks; i++){ _nbKmersPerBank[i] = it->item(); it->next();}
@@ -399,6 +404,7 @@ void SimkaStatistics::save (const string& filename){
 	file->insert((long double)_nbErroneousKmers);
 	file->insert((long double)_nbDistinctKmers);
 	file->insert((long double)_nbSolidKmers);
+	file->insert((long double)_nbSharedKmers);
 
     for(size_t i=0; i<_nbBanks; i++){ file->insert((long double)_nbSolidDistinctKmersPerBank[i]);}
     for(size_t i=0; i<_nbBanks; i++){ file->insert((long double)_nbKmersPerBank[i]);}

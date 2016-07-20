@@ -278,10 +278,42 @@ public:
 
 		//bool keepTempFiles = false;
 		if(!this->_keepTmpFiles){
-			string command = "rm -rf " + this->_outputDirTemp;
+			string command = "rm -rf " + this->_outputDirTemp + "/solid/";
+			system(command.c_str());
+			command = "rm -rf " + this->_outputDirTemp + "/temp/";
+			system(command.c_str());
+			command = "rm -rf " + this->_outputDirTemp + "/count_synchro/";
+			system(command.c_str());
+			command = "rm -rf " + this->_outputDirTemp + "/merge_synchro/";
+			system(command.c_str());
+			command = "rm -rf " + this->_outputDirTemp + "/stats/";
+			system(command.c_str());
+			command = "rm -rf " + this->_outputDirTemp + "/job_count/";
+			system(command.c_str());
+			command = "rm -rf " + this->_outputDirTemp + "/job_merge/";
+			system(command.c_str());
+			command = "rm -rf " + this->_outputDirTemp + "/kmercount_per_partition/";
+			system(command.c_str());
+			command = "rm -rf " + this->_outputDirTemp + "/input/";
+			system(command.c_str());
+
+
+			command = "rm " + this->_outputDirTemp + "/config.h5";
+			system(command.c_str());
+			command = "rm " + this->_outputDirTemp + "/datasetIds";
 			system(command.c_str());
 			//cout << command << endl;
 			//System::file().rmdir(this->_outputDirTemp);
+
+			//System::file().mkdir(this->_outputDirTemp + "/solid/", -1);
+			//System::file().mkdir(this->_outputDirTemp + "/temp/", -1);
+			//System::file().mkdir(this->_outputDirTemp + "/log/", -1);
+			//System::file().mkdir(this->_outputDirTemp + "/count_synchro/", -1);
+			//System::file().mkdir(this->_outputDirTemp + "/merge_synchro/", -1);
+			//System::file().mkdir(this->_outputDirTemp + "/stats/", -1);
+			//System::file().mkdir(this->_outputDirTemp + "/job_count/", -1);
+			//System::file().mkdir(this->_outputDirTemp + "/job_merge/", -1);
+			//System::file().mkdir(this->_outputDirTemp + "/kmercount_per_partition/", -1);
 		}
 	}
 
@@ -745,7 +777,8 @@ public:
 
 	void count(){
 
-		cout << endl << "Counting k-mers... (log files are in tmp_dir/simka_output_temp/log/count_...)" << endl;
+		cout << endl << "Counting k-mers... (log files are " + this->_outputDirTemp + "/log/count_*)" << endl;
+
 		vector<string> commands;
 
 		_progress = new ProgressSynchro (
@@ -888,7 +921,7 @@ public:
 
 	void merge(){
 
-		cout << endl << "Merging k-mer counts and computing distances... (log files are in tmp_dir/simka_output_temp/log/merge_...)" << endl;
+		cout << endl << "Merging k-mer counts and computing distances... (log files are " + this->_outputDirTemp + "/log/merge_*)" << endl;
 
 		_progress = new ProgressSynchro (
 			this->createIteratorListener (_nbPartitions, "Merging datasets"),

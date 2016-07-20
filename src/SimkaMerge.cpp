@@ -287,6 +287,7 @@ public:
 	vector<vector<CountVector>> _bufferCounts;
 	vector<size_t> _bufferIndex;
 	u_int64_t _nbDistinctKmers;
+	u_int64_t _nbSharedDistinctKmers;
 
     /** Constructor. */
 	MergeCommand (
@@ -307,6 +308,7 @@ public:
     	_nbCores = nbCores;
     	_computeComplexDistances = computeComplexDistances;
     	_nbDistinctKmers = 0;
+    	_nbSharedDistinctKmers = 0;
 
 		init();
     }
@@ -523,6 +525,11 @@ public:
 		_nbDistinctKmers += 1;
 
         if(_computeComplexDistances || nbBankThatHaveKmer > 1){
+
+        	if(nbBankThatHaveKmer > 1){
+        		_nbSharedDistinctKmers += 1;
+        	}
+
 			//DistanceCommand<span>* cmd = dynamic_cast<DistanceCommand<span>*>(_cmds[_currentBuffer]);
 			//cmd->_bufferKmers[cmd->_bufferIndex] = kmer;
 			//cmd->_bufferCounts[cmd->_bufferIndex] = counts;
@@ -783,7 +790,7 @@ public:
 		//	delete its[i];
 		//}
 
-		saveStats(p, mergeCmd->_nbDistinctKmers);
+		saveStats(p, mergeCmd->_nbDistinctKmers, mergeCmd->_nbSharedDistinctKmers);
 
 
 		//cout << _cmds.size() << endl;
@@ -893,7 +900,7 @@ public:
 	}
 
 
-	void saveStats(Parameter& p, const u_int64_t nbDistinctKmers){
+	void saveStats(Parameter& p, const u_int64_t nbDistinctKmers, const u_int64_t nbSharedDistinctKmers){
 
 		_stats = new SimkaStatistics(_nbBanks, p.computeSimpleDistances, p.computeComplexDistances);
 
@@ -906,6 +913,7 @@ public:
 		string filename = p.outputDir + "/stats/part_" + SimkaAlgorithm<>::toString(p.partitionId) + ".gz";
 
 		_stats->_nbDistinctKmers = nbDistinctKmers;
+		_stats->_nbSharedKmers = nbSharedDistinctKmers;
 		_stats->save(filename); //storage->getGroup(""));
 
 		
