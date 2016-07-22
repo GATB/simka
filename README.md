@@ -94,7 +94,8 @@ For further instructions on using simka, see User Manual, below.
 # User manual
 
 ##Description
-Simka computes several ecology distances between N metagenomic read sets at the k-mer level.	Simka is implemented with the GATB library (http://gatb.inria.fr/).
+Simka computes several ecology distances between N metagenomic read sets at the k-mer level.
+Simka is implemented with the GATB library (http://gatb.inria.fr/).
 
 
 ##Input
@@ -147,18 +148,17 @@ In this case, Simka will not count again the samples already counted.
 
 The option -out is the directory which will hold the distances matrices.
 
-By default, Simka provides basic qualitative and quantitative Jaccard distances.
+By default, Simka provides a abundance-based Bray-Curtis distance (and Jaccard) and all presence-absence-based distances.
 
 The option -simple-dist allow to compute more ecology distances which are fast to compute (Chord, Hellinger, Kulczinski).
 
-The option -complex-dist allow to compute others ecology distances which are long to compute (Bray-Curtis, Jensen-Shannon, Canberra, Whittaker).
+The option -complex-dist allow to compute others ecology distances which are long to compute (Jensen-Shannon, Canberra, Whittaker).
 
 The matrice names follow this template:
 
     mat_[abundance|presenceAbsence]_[distanceName].csv
 
 The distance matrices containing ‘simka’ are distances introduces by the comparead method (See equation 1 of the Simka paper).
-
 These distances have the advantage of having a symmetrical and asymmetrical version.
 
 ##Generating heatmaps and clustering
