@@ -556,10 +556,11 @@ void SimkaStatistics::outputMatrix(const string& outputDir, const vector<string>
 	dumpMatrix(outputDir, bankNames, "mat_abundance_ab-sorensen", _simkaDistance._matrixSorensen);
 	dumpMatrix(outputDir, bankNames, "mat_abundance_ab-jaccard", _simkaDistance._matrixJaccardAbundance);
 
+	dumpMatrix(outputDir, bankNames, "mat_abundance_braycurtis", _simkaDistance._matrixBrayCurtis);
+	dumpMatrix(outputDir, bankNames, "mat_abundance_jaccard", _simkaDistance.computeJaccardDistanceFromBrayCurtis(_simkaDistance._matrixBrayCurtis));
 
 	if(_computeSimpleDistances){
 		//dumpMatrix(outputDir, bankNames, "mat_abundance_braycurtis-simple", _simkaDistance._matrixJaccardIntersection);
-		dumpMatrix(outputDir, bankNames, "mat_abundance_braycurtis", _simkaDistance._matrixBrayCurtis);
 		dumpMatrix(outputDir, bankNames, "mat_abundance_chord", _simkaDistance._matrixChord);
 		dumpMatrix(outputDir, bankNames, "mat_abundance_hellinger", _simkaDistance._matrixHellinger);
 		dumpMatrix(outputDir, bankNames, "mat_abundance_kulczynski", _simkaDistance._matrixKulczynski);
@@ -823,7 +824,8 @@ double SimkaDistance::distance_abundance_brayCurtis(size_t i, size_t j){
 //Abundance Chord
 double SimkaDistance::distance_abundance_chord(size_t i, size_t j){
 
-	long double chordDistance =  sqrtl(2 - 2*_stats._chord_NiNj[i][j]);
+	double den = _stats._chord_sqrt_N2[i]*_stats._chord_sqrt_N2[j];
+	long double chordDistance =  sqrtl(2 - 2*_stats._chord_NiNj[i][j] / den);
 	/*
 	long double intersection = 2*_stats._chord_NiNj[i][j];
 	if(intersection == 0) return sqrt(2);
@@ -1081,3 +1083,20 @@ double SimkaDistance::distance_presenceAbsence_jaccard_simka(size_t i, size_t j,
 
     return 1 - numerator/denominator;
 }
+
+
+vector<vector<float> > SimkaDistance::computeJaccardDistanceFromBrayCurtis(const vector<vector<float> >& brayDistanceMatrix){
+
+	vector<vector<float> > jaccardDistanceMatrix = createSquaredMatrix(_nbBanks);
+
+	for(size_t i=0; i<_nbBanks; i++){
+		for(size_t j=0; j<_nbBanks; j++){
+			double B = brayDistanceMatrix[i][j];
+			double J = (2*B) / (1+B);
+			jaccardDistanceMatrix[i][j] = J;
+		}
+	}
+
+	return jaccardDistanceMatrix;
+}
+

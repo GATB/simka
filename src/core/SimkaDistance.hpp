@@ -109,7 +109,6 @@ public:
 	//Abundance Kulczynski
 	vector<vector<u_int64_t> > _kulczynski_minNiNj;
 
-
 	//string _outputDir;
 
 	u_int64_t _nbKmers;
@@ -171,6 +170,8 @@ public:
     vector<vector<float> > _matrix_presenceAbsence_jaccardCanberra;
     vector<vector<float> > _matrix_presenceAbsence_jaccard_simka;
     vector<vector<float> > _matrix_presenceAbsence_jaccard_simka_asym;
+
+    vector<vector<float> > computeJaccardDistanceFromBrayCurtis(const vector<vector<float> >& brayDistanceMatrix);
 
 private:
 

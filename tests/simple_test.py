@@ -13,12 +13,16 @@ def __test_matrices(result_dir, truth_dir):
 	ok = True
 
 	result_filenames = os.listdir(result_dir)
+	result_filenames.remove("mat_abundance_jaccard.csv") #This distance is computed from Bray Curtis distance
 	truth_filenames = os.listdir(truth_dir)
+	if "mat_abundance_jaccard.csv" in truth_filenames:
+		truth_filenames.remove("mat_abundance_jaccard.csv") #This distance is computed from Bray Curtis distance
 
 	for i in range(0, len(result_filenames)):
 
 		res_file = open(result_dir + "/" + result_filenames[i], "r")
 		truth_file = open(truth_dir + "/" + truth_filenames[i], "r")
+		
 		res_str = res_file.read()
 		truth_str = truth_file.read()
 

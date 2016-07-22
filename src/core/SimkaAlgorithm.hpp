@@ -299,7 +299,7 @@ public:
 				_stats->_matrixNbSharedKmers[i][j] += counts[i];
 				_stats->_matrixNbSharedKmers[j][i] += counts[j];
 				_stats->_matrixNbDistinctSharedKmers[i][j] += 1;
-
+				_stats->_brayCurtisNumerator[i][j] += min(abundanceI, abundanceJ);
 			}
 		}
 
@@ -321,9 +321,8 @@ public:
 
 				//cout << _stats->_chord_sqrt_N2[i] << endl;
 				//_stats->_chord_NiNj[i][j] += abundanceI * abundanceJ;
-				_stats->_chord_NiNj[i][j] += (abundanceI * abundanceJ) / (_stats->_chord_sqrt_N2[i]*_stats->_chord_sqrt_N2[j]);
+				_stats->_chord_NiNj[i][j] += abundanceI * abundanceJ;
 				_stats->_hellinger_SqrtNiNj[i][j] += sqrt(abundanceI * abundanceJ);
-				_stats->_brayCurtisNumerator[i][j] += min(abundanceI, abundanceJ);
 				_stats->_kulczynski_minNiNj[i][j] += min(abundanceI, abundanceJ);
 			}
 		}
