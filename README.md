@@ -87,6 +87,15 @@ For further instructions on using simka, see User Manual, below.
 
 #Changelog
 
+* version 1.3.0 July 29, 2016:
+	- Bray-Crutis computed by default
+	- Better k-mer statistics
+	- Fix bug in script for creating heatmaps
+	- Add "all in memory" k-mer counter when k <= 15
+	- Fine grain paralellization for computing distances
+	- Clean all memory leaks with valgrind
+	- Update help messages
+	- Redirect stdout and stderr of parallel processes in specific log files 
 * version 1.0.1  March 16, 2016: minor updates ang bug fixes, first release on Github
 * version 1  Feb 16, 2016: stable version
 * version 0.1  May 28, 2015: initial public release

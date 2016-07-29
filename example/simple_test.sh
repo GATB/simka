@@ -15,7 +15,12 @@ else
 fi
 
 # run simka
-$bindir/simka -verbose 0 -in ../example/simka_input.txt -out output/ -out-tmp temp_output
+command="$bindir/simka -in ../example/simka_input.txt -out output/ -out-tmp temp_output"
+#printf "$command\n\n"
+
+$command
+
+printf "\n\n\n"
 var=$?
 if [ $var -eq 0 ]
 then
@@ -25,5 +30,11 @@ else
     exit 1
 fi
 
+#printf "\nremoving all created dirs\n"
 # clean temp files
-rm -rf output temp_output
+rm -rf temp_output
+
+printf "\nCommand used:\n" 
+printf "\t$command\n"
+printf "Command for creating heatmaps and dendrogram:\n"
+printf "\tpython ../scripts/create_heatmaps.py output/\n"
