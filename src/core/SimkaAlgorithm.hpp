@@ -26,7 +26,7 @@
 #include<stdio.h>
 
 //#define PRINT_STATS
-#define CHI2_TEST
+//#define CHI2_TEST
 //#define SIMKA_POTARA
 //#define BOOTSTRAP
 #define MAX_BOOTSTRAP 50

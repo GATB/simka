@@ -599,7 +599,8 @@ public:
 
 	typedef typename Kmer<span>::Type                                       Type;
 	typedef typename Kmer<span>::Count                                      Count;
-
+	typedef std::pair<u_int16_t, Type> kxp; //id pointer in vec_pointer , value
+	struct kxpcomp { bool operator() (kxp l,kxp r) { return ((r.second) < (l.second)); } } ;
 
 	Parameter& p;
 
@@ -621,11 +622,13 @@ public:
 
 	//pthread_t statThread;_datasetNbReads
 
+	/*
 	void createInfo(Parameter& p){
 
 
 
 	}
+
 
 	void loadCountInfo(){
     	for(size_t i=0; i<_nbBanks; i++){
@@ -649,7 +652,7 @@ public:
 			_stats->_chord_sqrt_N2[i] = sqrt(strtoull(lines[3].c_str(), NULL, 10));
 			//cout << _stats->_chord_sqrt_N2[i] << endl;
     	}
-	}
+	}*/
 
 	void execute(){
 
@@ -667,7 +670,7 @@ public:
 		_nbBanks = _datasetIds.size();
 
 
-
+		/* PARALLEL
 		for (size_t i=0; i<_nbCores; i++)
 	    {
 		//cout << i << endl;
@@ -680,14 +683,18 @@ public:
 	    }
 
 		resetCommands();
+		*/
 
 
 		//SimkaDistanceParam distanceParams(p.props);
-		createInfo(p);
+		//createInfo(p);
 
 
 		//createProcessor(p);
-		//_processor = new SimkaCountProcessorSimple<span> (_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, p.minShannonIndex);
+
+		//PARALLEL line to remove
+		_stats = new SimkaStatistics(_nbBanks, p.computeSimpleDistances, p.computeComplexDistances, p.outputDir, _datasetIds);
+		_processor = new SimkaCountProcessorSimple<span> (_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, p.minShannonIndex);
 		//_processor->use();
 
 
@@ -731,6 +738,7 @@ public:
 		_progress->init ();
 
 
+		/* PARALLEL
 		_mergeCommand = new MergeCommand<span>(
     		_partitionId,
     		_nbBanks,
@@ -745,6 +753,7 @@ public:
 
 		//cout << "CMDS SIZE:" << _cmds.size() << endl;
 
+
 		MergeCommand<span>* mergeCmd = dynamic_cast<MergeCommand<span>*>(_mergeCommand);
 		mergeCmd->execute();
 
@@ -754,7 +763,101 @@ public:
 			dispatch();
 		}
 
-	    dispatch();
+	    dispatch();*/
+
+		_nbDistinctKmers = 0;
+		_nbSharedDistinctKmers = 0;
+		u_int64_t nbKmersProcessed = 0;
+		size_t nbBankThatHaveKmer = 0;
+		u_int16_t best_p = 0;
+		Type previous_kmer;
+	    CountVector abundancePerBank;
+		abundancePerBank.resize(_nbBanks, 0);
+		SimkaCounterBuilderMerge* solidCounter = new SimkaCounterBuilderMerge(abundancePerBank);;
+		std::priority_queue< kxp, vector<kxp>,kxpcomp > pq;
+
+
+		for(size_t i=0; i<_nbBanks; i++){
+			StorageIt<span>* it = its[i];
+			it->_it->first();
+		}
+
+	    //fill the  priority queue with the first elems
+	    for (size_t ii=0; ii<_nbBanks; ii++)
+	    {
+	    	pq.push(kxp(ii,its[ii]->value()));
+	    }
+
+	    if (pq.size() != 0) // everything empty, no kmer at all
+	    {
+	        //get first pointer
+	        best_p = pq.top().first ; pq.pop();
+	        previous_kmer = its[best_p]->value();
+	        solidCounter->init (its[best_p]->getBankId(), its[best_p]->abundance());
+	        nbBankThatHaveKmer = 1;
+
+			while(1){
+
+				if (! its[best_p]->next())
+				{
+					//reaches end of one array
+					if(pq.size() == 0){
+						break;
+					}
+
+					//otherwise get new best
+					best_p = pq.top().first ; pq.pop();
+				}
+
+				if (its[best_p]->value() != previous_kmer )
+				{
+					//if diff, changes to new array, get new min pointer
+					pq.push(kxp(best_p,its[best_p]->value())); //push new val of this pointer in pq, will be counted later
+
+					best_p = pq.top().first ; pq.pop();
+
+					//if new best is diff, this is the end of this kmer
+					if(its[best_p]->value()!=previous_kmer )
+					{
+
+						nbKmersProcessed += nbBankThatHaveKmer;
+						if(nbKmersProcessed > progressStep){
+							//cout << "queue size:   " << pq.size() << endl;
+							//cout << nbKmersProcessed << endl;
+							_progress->inc(nbKmersProcessed);
+							nbKmersProcessed = 0;
+						}
+
+						//cout << previous_kmer.toString(p.kmerSize) << endl;
+						//for(size_t i=0; i<abundancePerBank.size(); i++){
+						//	cout << abundancePerBank[i] << " ";
+						//}
+						//cout << endl;
+
+						insert(previous_kmer, abundancePerBank, nbBankThatHaveKmer);
+						//if(nbBankThatHaveKmer > 1)
+						//	_processor->process (_partitionId, previous_kmer, abundancePerBank);
+						//this->insert (previous_kmer, solidCounter);
+
+						solidCounter->init (its[best_p]->getBankId(), its[best_p]->abundance());
+						nbBankThatHaveKmer = 1;
+						previous_kmer = its[best_p]->value();
+					}
+					else
+					{
+						solidCounter->increase (its[best_p]->getBankId(), its[best_p]->abundance());
+						nbBankThatHaveKmer += 1;
+					}
+				}
+				else
+				{
+					solidCounter->increase (its[best_p]->getBankId(), its[best_p]->abundance());
+					nbBankThatHaveKmer += 1;
+				}
+			}
+
+			insert(previous_kmer, abundancePerBank, nbBankThatHaveKmer);
+	    }
 
 
 
@@ -762,10 +865,18 @@ public:
 		for(size_t i=0; i<partitions.size(); i++){
 			delete partitions[i];
 		}
+
+
+		saveStats(p);
+
+
+		delete _stats;
+		delete _processor;
 		//for(size_t i=0; i<its.size(); i++){
 		//	delete its[i];
 		//}
 
+		/* PARALLEL
 		saveStats(p, mergeCmd->_nbDistinctKmers, mergeCmd->_nbSharedDistinctKmers);
 
 
@@ -777,16 +888,31 @@ public:
 		}
 		//_cmds.clear();
 		//delete _mergeCommand;
-
+		*/
+		delete solidCounter;
 		for(size_t i=0; i<its.size(); i++){
-                        delete its[i];
-                }
+			delete its[i];
+		}
 
 		writeFinishSignal(p);
 		_progress->finish();
 
 	}
 
+	void insert(const Type& kmer, const CountVector& counts, size_t nbBankThatHaveKmer){
+
+		_stats->_nbDistinctKmers += 1;
+
+		if(_computeComplexDistances || nbBankThatHaveKmer > 1){
+
+			if(nbBankThatHaveKmer > 1){
+				_stats->_nbSharedKmers += 1;
+			}
+
+			_processor->process(_partitionId, kmer, counts);
+
+		}
+	}
 
 	void createDatasetIdList(Parameter& p){
 
@@ -876,6 +1002,7 @@ public:
 	}
 
 
+	/* PARALLEL
 	void saveStats(Parameter& p, const u_int64_t nbDistinctKmers, const u_int64_t nbSharedDistinctKmers){
 
 		_stats = new SimkaStatistics(_nbBanks, p.computeSimpleDistances, p.computeComplexDistances, p.outputDir, _datasetIds);
@@ -895,6 +1022,27 @@ public:
 
 		
 		delete _stats;
+		//string filename = p.outputDir + "/stats/part_" + SimkaAlgorithm<>::toString(p.partitionId) + ".gz";
+		//_processor->finishClones(_processors);
+		//Storage* storage = 0;
+		//storage = StorageFactory(STORAGE_HDF5).create (p.outputDir + "/stats/part_" + SimkaAlgorithm<>::toString(p.partitionId) + ".stats", true, false);
+		//LOCAL (storage);
+		//_stats->save(filename); //storage->getGroup(""));
+
+		//cout << _stats->_nbKmers << endl;
+
+		//_processors[0]->forget();
+		//_processor->forget();
+
+	}*/
+
+	void saveStats(Parameter& p){
+
+		string filename = p.outputDir + "/stats/part_" + SimkaAlgorithm<>::toString(p.partitionId) + ".gz";
+
+		_stats->save(filename); //storage->getGroup(""));
+
+
 		//string filename = p.outputDir + "/stats/part_" + SimkaAlgorithm<>::toString(p.partitionId) + ".gz";
 		//_processor->finishClones(_processors);
 		//Storage* storage = 0;
@@ -936,6 +1084,8 @@ private:
 
 	SimkaStatistics* _stats;
 	SimkaCountProcessorSimple<span>* _processor;
+	u_int64_t _nbDistinctKmers;
+	u_int64_t _nbSharedDistinctKmers;
 };
 
 
