@@ -26,7 +26,7 @@
 #include<stdio.h>
 
 //#define PRINT_STATS
-//#define CHI2_TEST
+#define CHI2_TEST
 //#define SIMKA_POTARA
 //#define BOOTSTRAP
 #define MAX_BOOTSTRAP 50
@@ -133,6 +133,28 @@ private:
 template<size_t span>
 class SimkaCountProcessorSimple{
 
+private:
+
+    size_t _nbBanks;
+    size_t _kmerSize;
+	//pair<CountNumber, CountNumber> _abundanceThreshold;
+	//bool isAbundanceThreshold;
+
+    SimkaStatistics* _stats;
+    double _totalAbundance;
+
+    u_int64_t _nbKmerCounted;
+    double _minKmerShannonIndex;
+
+    //vector<size_t> _banksOks;
+
+    vector<u_int16_t> _sharedBanks;
+
+	typedef std::pair<double, CountVector> chi2val_Abundances;
+	struct _chi2ValueSorterFunction { bool operator() (chi2val_Abundances l,chi2val_Abundances r) { return r.first < l.first; } } ;
+	std::priority_queue< chi2val_Abundances, vector<chi2val_Abundances>, _chi2ValueSorterFunction> _chi2ValueSorter;
+	size_t _maxChi2Values;
+
 public:
 
     typedef typename Kmer<span>::Type  Type;
@@ -142,6 +164,7 @@ public:
     _stats(stats)
     {
 
+    	_maxChi2Values = 1000;
     	// We configure the vector for the N.(N+1)/2 possible pairs
     	//_countTotal.resize (_nbBanks*(_nbBanks+1)/2);
 
@@ -156,6 +179,29 @@ public:
     	//isAbundanceThreshold = _abundanceThreshold.first > 1 || _abundanceThreshold.second < 1000000;
 
 
+    }
+
+
+    void end(){
+		#ifdef CHI2_TEST
+
+			size_t nbValues = _chi2ValueSorter.size();
+			for(size_t i=0; i<nbValues; i++){
+				double val = _chi2ValueSorter.top().first;
+				CountVector counts = _chi2ValueSorter.top().second;
+
+
+				//cout << val << endl;
+				//for(size_t j=0; j<counts.size(); j++){
+				//	cout << counts[j] << " ";
+				//}
+				//cout << endl;
+
+				updateDistance(counts);
+
+				_chi2ValueSorter.pop();
+			}
+		#endif
     }
 
     void process (size_t partId, const typename Kmer<span>::Type& kmer, const CountVector& counts){
@@ -203,13 +249,44 @@ public:
     	for(size_t i=0; i<counts.size(); i++){
 
     		float Ni = counts[i];
-    		X2j += pow((Ni/_totalAbundance - _stats->_datasetNbReads[i]/_totalReads), 2) / (_stats->_datasetNbReads[i] / (_totalReads*_totalAbundance));
+    		X2j += pow((Ni/_totalAbundance - _stats->_datasetNbReads[i]/_stats->_totalReads), 2) / (_stats->_datasetNbReads[i] / (_stats->_totalReads*_totalAbundance));
     	}
 
     	//std::chi_squared_distribution<double> distribution(_nbBanks-1);
-    	double pvalue = chisqr(_nbBanks-1, X2j);
+    	//double pvalue = chisqr(_nbBanks-1, X2j);
 
-    	cout <<  X2j << "    " << pvalue << endl;
+    	/*
+    	if(lala> 100){
+        	for(size_t i=0; i<_chi2ValueSorter.size(); i++){
+        		double val = _chi2ValueSorter.top();
+        		_chi2ValueSorter.pop();
+        		cout << val << endl;
+        	}
+
+    		return;
+    	}*/
+
+    	//cout << X2j << endl;
+
+
+    	if(_chi2ValueSorter.size() > _maxChi2Values){
+
+        	if(X2j > _chi2ValueSorter.top().first){
+            	_chi2ValueSorter.push(pair<double, CountVector>(X2j, counts));
+        		_chi2ValueSorter.pop();
+        	}
+
+    	}
+    	else{
+        	_chi2ValueSorter.push(pair<double, CountVector>(X2j, counts));
+    	}
+
+
+
+    	//cout << _chi2ValueSorter.size() << "    " << X2j << "   " << _chi2ValueSorter.top() << endl;
+    	//cout <<  X2j << "    " << pvalue << endl;
+
+    	return;
     	/*
     	cout << kmer.toString(_kmerSize) << "  [";
     	for(size_t i=0; i<counts.size(); i++)
@@ -223,7 +300,7 @@ public:
     	//if(_totalAbundance == 1){
     	//	cout << X2j << endl;
     	//}
-    	if(pvalue > 0.01) return;
+    	//if(pvalue > 0.01) return;
 #endif
     	/*
     	//for(size_t i=0; i<_datasetNbReads.size(); i++)
@@ -261,7 +338,16 @@ public:
     	//}
     	//else{
 
+    	updateDistance(counts);
 
+    	//else
+    	//	computeStats(counts);
+
+
+    	//_stats->_nbSolidKmers += 1;
+    }
+
+    void updateDistance(const CountVector& counts){
 		_sharedBanks.clear();
 
 		for(size_t i=0; i<counts.size(); i++)
@@ -274,13 +360,7 @@ public:
 
     	if(_stats->_computeComplexDistances)
     		updateDistanceComplex(counts);
-    	//else
-    	//	computeStats(counts);
-
-
-    	//_stats->_nbSolidKmers += 1;
     }
-
 
 	void updateDistanceDefault(const CountVector& counts){
 
@@ -648,22 +728,7 @@ public:
 	    return (1.0 - PValue);
 	}
 
-private:
 
-    size_t _nbBanks;
-    size_t _kmerSize;
-	//pair<CountNumber, CountNumber> _abundanceThreshold;
-	//bool isAbundanceThreshold;
-
-    SimkaStatistics* _stats;
-    double _totalAbundance;
-
-    u_int64_t _nbKmerCounted;
-    double _minKmerShannonIndex;
-
-    //vector<size_t> _banksOks;
-
-    vector<u_int16_t> _sharedBanks;
 };
 
 

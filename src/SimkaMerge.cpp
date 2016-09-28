@@ -756,6 +756,8 @@ public:
 
 	    dispatch();
 
+
+
 		//cout << "lala" << endl;
 		for(size_t i=0; i<partitions.size(); i++){
 			delete partitions[i];
@@ -880,6 +882,7 @@ public:
 
 		for (size_t i=0; i<_nbCores; i++){
 			DistanceCommand<span>* cmd = dynamic_cast<DistanceCommand<span>*>(_cmds[i]);
+			cmd->_processor->end();
 			(*_stats) += (*cmd->_stats);
 		}
 		//loadCountInfo();
