@@ -491,6 +491,8 @@ public:
 			_maxJobMerge = this->_options->getInt(STR_SIMKA_NB_JOB_MERGE);
 		}
 		else{
+			_maxJobMerge = maxCores;
+			/*
 			if(this->_computeComplexDistances && this->_computeSimpleDistances){
 				_maxJobMerge = max((size_t)maxCores/4, (size_t)1);
 			}
@@ -502,7 +504,7 @@ public:
 			}
 			else{
 				_maxJobMerge = maxCores;
-			}
+			}*/
 		}
 
 		_maxJobCount = min(_maxJobCount, maxCores);
