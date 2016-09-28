@@ -860,6 +860,7 @@ public:
 	    }
 
 
+		_processor->end();
 
 		//cout << "lala" << endl;
 		for(size_t i=0; i<partitions.size(); i++){
