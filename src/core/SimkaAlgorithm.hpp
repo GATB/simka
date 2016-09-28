@@ -155,9 +155,7 @@ public:
     	_nbKmerCounted = 0;
     	//isAbundanceThreshold = _abundanceThreshold.first > 1 || _abundanceThreshold.second < 1000000;
 
-    	_totalReads = 0;
-    	for(size_t i=0; i<_stats->_datasetNbReads.size(); i++)
-    		_totalReads += _stats->_datasetNbReads[i];
+
     }
 
     void process (size_t partId, const typename Kmer<span>::Type& kmer, const CountVector& counts){
@@ -662,7 +660,7 @@ private:
 
     u_int64_t _nbKmerCounted;
     double _minKmerShannonIndex;
-    double _totalReads;
+
     //vector<size_t> _banksOks;
 
     vector<u_int16_t> _sharedBanks;

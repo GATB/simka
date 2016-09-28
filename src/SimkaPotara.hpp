@@ -1066,6 +1066,7 @@ public:
 	    delete _progress;
 	}
 
+	/*
 	void getCountInfo(SimkaStatistics& mainStats){
 
     	for(size_t i=0; i<this->_nbBanks; i++){
@@ -1089,7 +1090,7 @@ public:
 			mainStats._chord_sqrt_N2[i] = sqrt(strtoull(lines[3].c_str(), NULL, 10));
     	}
 
-	}
+	}*/
 
 	void stats(){
 		cout << endl << "Computing stats..." << endl;
@@ -1098,7 +1099,7 @@ public:
 		//u_int64_t nbKmers = 0;
 
 		//SimkaDistanceParam distanceParams(this->_options);
-		SimkaStatistics mainStats(this->_nbBanks, this->_computeSimpleDistances, this->_computeComplexDistances);
+		SimkaStatistics mainStats(this->_nbBanks, this->_computeSimpleDistances, this->_computeComplexDistances, this->_outputDirTemp, this->_bankNames);
 
 		for(size_t i=0; i<_nbPartitions; i++){
 
@@ -1106,7 +1107,7 @@ public:
 			//Storage* storage = StorageFactory(STORAGE_HDF5).load (this->_outputDirTemp + "/stats/part_" + SimkaAlgorithm<>::toString(i) + ".stats");
 			//LOCAL (storage);
 
-			SimkaStatistics stats(this->_nbBanks, this->_computeSimpleDistances, this->_computeComplexDistances);
+			SimkaStatistics stats(this->_nbBanks, this->_computeSimpleDistances, this->_computeComplexDistances, this->_outputDirTemp, this->_bankNames);
 			stats.load(filename);
 
 			//cout << stats._nbDistinctKmers << "   " << stats._nbKmers << endl;
@@ -1117,7 +1118,7 @@ public:
 
 		//cout << "Nb kmers: " << nbKmers << endl;
 
-		getCountInfo(mainStats);
+		//getCountInfo(mainStats);
 		//for(size_t i=0; i<this->_nbBanks; i++){
 		//	cout << mainStats._nbSolidDistinctKmersPerBank[i] << endl;
 		//}

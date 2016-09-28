@@ -69,7 +69,7 @@ class SimkaStatistics{
 
 public:
 
-	SimkaStatistics(size_t nbBanks, bool computeSimpleDistances, bool computeComplexDistances);
+	SimkaStatistics(size_t nbBanks, bool computeSimpleDistances, bool computeComplexDistances, const string& tmpDir, const vector<string>& datasetIds);
 	SimkaStatistics& operator+=  (const SimkaStatistics& other);
 	void print();
 	void load(const string& filename);
@@ -79,6 +79,8 @@ public:
     size_t _nbBanks;
     bool _computeSimpleDistances;
     bool _computeComplexDistances;
+
+    double _totalReads;
 
 	vector<u_int64_t> _nbSolidDistinctKmersPerBank;
 	vector<u_int64_t> _nbSolidKmersPerBank;
@@ -126,6 +128,8 @@ public:
 	//u_int64_t _nbKmersInCoupleBankSupRatio;
 
 	//unordered_map<string, histo_t> _histos;
+
+
 private:
 
 	void dumpMatrix(const string& outputDir, const vector<string>& _bankNames, const string& outputFilename, const vector<vector<float> >& matrix);

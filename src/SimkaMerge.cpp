@@ -55,6 +55,8 @@ public:
 
     /** Constructor. */
     DistanceCommand (
+    		const string& tmpDir,
+			const vector<string>& datasetIds,
     		size_t partitionId,
     		size_t nbBanks,
 			bool computeSimpleDistances,
@@ -65,7 +67,8 @@ public:
     )
 	{
     	_partitionId = partitionId;
-		_stats = new SimkaStatistics(nbBanks, computeSimpleDistances, computeComplexDistances);
+		_stats = new SimkaStatistics(nbBanks, computeSimpleDistances, computeComplexDistances, tmpDir, datasetIds);
+
 		_processor = new SimkaCountProcessorSimple<span> (_stats, nbBanks, kmerSize, abundanceThreshold, SUM, false, minShannonIndex);
 
 		_bufferKmers.resize(MERGE_BUFFER_SIZE);
@@ -620,36 +623,7 @@ public:
 
 	void createInfo(Parameter& p){
 
-    	for(size_t i=0; i<_nbBanks; i++){
 
-    		string name = _datasetIds[i];
-    		string countFilename = p.outputDir + "/count_synchro/" +  name + ".ok";
-
-    		string line;
-	    	ifstream file(countFilename.c_str());
-	    	vector<string> lines;
-			while(getline(file, line)){
-				if(line == "") continue;
-				lines.push_back(line);
-			}
-			file.close();
-
-			u_int64_t nbReads = strtoull(lines[0].c_str(), NULL, 10);
-
-			/*
-			_stats->_datasetNbReads[i] = nbReads;
-			_stats->_nbSolidDistinctKmersPerBank[i] = strtoull(lines[1].c_str(), NULL, 10);
-			_stats->_nbSolidKmersPerBank[i] = strtoull(lines[2].c_str(), NULL, 10);
-			_stats->_chord_sqrt_N2[i] = sqrt(strtoull(lines[3].c_str(), NULL, 10));*/
-
-			for (size_t j=0; j<_nbCores; j++){
-				DistanceCommand<span>* cmd = dynamic_cast<DistanceCommand<span>*>(_cmds[j]);
-				cmd->_stats->_datasetNbReads[i] = nbReads;
-				cmd->_stats->_nbSolidDistinctKmersPerBank[i] = strtoull(lines[1].c_str(), NULL, 10);
-				cmd->_stats->_nbSolidKmersPerBank[i] = strtoull(lines[2].c_str(), NULL, 10);
-				cmd->_stats->_chord_sqrt_N2[i] = sqrt(strtoull(lines[3].c_str(), NULL, 10));
-			}
-    	}
 
 	}
 
@@ -698,7 +672,7 @@ public:
 	    {
 		//cout << i << endl;
 	        ICommand* cmd = 0;
-	        cmd = new DistanceCommand<span>(_partitionId, _nbBanks, _computeSimpleDistances, _computeComplexDistances, _kmerSize, _abundanceThreshold, _minShannonIndex);
+	        cmd = new DistanceCommand<span>(p.outputDir, _datasetIds, _partitionId, _nbBanks, _computeSimpleDistances, _computeComplexDistances, _kmerSize, _abundanceThreshold, _minShannonIndex);
 	        //cmd->use();
 	        _cmds.push_back (cmd);
 
@@ -902,13 +876,13 @@ public:
 
 	void saveStats(Parameter& p, const u_int64_t nbDistinctKmers, const u_int64_t nbSharedDistinctKmers){
 
-		_stats = new SimkaStatistics(_nbBanks, p.computeSimpleDistances, p.computeComplexDistances);
+		_stats = new SimkaStatistics(_nbBanks, p.computeSimpleDistances, p.computeComplexDistances, p.outputDir, _datasetIds);
 
 		for (size_t i=0; i<_nbCores; i++){
 			DistanceCommand<span>* cmd = dynamic_cast<DistanceCommand<span>*>(_cmds[i]);
 			(*_stats) += (*cmd->_stats);
 		}
-		loadCountInfo();
+		//loadCountInfo();
 
 		string filename = p.outputDir + "/stats/part_" + SimkaAlgorithm<>::toString(p.partitionId) + ".gz";
 

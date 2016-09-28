@@ -39,7 +39,8 @@ _stats(stats)
 	_soliditySingle = soliditySingle;
 	_minKmerShannonIndex = minKmerShannonIndex;
 
-	_localStats = new SimkaStatistics(_nbBanks, _stats._computeSimpleDistances,  _stats._computeComplexDistances);
+	//ATTENTION A REMETTRE
+	//_localStats = new SimkaStatistics(_nbBanks, _stats._computeSimpleDistances,  _stats._computeComplexDistances, _outputDirTemp, _bankNames);
 
 	_nbKmerCounted = 0;
 	isAbundanceThreshold = _abundanceThreshold.first > 1 || _abundanceThreshold.second < 1000000;
@@ -936,7 +937,7 @@ void SimkaAlgorithm<span>::count(){
 
 	//SimkaDistanceParam distanceParams(_options);
 
-	_stats = new SimkaStatistics(_nbBanks, _computeSimpleDistances, _computeComplexDistances);
+	_stats = new SimkaStatistics(_nbBanks, _computeSimpleDistances, _computeComplexDistances, _outputDirTemp, _bankNames);
 
 	SortingCountAlgorithm<span> sortingCount (_banks, _options);
 

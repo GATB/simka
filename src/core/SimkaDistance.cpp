@@ -24,7 +24,7 @@
 
 
 
-SimkaStatistics::SimkaStatistics(size_t nbBanks, bool computeSimpleDistances, bool computeComplexDistances)
+SimkaStatistics::SimkaStatistics(size_t nbBanks, bool computeSimpleDistances, bool computeComplexDistances, const string& tmpDir, const vector<string>& datasetIds)
 {
 
 	_nbBanks = nbBanks;
@@ -115,6 +115,43 @@ SimkaStatistics::SimkaStatistics(size_t nbBanks, bool computeSimpleDistances, bo
 			_kulczynski_minNiNj[i].resize(nbBanks, 0);
 		}
 		//}
+
+
+		_totalReads = 0;
+
+    	for(size_t i=0; i<_nbBanks; i++){
+
+    		string name = datasetIds[i];
+    		string countFilename = tmpDir + "/count_synchro/" +  name + ".ok";
+
+    		string line;
+	    	ifstream file(countFilename.c_str());
+	    	vector<string> lines;
+			while(getline(file, line)){
+				if(line == "") continue;
+				lines.push_back(line);
+			}
+			file.close();
+
+			u_int64_t nbReads = strtoull(lines[0].c_str(), NULL, 10);
+
+
+			_datasetNbReads[i] = nbReads;
+			_nbSolidDistinctKmersPerBank[i] = strtoull(lines[1].c_str(), NULL, 10);
+			_nbSolidKmersPerBank[i] = strtoull(lines[2].c_str(), NULL, 10);
+			_chord_sqrt_N2[i] = sqrt(strtoull(lines[3].c_str(), NULL, 10));
+
+			_totalReads += nbReads;
+			/*
+			for (size_t j=0; j<_nbCores; j++){
+				DistanceCommand<span>* cmd = dynamic_cast<DistanceCommand<span>*>(_cmds[j]);
+				cmd->_stats->_datasetNbReads[i] = nbReads;
+				cmd->_stats->_nbSolidDistinctKmersPerBank[i] = strtoull(lines[1].c_str(), NULL, 10);
+				cmd->_stats->_nbSolidKmersPerBank[i] = strtoull(lines[2].c_str(), NULL, 10);
+				cmd->_stats->_chord_sqrt_N2[i] = sqrt(strtoull(lines[3].c_str(), NULL, 10));
+			}*/
+    	}
+
 }
 
 
@@ -131,14 +168,14 @@ SimkaStatistics& SimkaStatistics::operator+=  (const SimkaStatistics& other){
 
 	for(size_t i=0; i<_nbBanks; i++){
 		_nbKmersPerBank[i] += other._nbKmersPerBank[i];
-		_nbSolidDistinctKmersPerBank[i] += other._nbSolidDistinctKmersPerBank[i];
-		_nbSolidKmersPerBank[i] += other._nbSolidKmersPerBank[i];
+		//_nbSolidDistinctKmersPerBank[i] += other._nbSolidDistinctKmersPerBank[i];
+		//_nbSolidKmersPerBank[i] += other._nbSolidKmersPerBank[i];
 		_nbDistinctKmersSharedByBanksThreshold[i] += other._nbDistinctKmersSharedByBanksThreshold[i];
 		_nbKmersSharedByBanksThreshold[i] += other._nbKmersSharedByBanksThreshold[i];
 
 
 		//if(_distanceParams._computeChord)
-			_chord_sqrt_N2[i] += other._chord_sqrt_N2[i];
+			//_chord_sqrt_N2[i] += other._chord_sqrt_N2[i];
 
 	}
 
