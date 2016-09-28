@@ -26,7 +26,7 @@
 #include<stdio.h>
 
 //#define PRINT_STATS
-//#define CHI2_TEST
+#define CHI2_TEST
 //#define SIMKA_POTARA
 //#define BOOTSTRAP
 #define MAX_BOOTSTRAP 50
@@ -202,8 +202,8 @@ public:
 
     	for(size_t i=0; i<counts.size(); i++){
 
-    		float Ni = counts[i];
-    		X2j += pow((Ni/_totalAbundance - _stats->_datasetNbReads[i]/_totalReads), 2) / (_stats->_datasetNbReads[i] / (_totalReads*_totalAbundance));
+   		float Ni = counts[i];
+    		X2j += pow((Ni/_totalAbundance - _stats->_datasetNbReads[i]/_stats->_totalReads), 2) / (_stats->_datasetNbReads[i] / (_stats->_totalReads*_totalAbundance));
     	}
 
     	//std::chi_squared_distribution<double> distribution(_nbBanks-1);
@@ -644,8 +644,8 @@ public:
 	    PValue /= approx_gamma(K);
 	    //PValue /= tgamma(K);
 
-	    //return PValue;
-	    return (1.0 - PValue);
+	    return PValue;
+	    //return (1.0 - PValue);
 	}
 
 private:
