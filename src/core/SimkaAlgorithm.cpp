@@ -569,7 +569,7 @@ void SimkaAlgorithm<span>::parseArgs() {
 	_outputDirTemp = _options->get(STR_URI_OUTPUT_TMP) ? _options->getStr(STR_URI_OUTPUT_TMP) : "./";
 	_kmerSize = _options->getInt(STR_KMER_SIZE);
 	_abundanceThreshold.first = _options->getInt(STR_KMER_ABUNDANCE_MIN);
-	_abundanceThreshold.second = min((u_int64_t)_options->getInt(STR_KMER_ABUNDANCE_MAX), (u_int64_t)std::numeric_limits<CountNumber>::max());
+	_abundanceThreshold.second = min((u_int64_t)_options->getInt(STR_KMER_ABUNDANCE_MAX), (u_int64_t)(999999999));
 
 	//cout << _options->getInt(STR_KMER_ABUNDANCE_MAX) << endl;
 	//cout << _abundanceThreshold.second << endl;

@@ -286,8 +286,8 @@ public:
 
 	size_t _currentBuffer;
 	u_int64_t _progressStep;
-	vector<vector<Type>> _bufferKmers;
-	vector<vector<CountVector>> _bufferCounts;
+	vector<vector<Type> > _bufferKmers;
+	vector<vector<CountVector> > _bufferCounts;
 	vector<size_t> _bufferIndex;
 	u_int64_t _nbDistinctKmers;
 	u_int64_t _nbSharedDistinctKmers;
