@@ -839,6 +839,7 @@ public:
 			if(_isClusterMode){
 				string jobFilename = this->_outputDirTemp + "/job_count/job_count_" + SimkaAlgorithm<>::toString(i) + ".bash";
 				IFile* jobFile = System::file().newFile(jobFilename.c_str(), "w");
+				system(("chmod 755 " + jobFilename).c_str());
 				string jobCommand = _jobCountContents + '\n' + '\n';
 				jobCommand += command;
 
@@ -984,6 +985,7 @@ public:
 				if(_isClusterMode){
 					string jobFilename = this->_outputDirTemp + "/job_merge/job_merge_" + SimkaAlgorithm<>::toString(i) + ".bash";
 					IFile* jobFile = System::file().newFile(jobFilename.c_str(), "w");
+					system(("chmod 755 " + jobFilename).c_str());
 					string jobCommand = _jobMergeContents + '\n' + '\n';
 					jobCommand += command;
 
