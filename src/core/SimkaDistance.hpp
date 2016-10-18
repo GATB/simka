@@ -150,32 +150,328 @@ public:
 	//vector<vector<float> > getMatrixBrayCurtis();
 	//vector<vector<float> > getMatrixKullbackLeibler();
 
-    vector<vector<float> > _matrixJaccardAbundance;
-    vector<vector<float> > _matrixBrayCurtis;
-    vector<vector<float> > _matrixChord;
-    vector<vector<float> > _matrixHellinger;
-    vector<vector<float> > _matrixJaccardIntersection;
-    vector<vector<float> > _matrixWhittaker;
-    vector<vector<float> > _matrixKullbackLeibler;
-    vector<vector<float> > _matrixCanberra;
-    vector<vector<float> > _matrixKulczynski;
-    vector<vector<float> > _matrixSymJaccardAbundance;
-    vector<vector<float> > _matrixAsymJaccardAbundance;
-    vector<vector<float> > _matrixOchiai;
-    vector<vector<float> > _matrixSorensen;
+    vector<vector<float> > _matrixJaccardAbundance(){
+    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
 
-    //vector<vector<float> > _matrixKullbackLeibler;
+    	for(size_t i=0; i<_nbBanks; i++){
+    		for(size_t j=i+1; j<_nbBanks; j++){
+    			double dist = distance_abundance_jaccard(i, j);
+    			matrix[i][j] = dist;
+    			matrix[j][i] = dist;
+    		}
+    	}
 
-    vector<vector<float> > _matrix_presenceAbsence_sorensenBrayCurtis;
-    vector<vector<float> > _matrix_presenceAbsence_Whittaker;
-    vector<vector<float> > _matrix_presenceAbsence_kulczynski;
-    vector<vector<float> > _matrix_presenceAbsence_ochiai;
-    vector<vector<float> > _matrix_presenceAbsence_chordHellinger;
-    vector<vector<float> > _matrix_presenceAbsence_jaccardCanberra;
-    vector<vector<float> > _matrix_presenceAbsence_jaccard_simka;
-    vector<vector<float> > _matrix_presenceAbsence_jaccard_simka_asym;
+		return matrix;
+    }
 
-    vector<vector<float> > computeJaccardDistanceFromBrayCurtis(const vector<vector<float> >& brayDistanceMatrix);
+    vector<vector<float> > _matrixBrayCurtis(){
+    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+
+    	for(size_t i=0; i<_nbBanks; i++){
+    		for(size_t j=i+1; j<_nbBanks; j++){
+    			double dist = distance_abundance_brayCurtis(i, j);
+    			matrix[i][j] = dist;
+    			matrix[j][i] = dist;
+    		}
+    	}
+
+		return matrix;
+    }
+
+    vector<vector<float> > _matrixChord(){
+    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+
+    	for(size_t i=0; i<_nbBanks; i++){
+    		for(size_t j=i+1; j<_nbBanks; j++){
+    			double dist = distance_abundance_chord(i, j);
+    			matrix[i][j] = dist;
+    			matrix[j][i] = dist;
+    		}
+    	}
+
+		return matrix;
+    }
+
+    vector<vector<float> > _matrixHellinger(){
+    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+
+    	for(size_t i=0; i<_nbBanks; i++){
+    		for(size_t j=i+1; j<_nbBanks; j++){
+    			double dist = distance_abundance_hellinger(i, j);
+    			matrix[i][j] = dist;
+    			matrix[j][i] = dist;
+    		}
+    	}
+
+		return matrix;
+    }
+
+    vector<vector<float> > _matrixWhittaker(){
+    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+
+    	for(size_t i=0; i<_nbBanks; i++){
+    		for(size_t j=i+1; j<_nbBanks; j++){
+    			double dist = distance_abundance_whittaker(i, j);
+    			matrix[i][j] = dist;
+    			matrix[j][i] = dist;
+    		}
+    	}
+
+		return matrix;
+    }
+
+    vector<vector<float> > _matrixKullbackLeibler(){
+    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+
+    	for(size_t i=0; i<_nbBanks; i++){
+    		for(size_t j=i+1; j<_nbBanks; j++){
+    			double dist = distance_abundance_kullbackLeibler(i, j);
+    			matrix[i][j] = dist;
+    			matrix[j][i] = dist;
+    		}
+    	}
+
+		return matrix;
+    }
+
+    vector<vector<float> > _matrixCanberra(){
+    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    	u_int64_t a, b, c;
+
+    	for(size_t i=0; i<_nbBanks; i++){
+    		for(size_t j=i+1; j<_nbBanks; j++){
+
+    			get_abc(i, j, a, b ,c);
+    			double dist = distance_abundance_canberra(i, j, a, b, c);
+    			matrix[i][j] = dist;
+    			matrix[j][i] = dist;
+    		}
+    	}
+
+		return matrix;
+    }
+
+    vector<vector<float> > _matrixKulczynski(){
+    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+
+    	for(size_t i=0; i<_nbBanks; i++){
+    		for(size_t j=i+1; j<_nbBanks; j++){
+    			double dist = distance_abundance_kulczynski(i, j);
+    			matrix[i][j] = dist;
+    			matrix[j][i] = dist;
+    		}
+    	}
+
+		return matrix;
+    }
+
+    vector<vector<float> > _matrixSymJaccardAbundance(){
+    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+
+    	for(size_t i=0; i<_nbBanks; i++){
+    		for(size_t j=i+1; j<_nbBanks; j++){
+    			double dist = distance_abundance_jaccard_simka(i, j, SYMETRICAL);
+    			matrix[i][j] = dist;
+    			matrix[j][i] = dist;
+    		}
+    	}
+
+		return matrix;
+    }
+
+    vector<vector<float> > _matrixAsymJaccardAbundance(){
+    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+
+    	for(size_t i=0; i<_nbBanks; i++){
+    		for(size_t j=i+1; j<_nbBanks; j++){
+    			matrix[i][j] = distance_abundance_jaccard_simka(i, j, ASYMETRICAL);
+    			matrix[j][i] = distance_abundance_jaccard_simka(j, i, ASYMETRICAL);
+    		}
+    	}
+
+		return matrix;
+    }
+
+    vector<vector<float> > _matrixOchiai(){
+    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+
+    	for(size_t i=0; i<_nbBanks; i++){
+    		for(size_t j=i+1; j<_nbBanks; j++){
+    			double dist = distance_abundance_ochiai(i, j);
+    			matrix[i][j] = dist;
+    			matrix[j][i] = dist;
+    		}
+    	}
+
+		return matrix;
+    }
+
+    vector<vector<float> > _matrixSorensen(){
+    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+
+    	for(size_t i=0; i<_nbBanks; i++){
+    		for(size_t j=i+1; j<_nbBanks; j++){
+    			double dist = distance_abundance_sorensen(i, j);
+    			matrix[i][j] = dist;
+    			matrix[j][i] = dist;
+    		}
+    	}
+
+		return matrix;
+    }
+
+    vector<vector<float> > _matrix_presenceAbsence_sorensenBrayCurtis(){
+    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    	u_int64_t a, b, c;
+
+    	for(size_t i=0; i<_nbBanks; i++){
+    		for(size_t j=i+1; j<_nbBanks; j++){
+
+    			get_abc(i, j, a, b ,c);
+
+    			double dist = distance_presenceAbsence_sorensenBrayCurtis(a, b, c);
+    			matrix[i][j] = dist;
+    			matrix[j][i] = dist;
+    		}
+    	}
+
+		return matrix;
+    }
+
+    vector<vector<float> > _matrix_presenceAbsence_Whittaker(){
+    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    	u_int64_t a, b, c;
+
+    	for(size_t i=0; i<_nbBanks; i++){
+    		for(size_t j=i+1; j<_nbBanks; j++){
+
+    			get_abc(i, j, a, b ,c);
+
+    			double dist = distance_presenceAbsence_whittaker(a, b, c);
+    			matrix[i][j] = dist;
+    			matrix[j][i] = dist;
+    		}
+    	}
+
+		return matrix;
+    }
+
+    vector<vector<float> > _matrix_presenceAbsence_kulczynski(){
+    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    	u_int64_t a, b, c;
+
+    	for(size_t i=0; i<_nbBanks; i++){
+    		for(size_t j=i+1; j<_nbBanks; j++){
+
+    			get_abc(i, j, a, b ,c);
+
+    			double dist = distance_presenceAbsence_kulczynski(a, b, c);
+    			matrix[i][j] = dist;
+    			matrix[j][i] = dist;
+    		}
+    	}
+
+		return matrix;
+    }
+
+    vector<vector<float> > _matrix_presenceAbsence_ochiai(){
+    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    	u_int64_t a, b, c;
+
+    	for(size_t i=0; i<_nbBanks; i++){
+    		for(size_t j=i+1; j<_nbBanks; j++){
+
+    			get_abc(i, j, a, b ,c);
+
+    			double dist = distance_presenceAbsence_ochiai(a, b, c);
+    			matrix[i][j] = dist;
+    			matrix[j][i] = dist;
+    		}
+    	}
+
+		return matrix;
+    }
+
+    vector<vector<float> > _matrix_presenceAbsence_chordHellinger(){
+    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    	u_int64_t a, b, c;
+
+    	for(size_t i=0; i<_nbBanks; i++){
+    		for(size_t j=i+1; j<_nbBanks; j++){
+
+    			get_abc(i, j, a, b ,c);
+
+    			double dist = distance_presenceAbsence_chordHellinger(a, b, c);
+    			matrix[i][j] = dist;
+    			matrix[j][i] = dist;
+    		}
+    	}
+
+		return matrix;
+    }
+
+    vector<vector<float> > _matrix_presenceAbsence_jaccardCanberra(){
+    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    	u_int64_t a, b, c;
+
+    	for(size_t i=0; i<_nbBanks; i++){
+    		for(size_t j=i+1; j<_nbBanks; j++){
+
+    			get_abc(i, j, a, b ,c);
+
+    			double dist = distance_presenceAbsence_jaccardCanberra(a, b, c);
+    			matrix[i][j] = dist;
+    			matrix[j][i] = dist;
+    		}
+    	}
+
+		return matrix;
+    }
+
+    vector<vector<float> > _matrix_presenceAbsence_jaccard_simka(){
+    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+
+    	for(size_t i=0; i<_nbBanks; i++){
+    		for(size_t j=i+1; j<_nbBanks; j++){
+
+    			double dist = distance_presenceAbsence_jaccard_simka(i, j, SYMETRICAL);
+    			matrix[i][j] = dist;
+    			matrix[j][i] = dist;
+    		}
+    	}
+
+		return matrix;
+    }
+
+    vector<vector<float> > _matrix_presenceAbsence_jaccard_simka_asym(){
+    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+
+    	for(size_t i=0; i<_nbBanks; i++){
+    		for(size_t j=i+1; j<_nbBanks; j++){
+
+    			matrix[i][j] = distance_presenceAbsence_jaccard_simka(i, j, ASYMETRICAL);
+    			matrix[j][i] = distance_presenceAbsence_jaccard_simka(j, i, ASYMETRICAL);
+    		}
+    	}
+
+		return matrix;
+    }
+
+
+    vector<vector<float> > computeJaccardDistanceFromBrayCurtis(const vector<vector<float> >& brayDistanceMatrix){
+    	vector<vector<float> > jaccardDistanceMatrix = createSquaredMatrix(_nbBanks);
+
+    	for(size_t i=0; i<_nbBanks; i++){
+    		for(size_t j=0; j<_nbBanks; j++){
+    			double B = brayDistanceMatrix[i][j];
+    			double J = (2*B) / (1+B);
+    			jaccardDistanceMatrix[i][j] = J;
+    		}
+    	}
+
+    	return jaccardDistanceMatrix;
+    }
+
 
 private:
 
@@ -187,7 +483,7 @@ private:
     double distance_abundance_brayCurtis(size_t bank1, size_t bank2);
     double distance_abundance_chord(size_t i, size_t j);
     double distance_abundance_hellinger(size_t i, size_t j);
-    double distance_abundance_jaccard_intersection(size_t i, size_t j);
+    //double distance_abundance_jaccard_intersection(size_t i, size_t j);
     double distance_abundance_whittaker(size_t i, size_t j);
     double distance_abundance_kullbackLeibler(size_t i, size_t j);
     double distance_abundance_canberra(size_t i, size_t j, u_int64_t& ua, u_int64_t& ub, u_int64_t& uc);
