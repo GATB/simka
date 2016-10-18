@@ -474,9 +474,12 @@ public:
 
 		if(this->_options->get(STR_SIMKA_NB_JOB_COUNT)){
 			_maxJobCount = this->_options->getInt(STR_SIMKA_NB_JOB_COUNT);
+			maxCores = _maxJobCount; //TO REMOVE WHEN BUG IN DISPATCHER IS RESOLVED
 		}
 		else{
-			size_t maxjob_byCore = min(maxCores/4, this->_nbBanks);
+			//size_t maxjob_byCore = min(maxCores/4, this->_nbBanks);
+			size_t maxjob_byCore = min(maxCores, this->_nbBanks);  //TO REMOVE WHEN BUG IN DISPATCHER IS RESOLVED
+
 			maxjob_byCore = max(maxjob_byCore, (size_t)1);
 
 			size_t maxjob_byMemory = maxMemory/minMemoryPerJobMB;
@@ -484,6 +487,7 @@ public:
 
 			size_t maxJobs = min(maxjob_byCore, maxjob_byMemory);
 			_maxJobCount = maxJobs;
+			maxCores = _maxJobCount; //TO REMOVE WHEN BUG IN DISPATCHER IS RESOLVED
 
 		}
 
