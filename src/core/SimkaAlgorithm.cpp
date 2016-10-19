@@ -776,31 +776,36 @@ void SimkaAlgorithm<span>::computeMaxReads(){
 	u_int64_t totalReads = 0;
 	u_int64_t minReads = -1;
 	u_int64_t maxReads = 0;
-	for (size_t i=0; i<_nbBanks; i++){
+	u_int64_t meanReads = 0;
 
-		IBank* bank = Bank::open(inputDir + _bankNames[i]);
-		LOCAL(bank);
+	if(_maxNbReads == 0 || _options->get(STR_SIMKA_COMPUTE_DATA_INFO)){
 
-		u_int64_t nbReads = bank->estimateNbItems();
-		nbReads /= _nbBankPerDataset[i];
-		totalReads += nbReads;
-		if(nbReads < minReads){
-			minReads = nbReads;
-			//_smallerBankId = _bankNames[i];
+		for (size_t i=0; i<_nbBanks; i++){
+
+			IBank* bank = Bank::open(inputDir + _bankNames[i]);
+			LOCAL(bank);
+
+			u_int64_t nbReads = bank->estimateNbItems();
+			nbReads /= _nbBankPerDataset[i];
+			totalReads += nbReads;
+			if(nbReads < minReads){
+				minReads = nbReads;
+				//_smallerBankId = _bankNames[i];
+			}
+			if(nbReads > maxReads){
+				maxReads = nbReads;
+				_largerBankId = _bankNames[i];
+			}
+
 		}
-		if(nbReads > maxReads){
-			maxReads = nbReads;
-			_largerBankId = _bankNames[i];
+
+		meanReads = totalReads / _nbBanks;
+
+		if(_options->getInt(STR_VERBOSE) != 0){
+			cout << "Smaller sample contains: " << minReads << " reads" << endl;
+			cout << "Larger sample contains: " << maxReads << " reads" << endl;
+			cout << "Whole dataset contains a mean of: " << meanReads << " reads" << endl << endl;
 		}
-
-	}
-
-	u_int64_t meanReads = totalReads / _nbBanks;
-
-	if(_options->getInt(STR_VERBOSE) != 0){
-		cout << "Smaller sample contains: " << minReads << " reads" << endl;
-		cout << "Larger sample contains: " << maxReads << " reads" << endl;
-		cout << "Whole dataset contains a mean of: " << meanReads << " reads" << endl << endl;
 	}
 
 

@@ -46,6 +46,7 @@ const string STR_KMER_PER_READ = "-kmer-per-read";
 const string STR_SIMKA_COMPUTE_ALL_SIMPLE_DISTANCES= "-simple-dist";
 const string STR_SIMKA_COMPUTE_ALL_COMPLEX_DISTANCES = "-complex-dist";
 const string STR_SIMKA_KEEP_TMP_FILES = "-keep-tmp";
+const string STR_SIMKA_COMPUTE_DATA_INFO = "-data-info";
 
 enum SIMKA_SOLID_KIND{
 	RANGE,
