@@ -239,13 +239,13 @@ public:
 		    	}
 				 */
 
-				string outputDir = p.outputDir + "/solid/" + p.bankName;
-				System::file().mkdir(outputDir, -1);
-				vector<BagGzFile<Count>* > bags;
-		    	for(size_t i=0; i<p.nbPartitions; i++){
-		    		BagGzFile<Count>* bag = new BagGzFile<Count>(outputDir + "/" + "part" + Stringify::format("%i", i));
-		        	bags.push_back(bag);
-		    	}
+				//string outputDir = p.outputDir + "/solid/" + p.bankName;
+				//System::file().mkdir(outputDir, -1);
+				//vector<BagGzFile<Count>* > bags;
+				//for(size_t i=0; i<p.nbPartitions; i++){
+				//	BagGzFile<Count>* bag = new BagGzFile<Count>(outputDir + "/" + "part" + Stringify::format("%i", i));
+				//	bags.push_back(bag);
+				//}
 
 
 				string tempDir = p.outputDir + "/temp/" + p.bankName;
@@ -262,31 +262,50 @@ public:
 				//LOCAL(bank);
 
 				//Storage* solidStorage = 0:
-				//string solidsName = p.outputDir + "/solid/" +  p.bankName + ".h5";
+				string solidsName = p.outputDir + "/solid/" +  p.bankName + ".h5";
+				Storage* storage = StorageFactory(STORAGE_HDF5).create (solidsName, true, false);
 				//bool autoDelete = false; // (solidsName == "none") || (solidsName == "null");
 				//solidStorage = StorageFactory(STORAGE_HDF5).create (solidsName, true, autoDelete);
-				//LOCAL(solidStorage);
+				LOCAL(storage);
 
-				SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, nbKmerPerParts, nbDistinctKmerPerParts, chordNiPerParts, p.abundanceMin, p.abundanceMax);
-
+				SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(nbKmerPerParts, nbDistinctKmerPerParts, chordNiPerParts, p.abundanceMin, p.abundanceMax);
+				CountProcessorDump<span>* dumpProc = new CountProcessorDump<span> (	storage->getGroup("dsk"), p.kmerSize );
 				u_int64_t nbReads = 0;
 
 				if(p.kmerSize <= 15){
-					MiniKC<span> miniKc(p.tool.getInput(), p.kmerSize, filteredBank, *repartitor, proc);
-					miniKc.execute();
+					cout << "ATTENTION k < 15 not supported currently" << endl;
+					//MiniKC<span> miniKc(p.tool.getInput(), p.kmerSize, filteredBank, *repartitor, proc);
+					//miniKc.execute();
 
-					nbReads = miniKc._nbReads;
+					//nbReads = miniKc._nbReads;
 				}
 				else{
 					//SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, caches, cacheIndexes, p.abundanceMin, p.abundanceMax);
-					std::vector<ICountProcessor<span>* > procs;
-					procs.push_back(proc);
-					SortingCountAlgorithm<span> algo (filteredBank, config, repartitor,
-							procs,
-							props);
+					std::vector<ICountProcessor<span>* > procs; // = SortingCountAlgorithm<span>::getDefaultProcessorVector(config, props, storage, 0);
+					//procs.push_back(proc);
+					//procs.push_back(dumpProc);
+					SortingCountAlgorithm<span> algo (filteredBank, config, repartitor, procs, props);
+					//algo.addProcessor(proc);
+					//algo.addProcessor(dumpProc);
+
+				    ICountProcessor<span>* result = 0;
+
+				    result = new CountProcessorChain<span> (
+
+				    		proc,
+
+							dumpProc,
+				        NULL
+				    );
+
+				    /** We set some name. */
+				    result->setName ("dsk");
+				    algo.addProcessor(result);
 
 					algo.execute();
 
+					//cout << algo.getInfo()->getInt("kmers_nb_valid") << endl;
+					//cout << algo.getInfo()->getInt("kmers") << endl;
 					nbReads = algo.getInfo()->getInt("seq_number");
 				}
 
@@ -316,10 +335,10 @@ public:
 
 				System::file().rmdir(tempDir);
 
-		    	for(size_t i=0; i<p.nbPartitions; i++){
-		    		bags[i]->flush();
-		    		delete bags[i];
-		    	}
+		    	//for(size_t i=0; i<p.nbPartitions; i++){
+				//	bags[i]->flush();
+				//	delete bags[i];
+				//}
 
 		    	//delete proc;
 			}

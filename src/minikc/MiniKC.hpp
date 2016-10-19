@@ -22,15 +22,15 @@ public:
     typedef typename Kmer<span>::Count Count;
 
     //SimkaCompressedProcessor(vector<BagGzFile<Count>* >& bags, vector<vector<Count> >& caches, vector<size_t>& cacheIndexes, CountNumber abundanceMin, CountNumber abundanceMax) : _bags(bags), _caches(caches), _cacheIndexes(cacheIndexes)
-    SimkaCompressedProcessor(vector<BagGzFile<Count>* >& bags, vector<u_int64_t>& nbKmerPerParts, vector<u_int64_t>& nbDistinctKmerPerParts, vector<u_int64_t>& chordPerParts, CountNumber abundanceMin, CountNumber abundanceMax) :
-    	_bags(bags), _nbDistinctKmerPerParts(nbDistinctKmerPerParts), _nbKmerPerParts(nbKmerPerParts), _chordPerParts(chordPerParts)
+    SimkaCompressedProcessor(vector<u_int64_t>& nbKmerPerParts, vector<u_int64_t>& nbDistinctKmerPerParts, vector<u_int64_t>& chordPerParts, CountNumber abundanceMin, CountNumber abundanceMax) :
+    	_nbDistinctKmerPerParts(nbDistinctKmerPerParts), _nbKmerPerParts(nbKmerPerParts), _chordPerParts(chordPerParts)
     {
     	_abundanceMin = abundanceMin;
     	_abundanceMax = abundanceMax;
     }
 
 	~SimkaCompressedProcessor(){}
-    CountProcessorAbstract<span>* clone ()  {  return new SimkaCompressedProcessor (_bags, _nbKmerPerParts, _nbDistinctKmerPerParts, _chordPerParts, _abundanceMin, _abundanceMax);  }
+    CountProcessorAbstract<span>* clone ()  {  return new SimkaCompressedProcessor (_nbKmerPerParts, _nbDistinctKmerPerParts, _chordPerParts, _abundanceMin, _abundanceMax);  }
     //CountProcessorAbstract<span>* clone ()  {  return new SimkaCompressedProcessor (_bags, _caches, _cacheIndexes, _abundanceMin, _abundanceMax);  }
 	void finishClones (vector<ICountProcessor<span>*>& clones){}
 
@@ -38,8 +38,8 @@ public:
 
 		if(count[0] < _abundanceMin || count[0] > _abundanceMax) return false;
 
-		Count item(kmer, count[0]);
-		_bags[partId]->insert(item);
+		//Count item(kmer, count[0]);
+		//_bags[partId]->insert(item);
 		_nbDistinctKmerPerParts[partId] += 1;
 		_nbKmerPerParts[partId] += count[0];
 		_chordPerParts[partId] += pow(count[0], 2);
@@ -62,7 +62,7 @@ public:
 	}
 
 
-	vector<BagGzFile<Count>* >& _bags;
+	//vector<BagGzFile<Count>* >& _bags;
 	vector<u_int64_t>& _nbDistinctKmerPerParts;
 	vector<u_int64_t>& _nbKmerPerParts;
 	vector<u_int64_t>& _chordPerParts;

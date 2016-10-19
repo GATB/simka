@@ -472,13 +472,15 @@ public:
 		size_t maxMemory = this->_maxMemory;
 		size_t minMemoryPerJobMB = 500;
 
+		/*
 		if(this->_options->get(STR_SIMKA_NB_JOB_COUNT)){
 			_maxJobCount = this->_options->getInt(STR_SIMKA_NB_JOB_COUNT);
-			maxCores = _maxJobCount; //TO REMOVE WHEN BUG IN DISPATCHER IS RESOLVED
+			//maxCores = _maxJobCount; //TO REMOVE WHEN BUG IN DISPATCHER IS RESOLVED
 		}
 		else{
+			size_t maxjob_byCore = 1;
 			//size_t maxjob_byCore = min(maxCores/4, this->_nbBanks);
-			size_t maxjob_byCore = min(maxCores, this->_nbBanks);  //TO REMOVE WHEN BUG IN DISPATCHER IS RESOLVED
+			//size_t maxjob_byCore = min(maxCores, this->_nbBanks);  //TO REMOVE WHEN BUG IN DISPATCHER IS RESOLVED
 
 			maxjob_byCore = max(maxjob_byCore, (size_t)1);
 
@@ -489,7 +491,8 @@ public:
 			_maxJobCount = maxJobs;
 			maxCores = _maxJobCount; //TO REMOVE WHEN BUG IN DISPATCHER IS RESOLVED
 
-		}
+		}*/
+		_maxJobCount = 1;
 
 		if(this->_options->get(STR_SIMKA_NB_JOB_MERGE)){
 			_maxJobMerge = this->_options->getInt(STR_SIMKA_NB_JOB_MERGE);
@@ -798,6 +801,7 @@ public:
 
 	    for (size_t i=0; i<this->_bankNames.size(); i++){
 
+	    	cout << i << endl;
 			string logFilename = this->_outputDirTemp + "/log/count_" + this->_bankNames[i] + ".txt";
 
 			string finishFilename = this->_outputDirTemp + "/count_synchro/" +  this->_bankNames[i] + ".ok";
@@ -824,6 +828,7 @@ public:
 			command += " " + string(STR_SIMKA_MIN_READ_SIZE) + " " + SimkaAlgorithm<>::toString(this->_minReadSize);
 			command += " " + string(STR_SIMKA_MIN_READ_SHANNON_INDEX) + " " + Stringify::format("%f", this->_minReadShannonIndex);
 			command += " " + string(STR_SIMKA_MAX_READS) + " " + SimkaAlgorithm<>::toString(this->_maxNbReads);
+			command += " " + string(STR_URI_OUTPUT) + " " + this->_outputDirTemp + "/solid/" + this->_bankNames[i] + ".h5";
 			command += " -nb-partitions " + SimkaAlgorithm<>::toString(_nbPartitions);
 			//command += " -verbose " + Stringify::format("%d", this->_options->getInt(STR_VERBOSE));
 			command += " >> " + logFilename + " 2>&1";
@@ -838,8 +843,18 @@ public:
 			//cout << "Counting dataset " << i << endl;
 			//cout << "\t" << command << endl;
 
-			removeMergeSynchro();
 
+			//command += " &";
+			int ret=1;
+			while(ret != 0){
+				ret = system(command.c_str());
+				//cout << ret << endl;
+			}
+
+			removeMergeSynchro();
+	    }
+
+			/*
 			if(_isClusterMode){
 				string jobFilename = this->_outputDirTemp + "/job_count/job_count_" + SimkaAlgorithm<>::toString(i) + ".bash";
 				IFile* jobFile = System::file().newFile(jobFilename.c_str(), "w");
@@ -858,7 +873,9 @@ public:
 				command += " &";
 				system(command.c_str());
 			}
+			*/
 
+			/*
 			nbJobs += 1;
 			//cout << "job started" << endl;
 
@@ -892,10 +909,11 @@ public:
 					if(i >= this->_bankNames.size()) break;
 				}
 			}
+			*/
 
+	    //}
 
-	    }
-
+	    /*
 	    while(nbJobs > 0){
 			bool isJobAvailbale = false;
 
@@ -923,7 +941,7 @@ public:
 	    }
 
 	    _progress->finish();
-	    delete _progress;
+	    delete _progress;*/
 	}
 
 	void merge(){
