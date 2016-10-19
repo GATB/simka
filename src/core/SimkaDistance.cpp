@@ -28,6 +28,7 @@ SimkaStatistics::SimkaStatistics(size_t nbBanks, bool computeSimpleDistances, bo
 {
 
 	_nbBanks = nbBanks;
+	_symetricDistanceMatrixSize = (_nbBanks*(_nbBanks+1))/2;
 	_computeSimpleDistances = computeSimpleDistances;
 	_computeComplexDistances = computeComplexDistances;
 
@@ -51,14 +52,14 @@ SimkaStatistics::SimkaStatistics(size_t nbBanks, bool computeSimpleDistances, bo
 	//_nbDistinctKmersSharedByBanksThreshold.resize(_nbBanks, 0);
 	//_nbKmersSharedByBanksThreshold.resize(_nbBanks, 0);
 
-	_matrixNbDistinctSharedKmers.resize(_nbBanks);
+	_matrixNbDistinctSharedKmers.resize(_symetricDistanceMatrixSize);
 	_matrixNbSharedKmers.resize(_nbBanks);
-	_brayCurtisNumerator.resize(_nbBanks);
+	_brayCurtisNumerator.resize(_symetricDistanceMatrixSize);
 
 	for(size_t i=0; i<_nbBanks; i++){
-		_matrixNbDistinctSharedKmers[i].resize(nbBanks, 0);
+		//_matrixNbDistinctSharedKmers[i].resize(nbBanks, 0);
 		_matrixNbSharedKmers[i].resize(nbBanks, 0);
-		_brayCurtisNumerator[i].resize(nbBanks, 0);
+		//_brayCurtisNumerator[i].resize(nbBanks, 0);
 		//_kullbackLeibler[i].resize(nbBanks, 0);
 	}
 
@@ -176,11 +177,14 @@ SimkaStatistics& SimkaStatistics::operator+=  (const SimkaStatistics& other){
 
 	}
 
+	for(size_t i=0; i<_symetricDistanceMatrixSize; i++){
+		_brayCurtisNumerator[i] += other._brayCurtisNumerator[i];
+		_matrixNbDistinctSharedKmers[i] += other._matrixNbDistinctSharedKmers[i];
+	}
+
 	for(size_t i=0; i<_nbBanks; i++){
 		for(size_t j=0; j<_nbBanks; j++){
-			_matrixNbDistinctSharedKmers[i][j] += other._matrixNbDistinctSharedKmers[i][j];
 			_matrixNbSharedKmers[i][j] += other._matrixNbSharedKmers[i][j];
-			_brayCurtisNumerator[i][j] += other._brayCurtisNumerator[i][j];
 		}
 	}
 
@@ -366,13 +370,15 @@ void SimkaStatistics::load(const string& filename){
     	//cout << i << endl;
     	//cout << _nbBanks << endl;
     	//cout << _matrixNbDistinctSharedKmers[i].size() << endl;
-            for(size_t j=0; j<_nbBanks; j++){_matrixNbDistinctSharedKmers[i][j] = it->item(); it->next();}
             for(size_t j=0; j<_nbBanks; j++){ _matrixNbSharedKmers[i][j] = it->item(); it->next();}
 
-            for(size_t j=0; j<_nbBanks; j++){ _brayCurtisNumerator[i][j] = it->item(); it->next();}
             //for(size_t j=0; j<_nbBanks; j++){ _abundance_jaccard_intersection[i][j] = it->item(); it->next();}
     }
 
+    for(size_t i=0; i<_symetricDistanceMatrixSize; i++){
+        _matrixNbDistinctSharedKmers[i] = it->item(); it->next();
+        _brayCurtisNumerator[i] = it->item(); it->next();
+    }
 
 	if(_computeSimpleDistances){
 	    for(size_t i=0; i<_nbBanks; i++){ _chord_sqrt_N2[i] = it->item(); it->next();}
@@ -472,13 +478,16 @@ void SimkaStatistics::save (const string& filename){
     	//cout << i << endl;
     	//cout << _nbBanks << endl;
     	//cout << _matrixNbDistinctSharedKmers[i].size() << endl;
-            for(size_t j=0; j<_nbBanks; j++){ file->insert((long double)_matrixNbDistinctSharedKmers[i][j]);}
             for(size_t j=0; j<_nbBanks; j++){ file->insert((long double)_matrixNbSharedKmers[i][j]);}
 
-            for(size_t j=0; j<_nbBanks; j++){ file->insert((long double)_brayCurtisNumerator[i][j]);}
             //for(size_t j=0; j<_nbBanks; j++){ file->insert((long double)_abundance_jaccard_intersection[i][j]);}
     }
 
+
+    for(size_t i=0; i<_symetricDistanceMatrixSize; i++){
+        file->insert((long double)_matrixNbDistinctSharedKmers[i]);
+    	file->insert((long double)_brayCurtisNumerator[i]);
+    }
 
 	if(_computeSimpleDistances){
 	    for(size_t i=0; i<_nbBanks; i++){ file->insert((long double)_chord_sqrt_N2[i]);}
@@ -704,9 +713,9 @@ SimkaDistance::SimkaDistance(SimkaStatistics& stats) : _stats(stats){
 
 
 	//AnB is symetrical
-	for(size_t i=0; i<_nbBanks; i++)
-		for(size_t j=i+1; j<_nbBanks; j++)
-			_stats._matrixNbDistinctSharedKmers[j][i] = _stats._matrixNbDistinctSharedKmers[i][j];
+	//for(size_t i=0; i<_nbBanks; i++)
+	//	for(size_t j=i+1; j<_nbBanks; j++)
+	//		_stats._matrixNbDistinctSharedKmers[j][i] = _stats._matrixNbDistinctSharedKmers[i][j];
 
 
 	/*
@@ -898,20 +907,20 @@ vector<vector<float> > SimkaDistance::createSquaredMatrix(size_t n){
 }
 
 
-void SimkaDistance::get_abc(size_t i, size_t j, u_int64_t& a, u_int64_t& b, u_int64_t& c){
+void SimkaDistance::get_abc(size_t i, size_t j, size_t symetricIndex, u_int64_t& a, u_int64_t& b, u_int64_t& c){
 
-	a = _stats._matrixNbDistinctSharedKmers[i][j];
+	a = _stats._matrixNbDistinctSharedKmers[symetricIndex];
 	b = (_stats._nbSolidDistinctKmersPerBank[i] - a);
 	c = (_stats._nbSolidDistinctKmersPerBank[j] - a);
 
 }
 
-double SimkaDistance::distance_abundance_brayCurtis(size_t i, size_t j){
+double SimkaDistance::distance_abundance_brayCurtis(size_t i, size_t j, size_t symetricIndex){
 
 	//double intersection = _stats._abundance_jaccard_intersection[i][j];
 	double union_ = _stats._nbSolidKmersPerBank[i] + _stats._nbSolidKmersPerBank[j];
 
-	double intersection = 2 * _stats._brayCurtisNumerator[i][j];
+	double intersection = 2 * _stats._brayCurtisNumerator[symetricIndex];
 
 	double jaccard = 1 - intersection / union_;
 
@@ -1164,17 +1173,17 @@ double SimkaDistance::distance_presenceAbsence_jaccardCanberra(u_int64_t& ua, u_
 	return (b+c) / (a+b+c);
 }
 
-double SimkaDistance::distance_presenceAbsence_jaccard_simka(size_t i, size_t j, SIMKA_MATRIX_TYPE type){
+double SimkaDistance::distance_presenceAbsence_jaccard_simka(size_t i, size_t j, size_t symetricIndex, SIMKA_MATRIX_TYPE type){
 
 	double numerator = 0;
 	double denominator = 0;
 
     if(type == SYMETRICAL){
-    	numerator = 2*_stats._matrixNbDistinctSharedKmers[i][j];
+    	numerator = 2*_stats._matrixNbDistinctSharedKmers[symetricIndex];
     	denominator = _stats._nbSolidDistinctKmersPerBank[i] + _stats._nbSolidDistinctKmersPerBank[j];
     }
     else if(type == ASYMETRICAL){
-    	numerator = _stats._matrixNbDistinctSharedKmers[i][j];
+    	numerator = _stats._matrixNbDistinctSharedKmers[symetricIndex];
     	denominator = _stats._nbSolidDistinctKmersPerBank[i];
     }
 

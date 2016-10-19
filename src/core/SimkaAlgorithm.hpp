@@ -369,14 +369,17 @@ public:
 
 				u_int16_t i = _sharedBanks[ii];
 				u_int16_t j = _sharedBanks[jj];
+				size_t symetricIndex = j + ((_nbBanks-1)*i) - (i*(i-1)/2);
 
 				u_int64_t abundanceI = counts[i];
 				u_int64_t abundanceJ = counts[j];
 
 				_stats->_matrixNbSharedKmers[i][j] += counts[i];
 				_stats->_matrixNbSharedKmers[j][i] += counts[j];
-				_stats->_matrixNbDistinctSharedKmers[i][j] += 1;
-				_stats->_brayCurtisNumerator[i][j] += min(abundanceI, abundanceJ);
+				_stats->_matrixNbDistinctSharedKmers[symetricIndex] += 1;
+
+				//cout << i << " " << j << "    " << (j + ((_nbBanks-1)*i) - (i*(i-1)/2)) << endl;
+				_stats->_brayCurtisNumerator[symetricIndex] += min(abundanceI, abundanceJ);
 			}
 		}
 
@@ -739,58 +742,6 @@ public:
 
 
 
-
-
-
-/*********************************************************************
-* ** SimkaCountProcessor
-*********************************************************************/
-template<size_t span>
-class SimkaCountProcessor : public CountProcessorAbstract<span>{
-
-public:
-
-    typedef typename Kmer<span>::Type  Type;
-    //typedef typename Kmer<span>::Count Count;
-
-	SimkaCountProcessor(SimkaStatistics& stats, size_t nbBanks, size_t kmerSize, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, double minKmerShannonIndex);
-	~SimkaCountProcessor();
-    CountProcessorAbstract<span>* clone ()  {  return new SimkaCountProcessor (_stats, _nbBanks, _kmerSize, _abundanceThreshold, _solidKind, _soliditySingle, _minKmerShannonIndex);  }
-	//CountProcessorAbstract<span>* clone ();
-	void finishClones (vector<ICountProcessor<span>*>& clones);
-	void finishClone(SimkaCountProcessor<span>* clone);
-	virtual bool process (size_t partId, const typename Kmer<span>::Type& kmer, const CountVector& count, CountNumber sum);
-
-	void computeStats(const CountVector& counts);
-	//void updateBrayCurtis(int bank1, CountNumber abundance1, int bank2, CountNumber abundance2);
-
-	inline bool isSolidVector(const CountVector& counts);
-	//bool isSolid(CountNumber count);
-	double getShannonIndex(const Type&  kmer);
-
-
-    SimkaStatistics* _localStats;
-
-private:
-
-    size_t         _nbBanks;
-    size_t _kmerSize;
-	pair<CountNumber, CountNumber> _abundanceThreshold;
-	bool isAbundanceThreshold;
-    SIMKA_SOLID_KIND _solidKind;
-    bool _soliditySingle;
-    //IteratorListener* _progress;
-    //vector<size_t> _countTotal;
-
-	//u_int64_t _nbBanks;
-    SimkaStatistics& _stats;
-    double _totalAbundance;
-
-    u_int64_t _nbKmerCounted;
-    double _minKmerShannonIndex;
-    CountVector _solidCounts;
-    double _totalReads;
-};
 
 
 
@@ -1329,7 +1280,6 @@ protected:
 	IBank* _banks;
 	IProperties* _options;
 
-	SimkaCountProcessor<span>* _processor;
 	vector<string> _bankNames;
 	//vector<u_int64_t> _nbReadsPerDataset;
 
