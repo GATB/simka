@@ -368,6 +368,7 @@ public:
 		//vector<Partition<Count>*> partitions;
 		//vector<Collection<Count>*> collections;
 		//vector<Iterator<Count>*> its;
+		//vector<Storage*> storages;
 
 		//size_t nbPartitions;
 
@@ -702,42 +703,18 @@ public:
 
 
 		string line;
-		//vector<IterableGzFile<Count>* > partitions;
+		vector<IterableGzFile<Count>* > partitions;
 		vector<StorageIt<span>*> its;
 		u_int64_t nbKmers = 0;
 
 
 		//vector<Iterator<Count>* > partitionIts;
     	for(size_t i=0; i<_nbBanks; i++){
-
-
-    		//cout << i << endl;
-    		//string filename = p.outputDir + "/solid/" +  _datasetIds[i] + "/" + "part" + Stringify::format("%i", _partitionId);
+    		string filename = p.outputDir + "/solid/" +  _datasetIds[i] + "/" + "part" + Stringify::format("%i", _partitionId);
     		//cout << filename << endl;
-
-			string solidsName = p.outputDir + "/solid/" +  _datasetIds[i] + ".h5";
-			cout << solidsName << endl;
-			Storage* storage = StorageFactory(STORAGE_HDF5).load (solidsName);
-			//cout << "not close storage" << endl;
-			//LOCAL (storage);
-
-			Partition<Count>& solidKmers = storage->getGroup("dsk").getPartition<Count> ("solid");
-
-			//Storage* storage = StorageFactory(STORAGE_HDF5).create (solidsName, true, false);
-			//bool autoDelete = false; // (solidsName == "none") || (solidsName == "null");
-			//solidStorage = StorageFactory(STORAGE_HDF5).create (solidsName, true, autoDelete);
-			//LOCAL(storage);
-
-
-    		//IterableGzFile<Count>* partition = new IterableGzFile<Count>(filename, 1000);
-    		//partitions.push_back(partition);
-			//_partitions.push_back(solidKmers);
-			storages.push_back(storage);
-
-			cout << solidKmers[_partitionId].iterable()->getNbItems () << endl;
-    		its.push_back(new StorageIt<span>(solidKmers[_partitionId].iterable()->iterator(), i, _partitionId));
-
-
+    		IterableGzFile<Count>* partition = new IterableGzFile<Count>(filename, 1000);
+    		partitions.push_back(partition);
+    		its.push_back(new StorageIt<span>(partition->iterator(), i, _partitionId));
     		//nbKmers += partition->estimateNbItems();
 
     		size_t currentPart = 0;
@@ -886,9 +863,9 @@ public:
 		_processor->end();
 
 		//cout << "lala" << endl;
-		//for(size_t i=0; i<partitions.size(); i++){
-		//	delete partitions[i];
-		//}
+		for(size_t i=0; i<partitions.size(); i++){
+			delete partitions[i];
+		}
 
 
 		saveStats(p);
@@ -926,7 +903,7 @@ public:
 	void insert(const Type& kmer, const CountVector& counts, size_t nbBankThatHaveKmer){
 
 		_stats->_nbDistinctKmers += 1;
-		//cout << _stats->_nbDistinctKmers << endl;
+
 		if(_computeComplexDistances || nbBankThatHaveKmer > 1){
 
 			if(nbBankThatHaveKmer > 1){
@@ -1110,10 +1087,6 @@ private:
 	SimkaCountProcessorSimple<span>* _processor;
 	u_int64_t _nbDistinctKmers;
 	u_int64_t _nbSharedDistinctKmers;
-	vector<Storage*> storages;
-	vector<Partition<Count>> _partitions;
-
-
 };
 
 
