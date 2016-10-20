@@ -84,6 +84,7 @@ public:
         //getParser()->push_back (new OptionOneParam (STR_KMER_SIZE,   "kmer size", true));
         getParser()->push_back (new OptionOneParam ("-out-tmp-simka",   "tmp output", true));
         getParser()->push_back (new OptionOneParam ("-bank-name",   "bank name", true));
+        getParser()->push_back (new OptionOneParam ("-bank-index",   "bank name", true));
         getParser()->push_back (new OptionOneParam (STR_SIMKA_MIN_READ_SIZE,   "bank name", true));
         getParser()->push_back (new OptionOneParam (STR_SIMKA_MIN_READ_SHANNON_INDEX,   "bank name", true));
         getParser()->push_back (new OptionOneParam (STR_SIMKA_MAX_READS,   "bank name", true));
@@ -106,6 +107,7 @@ public:
 
     	string outputDir =  getInput()->getStr("-out-tmp-simka");
     	string bankName =  getInput()->getStr("-bank-name");
+    	size_t bankIndex =  getInput()->getInt("-bank-index");
     	size_t minReadSize =  getInput()->getInt(STR_SIMKA_MIN_READ_SIZE);
     	double minReadShannonIndex =  getInput()->getDouble(STR_SIMKA_MIN_READ_SHANNON_INDEX);
     	u_int64_t maxReads =  getInput()->getInt(STR_SIMKA_MAX_READS);
@@ -114,7 +116,7 @@ public:
     	CountNumber abundanceMin =   getInput()->getInt(STR_KMER_ABUNDANCE_MIN);
     	CountNumber abundanceMax =   getInput()->getInt(STR_KMER_ABUNDANCE_MAX);
 
-    	Parameter params(*this, kmerSize, outputDir, bankName, minReadSize, minReadShannonIndex, maxReads, nbDatasets, nbPartitions, abundanceMin, abundanceMax);
+    	Parameter params(*this, kmerSize, outputDir, bankName, minReadSize, minReadShannonIndex, maxReads, nbDatasets, nbPartitions, abundanceMin, abundanceMax, bankIndex);
 
         Integer::apply<Functor,Parameter> (kmerSize, params);
 
@@ -152,8 +154,8 @@ public:
 
     struct Parameter
     {
-        Parameter (SimkaCount& tool, size_t kmerSize, string outputDir, string bankName, size_t minReadSize, double minReadShannonIndex, u_int64_t maxReads, size_t nbDatasets, size_t nbPartitions, CountNumber abundanceMin, CountNumber abundanceMax) :
-        	tool(tool), kmerSize(kmerSize), outputDir(outputDir), bankName(bankName), minReadSize(minReadSize), minReadShannonIndex(minReadShannonIndex), maxReads(maxReads), nbDatasets(nbDatasets), nbPartitions(nbPartitions), abundanceMin(abundanceMin), abundanceMax(abundanceMax)  {}
+        Parameter (SimkaCount& tool, size_t kmerSize, string outputDir, string bankName, size_t minReadSize, double minReadShannonIndex, u_int64_t maxReads, size_t nbDatasets, size_t nbPartitions, CountNumber abundanceMin, CountNumber abundanceMax, size_t bankIndex) :
+        	tool(tool), kmerSize(kmerSize), outputDir(outputDir), bankName(bankName), minReadSize(minReadSize), minReadShannonIndex(minReadShannonIndex), maxReads(maxReads), nbDatasets(nbDatasets), nbPartitions(nbPartitions), abundanceMin(abundanceMin), abundanceMax(abundanceMax), bankIndex(bankIndex)  {}
         SimkaCount& tool;
         //size_t datasetId;
         size_t kmerSize;
@@ -166,12 +168,14 @@ public:
         size_t nbPartitions;
         CountNumber abundanceMin;
         CountNumber abundanceMax;
+        size_t bankIndex;
     };
 
     template<size_t span> struct Functor  {
 
         typedef typename Kmer<span>::Type  Type;
         typedef typename Kmer<span>::Count Count;
+        typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
 
     	void operator ()  (Parameter p){
 
@@ -241,9 +245,9 @@ public:
 
 				string outputDir = p.outputDir + "/solid/" + p.bankName;
 				System::file().mkdir(outputDir, -1);
-				vector<BagGzFile<Count>* > bags;
+				vector<BagGzFile<Kmer_BankId_Count>* > bags;
 		    	for(size_t i=0; i<p.nbPartitions; i++){
-		    		BagGzFile<Count>* bag = new BagGzFile<Count>(outputDir + "/" + "part" + Stringify::format("%i", i));
+		    		BagGzFile<Kmer_BankId_Count>* bag = new BagGzFile<Kmer_BankId_Count>(outputDir + "/" + "part" + Stringify::format("%i", i));
 		        	bags.push_back(bag);
 		    	}
 
@@ -267,7 +271,7 @@ public:
 				//solidStorage = StorageFactory(STORAGE_HDF5).create (solidsName, true, autoDelete);
 				//LOCAL(solidStorage);
 
-				SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, nbKmerPerParts, nbDistinctKmerPerParts, chordNiPerParts, p.abundanceMin, p.abundanceMax);
+				SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, nbKmerPerParts, nbDistinctKmerPerParts, chordNiPerParts, p.abundanceMin, p.abundanceMax, p.bankIndex);
 
 				u_int64_t nbReads = 0;
 

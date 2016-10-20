@@ -142,10 +142,11 @@ public:
 
     typedef typename Kmer<span>::Type                                       Type;
     typedef typename Kmer<span>::Count                                      Count;
+    typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
     //typedef typename Kmer<span>::ModelCanonical                             ModelCanonical;
     //typedef typename ModelCanonical::Kmer                                   KmerType;
 
-    StorageIt(Iterator<Count>* it, size_t bankId, size_t partitionId){
+    StorageIt(Iterator<Kmer_BankId_Count>* it, size_t bankId, size_t partitionId){
     	_it = it;
     	//cout << h5filename << endl;
     	_bankId = bankId;
@@ -183,16 +184,18 @@ public:
 	}
 
 	Type& value(){
-		return _it->item().value;
-	}
-
-	CountNumber& abundance(){
-		return _it->item().abundance;
+		return get<0>(_it->item());
 	}
 
 	u_int16_t getBankId(){
-		return _bankId;
+		return get<1>(_it->item());
 	}
+
+	u_int64_t& abundance(){
+		return get<2>(_it->item());
+	}
+
+
 
 	//u_int64_t getNbKmers(){
 	//	return _nbKmers;
@@ -200,7 +203,7 @@ public:
 
 	u_int16_t _bankId;
 	u_int16_t _partitionId;
-    Iterator<Count>* _it;
+    Iterator<Kmer_BankId_Count>* _it;
     //u_int64_t _nbKmers;
 };
 
@@ -267,7 +270,7 @@ private:
 
 
 
-
+/*
 template<size_t span>
 class MergeCommand : public gatb::core::tools::dp::ICommand //, public gatb::core::system::SmartPointer
 {
@@ -276,7 +279,6 @@ public:
         void use () {}
         void forget () {}
 
-    /** cut. */
     typedef typename Kmer<span>::Type           Type;
     typedef typename Kmer<span>::Count          Count;
 
@@ -292,7 +294,6 @@ public:
 	u_int64_t _nbDistinctKmers;
 	u_int64_t _nbSharedDistinctKmers;
 
-    /** Constructor. */
 	MergeCommand (
     		size_t partitionId,
     		size_t nbBanks,
@@ -556,26 +557,7 @@ public:
         }
 
     	//_processor->process (_partitionId, kmer, counts);
-		/*
-		size_t nbBanks = 0;
-		for(size_t i=0; i<counter.get().size(); i++){
 
-			//if(counts[i] >= _abundanceThreshold.first && counts[i] <= _abundanceThreshold.second)
-			//	return true;
-
-			if(counter.get()[i] > 0) nbBanks += 1;
-
-		}
-
-		if(nbBanks == _nbBanks){
-			cout << nbBanks << endl;
-
-			cout << kmer.toString(31) << endl;
-			for(size_t i=0; i<counter.get().size(); i++){
-				cout << counter.get()[i] << " ";
-			}
-			cout << endl;
-		}*/
 
 		//cout <<_partitiontId << " "<< kmer.toString(31) << endl;
 		//_processor->process (_partitionId, kmer, counter.get());
@@ -583,7 +565,7 @@ public:
 
 
 };
-
+*/
 
 
 
@@ -599,8 +581,12 @@ public:
 
 	typedef typename Kmer<span>::Type                                       Type;
 	typedef typename Kmer<span>::Count                                      Count;
-	typedef std::pair<u_int16_t, Type> kxp; //id pointer in vec_pointer , value
-	struct kxpcomp { bool operator() (kxp l,kxp r) { return ((r.second) < (l.second)); } } ;
+    typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
+
+	//typedef std::pair<u_int16_t, Type> kxp; //id pointer in vec_pointer , value
+    //typedef std::pair<u_int16_t, Type> kxp; //id pointer in vec_pointer , value
+	//struct kxpcomp { bool operator() (Kmer_BankId_Count l,Kmer_BankId_Count r) { return ((r.second) < (l.second)); } } ;
+	struct kxpcomp { bool operator() (Kmer_BankId_Count l,Kmer_BankId_Count r) { return (get<0>(r) < get<0>(l)); } } ;
 
 	Parameter& p;
 
@@ -703,7 +689,7 @@ public:
 
 
 		string line;
-		vector<IterableGzFile<Count>* > partitions;
+		vector<IterableGzFile<Kmer_BankId_Count>* > partitions;
 		vector<StorageIt<span>*> its;
 		u_int64_t nbKmers = 0;
 
@@ -712,7 +698,7 @@ public:
     	for(size_t i=0; i<_nbBanks; i++){
     		string filename = p.outputDir + "/solid/" +  _datasetIds[i] + "/" + "part" + Stringify::format("%i", _partitionId);
     		//cout << filename << endl;
-    		IterableGzFile<Count>* partition = new IterableGzFile<Count>(filename, 1000);
+    		IterableGzFile<Kmer_BankId_Count>* partition = new IterableGzFile<Kmer_BankId_Count>(filename, 1000);
     		partitions.push_back(partition);
     		its.push_back(new StorageIt<span>(partition->iterator(), i, _partitionId));
     		//nbKmers += partition->estimateNbItems();
@@ -774,7 +760,7 @@ public:
 	    CountVector abundancePerBank;
 		abundancePerBank.resize(_nbBanks, 0);
 		SimkaCounterBuilderMerge* solidCounter = new SimkaCounterBuilderMerge(abundancePerBank);;
-		std::priority_queue< kxp, vector<kxp>,kxpcomp > pq;
+		std::priority_queue< Kmer_BankId_Count, vector<Kmer_BankId_Count>,kxpcomp > pq;
 
 
 		for(size_t i=0; i<_nbBanks; i++){
@@ -785,13 +771,14 @@ public:
 	    //fill the  priority queue with the first elems
 	    for (size_t ii=0; ii<_nbBanks; ii++)
 	    {
-	    	pq.push(kxp(ii,its[ii]->value()));
+	    	//pq.push(Kmer_BankId_Count(ii,its[ii]->value()));
+	    	pq.push(Kmer_BankId_Count(its[ii]->value(), its[ii]->getBankId(), its[ii]->abundance()));
 	    }
 
 	    if (pq.size() != 0) // everything empty, no kmer at all
 	    {
 	        //get first pointer
-	        best_p = pq.top().first ; pq.pop();
+	        best_p = get<1>(pq.top()) ; pq.pop();
 	        previous_kmer = its[best_p]->value();
 	        solidCounter->init (its[best_p]->getBankId(), its[best_p]->abundance());
 	        nbBankThatHaveKmer = 1;
@@ -806,15 +793,15 @@ public:
 					}
 
 					//otherwise get new best
-					best_p = pq.top().first ; pq.pop();
+					best_p = get<1>(pq.top()) ; pq.pop();
 				}
 
 				if (its[best_p]->value() != previous_kmer )
 				{
 					//if diff, changes to new array, get new min pointer
-					pq.push(kxp(best_p,its[best_p]->value())); //push new val of this pointer in pq, will be counted later
+					pq.push(Kmer_BankId_Count(its[best_p]->value(), best_p, its[best_p]->abundance())); //push new val of this pointer in pq, will be counted later
 
-					best_p = pq.top().first ; pq.pop();
+					best_p = get<1>(pq.top()) ; pq.pop();
 
 					//if new best is diff, this is the end of this kmer
 					if(its[best_p]->value()!=previous_kmer )
@@ -902,6 +889,12 @@ public:
 
 	void insert(const Type& kmer, const CountVector& counts, size_t nbBankThatHaveKmer){
 
+		//cout << kmer.toString(31) << endl;
+		//for(size_t i=0; i<counts.size(); i++){
+		//	cout << counts[i] << " ";
+		//}
+		//cout << endl;
+
 		_stats->_nbDistinctKmers += 1;
 
 		if(_computeComplexDistances || nbBankThatHaveKmer > 1){
@@ -970,6 +963,7 @@ public:
 
 	}
 
+	/*
 	void dispatch(){
 
 
@@ -993,7 +987,7 @@ public:
 	    resetCommands();
 
 
-	}
+	}*/
 
 
 	void removeStorage(Parameter& p){

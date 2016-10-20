@@ -38,7 +38,6 @@
 //#define SERIAL
 #define SLEEP_TIME_SEC 1
 
-
 const string STR_SIMKA_CLUSTER_MODE = "-cluster";
 const string STR_SIMKA_NB_JOB_COUNT = "-max-count";
 const string STR_SIMKA_NB_JOB_MERGE = "-max-merge";
@@ -815,6 +814,7 @@ public:
 			command += " " + string("-out-tmp-simka") + " " + this->_outputDirTemp;
 			command += " " + string("-out-tmp") + " " + tempDir;
 			command += " -bank-name " + this->_bankNames[i];
+			command += " -bank-index " + SimkaAlgorithm<>::toString(i);
 			command += " -nb-datasets " + SimkaAlgorithm<>::toString(this->_nbBankPerDataset[i]);
 			command += " " + string(STR_MAX_MEMORY) + " " + SimkaAlgorithm<>::toString(_memoryPerJob);
 			command += " " + string(STR_NB_CORES) + " " + SimkaAlgorithm<>::toString(_coresPerJob);
