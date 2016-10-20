@@ -1111,7 +1111,7 @@ private:
 	u_int64_t _nbDistinctKmers;
 	u_int64_t _nbSharedDistinctKmers;
 	vector<Storage*> storages;
-	vector<Partition<Count> > _partitions;
+	vector<Partition<Count>> _partitions;
 
 
 };
