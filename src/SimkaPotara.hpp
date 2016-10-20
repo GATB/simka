@@ -454,6 +454,7 @@ public:
 
 		//System::file().mkdir(_outputDirTemp, -1);
 		System::file().mkdir(this->_outputDirTemp + "/solid/", -1);
+		System::file().mkdir(this->_outputDirTemp + "/solid/merged/", -1);
 		System::file().mkdir(this->_outputDirTemp + "/temp/", -1);
 		System::file().mkdir(this->_outputDirTemp + "/log/", -1);
 		System::file().mkdir(this->_outputDirTemp + "/count_synchro/", -1);
@@ -471,6 +472,7 @@ public:
 		size_t maxMemory = this->_maxMemory;
 		size_t minMemoryPerJobMB = 500;
 
+		/*
 		if(this->_options->get(STR_SIMKA_NB_JOB_COUNT)){
 			_maxJobCount = this->_options->getInt(STR_SIMKA_NB_JOB_COUNT);
 			maxCores = _maxJobCount; //TO REMOVE WHEN BUG IN DISPATCHER IS RESOLVED
@@ -488,7 +490,8 @@ public:
 			_maxJobCount = maxJobs;
 			maxCores = _maxJobCount; //TO REMOVE WHEN BUG IN DISPATCHER IS RESOLVED
 
-		}
+		}*/
+		_maxJobCount = 1;
 
 		if(this->_options->get(STR_SIMKA_NB_JOB_MERGE)){
 			_maxJobMerge = this->_options->getInt(STR_SIMKA_NB_JOB_MERGE);
@@ -840,6 +843,15 @@ public:
 
 			removeMergeSynchro();
 
+			int ret=1;
+			while(ret != 0){
+				ret = system(command.c_str());
+			}
+
+			_progress->inc(1);
+			nanosleep((const struct timespec[]){{0, 10000000L}}, NULL);
+
+			/*
 			if(_isClusterMode){
 				string jobFilename = this->_outputDirTemp + "/job_count/job_count_" + SimkaAlgorithm<>::toString(i) + ".bash";
 				IFile* jobFile = System::file().newFile(jobFilename.c_str(), "w");
@@ -857,8 +869,10 @@ public:
 			else{
 				command += " &";
 				system(command.c_str());
-			}
+			}*/
+	    }
 
+			/*
 			nbJobs += 1;
 			//cout << "job started" << endl;
 
@@ -894,8 +908,9 @@ public:
 			}
 
 
-	    }
+	    }*/
 
+	    /*
 	    while(nbJobs > 0){
 			bool isJobAvailbale = false;
 
@@ -920,13 +935,19 @@ public:
 			else{
 				sleep(1);
 			}
-	    }
+	    }*/
 
 	    _progress->finish();
 	    delete _progress;
 	}
 
 	void merge(){
+
+
+	    for (size_t i=0; i<_nbPartitions; i++){
+	    	System::file().mkdir(this->_outputDirTemp + "/solid/merged/part_" + Stringify::format("%i", i), -1);
+	    }
+
 
 		cout << endl << "Merging k-mer counts and computing distances... (log files are " + this->_outputDirTemp + "/log/merge_*)" << endl;
 

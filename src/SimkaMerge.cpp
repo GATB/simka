@@ -33,7 +33,7 @@ using namespace gatb::core::system::impl;
 
 
 #define MERGE_BUFFER_SIZE 1000
-
+#define SIMKA_MERGE_MAX_FILE_USED 200
 
 template<size_t span>
 class DistanceCommand : public gatb::core::tools::dp::ICommand //, public gatb::core::system::SmartPointer
@@ -169,7 +169,7 @@ public:
     }
 
     ~StorageIt(){
-	delete _it;
+    	delete _it;
     }
 
     //void setPartitionId(size_t partitionId){
@@ -569,7 +569,186 @@ public:
 
 
 
+template<size_t span>
+class DiskBasedMergeSort
+{
 
+public:
+
+	typedef typename Kmer<span>::Type                                       Type;
+	typedef typename Kmer<span>::Count                                      Count;
+    typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
+    typedef tuple<Type, u_int64_t, u_int64_t, StorageIt<span>*> kxp;
+	struct kxpcomp { bool operator() (kxp l,kxp r) { return (get<0>(r) < get<0>(l)); } } ;
+
+
+
+	string _outputDir;
+	//string _outputFilename;
+	vector<string>& _datasetIds;
+	size_t _partitionId;
+	BagGzFile<Kmer_BankId_Count>* _outputGzFile;
+
+
+
+    DiskBasedMergeSort(size_t mergeId, const string& outputDir, vector<string>& datasetIds, size_t partitionId):
+    	_datasetIds(datasetIds)
+    {
+    	_outputDir = outputDir;
+    	_partitionId = partitionId;
+
+    	string outputFilename = _outputDir + "/solid/merged/part_" + Stringify::format("%i", partitionId) + "/merge_" + Stringify::format("%i", mergeId);
+    	_outputGzFile = new BagGzFile<Kmer_BankId_Count>(outputFilename);
+
+    }
+
+    ~DiskBasedMergeSort(){
+    }
+
+    void execute(){
+
+		vector<IterableGzFile<Kmer_BankId_Count>* > partitions;
+		vector<StorageIt<span>*> its;
+
+		size_t _nbBanks = _datasetIds.size();
+
+		//vector<Iterator<Count>* > partitionIts;
+		for(size_t i=0; i<_nbBanks; i++){
+			string filename = _outputDir + "/solid/" +  _datasetIds[i] + "/" + "part" + Stringify::format("%i", _partitionId);
+			//cout << filename << endl;
+			IterableGzFile<Kmer_BankId_Count>* partition = new IterableGzFile<Kmer_BankId_Count>(filename, 1000);
+			partitions.push_back(partition);
+			its.push_back(new StorageIt<span>(partition->iterator(), i, _partitionId));
+			//nbKmers += partition->estimateNbItems();
+
+			//size_t currentPart = 0;
+			//ifstream file((_outputDir + "/kmercount_per_partition/" +  _datasetIds[i] + ".txt").c_str());
+			//while(getline(file, line)){
+			//	if(line == "") continue;
+			//	if(currentPart == _partitionId){
+			//		//cout << stoull(line) << endl;
+			//		nbKmers += strtoull(line.c_str(), NULL, 10);
+			//		break;
+			//	}
+			//	currentPart += 1;
+			//}
+			//file.close();
+		}
+
+		//u_int64_t progressStep = nbKmers / 1000;
+		//_progress = new ProgressSynchro (
+		//	createIteratorListener (nbKmers, "Merging kmers"),
+		//	System::thread().newSynchronizer());
+		//_progress->init ();
+
+
+		/* PARALLEL
+		_mergeCommand = new MergeCommand<span>(
+			_partitionId,
+			_nbBanks,
+			_progress,
+			its,
+			progressStep,
+			_nbCores,
+			p.computeComplexDistances);
+		//_mergeCommand->use();
+		_cmds.push_back(_mergeCommand);
+
+
+		//cout << "CMDS SIZE:" << _cmds.size() << endl;
+
+
+		MergeCommand<span>* mergeCmd = dynamic_cast<MergeCommand<span>*>(_mergeCommand);
+		mergeCmd->execute();
+
+		while(!mergeCmd->_isDone){
+			//cout << mergeCmd->_isDone << endl;
+			//mergeCmd->execute();
+			dispatch();
+		}
+
+		dispatch();*/
+
+		//_nbDistinctKmers = 0;
+		//_nbSharedDistinctKmers = 0;
+		//u_int64_t nbKmersProcessed = 0;
+		//size_t nbBankThatHaveKmer = 0;
+		//u_int16_t best_p = 0;
+		Type previous_kmer;
+		//CountVector abundancePerBank;
+		//abundancePerBank.resize(_nbBanks, 0);
+		//SimkaCounterBuilderMerge* solidCounter = new SimkaCounterBuilderMerge(abundancePerBank);;
+		std::priority_queue< kxp, vector<kxp>,kxpcomp > pq;
+		StorageIt<span>* bestIt;
+
+
+		for(size_t i=0; i<_nbBanks; i++){
+			StorageIt<span>* it = its[i];
+			it->_it->first();
+		}
+
+		//fill the  priority queue with the first elems
+		for (size_t ii=0; ii<_nbBanks; ii++)
+		{
+			//pq.push(Kmer_BankId_Count(ii,its[ii]->value()));
+			pq.push(kxp(its[ii]->value(), its[ii]->getBankId(), its[ii]->abundance(), its[ii]));
+		}
+
+		if (pq.size() != 0) // everything empty, no kmer at all
+		{
+			//get first pointer
+			bestIt = get<3>(pq.top()); pq.pop();
+			_outputGzFile->insert(Kmer_BankId_Count(bestIt->value(), bestIt->getBankId(), bestIt->abundance()));
+			//best_p = get<1>(pq.top()) ; pq.pop();
+			//previous_kmer = bestIt->value();
+			//solidCounter->init (bestIt->getBankId(), bestIt->abundance());
+			//nbBankThatHaveKmer = 1;
+
+			while(1){
+
+				if (! bestIt->next())
+				{
+					//reaches end of one array
+					if(pq.size() == 0){
+						break;
+					}
+
+					//otherwise get new best
+					//best_p = get<1>(pq.top()) ; pq.pop();
+					bestIt = get<3>(pq.top()); pq.pop();
+				}
+
+				pq.push(kxp(bestIt->value(), bestIt->getBankId(), bestIt->abundance(), bestIt)); //push new val of this pointer in pq, will be counted later
+
+		    	bestIt = get<3>(pq.top()); pq.pop();
+		    	_outputGzFile->insert(Kmer_BankId_Count(bestIt->value(), bestIt->getBankId(), bestIt->abundance()));
+		    	//cout << bestIt->value().toString(31) << " " << bestIt->getBankId() <<  " "<< bestIt->abundance() << endl;
+				//bestIt = get<3>(pq.top()); pq.pop();
+
+
+				//pq.push(kxp(bestIt->value(), bestIt->getBankId(), bestIt->abundance(), bestIt));
+
+			}
+
+
+	    	//_outputGzFile->insert(Kmer_BankId_Count(bestIt->value(), bestIt->getBankId(), bestIt->abundance()));
+	    	//cout << bestIt->value().toString(31) << " " << bestIt->getBankId() <<  " "<< bestIt->abundance() << endl;
+		}
+
+		for(size_t i=0; i<partitions.size(); i++){
+			delete partitions[i];
+		}
+
+		for(size_t i=0; i<its.size(); i++){
+			delete its[i];
+		}
+
+
+    	_outputGzFile->flush();
+    	delete _outputGzFile;
+    }
+
+};
 
 
 
@@ -583,10 +762,11 @@ public:
 	typedef typename Kmer<span>::Count                                      Count;
     typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
 
+    typedef tuple<Type, u_int64_t, u_int64_t, StorageIt<span>*> kxp;
 	//typedef std::pair<u_int16_t, Type> kxp; //id pointer in vec_pointer , value
     //typedef std::pair<u_int16_t, Type> kxp; //id pointer in vec_pointer , value
 	//struct kxpcomp { bool operator() (Kmer_BankId_Count l,Kmer_BankId_Count r) { return ((r.second) < (l.second)); } } ;
-	struct kxpcomp { bool operator() (Kmer_BankId_Count l,Kmer_BankId_Count r) { return (get<0>(r) < get<0>(l)); } } ;
+	struct kxpcomp { bool operator() (kxp l,kxp r) { return (get<0>(r) < get<0>(l)); } } ;
 
 	Parameter& p;
 
@@ -647,7 +827,6 @@ public:
 
 
 
-
 		removeStorage(p);
 
 		_partitionId = p.partitionId;
@@ -656,6 +835,28 @@ public:
 		_nbBanks = _datasetIds.size();
 
 
+		size_t nbMerges = ceil((float)_nbBanks / (float)SIMKA_MERGE_MAX_FILE_USED);
+		cout << "nb Merges: " << nbMerges << endl;
+		size_t datasetIndex = 0;
+
+		for(size_t i=0; i<nbMerges; i++){
+
+			vector<string> mergeDatasetIds;
+
+			for(size_t j=0; j<SIMKA_MERGE_MAX_FILE_USED; j++){
+				mergeDatasetIds.push_back(_datasetIds[datasetIndex]);
+				datasetIndex += 1;
+				if(datasetIndex >= _nbBanks) break;
+			}
+
+			cout << "doivent etre égaux a la dernière passe:    " << _nbBanks << " " << mergeDatasetIds.size() << " " << datasetIndex << endl;
+
+			DiskBasedMergeSort<span> diskBasedMergeSort(i, p.outputDir, mergeDatasetIds, _partitionId);
+			diskBasedMergeSort.execute();
+
+		}
+
+		//exit(1);
 		/* PARALLEL
 		for (size_t i=0; i<_nbCores; i++)
 	    {
@@ -693,7 +894,30 @@ public:
 		vector<StorageIt<span>*> its;
 		u_int64_t nbKmers = 0;
 
+    	for(size_t i=0; i<nbMerges; i++){
+    		string filename = p.outputDir + "/solid/merged/part_" + Stringify::format("%i", p.partitionId) + "/merge_" + Stringify::format("%i", i);
+    		//cout << filename << endl;
+    		IterableGzFile<Kmer_BankId_Count>* partition = new IterableGzFile<Kmer_BankId_Count>(filename, 1000);
+    		partitions.push_back(partition);
+    		its.push_back(new StorageIt<span>(partition->iterator(), i, _partitionId));
+    		//nbKmers += partition->estimateNbItems();
 
+    		size_t currentPart = 0;
+	    	ifstream file((p.outputDir + "/kmercount_per_partition/" +  _datasetIds[i] + ".txt").c_str());
+			while(getline(file, line)){
+				if(line == "") continue;
+				if(currentPart == _partitionId){
+					//cout << stoull(line) << endl;
+					nbKmers += strtoull(line.c_str(), NULL, 10);
+					break;
+				}
+				currentPart += 1;
+			}
+			file.close();
+    	}
+
+
+		/*
 		//vector<Iterator<Count>* > partitionIts;
     	for(size_t i=0; i<_nbBanks; i++){
     		string filename = p.outputDir + "/solid/" +  _datasetIds[i] + "/" + "part" + Stringify::format("%i", _partitionId);
@@ -715,7 +939,7 @@ public:
 				currentPart += 1;
 			}
 			file.close();
-    	}
+    	}*/
 
     	u_int64_t progressStep = nbKmers / 1000;
 		_progress = new ProgressSynchro (
@@ -760,32 +984,34 @@ public:
 	    CountVector abundancePerBank;
 		abundancePerBank.resize(_nbBanks, 0);
 		SimkaCounterBuilderMerge* solidCounter = new SimkaCounterBuilderMerge(abundancePerBank);;
-		std::priority_queue< Kmer_BankId_Count, vector<Kmer_BankId_Count>,kxpcomp > pq;
+		std::priority_queue< kxp, vector<kxp>,kxpcomp > pq;
 
+    	StorageIt<span>* bestIt;
 
-		for(size_t i=0; i<_nbBanks; i++){
+		for(size_t i=0; i<its.size(); i++){
 			StorageIt<span>* it = its[i];
 			it->_it->first();
 		}
 
 	    //fill the  priority queue with the first elems
-	    for (size_t ii=0; ii<_nbBanks; ii++)
+	    for (size_t ii=0; ii<its.size(); ii++)
 	    {
 	    	//pq.push(Kmer_BankId_Count(ii,its[ii]->value()));
-	    	pq.push(Kmer_BankId_Count(its[ii]->value(), its[ii]->getBankId(), its[ii]->abundance()));
+	    	pq.push(kxp(its[ii]->value(), its[ii]->getBankId(), its[ii]->abundance(), its[ii]));
 	    }
 
 	    if (pq.size() != 0) // everything empty, no kmer at all
 	    {
 	        //get first pointer
-	        best_p = get<1>(pq.top()) ; pq.pop();
-	        previous_kmer = its[best_p]->value();
-	        solidCounter->init (its[best_p]->getBankId(), its[best_p]->abundance());
+	    	bestIt = get<3>(pq.top()); pq.pop();
+	        //best_p = get<1>(pq.top()) ; pq.pop();
+	        previous_kmer = bestIt->value();
+	        solidCounter->init (bestIt->getBankId(), bestIt->abundance());
 	        nbBankThatHaveKmer = 1;
 
 			while(1){
 
-				if (! its[best_p]->next())
+				if (! bestIt->next())
 				{
 					//reaches end of one array
 					if(pq.size() == 0){
@@ -793,18 +1019,22 @@ public:
 					}
 
 					//otherwise get new best
-					best_p = get<1>(pq.top()) ; pq.pop();
+					//best_p = get<1>(pq.top()) ; pq.pop();
+			    	bestIt = get<3>(pq.top()); pq.pop();
 				}
 
-				if (its[best_p]->value() != previous_kmer )
+		    	//cout << bestIt->value().toString(31) << " " << bestIt->getBankId() <<  " "<< bestIt->abundance() << endl;
+
+				if (bestIt->value() != previous_kmer )
 				{
 					//if diff, changes to new array, get new min pointer
-					pq.push(Kmer_BankId_Count(its[best_p]->value(), best_p, its[best_p]->abundance())); //push new val of this pointer in pq, will be counted later
+					pq.push(kxp(bestIt->value(), bestIt->getBankId(), bestIt->abundance(), bestIt)); //push new val of this pointer in pq, will be counted later
 
-					best_p = get<1>(pq.top()) ; pq.pop();
+			    	bestIt = get<3>(pq.top()); pq.pop();
+					//best_p = get<1>(pq.top()) ; pq.pop();
 
 					//if new best is diff, this is the end of this kmer
-					if(its[best_p]->value()!=previous_kmer )
+					if(bestIt->value()!=previous_kmer )
 					{
 
 						nbKmersProcessed += nbBankThatHaveKmer;
@@ -826,19 +1056,20 @@ public:
 						//	_processor->process (_partitionId, previous_kmer, abundancePerBank);
 						//this->insert (previous_kmer, solidCounter);
 
-						solidCounter->init (its[best_p]->getBankId(), its[best_p]->abundance());
+						solidCounter->init (bestIt->getBankId(), bestIt->abundance());
 						nbBankThatHaveKmer = 1;
-						previous_kmer = its[best_p]->value();
+						previous_kmer = bestIt->value();
 					}
 					else
 					{
-						solidCounter->increase (its[best_p]->getBankId(), its[best_p]->abundance());
+						solidCounter->increase (bestIt->getBankId(), bestIt->abundance());
 						nbBankThatHaveKmer += 1;
 					}
 				}
 				else
 				{
-					solidCounter->increase (its[best_p]->getBankId(), its[best_p]->abundance());
+					//cout << "increase" << endl;
+					solidCounter->increase (bestIt->getBankId(), bestIt->abundance());
 					nbBankThatHaveKmer += 1;
 				}
 			}
