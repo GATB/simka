@@ -472,14 +472,14 @@ public:
 		size_t maxMemory = this->_maxMemory;
 		size_t minMemoryPerJobMB = 500;
 
-		/*
+
 		if(this->_options->get(STR_SIMKA_NB_JOB_COUNT)){
 			_maxJobCount = this->_options->getInt(STR_SIMKA_NB_JOB_COUNT);
-			maxCores = _maxJobCount; //TO REMOVE WHEN BUG IN DISPATCHER IS RESOLVED
+			//maxCores = _maxJobCount; //TO REMOVE WHEN BUG IN DISPATCHER IS RESOLVED
 		}
 		else{
-			//size_t maxjob_byCore = min(maxCores/4, this->_nbBanks);
-			size_t maxjob_byCore = min(maxCores, this->_nbBanks);  //TO REMOVE WHEN BUG IN DISPATCHER IS RESOLVED
+			size_t maxjob_byCore = min(maxCores/2, this->_nbBanks);
+			//size_t maxjob_byCore = min(maxCores, this->_nbBanks);  //TO REMOVE WHEN BUG IN DISPATCHER IS RESOLVED
 
 			maxjob_byCore = max(maxjob_byCore, (size_t)1);
 
@@ -488,10 +488,10 @@ public:
 
 			size_t maxJobs = min(maxjob_byCore, maxjob_byMemory);
 			_maxJobCount = maxJobs;
-			maxCores = _maxJobCount; //TO REMOVE WHEN BUG IN DISPATCHER IS RESOLVED
+			//maxCores = _maxJobCount; //TO REMOVE WHEN BUG IN DISPATCHER IS RESOLVED
 
-		}*/
-		_maxJobCount = 1;
+		}
+		//_maxJobCount = 1;
 
 		if(this->_options->get(STR_SIMKA_NB_JOB_MERGE)){
 			_maxJobMerge = this->_options->getInt(STR_SIMKA_NB_JOB_MERGE);
@@ -812,7 +812,7 @@ public:
 
 			string tempDir = this->_outputDirTemp + "/temp/" + this->_bankNames[i];
 
-			string command = "nohup " + _execDir + "/simkaCount ";
+			string command = "nohup " + _execDir + "/simkaCountProcess " + _execDir + "/simkaCount ";
 			command += " " + string(STR_KMER_SIZE) + " " + SimkaAlgorithm<>::toString(this->_kmerSize);
 			command += " " + string("-out-tmp-simka") + " " + this->_outputDirTemp;
 			command += " " + string("-out-tmp") + " " + tempDir;
@@ -843,15 +843,12 @@ public:
 
 			removeMergeSynchro();
 
-			int ret=1;
-			while(ret != 0){
-				ret = system(command.c_str());
-			}
 
-			_progress->inc(1);
-			nanosleep((const struct timespec[]){{0, 10000000L}}, NULL);
 
-			/*
+			//_progress->inc(1);
+			//nanosleep((const struct timespec[]){{0, 10000000L}}, NULL);
+
+
 			if(_isClusterMode){
 				string jobFilename = this->_outputDirTemp + "/job_count/job_count_" + SimkaAlgorithm<>::toString(i) + ".bash";
 				IFile* jobFile = System::file().newFile(jobFilename.c_str(), "w");
@@ -869,10 +866,9 @@ public:
 			else{
 				command += " &";
 				system(command.c_str());
-			}*/
-	    }
+			}
 
-			/*
+
 			nbJobs += 1;
 			//cout << "job started" << endl;
 
@@ -900,7 +896,8 @@ public:
 						break;
 					}
 					else{
-						sleep(1);
+						//sleep(1);
+						nanosleep((const struct timespec[]){{0, 100000000L}}, NULL);
 					}
 
 					if(i >= this->_bankNames.size()) break;
@@ -908,9 +905,9 @@ public:
 			}
 
 
-	    }*/
+	    }
 
-	    /*
+
 	    while(nbJobs > 0){
 			bool isJobAvailbale = false;
 
@@ -935,7 +932,7 @@ public:
 			else{
 				sleep(1);
 			}
-	    }*/
+	    }
 
 	    _progress->finish();
 	    delete _progress;

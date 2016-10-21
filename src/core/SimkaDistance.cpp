@@ -1122,6 +1122,7 @@ double SimkaDistance::distance_presenceAbsence_whittaker(u_int64_t& ua, u_int64_
 	double b = (double) ub;
 	double c = (double) uc;
 
+	if(a+b == 0 || a+c == 0) return 1;
 	double p1 = b / (a + b);
 	double p2 = c / (a + c);
 

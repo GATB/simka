@@ -79,6 +79,8 @@ set(PROJECT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/bin)
 add_executable        (simka  src/SimkaPotara.cpp ${ProjectFiles})
 target_link_libraries (simka  ${gatb-core-libraries})
 
+add_executable        (simkaCountProcess  src/minikc/SimkaCountProcess.cpp ${ProjectFiles})
+target_link_libraries (simkaCountProcess  ${gatb-core-libraries})
 add_executable        (simkaCount  src/SimkaCount.cpp ${ProjectFiles})
 target_link_libraries (simkaCount  ${gatb-core-libraries})
 
