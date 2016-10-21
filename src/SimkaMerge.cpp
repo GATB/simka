@@ -770,7 +770,7 @@ public:
 	}
 
 	~SimkaMergeAlgorithm(){
-		delete _progress;
+		//delete _progress;
 	}
 
 	//pthread_t statThread;_datasetNbReads
@@ -1009,11 +1009,11 @@ public:
 			file.close();
     	}*/
 
-    	u_int64_t progressStep = nbKmers / 1000;
-		_progress = new ProgressSynchro (
-			createIteratorListener (nbKmers, "Merging kmers"),
-			System::thread().newSynchronizer());
-		_progress->init ();
+    	//u_int64_t progressStep = nbKmers / 1000;
+    	//_progress = new ProgressSynchro (
+    	//	createIteratorListener (nbKmers, "Merging kmers"),
+    	//	System::thread().newSynchronizer());
+    	//_progress->init ();
 
 
 		/* PARALLEL
@@ -1105,13 +1105,13 @@ public:
 					if(bestIt->value()!=previous_kmer )
 					{
 
-						nbKmersProcessed += nbBankThatHaveKmer;
-						if(nbKmersProcessed > progressStep){
+						//nbKmersProcessed += nbBankThatHaveKmer;
+						//if(nbKmersProcessed > progressStep){
 							//cout << "queue size:   " << pq.size() << endl;
 							//cout << nbKmersProcessed << endl;
-							_progress->inc(nbKmersProcessed);
-							nbKmersProcessed = 0;
-						}
+							//_progress->inc(nbKmersProcessed);
+						//nbKmersProcessed = 0;
+						//}
 
 						//cout << previous_kmer.toString(p.kmerSize) << endl;
 						//for(size_t i=0; i<abundancePerBank.size(); i++){
@@ -1182,7 +1182,7 @@ public:
 		}
 
 		writeFinishSignal(p);
-		_progress->finish();
+		//_progress->finish();
 
 	}
 
