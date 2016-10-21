@@ -919,6 +919,7 @@ double SimkaDistance::distance_abundance_brayCurtis(size_t i, size_t j, size_t s
 
 	//double intersection = _stats._abundance_jaccard_intersection[i][j];
 	double union_ = _stats._nbSolidKmersPerBank[i] + _stats._nbSolidKmersPerBank[j];
+	if(union_ == 0) return 1;
 
 	double intersection = 2 * _stats._brayCurtisNumerator[symetricIndex];
 
@@ -931,6 +932,8 @@ double SimkaDistance::distance_abundance_brayCurtis(size_t i, size_t j, size_t s
 double SimkaDistance::distance_abundance_chord(size_t i, size_t j){
 
 	double den = _stats._chord_sqrt_N2[i]*_stats._chord_sqrt_N2[j];
+	if(den == 0) return sqrt(2);
+
 	long double chordDistance =  sqrtl(2 - 2*_stats._chord_NiNj[i][j] / den);
 	/*
 	long double intersection = 2*_stats._chord_NiNj[i][j];
@@ -948,8 +951,10 @@ double SimkaDistance::distance_abundance_chord(size_t i, size_t j){
 //Abundance Hellinger
 double SimkaDistance::distance_abundance_hellinger(size_t i, size_t j){
 
-	double intersection = 2*_stats._hellinger_SqrtNiNj[i][j];
 	double union_ = sqrt(_stats._nbSolidKmersPerBank[i]) * sqrt(_stats._nbSolidKmersPerBank[j]);
+	if(union_ == 0) return sqrt(2);
+
+	double intersection = 2*_stats._hellinger_SqrtNiNj[i][j];
 
 	double hellingerDistance = sqrt(2 - (intersection / union_));
 
@@ -972,8 +977,10 @@ double SimkaDistance::distance_abundance_hellinger(size_t i, size_t j){
 //Abundance Whittaker
 double SimkaDistance::distance_abundance_whittaker(size_t i, size_t j){
 
-	long double intersection = _stats._whittaker_minNiNj[i][j];
 	long double union_ = _stats._nbSolidKmersPerBank[i] * _stats._nbSolidKmersPerBank[j];
+	if(union_ == 0) return 1;
+
+	long double intersection = _stats._whittaker_minNiNj[i][j];
 
 	double whittakerDistance = 0.5 * (intersection / union_);
 
@@ -982,6 +989,8 @@ double SimkaDistance::distance_abundance_whittaker(size_t i, size_t j){
 
 //Abundance Kullback Leibler
 double SimkaDistance::distance_abundance_kullbackLeibler(size_t i, size_t j){
+
+	if(_stats._kullbackLeibler[i][j] == 0) return 1;
 
 	return sqrt(0.5 * _stats._kullbackLeibler[i][j]);
 	//return _stats._kullbackLeibler[i][j];
@@ -994,6 +1003,8 @@ double SimkaDistance::distance_abundance_canberra(size_t i, size_t j, u_int64_t&
 	double b = (double) ub;
 	double c = (double) uc;
 
+	if((a+b+c) == 0) return 1;
+
 	double canberraDistance = (1 / (a+b+c)) * _stats._canberra[i][j];
 
 	return canberraDistance;
@@ -1002,6 +1013,7 @@ double SimkaDistance::distance_abundance_canberra(size_t i, size_t j, u_int64_t&
 //Abundance Kulczynski
 double SimkaDistance::distance_abundance_kulczynski(size_t i, size_t j){
 
+	if(_stats._nbSolidKmersPerBank[i] == 0 || _stats._nbSolidKmersPerBank[j] == 0) return 1;
 
 	long double n1 = (double) _stats._kulczynski_minNiNj[i][j] / (double) _stats._nbSolidKmersPerBank[i];
 	long double n2 = (double) _stats._kulczynski_minNiNj[j][i] / (double) _stats._nbSolidKmersPerBank[j];
@@ -1049,6 +1061,8 @@ double SimkaDistance::distance_abundance_ochiai(size_t i, size_t j){
 	double B1 = _stats._matrixNbSharedKmers[j][i];
 	double A0 = _stats._nbSolidKmersPerBank[i];
 	double B0 = _stats._nbSolidKmersPerBank[j];
+
+	if(A0 == 0 || B0 == 0) return 1;
 
 	return 1 - sqrt(A1/A0) * sqrt(B1/B0);
 }
@@ -1098,6 +1112,7 @@ double SimkaDistance::distance_presenceAbsence_chordHellinger(u_int64_t& ua, u_i
 
 	double p1 = sqrt((a+b)*(a+c));
 
+	if(p1 == 0) return sqrt(2);
 	return sqrt(2*(1-a/p1));
 }
 
@@ -1133,6 +1148,8 @@ double SimkaDistance::distance_presenceAbsence_kulczynski(u_int64_t& ua, u_int64
 	double b = (double) ub;
 	double c = (double) uc;
 
+	if(a+b == 0 || a+c == 0) return 1;
+
 	double p1 = a / (a + b);
 	double p2 = a / (a + c);
 
@@ -1146,6 +1163,8 @@ double SimkaDistance::distance_presenceAbsence_sorensenBrayCurtis(u_int64_t& ua,
 	double a = (double) ua;
 	double b = (double) ub;
 	double c = (double) uc;
+
+	if((2*a + b + c) == 0) return 1;
 
 	double distance = (b+c) / (2*a + b + c);
 
@@ -1161,7 +1180,10 @@ double SimkaDistance::distance_presenceAbsence_ochiai(u_int64_t& ua, u_int64_t& 
 	double b = (double) ub;
 	double c = (double) uc;
 
-	return 1 - (a / sqrt((a+b)*(a+c)));
+	float val = sqrt((a+b)*(a+c));
+	if(val == 0) return 1;
+
+	return 1 - (a / val);
 }
 
 double SimkaDistance::distance_presenceAbsence_jaccardCanberra(u_int64_t& ua, u_int64_t& ub, u_int64_t& uc){
@@ -1170,6 +1192,7 @@ double SimkaDistance::distance_presenceAbsence_jaccardCanberra(u_int64_t& ua, u_
 	double b = (double) ub;
 	double c = (double) uc;
 
+	if((a+b+c) == 0) return 1;
 	return (b+c) / (a+b+c);
 }
 
@@ -1187,6 +1210,7 @@ double SimkaDistance::distance_presenceAbsence_jaccard_simka(size_t i, size_t j,
     	denominator = _stats._nbSolidDistinctKmersPerBank[i];
     }
 
+    if(denominator == 0) return 1;
     return 1 - numerator/denominator;
 }
 
