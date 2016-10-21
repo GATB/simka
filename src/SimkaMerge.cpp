@@ -33,7 +33,7 @@ using namespace gatb::core::system::impl;
 
 
 #define MERGE_BUFFER_SIZE 1000
-#define SIMKA_MERGE_MAX_FILE_USED 200
+#define SIMKA_MERGE_MAX_FILE_USED 2
 
 template<size_t span>
 class DistanceCommand : public gatb::core::tools::dp::ICommand //, public gatb::core::system::SmartPointer
@@ -584,21 +584,21 @@ public:
 
 
 	string _outputDir;
-	//string _outputFilename;
-	vector<string>& _datasetIds;
+	string _outputFilename;
+	vector<size_t>& _datasetIds;
 	size_t _partitionId;
 	BagGzFile<Kmer_BankId_Count>* _outputGzFile;
 
 
 
-    DiskBasedMergeSort(size_t mergeId, const string& outputDir, vector<string>& datasetIds, size_t partitionId):
+    DiskBasedMergeSort(size_t mergeId, const string& outputDir, vector<size_t>& datasetIds, size_t partitionId):
     	_datasetIds(datasetIds)
     {
     	_outputDir = outputDir;
     	_partitionId = partitionId;
 
-    	string outputFilename = _outputDir + "/solid/merged/part_" + Stringify::format("%i", partitionId) + "/merge_" + Stringify::format("%i", mergeId);
-    	_outputGzFile = new BagGzFile<Kmer_BankId_Count>(outputFilename);
+    	_outputFilename = _outputDir + "/solid/part_" + Stringify::format("%i", partitionId) + "/__p__" + Stringify::format("%i", mergeId) + ".gz.temp";
+    	_outputGzFile = new BagGzFile<Kmer_BankId_Count>(_outputFilename);
 
     }
 
@@ -612,10 +612,10 @@ public:
 
 		size_t _nbBanks = _datasetIds.size();
 
-		//vector<Iterator<Count>* > partitionIts;
 		for(size_t i=0; i<_nbBanks; i++){
-			string filename = _outputDir + "/solid/" +  _datasetIds[i] + "/" + "part" + Stringify::format("%i", _partitionId);
-			//cout << filename << endl;
+			//cout << _datasetIds[i] << endl;
+			string filename = _outputDir + "/solid/part_" +  Stringify::format("%i", _partitionId) + "/__p__" + Stringify::format("%i", _datasetIds[i]) + ".gz";
+			//cout << "\t\t" << filename << endl;
 			IterableGzFile<Kmer_BankId_Count>* partition = new IterableGzFile<Kmer_BankId_Count>(filename, 1000);
 			partitions.push_back(partition);
 			its.push_back(new StorageIt<span>(partition->iterator(), i, _partitionId));
@@ -642,32 +642,6 @@ public:
 		//_progress->init ();
 
 
-		/* PARALLEL
-		_mergeCommand = new MergeCommand<span>(
-			_partitionId,
-			_nbBanks,
-			_progress,
-			its,
-			progressStep,
-			_nbCores,
-			p.computeComplexDistances);
-		//_mergeCommand->use();
-		_cmds.push_back(_mergeCommand);
-
-
-		//cout << "CMDS SIZE:" << _cmds.size() << endl;
-
-
-		MergeCommand<span>* mergeCmd = dynamic_cast<MergeCommand<span>*>(_mergeCommand);
-		mergeCmd->execute();
-
-		while(!mergeCmd->_isDone){
-			//cout << mergeCmd->_isDone << endl;
-			//mergeCmd->execute();
-			dispatch();
-		}
-
-		dispatch();*/
 
 		//_nbDistinctKmers = 0;
 		//_nbSharedDistinctKmers = 0;
@@ -746,6 +720,17 @@ public:
 
     	_outputGzFile->flush();
     	delete _outputGzFile;
+
+		for(size_t i=0; i<_nbBanks; i++){
+			//cout << _datasetIds[i] << endl;
+			string filename = _outputDir + "/solid/part_" +  Stringify::format("%i", _partitionId) + "/__p__" + Stringify::format("%i", _datasetIds[i]) + ".gz";
+			System::file().remove(filename);
+		}
+
+		string newOutputFilename = _outputFilename;
+		newOutputFilename.erase(_outputFilename.size()-5, 5);
+    	System::file().rename(_outputFilename, newOutputFilename); //remove .temp at the end of new merged file
+    	//_outputFilename = newOutputFilename;
     }
 
 };
@@ -819,6 +804,18 @@ public:
 			//cout << _stats->_chord_sqrt_N2[i] << endl;
     	}
 	}*/
+	typedef tuple<u_int64_t, size_t> sortItem_Size_Filename_ID;
+
+	static bool sortFileBySize (sortItem_Size_Filename_ID i, sortItem_Size_Filename_ID j){
+		return ( get<0>(i) < get<0>(j) );
+	}
+
+	static u_int64_t getFileSize(const string& filename){
+		std::ifstream in(filename, std::ifstream::ate | std::ifstream::binary);
+		u_int64_t size = in.tellg();
+		in.close();
+		return size;
+	}
 
 	void execute(){
 
@@ -834,6 +831,74 @@ public:
 		createDatasetIdList(p);
 		_nbBanks = _datasetIds.size();
 
+		string partDir = p.outputDir + "/solid/part_" + Stringify::format("%i", _partitionId) + "/";
+		vector<string> filenames = System::file().listdir(partDir);
+		//cout << filenames.size() << endl;
+		vector<string> partFilenames;
+		vector<sortItem_Size_Filename_ID> filenameSizes;
+
+		for(size_t i=0; i<filenames.size(); i++){
+			if(filenames[i].find("__p__") != std::string::npos){
+
+
+				string id = string(filenames[i]);
+				id.erase(0, 5);
+				std::string::size_type pos = id.find(".gz");
+				id.erase(pos, 3);
+
+				size_t datasetId = stoull(id);
+				//cout << filenames[i] << " " << datasetId << endl;
+
+				filenameSizes.push_back(sortItem_Size_Filename_ID(getFileSize(partDir+filenames[i]), datasetId));
+				//cout << filenames[i] << " " << size << endl;
+				//cout << filenames[i] << endl;
+			}
+		}
+
+		//cout << "mettre un while ici" << endl;
+		while(filenameSizes.size() > SIMKA_MERGE_MAX_FILE_USED){
+
+			//cout << "Start merging pass" << endl;
+			sort(filenameSizes.begin(),filenameSizes.end(),sortFileBySize);
+
+			vector<size_t> mergeDatasetIds;
+			vector<size_t> toRemoveItem;
+
+
+			for(size_t i=0; i<SIMKA_MERGE_MAX_FILE_USED; i++){
+				sortItem_Size_Filename_ID sfi = filenameSizes[i];
+				mergeDatasetIds.push_back(get<1>(sfi));
+				//datasetIndex += 1;
+				//if(datasetIndex >= _nbBanks) break;
+
+				//cout << mergeDatasetIds[i] << endl;
+				//cout << "First val must never be greater than second:   " << i << "  " << _nbBanks << endl;
+				//cout << "\t" << get<1>(sfi) << endl;
+			}
+
+			for(size_t i=0; i<mergeDatasetIds.size(); i++){
+				filenameSizes.erase(filenameSizes.begin());
+			}
+
+			size_t mergedId = mergeDatasetIds[0];
+			DiskBasedMergeSort<span> diskBasedMergeSort(mergedId, p.outputDir, mergeDatasetIds, _partitionId);
+			diskBasedMergeSort.execute();
+
+			filenameSizes.push_back(sortItem_Size_Filename_ID(getFileSize(diskBasedMergeSort._outputFilename), mergedId));
+
+			//cout << "\tmerged id: " <<  mergedId << endl;
+			//cout << "\tremainging files: " << filenameSizes.size() << endl;
+		}
+
+		//cout << filenameSizes.size() << endl;
+		//for(size_t i=0; i<filenameSizes.size(); i++){
+		//	cout << filenameSizes[i].first << endl;
+		//}
+
+		//size_t nbMerges = 0;
+		/*
+		//cout << partFilenames.size() << endl;
+		exit(1);
 
 		size_t nbMerges = ceil((float)_nbBanks / (float)SIMKA_MERGE_MAX_FILE_USED);
 		cout << "nb Merges: " << nbMerges << endl;
@@ -854,7 +919,7 @@ public:
 			DiskBasedMergeSort<span> diskBasedMergeSort(i, p.outputDir, mergeDatasetIds, _partitionId);
 			diskBasedMergeSort.execute();
 
-		}
+		}*/
 
 		//exit(1);
 		/* PARALLEL
@@ -894,8 +959,9 @@ public:
 		vector<StorageIt<span>*> its;
 		u_int64_t nbKmers = 0;
 
-    	for(size_t i=0; i<nbMerges; i++){
-    		string filename = p.outputDir + "/solid/merged/part_" + Stringify::format("%i", p.partitionId) + "/merge_" + Stringify::format("%i", i);
+    	for(size_t i=0; i<filenameSizes.size(); i++){
+    		size_t datasetId = get<1>(filenameSizes[i]);
+    		string filename = p.outputDir + "/solid/part_" + Stringify::format("%i", p.partitionId) + "/__p__" + Stringify::format("%i", datasetId) + ".gz";
     		//cout << filename << endl;
     		IterableGzFile<Kmer_BankId_Count>* partition = new IterableGzFile<Kmer_BankId_Count>(filename, 1000);
     		partitions.push_back(partition);

@@ -243,11 +243,13 @@ public:
 		    	}
 				 */
 
-				string outputDir = p.outputDir + "/solid/" + p.bankName;
-				System::file().mkdir(outputDir, -1);
-				vector<BagGzFile<Kmer_BankId_Count>* > bags;
+				//string outputDir = p.outputDir + "/solid/" + p.bankName;
+				//System::file().mkdir(outputDir, -1);
+				vector<Bag<Kmer_BankId_Count>* > bags;
 		    	for(size_t i=0; i<p.nbPartitions; i++){
-		    		BagGzFile<Kmer_BankId_Count>* bag = new BagGzFile<Kmer_BankId_Count>(outputDir + "/" + "part" + Stringify::format("%i", i));
+					string outputFilename = p.outputDir + "/solid/part_" + Stringify::format("%i", i) + "/__p__" + Stringify::format("%i", p.bankIndex) + ".gz";
+					Bag<Kmer_BankId_Count>* bag = new BagGzFile<Kmer_BankId_Count>(outputFilename);
+					//BagCache bagCache(*bag, 10000);
 		        	bags.push_back(bag);
 		    	}
 

@@ -23,7 +23,7 @@ public:
     typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
 
     //SimkaCompressedProcessor(vector<BagGzFile<Count>* >& bags, vector<vector<Count> >& caches, vector<size_t>& cacheIndexes, CountNumber abundanceMin, CountNumber abundanceMax) : _bags(bags), _caches(caches), _cacheIndexes(cacheIndexes)
-    SimkaCompressedProcessor(vector<BagGzFile<Kmer_BankId_Count>* >& bags, vector<u_int64_t>& nbKmerPerParts, vector<u_int64_t>& nbDistinctKmerPerParts, vector<u_int64_t>& chordPerParts, CountNumber abundanceMin, CountNumber abundanceMax, size_t bankIndex) :
+    SimkaCompressedProcessor(vector<Bag<Kmer_BankId_Count>* >& bags, vector<u_int64_t>& nbKmerPerParts, vector<u_int64_t>& nbDistinctKmerPerParts, vector<u_int64_t>& chordPerParts, CountNumber abundanceMin, CountNumber abundanceMax, size_t bankIndex) :
     	_bags(bags), _nbDistinctKmerPerParts(nbDistinctKmerPerParts), _nbKmerPerParts(nbKmerPerParts), _chordPerParts(chordPerParts)
     {
     	_abundanceMin = abundanceMin;
@@ -64,7 +64,7 @@ public:
 	}
 
 
-	vector<BagGzFile<Kmer_BankId_Count>* >& _bags;
+	vector<Bag<Kmer_BankId_Count>* >& _bags;
 	vector<u_int64_t>& _nbDistinctKmerPerParts;
 	vector<u_int64_t>& _nbKmerPerParts;
 	vector<u_int64_t>& _chordPerParts;

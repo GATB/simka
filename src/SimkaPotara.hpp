@@ -454,7 +454,7 @@ public:
 
 		//System::file().mkdir(_outputDirTemp, -1);
 		System::file().mkdir(this->_outputDirTemp + "/solid/", -1);
-		System::file().mkdir(this->_outputDirTemp + "/solid/merged/", -1);
+		//System::file().mkdir(this->_outputDirTemp + "/solid/merged/", -1);
 		System::file().mkdir(this->_outputDirTemp + "/temp/", -1);
 		System::file().mkdir(this->_outputDirTemp + "/log/", -1);
 		System::file().mkdir(this->_outputDirTemp + "/count_synchro/", -1);
@@ -787,6 +787,11 @@ public:
 
 		cout << endl << "Counting k-mers... (log files are " + this->_outputDirTemp + "/log/count_*)" << endl;
 
+	    for (size_t i=0; i<_nbPartitions; i++){
+	    	//System::file().mkdir(this->_outputDirTemp + "/solid/merged/part_" + Stringify::format("%i", i), -1);
+	    	System::file().mkdir(this->_outputDirTemp + "/solid/part_" + Stringify::format("%i", i), -1);
+	    }
+
 		vector<string> commands;
 
 		_progress = new ProgressSynchro (
@@ -941,9 +946,7 @@ public:
 	void merge(){
 
 
-	    for (size_t i=0; i<_nbPartitions; i++){
-	    	System::file().mkdir(this->_outputDirTemp + "/solid/merged/part_" + Stringify::format("%i", i), -1);
-	    }
+
 
 
 		cout << endl << "Merging k-mer counts and computing distances... (log files are " + this->_outputDirTemp + "/log/merge_*)" << endl;
