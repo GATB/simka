@@ -246,9 +246,12 @@ public:
 				//string outputDir = p.outputDir + "/solid/" + p.bankName;
 				//System::file().mkdir(outputDir, -1);
 				vector<Bag<Kmer_BankId_Count>* > bags;
+				vector<Bag<Kmer_BankId_Count>* > cachedBags;
 		    	for(size_t i=0; i<p.nbPartitions; i++){
 					string outputFilename = p.outputDir + "/solid/part_" + Stringify::format("%i", i) + "/__p__" + Stringify::format("%i", p.bankIndex) + ".gz";
 					Bag<Kmer_BankId_Count>* bag = new BagGzFile<Kmer_BankId_Count>(outputFilename);
+					Bag<Kmer_BankId_Count>* cachedBag = new BagCache<Kmer_BankId_Count>(bag, 10000);
+					cachedBags.push_back(cachedBag);
 					//BagCache bagCache(*bag, 10000);
 		        	bags.push_back(bag);
 		    	}
@@ -273,7 +276,7 @@ public:
 				//solidStorage = StorageFactory(STORAGE_HDF5).create (solidsName, true, autoDelete);
 				//LOCAL(solidStorage);
 
-				SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, nbKmerPerParts, nbDistinctKmerPerParts, chordNiPerParts, p.abundanceMin, p.abundanceMax, p.bankIndex);
+				SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(cachedBags, nbKmerPerParts, nbDistinctKmerPerParts, chordNiPerParts, p.abundanceMin, p.abundanceMax, p.bankIndex);
 
 				u_int64_t nbReads = 0;
 
@@ -323,8 +326,10 @@ public:
 				System::file().rmdir(tempDir);
 
 		    	for(size_t i=0; i<p.nbPartitions; i++){
-		    		bags[i]->flush();
-		    		delete bags[i];
+		    		//bags[i]->flush();
+		    		//cachedBags[i]->flush();
+		    		delete cachedBags[i];
+		    		//delete bags[i];
 		    	}
 
 		    	//delete proc;

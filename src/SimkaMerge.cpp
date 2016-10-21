@@ -33,7 +33,7 @@ using namespace gatb::core::system::impl;
 
 
 #define MERGE_BUFFER_SIZE 1000
-#define SIMKA_MERGE_MAX_FILE_USED 2
+#define SIMKA_MERGE_MAX_FILE_USED 100
 
 template<size_t span>
 class DistanceCommand : public gatb::core::tools::dp::ICommand //, public gatb::core::system::SmartPointer
@@ -587,7 +587,8 @@ public:
 	string _outputFilename;
 	vector<size_t>& _datasetIds;
 	size_t _partitionId;
-	BagGzFile<Kmer_BankId_Count>* _outputGzFile;
+	Bag<Kmer_BankId_Count>* _outputGzFile;
+	Bag<Kmer_BankId_Count>* _cachedBag;
 
 
 
@@ -599,6 +600,7 @@ public:
 
     	_outputFilename = _outputDir + "/solid/part_" + Stringify::format("%i", partitionId) + "/__p__" + Stringify::format("%i", mergeId) + ".gz.temp";
     	_outputGzFile = new BagGzFile<Kmer_BankId_Count>(_outputFilename);
+    	_cachedBag = new BagCache<Kmer_BankId_Count>(_outputGzFile, 10000);
 
     }
 
@@ -616,7 +618,7 @@ public:
 			//cout << _datasetIds[i] << endl;
 			string filename = _outputDir + "/solid/part_" +  Stringify::format("%i", _partitionId) + "/__p__" + Stringify::format("%i", _datasetIds[i]) + ".gz";
 			//cout << "\t\t" << filename << endl;
-			IterableGzFile<Kmer_BankId_Count>* partition = new IterableGzFile<Kmer_BankId_Count>(filename, 1000);
+			IterableGzFile<Kmer_BankId_Count>* partition = new IterableGzFile<Kmer_BankId_Count>(filename, 10000);
 			partitions.push_back(partition);
 			its.push_back(new StorageIt<span>(partition->iterator(), i, _partitionId));
 			//nbKmers += partition->estimateNbItems();
@@ -672,7 +674,7 @@ public:
 		{
 			//get first pointer
 			bestIt = get<3>(pq.top()); pq.pop();
-			_outputGzFile->insert(Kmer_BankId_Count(bestIt->value(), bestIt->getBankId(), bestIt->abundance()));
+			_cachedBag->insert(Kmer_BankId_Count(bestIt->value(), bestIt->getBankId(), bestIt->abundance()));
 			//best_p = get<1>(pq.top()) ; pq.pop();
 			//previous_kmer = bestIt->value();
 			//solidCounter->init (bestIt->getBankId(), bestIt->abundance());
@@ -695,7 +697,7 @@ public:
 				pq.push(kxp(bestIt->value(), bestIt->getBankId(), bestIt->abundance(), bestIt)); //push new val of this pointer in pq, will be counted later
 
 		    	bestIt = get<3>(pq.top()); pq.pop();
-		    	_outputGzFile->insert(Kmer_BankId_Count(bestIt->value(), bestIt->getBankId(), bestIt->abundance()));
+		    	_cachedBag->insert(Kmer_BankId_Count(bestIt->value(), bestIt->getBankId(), bestIt->abundance()));
 		    	//cout << bestIt->value().toString(31) << " " << bestIt->getBankId() <<  " "<< bestIt->abundance() << endl;
 				//bestIt = get<3>(pq.top()); pq.pop();
 
@@ -718,8 +720,8 @@ public:
 		}
 
 
-    	_outputGzFile->flush();
-    	delete _outputGzFile;
+		_cachedBag->flush();
+    	delete _cachedBag;
 
 		for(size_t i=0; i<_nbBanks; i++){
 			//cout << _datasetIds[i] << endl;
@@ -963,7 +965,7 @@ public:
     		size_t datasetId = get<1>(filenameSizes[i]);
     		string filename = p.outputDir + "/solid/part_" + Stringify::format("%i", p.partitionId) + "/__p__" + Stringify::format("%i", datasetId) + ".gz";
     		//cout << filename << endl;
-    		IterableGzFile<Kmer_BankId_Count>* partition = new IterableGzFile<Kmer_BankId_Count>(filename, 1000);
+    		IterableGzFile<Kmer_BankId_Count>* partition = new IterableGzFile<Kmer_BankId_Count>(filename, 10000);
     		partitions.push_back(partition);
     		its.push_back(new StorageIt<span>(partition->iterator(), i, _partitionId));
     		//nbKmers += partition->estimateNbItems();
