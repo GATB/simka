@@ -4,6 +4,8 @@ import sys, os, shutil
 suffix = " > /dev/null 2>&1"
 dir = "__results__"
 
+if os.path.exists("temp_output"):
+        shutil.rmtree(dir)
 if os.path.exists("__results__"):
 	shutil.rmtree(dir)
 os.mkdir(dir)
@@ -55,24 +57,28 @@ def test_parallelization():
 #test k=31 t=0
 print("TESTING k=31 t=0")
 command = "../build/bin/simka -in ../example/simka_input.txt -out ./__results__/results_k31_t0 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 31 -abundance-min 0 -verbose 0"
+print(command)
 os.system(command + suffix)
 test_dists("results_k31_t0")
 
 #test k=21 t=0
 print("TESTING k=21 t=0")
 command = "../build/bin/simka -in ../example/simka_input.txt -out ./__results__/results_k21_t0 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 0 -verbose 0"
+print(command)
 os.system(command + suffix)
 test_dists("results_k21_t0")
 
 #test k=31 t=2
 print("TESTING k=31 t=2")
 command = "../build/bin/simka -in ../example/simka_input.txt -out ./__results__/results_k31_t2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 31 -abundance-min 2 -verbose 0"
+print(command)
 os.system(command + suffix)
 test_dists("results_k31_t2")
 
 #test k=21 t=2
 print("TESTING k=21 t=2")
 command = "../build/bin/simka -in ../example/simka_input.txt -out ./__results__/results_k21_t2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 2 -verbose 0"
+print(command)
 os.system(command + suffix)
 test_dists("results_k21_t2")
 
