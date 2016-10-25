@@ -5,9 +5,9 @@ suffix = " > /dev/null 2>&1"
 dir = "__results__"
 
 if os.path.exists("temp_output"):
-        shutil.rmtree(dir)
+	shutil.rmtree("temp_output")
 if os.path.exists("__results__"):
-	shutil.rmtree(dir)
+	shutil.rmtree("__results__")
 os.mkdir(dir)
 
 def __test_matrices(result_dir, truth_dir):
