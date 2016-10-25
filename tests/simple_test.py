@@ -1,5 +1,5 @@
 
-import sys, os, shutil
+import sys, os, shutil, gzip, glob
 
 suffix = " > /dev/null 2>&1"
 dir = "__results__"
@@ -10,21 +10,41 @@ if os.path.exists("__results__"):
 	shutil.rmtree("__results__")
 os.mkdir(dir)
 
-def __test_matrices(result_dir, truth_dir):
+def decompress_simka_results(dir):
+	result_filenames = glob.glob(os.path.join(dir, '*'))
+	for filename_gz in result_filenames:
+		#filename_gz = result_dir + "/" + filename
+		with gzip.open(filename_gz, 'rb') as f:
+			outFile = open(filename_gz[:-3], "w")
+			outFile.write(f.read())
+			outFile.close()
+			os.remove(filename_gz)
+
+def __test_matrices(simka_vs_truth, result_dir, truth_dir):
 
 	ok = True
 
-	result_filenames = os.listdir(result_dir)
-	result_filenames.remove("mat_abundance_jaccard.csv") #This distance is computed from Bray Curtis distance
-	truth_filenames = os.listdir(truth_dir)
-	if "mat_abundance_jaccard.csv" in truth_filenames:
-		truth_filenames.remove("mat_abundance_jaccard.csv") #This distance is computed from Bray Curtis distance
+	decompress_simka_results(result_dir)
+	result_filenames = glob.glob(os.path.join(result_dir, '*'))
+	result_filenames.remove(result_dir + "/mat_abundance_jaccard.csv") #This distance is computed from Bray Curtis distance
+	
+	
+	if simka_vs_truth:
+		truth_filenames = glob.glob(os.path.join(truth_dir, '*'))
+	else: #simka vs simka
+		#if result_dir+"/mat_abundance_jaccard.csv" in truth_filenames: #comparing simka results vs simka results
+		#truth_filenames.remove(result_dir+"/mat_abundance_jaccard.csv") #This distance is computed from Bray Curtis distance
+		decompress_simka_results(truth_dir)
+		truth_filenames = glob.glob(os.path.join(truth_dir, '*'))
+		truth_filenames.remove(truth_dir + "/mat_abundance_jaccard.csv") #This distance is computed from Bray Curtis distance
+	
 
 	for i in range(0, len(result_filenames)):
 
-		res_file = open(result_dir + "/" + result_filenames[i], "r")
-		truth_file = open(truth_dir + "/" + truth_filenames[i], "r")
+		res_file = open(result_filenames[i], "r")
+		truth_file = open(truth_filenames[i], "r")
 		
+		#print res_file, truth_file
 		res_str = res_file.read()
 		truth_str = truth_file.read()
 
@@ -32,14 +52,14 @@ def __test_matrices(result_dir, truth_dir):
 		truth_file.close()
 
 		if(res_str != truth_str):
-			print("\t- TEST ERROR:    " + result_dir + "    " + result_filenames[i])
+			print("\t- TEST ERROR:    " + result_filenames[i])
 			ok = False
 
 	return ok
 
 
 def test_dists(dir):
-	if(__test_matrices("__results__/" + dir, "truth/" + dir)):
+	if(__test_matrices(True, "__results__/" + dir, "truth/" + dir)):
 		print("\tOK")
 	else:
 		print("\tFAILED")
@@ -47,7 +67,7 @@ def test_dists(dir):
 
 
 def test_parallelization():
-	if(__test_matrices("__results__/results_resources1", "__results__/results_resources2")):
+	if(__test_matrices(False, "__results__/results_resources1", "__results__/results_resources2")):
 		print("\tOK")
 	else:
 		print("\tFAILED")

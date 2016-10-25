@@ -652,7 +652,16 @@ void SimkaStatistics::outputMatrix(const string& outputDir, const vector<string>
 
 void SimkaStatistics::dumpMatrix(const string& outputDir, const vector<string>& bankNames, const string& outputFilename, const vector<vector<float> >& matrix){
 
-	char buffer[200];
+	string filename = outputDir + "/" + outputFilename + _outputFilenameSuffix + ".csv";
+	//IFile* file = gatb::core::system::impl::System::file().newFile(filename, "wb");
+	//Bag<string>* bag = new BagGzFile<string>(outputDir + "/" + outputFilename + _outputFilenameSuffix + ".csv.gz");
+	//Bag<string>* cachedBag = new BagCache<string>(bag, 10000);
+
+
+	gzFile *out = (gzFile *)gzopen((filename + ".gz").c_str(),"wb");
+	//char buf[BUFSIZ] = { 0 };
+
+	//char buffer[200];
 	string str;
 
 	for(size_t i=0; i<matrix.size(); i++){
@@ -660,16 +669,22 @@ void SimkaStatistics::dumpMatrix(const string& outputDir, const vector<string>& 
 		//str += ";" + datasetInfos[i]._name;
 	}
 	str += '\n';
+	gzwrite(out, str.c_str(), str.size());
+	//cachedBag->insert(str);
+	//file->fwrite(str.c_str(), str.size(), 1);
+
+	str = "";
 
 	for(size_t i=0; i<matrix.size(); i++){
 
+		str = "";
 		str += bankNames[i] + ";";
 		//str += datasetInfos[i]._name + ";";
 		for(size_t j=0; j<matrix.size(); j++){
 
 			//snprintf(buffer,200,"%.2f", matrix[i][j]);
-			snprintf(buffer,200,"%f", matrix[i][j]);
-			str += string(buffer) + ";";
+			//snprintf(buffer,200,"%f", matrix[i][j]);
+			str += Stringify::format("%f", matrix[i][j]) + ";";
 
 			//str += to_string(matrix[i][j]) + ";";
 		}
@@ -678,13 +693,35 @@ void SimkaStatistics::dumpMatrix(const string& outputDir, const vector<string>& 
 		str.erase(str.size()-1);
 		//str.pop_back(); //remove ; at the end of the line
 		str += '\n';
+
+		//cout << str << endl;
+		//file->fwrite(str.c_str(), str.size(), 1);
+		gzwrite(out, str.c_str(), str.size());
+		//cachedBag->insert(str);
 	}
 
 
-	gatb::core::system::IFile* file = gatb::core::system::impl::System::file().newFile(outputDir + "/" + outputFilename + _outputFilenameSuffix + ".csv", "wb");
-	file->fwrite(str.c_str(), str.size(), 1);
-	file->flush();
-	delete file;
+	//gatb::core::system::IFile* file = gatb::core::system::impl::System::file().newFile(outputDir + "/" + outputFilename + _outputFilenameSuffix + ".csv", "wb");
+
+	//file->flush();
+	//delete file;
+	gzclose(out);
+	//delete cachedBag;
+
+	/*
+	FILE * in = fopen(filename.c_str(), "rb");
+	char buf[BUFSIZ] = { 0 };
+	size_t bytes_read = 0;
+	gzFile *out = (gzFile *)gzopen((filename + ".gz").c_str(),"wb");
+
+	bytes_read = fread(buf, 1, BUFSIZ, in);
+	while (bytes_read > 0)
+	{
+	  int bytes_written = gzwrite(out, buf, bytes_read);
+	  bytes_read = fread(buf, 1, BUFSIZ, in);
+
+   }
+	gzclose(out);*/
 
 }
 
