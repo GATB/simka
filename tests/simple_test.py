@@ -37,7 +37,9 @@ def __test_matrices(simka_vs_truth, result_dir, truth_dir):
 		decompress_simka_results(truth_dir)
 		truth_filenames = glob.glob(os.path.join(truth_dir, '*'))
 		truth_filenames.remove(truth_dir + "/mat_abundance_jaccard.csv") #This distance is computed from Bray Curtis distance
-	
+
+	truth_filenames.sort()
+	result_filenames.sort()
 
 	for i in range(0, len(result_filenames)):
 
