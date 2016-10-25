@@ -87,6 +87,12 @@ For further instructions on using simka, see User Manual, below.
 
 #Changelog
 
+* version 1.3.1 Oct 25, 2016:
+	- improve memory usage of symetrical distances
+	- option -data-info to compute information on the input data (nb reads per dataset...)
+	- intermediate merge sort passes to handle large number of datasets
+	- prevent distances from producing nan value
+	- fix bug that occur during k-mer counting
 * version 1.3.0 July 29, 2016:
 	- Bray-Crutis computed by default
 	- Better k-mer statistics
