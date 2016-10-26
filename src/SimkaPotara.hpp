@@ -832,6 +832,7 @@ public:
 			command += " " + string(STR_SIMKA_MIN_READ_SIZE) + " " + SimkaAlgorithm<>::toString(this->_minReadSize);
 			command += " " + string(STR_SIMKA_MIN_READ_SHANNON_INDEX) + " " + Stringify::format("%f", this->_minReadShannonIndex);
 			command += " " + string(STR_SIMKA_MAX_READS) + " " + SimkaAlgorithm<>::toString(this->_maxNbReads);
+			command += " " + string(STR_URI_OUTPUT) + " " + this->_outputDirTemp + "/solid/" + this->_bankNames[i] + ".h5";
 			command += " -nb-partitions " + SimkaAlgorithm<>::toString(_nbPartitions);
 			//command += " -verbose " + Stringify::format("%d", this->_options->getInt(STR_VERBOSE));
 			command += " >> " + logFilename + " 2>&1";

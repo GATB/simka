@@ -961,6 +961,7 @@ public:
 		vector<StorageIt<span>*> its;
 		u_int64_t nbKmers = 0;
 
+		//cout << filenameSizes.size() << endl;
     	for(size_t i=0; i<filenameSizes.size(); i++){
     		size_t datasetId = get<1>(filenameSizes[i]);
     		string filename = p.outputDir + "/solid/part_" + Stringify::format("%i", p.partitionId) + "/__p__" + Stringify::format("%i", datasetId) + ".gz";
@@ -1188,7 +1189,7 @@ public:
 
 	void insert(const Type& kmer, const CountVector& counts, size_t nbBankThatHaveKmer){
 
-		//cout << kmer.toString(31) << endl;
+		//cout << kmer.toString(21) << endl;
 		//for(size_t i=0; i<counts.size(); i++){
 		//	cout << counts[i] << " ";
 		//}

@@ -23,8 +23,7 @@ public:
     typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
 
     //SimkaCompressedProcessor(vector<BagGzFile<Count>* >& bags, vector<vector<Count> >& caches, vector<size_t>& cacheIndexes, CountNumber abundanceMin, CountNumber abundanceMax) : _bags(bags), _caches(caches), _cacheIndexes(cacheIndexes)
-    SimkaCompressedProcessor(vector<Bag<Kmer_BankId_Count>* >& bags, vector<u_int64_t>& nbKmerPerParts, vector<u_int64_t>& nbDistinctKmerPerParts, vector<u_int64_t>& chordPerParts, CountNumber abundanceMin, CountNumber abundanceMax, size_t bankIndex) :
-    	_bags(bags), _nbDistinctKmerPerParts(nbDistinctKmerPerParts), _nbKmerPerParts(nbKmerPerParts), _chordPerParts(chordPerParts)
+    SimkaCompressedProcessor(CountNumber abundanceMin, CountNumber abundanceMax, size_t bankIndex)
     {
     	_abundanceMin = abundanceMin;
     	_abundanceMax = abundanceMax;
@@ -32,7 +31,7 @@ public:
     }
 
 	~SimkaCompressedProcessor(){}
-    CountProcessorAbstract<span>* clone ()  {  return new SimkaCompressedProcessor (_bags, _nbKmerPerParts, _nbDistinctKmerPerParts, _chordPerParts, _abundanceMin, _abundanceMax, _bankIndex);  }
+    CountProcessorAbstract<span>* clone ()  {  return new SimkaCompressedProcessor (_abundanceMin, _abundanceMax, _bankIndex);  }
     //CountProcessorAbstract<span>* clone ()  {  return new SimkaCompressedProcessor (_bags, _caches, _cacheIndexes, _abundanceMin, _abundanceMax);  }
 	void finishClones (vector<ICountProcessor<span>*>& clones){}
 
@@ -40,11 +39,7 @@ public:
 
 		if(count[0] < _abundanceMin || count[0] > _abundanceMax) return false;
 
-		Kmer_BankId_Count item(kmer, _bankIndex, count[0]);
-		_bags[partId]->insert(item);
-		_nbDistinctKmerPerParts[partId] += 1;
-		_nbKmerPerParts[partId] += count[0];
-		_chordPerParts[partId] += pow(count[0], 2);
+
 
 		/*
 		size_t index = _cacheIndexes[partId];
@@ -63,11 +58,6 @@ public:
 		return true;
 	}
 
-
-	vector<Bag<Kmer_BankId_Count>* >& _bags;
-	vector<u_int64_t>& _nbDistinctKmerPerParts;
-	vector<u_int64_t>& _nbKmerPerParts;
-	vector<u_int64_t>& _chordPerParts;
 	CountNumber _abundanceMin;
 	CountNumber _abundanceMax;
 	size_t _bankIndex;

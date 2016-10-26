@@ -32,6 +32,72 @@ using namespace std;
 
 
 
+template<size_t span=KMER_DEFAULT_SPAN>
+class StorageItKmerCount
+{
+
+public:
+
+
+    typedef typename Kmer<span>::Type                                       Type;
+    typedef typename Kmer<span>::Count                                      Count;
+    //typedef tuple<Type, u_int64_t> Kmer_Count;
+    //typedef typename Kmer<span>::ModelCanonical                             ModelCanonical;
+    //typedef typename ModelCanonical::Kmer                                   KmerType;
+
+    StorageItKmerCount(Iterator<Count>* it){
+    	_it = it;
+    	//cout << h5filename << endl;
+    	//_bankId = bankId;
+    	//_partitionId = partitionId;
+
+
+
+		//Iterator<Count>* it2 = partition1.iterator();
+		//Collection<Count>& kmers1 = (*partition1)[_partitionId];
+		//collections.push_back(&kmers1);
+
+		//_it = kmers1.iterator();
+
+		//_nbKmers = it->estimateNbItems();
+		//it2->first();
+		//while(!it2->isDone()){
+		//	cout << it2->item().value.toString(31) << endl;
+		//	it2->next();
+		//}
+    }
+
+    ~StorageItKmerCount(){
+    	delete _it;
+    }
+
+    //void setPartitionId(size_t partitionId){
+    //	_partitionId = partitionId;
+    //}
+
+	bool next(){
+		_it->next();
+
+		//cout << "is done?" <<  _it->isDone() << endl;
+		return !_it->isDone();
+	}
+
+	Count& item(){
+		return _it->item();
+	}
+	//Type& value(){
+	//	return _it->item().value;
+	//}
+
+	//u_int64_t& abundance(){
+	//	return _it->item().abundance;
+	//}
+
+	//u_int16_t _bankId;
+	//u_int16_t _partitionId;
+    Iterator<Count>* _it;
+    //u_int64_t _nbKmers;
+};
 
 
 
@@ -169,13 +235,16 @@ public:
         CountNumber abundanceMin;
         CountNumber abundanceMax;
         size_t bankIndex;
+        size_t localNbPartitions;
     };
 
     template<size_t span> struct Functor  {
 
         typedef typename Kmer<span>::Type  Type;
         typedef typename Kmer<span>::Count Count;
+        typedef tuple<Count, StorageItKmerCount<span>*> KmerCount_It;
         typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
+    	struct kxpcomp { bool operator() (KmerCount_It& l,KmerCount_It& r) { return (get<0>(r).value < get<0>(l).value); } } ;
 
     	void operator ()  (Parameter p){
 
@@ -210,22 +279,20 @@ public:
 			*/
 
 
-			vector<u_int64_t> nbKmerPerParts(p.nbPartitions, 0);
-			vector<u_int64_t> nbDistinctKmerPerParts(p.nbPartitions, 0);
-			vector<u_int64_t> chordNiPerParts(p.nbPartitions, 0);
 
 
-			Configuration config;
-			{
-				Repartitor* repartitor = new Repartitor();
-				LOCAL(repartitor);
 
-				{
-					Storage* storage = StorageFactory(STORAGE_HDF5).load (p.outputDir + "/" + "config.h5");
-					LOCAL (storage);
-					config.load(storage->getGroup(""));
-					repartitor->load(storage->getGroup(""));
-				}
+			//Configuration config;
+			//{
+			//Repartitor* repartitor = new Repartitor();
+			//LOCAL(repartitor);
+
+			//{
+			//	Storage* storage = StorageFactory(STORAGE_HDF5).load (p.outputDir + "/" + "config.h5");
+					//	LOCAL (storage);
+			//	config.load(storage->getGroup(""));
+			//	repartitor->load(storage->getGroup(""));
+			//}
 
 				//config._abundanceUserNb = 1;
 				//config._abundance.clear();
@@ -245,20 +312,13 @@ public:
 
 				//string outputDir = p.outputDir + "/solid/" + p.bankName;
 				//System::file().mkdir(outputDir, -1);
-				vector<Bag<Kmer_BankId_Count>* > bags;
-				vector<Bag<Kmer_BankId_Count>* > cachedBags;
-		    	for(size_t i=0; i<p.nbPartitions; i++){
-					string outputFilename = p.outputDir + "/solid/part_" + Stringify::format("%i", i) + "/__p__" + Stringify::format("%i", p.bankIndex) + ".gz";
-					Bag<Kmer_BankId_Count>* bag = new BagGzFile<Kmer_BankId_Count>(outputFilename);
-					Bag<Kmer_BankId_Count>* cachedBag = new BagCache<Kmer_BankId_Count>(bag, 10000);
-					cachedBags.push_back(cachedBag);
-					//BagCache bagCache(*bag, 10000);
-		        	bags.push_back(bag);
-		    	}
 
+			u_int64_t nbReads = 0;
+			string tempDir = p.outputDir + "/temp/" + p.bankName;
+			System::file().mkdir(tempDir, -1);
 
-				string tempDir = p.outputDir + "/temp/" + p.bankName;
-				System::file().mkdir(tempDir, -1);
+			{
+
 				//cout << i << endl;
 				//string outputDir = p.outputDir + "/comp_part" + to_string(p.datasetId) + "/";
 
@@ -270,53 +330,88 @@ public:
 				LOCAL(filteredBank);
 				//LOCAL(bank);
 
-				//Storage* solidStorage = 0:
-				//string solidsName = p.outputDir + "/solid/" +  p.bankName + ".h5";
-				//bool autoDelete = false; // (solidsName == "none") || (solidsName == "null");
-				//solidStorage = StorageFactory(STORAGE_HDF5).create (solidsName, true, autoDelete);
-				//LOCAL(solidStorage);
 
-				SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(cachedBags, nbKmerPerParts, nbDistinctKmerPerParts, chordNiPerParts, p.abundanceMin, p.abundanceMax, p.bankIndex);
+				string solidsName = p.outputDir + "/solid/" +  p.bankName + ".h5";
+				Storage* solidStorage = StorageFactory(STORAGE_HDF5).create (solidsName, true, false);
 
-				u_int64_t nbReads = 0;
+	    		ConfigurationAlgorithm<span> configAlgo(filteredBank, props);
+	    		configAlgo.execute();
+	            RepartitorAlgorithm<span> repart (filteredBank, solidStorage->getGroup(""), configAlgo.getConfiguration());
+	            repart.execute ();
+	            Repartitor* repartitor = new Repartitor();
+	            LOCAL(repartitor);
+	            repartitor->load(solidStorage->getGroup(""));
+
+
+				SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(p.abundanceMin, p.abundanceMax, p.bankIndex);
+				CountProcessorDump<span>* procDump = new CountProcessorDump     <span> (solidStorage->getGroup("dsk"), p.kmerSize);
+
+
+
 
 				if(p.kmerSize <= 15){
-					MiniKC<span> miniKc(p.tool.getInput(), p.kmerSize, filteredBank, *repartitor, proc);
-					miniKc.execute();
+					cout << "Mini Kc a remettre" << endl;
+					//MiniKC<span> miniKc(p.tool.getInput(), p.kmerSize, filteredBank, *repartitor, proc);
+					//miniKc.execute();
 
-					nbReads = miniKc._nbReads;
+					//nbReads = miniKc._nbReads;
 				}
 				else{
 					//SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, caches, cacheIndexes, p.abundanceMin, p.abundanceMax);
 					std::vector<ICountProcessor<span>* > procs;
-					procs.push_back(proc);
-					SortingCountAlgorithm<span> algo (filteredBank, config, repartitor,
+					//procs.push_back(proc);
+					ICountProcessor<span>* result = 0;
+
+					result = new CountProcessorChain<span> (
+							proc,
+							procDump,
+							NULL
+					);
+
+					/** We set some name. */
+					result->setName ("dsk");
+
+					//SortingCountAlgorithm<span> algo (filteredBank, props);
+					SortingCountAlgorithm<span> algo (filteredBank, configAlgo.getConfiguration(), repartitor,
 							procs,
 							props);
-
+					algo.addProcessor(result);
 					algo.execute();
 
+					//delete proc;
+					//delete procDump;
+					//delete result;
 					nbReads = algo.getInfo()->getInt("seq_number");
+					p.localNbPartitions = algo.getConfig()._nb_partitions;
 				}
+			}
 
+			dispatchKmerCounts(p);
 
-				u_int64_t nbDistinctKmers = 0;
-				u_int64_t nbKmers = 0;
-				u_int64_t chord_N2 = 0;
-				for(size_t i=0; i<p.nbPartitions; i++){
-					nbDistinctKmers += nbDistinctKmerPerParts[i];
-					nbKmers += nbKmerPerParts[i];
-					chord_N2 += chordNiPerParts[i];
-				}
-				//cout << nbDistinctKmers << endl;
+			u_int64_t nbDistinctKmers = 0;
+			u_int64_t nbKmers = 0;
+			u_int64_t chord_N2 = 0;
+			for(size_t i=0; i<p.nbPartitions; i++){
+				nbDistinctKmers += _nbDistinctKmerPerParts[i];
+				nbKmers += _nbKmerPerParts[i];
+				chord_N2 += _chordNiPerParts[i];
+			}
+			//cout << nbDistinctKmers << endl;
 
-				//cout << "CHECK NB READS PER DATASET:  " << nbReads << endl;
-				outInfo.push_back(Stringify::format("%llu", nbReads));
-				outInfo.push_back(Stringify::format("%llu", nbDistinctKmers));
-				outInfo.push_back(Stringify::format("%llu", nbKmers));
-				outInfo.push_back(Stringify::format("%llu", chord_N2));
+			//cout << "CHECK NB READS PER DATASET:  " << nbReads << endl;
+			outInfo.push_back(Stringify::format("%llu", nbReads));
+			outInfo.push_back(Stringify::format("%llu", nbDistinctKmers));
+			outInfo.push_back(Stringify::format("%llu", nbKmers));
+			outInfo.push_back(Stringify::format("%llu", chord_N2));
 
-
+			string contents = "";
+			for(size_t i=0; i<_nbDistinctKmerPerParts.size(); i++){
+				contents += Stringify::format("%llu", _nbDistinctKmerPerParts[i]) + "\n";
+			}
+			IFile* nbKmerPerPartFile = System::file().newFile(p.outputDir + "/kmercount_per_partition/" + p.bankName + ".txt", "w");
+			nbKmerPerPartFile->fwrite(contents.c_str(), contents.size(), 1);
+			nbKmerPerPartFile->flush();
+			delete nbKmerPerPartFile;
 
 #ifdef TRACK_DISK_USAGE
 				string command = "du -sh " +  p.outputDir;
@@ -325,24 +420,11 @@ public:
 
 				System::file().rmdir(tempDir);
 
-		    	for(size_t i=0; i<p.nbPartitions; i++){
-		    		//bags[i]->flush();
-		    		//cachedBags[i]->flush();
-		    		delete cachedBags[i];
-		    		//delete bags[i];
-		    	}
+
 
 		    	//delete proc;
-			}
+				//	}
 
-			string contents = "";
-			for(size_t i=0; i<nbDistinctKmerPerParts.size(); i++){
-				contents += Stringify::format("%llu", nbDistinctKmerPerParts[i]) + "\n";
-			}
-			IFile* nbKmerPerPartFile = System::file().newFile(p.outputDir + "/kmercount_per_partition/" + p.bankName + ".txt", "w");
-			nbKmerPerPartFile->fwrite(contents.c_str(), contents.size(), 1);
-			nbKmerPerPartFile->flush();
-			delete nbKmerPerPartFile;
 
 
 			//cout << "heo" << endl;
@@ -351,6 +433,120 @@ public:
 			writeFinishSignal(p, outInfo);
 			//cout << "heo" << endl;
 		}
+
+    	vector<u_int64_t> _nbKmerPerParts;
+    	vector<u_int64_t> _nbDistinctKmerPerParts;
+    	vector<u_int64_t> _chordNiPerParts;
+
+    	void dispatchKmerCounts(Parameter p){
+
+    		_nbKmerPerParts = vector<u_int64_t>(p.nbPartitions, 0);
+    		_nbDistinctKmerPerParts =  vector<u_int64_t>(p.nbPartitions, 0);
+    		_chordNiPerParts = vector<u_int64_t>(p.nbPartitions, 0);
+
+
+			vector<Bag<Kmer_BankId_Count>* > bags;
+			vector<Bag<Kmer_BankId_Count>* > cachedBags;
+	    	for(size_t i=0; i<p.nbPartitions; i++){
+				string outputFilename = p.outputDir + "/solid/part_" + Stringify::format("%i", i) + "/__p__" + Stringify::format("%i", p.bankIndex) + ".gz";
+				Bag<Kmer_BankId_Count>* bag = new BagGzFile<Kmer_BankId_Count>(outputFilename);
+				Bag<Kmer_BankId_Count>* cachedBag = new BagCache<Kmer_BankId_Count>(bag, 10000);
+				cachedBags.push_back(cachedBag);
+				//BagCache bagCache(*bag, 10000);
+	        	bags.push_back(bag);
+	    	}
+
+
+			Storage* solidStorage = 0;
+			string solidsName = p.outputDir + "/solid/" +  p.bankName + ".h5";
+			//cout << solidsName << endl;
+			//bool autoDelete = false; // (solidsName == "none") || (solidsName == "null");
+			solidStorage = StorageFactory(STORAGE_HDF5).load(solidsName);
+			LOCAL(solidStorage);
+
+			vector<StorageItKmerCount<span>*> its;
+			Partition<Count>& solidKmers = solidStorage->getGroup("dsk").getPartition<Count>("solid");
+			for(size_t i=0; i<p.localNbPartitions; i++){
+				//cout << "lala" << endl;
+				//cout << solidKmers[i].iterable()->getNbItems () << endl;
+				its.push_back(new StorageItKmerCount<span>(solidKmers[i].iterable()->iterator()));
+			}
+
+			std::priority_queue< KmerCount_It, vector<KmerCount_It>,kxpcomp > pq;
+			//StorageItKmerCount<span>* bestIt;
+			size_t bestPart;
+
+			for(size_t i=0; i<its.size(); i++){
+				its[i]->_it->first();
+				//StorageItKmerCount<span>* it = its[i];
+				//it->_it->first();
+			}
+
+			//fill the  priority queue with the first elems
+			for (size_t ii=0; ii<its.size(); ii++)
+			{
+				//pq.push(Kmer_BankId_Count(ii,its[ii]->value()));
+				pq.push(KmerCount_It(its[ii]->item(), its[ii]));
+			}
+
+			StorageItKmerCount<span>* bestIt;
+
+			if (pq.size() != 0) // everything empty, no kmer at all
+			{
+				//get first pointer
+				//bestPart =
+				//bestIt = get<3>(pq.top()); pq.pop();
+				KmerCount_It kmerCountIt = pq.top(); pq.pop();
+				size_t part = oahash(get<0>(kmerCountIt).value) % p.nbPartitions;
+				cachedBags[part]->insert(Kmer_BankId_Count(get<0>(kmerCountIt).value, p.bankIndex, get<0>(kmerCountIt).abundance));
+				_nbDistinctKmerPerParts[part] += 1;
+				_nbKmerPerParts[part] += get<0>(kmerCountIt).abundance;
+				_chordNiPerParts[part] += pow(get<0>(kmerCountIt).abundance, 2);
+
+				bestIt = get<1>(kmerCountIt);
+
+
+				while(1){
+
+					if (! bestIt->next())
+					{
+						//reaches end of one array
+						if(pq.size() == 0){
+							break;
+						}
+
+						//otherwise get new best
+						//best_p = get<1>(pq.top()) ; pq.pop();
+						bestIt = get<1>(pq.top()); pq.pop();
+					}
+
+					pq.push(KmerCount_It(bestIt->item(), bestIt));
+					//pq.push(kxp(bestIt->value(), bestIt->getBankId(), bestIt->abundance(), bestIt)); //push new val of this pointer in pq, will be counted later
+
+			    	bestIt = get<1>(pq.top()); pq.pop();
+			    	//_cachedBag->insert(Kmer_BankId_Count(bestIt->value(), bestIt->getBankId(), bestIt->abundance()));
+					size_t part = oahash(bestIt->item().value) % p.nbPartitions;
+					//cout << part << " " << p.nbPartitions << endl;
+					//cout << bestIt->item().value.toString(21) << " " << bestIt->item().abundance << endl;
+					cachedBags[part]->insert(Kmer_BankId_Count(bestIt->item().value, p.bankIndex, bestIt->item().abundance));
+
+					//Kmer_BankId_Count item(kmer, _bankIndex, count[0]);
+					_nbDistinctKmerPerParts[part] += 1;
+					_nbKmerPerParts[part] += bestIt->item().abundance;
+					_chordNiPerParts[part] += pow(bestIt->item().abundance, 2);
+				}
+			}
+
+
+	    	for(size_t i=0; i<p.nbPartitions; i++){
+	    		//bags[i]->flush();
+	    		//cachedBags[i]->flush();
+	    		delete cachedBags[i];
+	    		//delete bags[i];
+	    	}
+
+    	}
+
 
 		void writeFinishSignal(Parameter& p, const vector<string>& outInfo){
 
