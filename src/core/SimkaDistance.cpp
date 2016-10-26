@@ -654,11 +654,11 @@ void SimkaStatistics::dumpMatrix(const string& outputDir, const vector<string>& 
 
 	string filename = outputDir + "/" + outputFilename + _outputFilenameSuffix + ".csv";
 	//IFile* file = gatb::core::system::impl::System::file().newFile(filename, "wb");
-	//Bag<string>* bag = new BagGzFile<string>(outputDir + "/" + outputFilename + _outputFilenameSuffix + ".csv.gz");
+	Bag<string>* bag = new BagGzFile<string>(outputDir + "/" + outputFilename + _outputFilenameSuffix + ".csv.gz");
 	//Bag<string>* cachedBag = new BagCache<string>(bag, 10000);
 
 
-	gzFile *out = (gzFile *)gzopen((filename + ".gz").c_str(),"wb");
+	gzFile out = gzopen((filename + ".gz").c_str(),"wb");
 	//char buf[BUFSIZ] = { 0 };
 
 	//char buffer[200];
