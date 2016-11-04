@@ -23,6 +23,7 @@
 
 #include <gatb/gatb_core.hpp>
 #include <gatb/kmer/impl/RepartitionAlgorithm.hpp>
+#include "../subsampling/SimkaSubsampling.hpp"
 #include<stdio.h>
 
 //#define PRINT_STATS
@@ -47,6 +48,10 @@ const string STR_SIMKA_COMPUTE_ALL_SIMPLE_DISTANCES= "-simple-dist";
 const string STR_SIMKA_COMPUTE_ALL_COMPLEX_DISTANCES = "-complex-dist";
 const string STR_SIMKA_KEEP_TMP_FILES = "-keep-tmp";
 const string STR_SIMKA_COMPUTE_DATA_INFO = "-data-info";
+
+const string STR_SIMKA_SUBSAMPLING_SETUP = "-subsampling-setup";
+const string STR_SIMKA_SUBSAMPLING_MAX_READS = "-subsampling-space";
+const string STR_SIMKA_SUBSAMPLING_NB_PICKED_READS = "-subsampling-nb-reads";
 
 enum SIMKA_SOLID_KIND{
 	RANGE,
@@ -757,8 +762,8 @@ public:
 	* \param[in] ref : the referred iterator
 	* \param[in] initRef : will call 'first' on the reference if true
 	*/
-	SimkaInputIterator(Iterator<Item>* refs, size_t nbBanks, u_int64_t maxReads, Filter filter)
-	:  _filter(filter), _mainref(0) {
+	SimkaInputIterator(Iterator<Item>* refs, size_t nbBanks, u_int64_t maxReads, Filter filter, vector<u_int32_t>& subsampleReads)
+	:  _filter(filter), _mainref(0), _subsampleReads(subsampleReads) {
 
 		setMainref(refs);
 		_ref = _mainref->getComposition()[0];
@@ -770,6 +775,7 @@ public:
 		_currentBank = 0;
 		_currentInternalBank = 0;
 		_currentDataset = 0;
+		_globalSequenceIndex = 0;
 
 	}
 
@@ -837,10 +843,45 @@ public:
 			return;
 		}
 
-		//cout << "haha" << endl;
 
-		_ref->next();
-		while (!_ref->isDone() && _filter(_ref->item())==false) _ref->next();
+		//cout << _ref->item().getIndex() << "   " << _subsampleReads[_ref->item().getIndex()] << endl;
+
+		cout << _globalSequenceIndex << " " << _maxReads << " " << _nbReadProcessed << endl;
+		verifier que ce truc marche bien quand on concatene des jeux!! _globalSequenceIndex et _nbReadProcessed bien synchro ?
+
+		if(_subsampleReads.size() > 0){
+			while (!_ref->isDone()){
+				if(_subsampleReads[_globalSequenceIndex] == 0){
+					_ref->next();
+					_globalSequenceIndex += 1;
+					_nbReadProcessed += 1;
+					//cout << "\tnop: " << _globalSequenceIndex << " " << _maxReads << " " << _nbReadProcessed << endl;
+				}
+				else{
+					_subsampleReads[_globalSequenceIndex] -= 1;
+					//_globalSequenceIndex += 1;
+					//_nbReadProcessed -= 1;
+					break;
+				}
+			}
+		}
+		else{
+			_ref->next();
+			_globalSequenceIndex += 1;
+		}
+
+		//_ref->next();
+		//_globalSequenceIndex += 1;
+
+		while (!_ref->isDone()){
+			if(_filter(_ref->item())==false){
+				_ref->next();
+				_globalSequenceIndex += 1;
+			}
+			else{
+				break;
+			}
+		}
 
 		_isDone = _ref->isDone();
 
@@ -879,6 +920,8 @@ public:
 				nextDataset();
 		}
 
+		//cout << _ref->item().getIndex() << " " << _globalSequenceIndex << " " << _subsampleReads.size() << _ref->item().toString() << endl;
+		//cout << "\t" << _ref->item().getIndex() << endl;
 	}
 
     /** \copydoc  Iterator::isDone */
@@ -901,9 +944,12 @@ private:
     size_t _currentInternalBank;
 	size_t _currentDataset;
 	size_t _nbDatasets;
+	u_int64_t _globalSequenceIndex;
 
     Iterator<Item>* _mainref;
     void setMainref (Iterator<Item>* mainref)  { SP_SETATTR(mainref); }
+
+	vector<u_int32_t>& _subsampleReads;
 };
 
 
@@ -917,7 +963,8 @@ struct SimkaSequenceFilter
 	//int* _datasetIndex;
 
 
-	SimkaSequenceFilter(size_t minReadSize, double minShannonIndex){
+	SimkaSequenceFilter(size_t minReadSize, double minShannonIndex)
+	{
 		//_maxNbReads = 0;
 		//_nbReadProcessed = 0;
 		_minReadSize = minReadSize;
@@ -971,7 +1018,10 @@ struct SimkaSequenceFilter
 		if(!isShannonIndexValid(seq))
 			return false;
 
+		//if(_subsampleReads.size() > 0){
 
+			//cout << seq.getIndex() << " " << _subsampleReads[seq.getIndex()] << " " << _subsampleReads.size() << endl;
+		//}
 		//cout << _nbReadProcessed << endl;
 		//_nbReadProcessed += 1;
 

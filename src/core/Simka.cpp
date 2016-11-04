@@ -90,6 +90,11 @@ IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
     //coreParser->push_back(dskParser->getParser ());
     //coreParser->push_back(dskParser->getParser (STR_MAX_DISK));
 
+    //Subsampling parser
+    IOptionsParser* subsamplingParser = new OptionsParser ("subsampling");
+    subsamplingParser->push_back(new OptionNoParam(STR_SIMKA_SUBSAMPLING_SETUP, "provide information for correctly subsampling reads", false));
+    subsamplingParser->push_back(new OptionOneParam(STR_SIMKA_SUBSAMPLING_MAX_READS, "max size of the subsample space (provided by Simka with option: " + string(STR_SIMKA_SUBSAMPLING_SETUP) + ")", false, "100000"));
+    subsamplingParser->push_back(new OptionOneParam(STR_SIMKA_SUBSAMPLING_NB_PICKED_READS, "number of reads to pick randomly (must be smaller than " + string(STR_SIMKA_SUBSAMPLING_MAX_READS) + ")", false, "10000"));
     //Distances
     //IOptionsParser* distanceParser = new OptionsParser ("distances");
     //distanceParser->push_back (new OptionNoParam (STR_SIMKA_DISTANCE_BRAYCURTIS.c_str(), "compute Bray Curtis distance"));
@@ -102,6 +107,7 @@ IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
 	parser->push_back(distanceParser);
 	parser->push_back(kmerParser);
 	parser->push_back(readParser);
+	parser->push_back(subsamplingParser);
 	parser->push_back(coreParser);
 	//parser->push_back(distanceParser);
 

@@ -544,11 +544,11 @@ void SimkaAlgorithm<span>::layoutInputFilename(){
 template<size_t span>
 void SimkaAlgorithm<span>::createBank(){
 
-	IBank* bank = Bank::open(_banksInputFilename);
+	//IBank* bank = Bank::open(_banksInputFilename);
 
-	SimkaSequenceFilter sequenceFilter(_minReadSize, _minReadShannonIndex);
+	//SimkaSequenceFilter sequenceFilter(_minReadSize, _minReadShannonIndex);
 
-	_banks = new SimkaBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, _nbBankPerDataset, _maxNbReads);
+	//_banks = new SimkaBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, _nbBankPerDataset, _maxNbReads);
 
 }
 

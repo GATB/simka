@@ -246,14 +246,36 @@ public:
 
 	}
 
+	bool _isSubsampling;
+	u_int64_t _maxPickableKmers;
+	u_int64_t _nbPickedReads;
 
 	void execute(){
+
+		_isSubsampling = false;
 
 		parseArgs();
 
 		setup();
 
 		if(!SimkaAlgorithm<span>::isInputValid()) exit(1);
+
+
+		if(this->_options->get(STR_SIMKA_SUBSAMPLING_SETUP)){
+			SimkaSubsampling simkaSubsampling(this->_outputDirTemp, this->_nbBanks, this->_bankNames, this->_kmerSize);
+			simkaSubsampling.setup();
+			exit(0);
+		}
+		if(this->_options->get(STR_SIMKA_SUBSAMPLING_MAX_READS)){
+			_isSubsampling = true;
+			SimkaSubsampling simkaSubsampling(this->_outputDirTemp, this->_nbBanks, this->_bankNames, this->_kmerSize);
+			_maxPickableKmers = this->_options->getInt(STR_SIMKA_SUBSAMPLING_MAX_READS);
+			_nbPickedReads = this->_options->getInt(STR_SIMKA_SUBSAMPLING_NB_PICKED_READS);
+			//simkaSubsampling.setup();
+			//exit(0);
+			//cout << _maxPickableKmers << endl;
+			//cout << _nbPickedReads << endl;
+		}
 
 		SimkaAlgorithm<span>::computeMaxReads();
 
@@ -589,7 +611,6 @@ public:
 
 
 
-
         size_t chosenBankId = 0;
     	SimkaSequenceFilter dummyFilter(0, 0);
     	//vector<SimkaBankFiltered<SimkaSequenceFilter>*> banksToDelete;
@@ -833,6 +854,10 @@ public:
 			command += " " + string(STR_SIMKA_MIN_READ_SHANNON_INDEX) + " " + Stringify::format("%f", this->_minReadShannonIndex);
 			command += " " + string(STR_SIMKA_MAX_READS) + " " + SimkaAlgorithm<>::toString(this->_maxNbReads);
 			command += " -nb-partitions " + SimkaAlgorithm<>::toString(_nbPartitions);
+			if(_isSubsampling){
+				command += " " + string(STR_SIMKA_SUBSAMPLING_MAX_READS) + " " + SimkaAlgorithm<>::toString(_maxPickableKmers);
+				command += " " + string(STR_SIMKA_SUBSAMPLING_NB_PICKED_READS) + " " + SimkaAlgorithm<>::toString(_nbPickedReads);
+			}
 			//command += " -verbose " + Stringify::format("%d", this->_options->getInt(STR_VERBOSE));
 			command += " >> " + logFilename + " 2>&1";
 
