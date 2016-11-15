@@ -26,7 +26,7 @@ DATABASE = SimkaDatabase(args._databaseDir)
 SCRIPT_DIR = os.path.split(os.path.realpath(__file__))[0]
 
 if not os.path.exists(args._outputDirTemp):
-	os.mkdirs(args._outputDirTemp)
+	os.makedirs(args._outputDirTemp)
 
 #----------------------------------------------------------------------
 #----------------------------------------------------------------------
