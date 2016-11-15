@@ -40,6 +40,8 @@ public:
 
 		if(count[0] < _abundanceMin || count[0] > _abundanceMax) return false;
 
+		//if(count[0] > 1000)
+		//cout << kmer.toString(31) << "  " << count[0] << endl;
 		Kmer_BankId_Count item(kmer, _bankIndex, count[0]);
 		_bags[partId]->insert(item);
 		_nbDistinctKmerPerParts[partId] += 1;
@@ -76,6 +78,64 @@ public:
 	//vector<size_t>& _cacheIndexes;
 };
 
+
+
+
+
+
+
+
+
+
+template<size_t span>
+class SimkaAbundanceProcessor : public CountProcessorAbstract<span>{
+
+public:
+
+    typedef typename Kmer<span>::Type  Type;
+    typedef typename Kmer<span>::Count Count;
+    typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
+
+    //SimkaCompressedProcessor(vector<BagGzFile<Count>* >& bags, vector<vector<Count> >& caches, vector<size_t>& cacheIndexes, CountNumber abundanceMin, CountNumber abundanceMax) : _bags(bags), _caches(caches), _cacheIndexes(cacheIndexes)
+    SimkaAbundanceProcessor(CountNumber abundanceMin, CountNumber abundanceMax)
+    {
+    	_abundanceMin = abundanceMin;
+    	_abundanceMax = abundanceMax;
+    	//_bankIndex = bankIndex;
+    }
+
+	~SimkaAbundanceProcessor(){}
+    CountProcessorAbstract<span>* clone ()  {  return new SimkaAbundanceProcessor<span>(_abundanceMin, _abundanceMax);  }
+    //CountProcessorAbstract<span>* clone ()  {  return new SimkaCompressedProcessor (_bags, _caches, _cacheIndexes, _abundanceMin, _abundanceMax);  }
+	void finishClones (vector<ICountProcessor<span>*>& clones){}
+
+	bool process (size_t partId, const typename Kmer<span>::Type& kmer, const CountVector& count, CountNumber sum){
+
+		if(count[0] < _abundanceMin || count[0] > _abundanceMax) return false;
+
+
+
+		/*
+		size_t index = _cacheIndexes[partId];
+		_caches[partId][index] = item;
+		index += 1;
+		if(index == NB_COUNT_CACHE){
+			_bags[partId]->insert(_caches[partId], index);
+			_cacheIndexes[partId] = 0;
+		}
+		else{
+			_cacheIndexes[partId] = index;
+		}*/
+
+		return true;
+	}
+
+	CountNumber _abundanceMin;
+	CountNumber _abundanceMax;
+	//_stats->_chord_N2[i] += pow(abundanceI, 2);
+	//vector<vector<Count> >& _caches;
+	//vector<size_t>& _cacheIndexes;
+};
 
 /*
 

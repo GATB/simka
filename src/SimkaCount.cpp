@@ -20,6 +20,7 @@
 
 #include "SimkaPotara.hpp"
 #include "minikc/MiniKC.hpp"
+//#include "simka2/lz4/BagCompressedLZ4.hpp"		// set up encoder and decoder
 //#include <gatb/gatb_core.hpp>
 
 // We use the required packages
@@ -243,6 +244,19 @@ public:
 		    	}
 				 */
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 				//string outputDir = p.outputDir + "/solid/" + p.bankName;
 				//System::file().mkdir(outputDir, -1);
 				vector<Bag<Kmer_BankId_Count>* > bags;
@@ -250,7 +264,7 @@ public:
 		    	for(size_t i=0; i<p.nbPartitions; i++){
 					string outputFilename = p.outputDir + "/solid/part_" + Stringify::format("%i", i) + "/__p__" + Stringify::format("%i", p.bankIndex) + ".gz";
 					Bag<Kmer_BankId_Count>* bag = new BagGzFile<Kmer_BankId_Count>(outputFilename);
-					Bag<Kmer_BankId_Count>* cachedBag = new BagCache<Kmer_BankId_Count>(bag, 10000);
+					Bag<Kmer_BankId_Count>* cachedBag = new BagCache<Kmer_BankId_Count>(bag, SIMKA2_LZ4_CACHE_NB_ITEMS);
 					cachedBags.push_back(cachedBag);
 					//BagCache bagCache(*bag, 10000);
 		        	bags.push_back(bag);

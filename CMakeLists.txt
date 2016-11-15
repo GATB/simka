@@ -60,7 +60,7 @@ endif()
 #       - from project source
 #       - from GATB-CORE source
 #       - from simka source
-include_directories (include ${gatb-core-includes} ${PROJECT_SOURCE_DIR}/src/core ${PROJECT_SOURCE_DIR}/src/minikc ${PROJECT_SOURCE_DIR}/src)
+include_directories (include ${gatb-core-includes} ${PROJECT_SOURCE_DIR}/src/core ${PROJECT_SOURCE_DIR}/src/minikc ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/src/simka2/lz4)
 
 # we generate one file per template specialization
 FOREACH (KSIZE ${gatb-core-klist})
@@ -71,21 +71,42 @@ FOREACH (KSIZE ${gatb-core-klist})
 ENDFOREACH ()
 
 # we define the files to be compiled
-file (GLOB_RECURSE  ProjectFiles  src/core/Simka*  ${PROJECT_BINARY_DIR}/src/core/template/*.cpp)
+file (GLOB_RECURSE  ProjectFiles  src/core/Simka*  src/simka2/lz4/*.cpp ${PROJECT_BINARY_DIR}/src/core/template/*.cpp)
 
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 set(PROJECT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/bin)
 
-add_executable        (simka  src/SimkaPotara.cpp ${ProjectFiles})
-target_link_libraries (simka  ${gatb-core-libraries})
 
-add_executable        (simkaCountProcess  src/minikc/SimkaCountProcess.cpp ${ProjectFiles})
-target_link_libraries (simkaCountProcess  ${gatb-core-libraries})
-add_executable        (simkaCount  src/SimkaCount.cpp ${ProjectFiles})
-target_link_libraries (simkaCount  ${gatb-core-libraries})
+#-- simka1
 
-add_executable        (simkaMerge  src/SimkaMerge.cpp ${ProjectFiles})
-target_link_libraries (simkaMerge  ${gatb-core-libraries})
+#add_executable        (simka  src/SimkaPotara.cpp ${ProjectFiles})
+#target_link_libraries (simka  ${gatb-core-libraries})
+
+#add_executable        (simkaCountProcess  src/minikc/SimkaCountProcess.cpp ${ProjectFiles})
+#target_link_libraries (simkaCountProcess  ${gatb-core-libraries})
+#add_executable        (simkaCount  src/SimkaCount.cpp ${ProjectFiles})
+#target_link_libraries (simkaCount  ${gatb-core-libraries})
+
+#add_executable        (simkaMerge  src/SimkaMerge.cpp ${ProjectFiles})
+#target_link_libraries (simkaMerge  ${gatb-core-libraries})
+
+add_executable        (simkaDistanceExport  src/export/SimkaDistanceExporter.cpp ${ProjectFiles})
+target_link_libraries (simkaDistanceExport  ${gatb-core-libraries})
+
+
+#-- simka2
+
+add_executable        (simka2-computeKmerSpectrum  src/simka2/Simka2ComputeKmerSpectrum.cpp ${ProjectFiles})
+target_link_libraries (simka2-computeKmerSpectrum  ${gatb-core-libraries})
+
+add_executable        (simka2-merge  src/simka2/Simka2Merge.cpp ${ProjectFiles})
+target_link_libraries (simka2-merge  ${gatb-core-libraries})
+
+add_executable        (simka2-distance  src/simka2/Simka2Distance.cpp ${ProjectFiles})
+target_link_libraries (simka2-distance  ${gatb-core-libraries})
+
+add_executable        (simka2-distance-final  src/simka2/Simka2DistanceFinal.cpp ${ProjectFiles})
+target_link_libraries (simka2-distance-final  ${gatb-core-libraries})
 
 ################################################################################
 #  PACKAGING

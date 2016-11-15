@@ -584,7 +584,7 @@ void SimkaAlgorithm<span>::count(){
 
 template<size_t span>
 void SimkaAlgorithm<span>::outputMatrix(){
-	_stats->outputMatrix(_outputDir, _bankNames);
+	//_stats->outputMatrix(_outputDir, _bankNames);
 }
 
 

@@ -295,6 +295,8 @@ public:
 			system(command.c_str());
 			command = "rm -rf " + this->_outputDirTemp + "/input/";
 			system(command.c_str());
+			command = "rm -rf " + this->_outputDirTemp + "/distance_matrix/";
+			system(command.c_str());
 
 
 			command = "rm " + this->_outputDirTemp + "/config.h5";
@@ -463,6 +465,7 @@ public:
 		System::file().mkdir(this->_outputDirTemp + "/job_count/", -1);
 		System::file().mkdir(this->_outputDirTemp + "/job_merge/", -1);
 		System::file().mkdir(this->_outputDirTemp + "/kmercount_per_partition/", -1);
+		System::file().mkdir(this->_outputDirTemp + "/distance_matrix/", -1);
 
 	}
 
@@ -684,6 +687,21 @@ public:
 
 
 		_nbPartitions = max((size_t)maxPart, (size_t)_maxJobMerge);
+		/*
+		cout << "ENELEVER _nbPartitions = 1 dans SImkaPoatar !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+		cout << "ENELEVER _nbPartitions = 1 dans SImkaPoatar !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+		cout << "ENELEVER _nbPartitions = 1 dans SImkaPoatar !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+		cout << "ENELEVER _nbPartitions = 1 dans SImkaPoatar !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+		cout << "ENELEVER _nbPartitions = 1 dans SImkaPoatar !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+		cout << "ENELEVER _nbPartitions = 1 dans SImkaPoatar !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+		cout << "ENELEVER _nbPartitions = 1 dans SImkaPoatar !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+		cout << "ENELEVER _nbPartitions = 1 dans SImkaPoatar !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+		cout << "ENELEVER _nbPartitions = 1 dans SImkaPoatar !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+		cout << "ENELEVER _nbPartitions = 1 dans SImkaPoatar !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+		cout << "ENELEVER _nbPartitions = 1 dans SImkaPoatar !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+		cout << "ENELEVER _nbPartitions = 1 dans SImkaPoatar !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+		cout << "ENELEVER _nbPartitions = 1 dans SImkaPoatar !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+		_nbPartitions = 1;*/
 		//_nbPartitions = max(_nbPartitions, (size_t)32);
 
 		cout << "Nb partitions: " << _nbPartitions << " partitions" << endl << endl << endl;
@@ -1128,7 +1146,8 @@ public:
 		//u_int64_t nbKmers = 0;
 
 		//SimkaDistanceParam distanceParams(this->_options);
-		SimkaStatistics mainStats(this->_nbBanks, this->_computeSimpleDistances, this->_computeComplexDistances, this->_outputDirTemp, this->_bankNames);
+		SimkaStatistics mainStats(this->_nbBanks, this->_nbBanks, this->_computeSimpleDistances, this->_computeComplexDistances);
+		mainStats.loadInfoSimka1(this->_outputDirTemp, this->_bankNames);
 
 		for(size_t i=0; i<_nbPartitions; i++){
 
@@ -1136,7 +1155,8 @@ public:
 			//Storage* storage = StorageFactory(STORAGE_HDF5).load (this->_outputDirTemp + "/stats/part_" + SimkaAlgorithm<>::toString(i) + ".stats");
 			//LOCAL (storage);
 
-			SimkaStatistics stats(this->_nbBanks, this->_computeSimpleDistances, this->_computeComplexDistances, this->_outputDirTemp, this->_bankNames);
+			SimkaStatistics stats(this->_nbBanks, this->_nbBanks, this->_computeSimpleDistances, this->_computeComplexDistances);
+			stats.loadInfoSimka1(this->_outputDirTemp, this->_bankNames);
 			stats.load(filename);
 
 			//cout << stats._nbDistinctKmers << "   " << stats._nbKmers << endl;
@@ -1151,7 +1171,7 @@ public:
 		//for(size_t i=0; i<this->_nbBanks; i++){
 		//	cout << mainStats._nbSolidDistinctKmersPerBank[i] << endl;
 		//}
-		mainStats.outputMatrix(this->_outputDir, this->_bankNames);
+		mainStats.outputMatrix(this->_outputDirTemp, this->_bankNames);
 
 #//ifdef PRINT_STATS
 		if(this->_options->getInt(STR_VERBOSE) != 0) mainStats.print();

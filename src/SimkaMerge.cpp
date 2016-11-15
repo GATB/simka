@@ -22,7 +22,7 @@
 #include <gatb/gatb_core.hpp>
 #include <SimkaAlgorithm.hpp>
 #include <SimkaDistance.hpp>
-
+//#include "simka2/lz4/BagCompressedLZ4.hpp"
 // We use the required packages
 using namespace std;
 
@@ -35,12 +35,12 @@ using namespace gatb::core::system::impl;
 #define MERGE_BUFFER_SIZE 1000
 #define SIMKA_MERGE_MAX_FILE_USED 100
 
+/*
 template<size_t span>
 class DistanceCommand : public gatb::core::tools::dp::ICommand //, public gatb::core::system::SmartPointer
 {
 public:
 
-    /** Shortcut. */
     typedef typename Kmer<span>::Type           Type;
     typedef typename Kmer<span>::Count          Count;
 
@@ -53,7 +53,6 @@ public:
 	vector<Type> _bufferKmers;
 	vector<CountVector> _bufferCounts;
 
-    /** Constructor. */
     DistanceCommand (
     		const string& tmpDir,
 			const vector<string>& datasetIds,
@@ -67,9 +66,9 @@ public:
     )
 	{
     	_partitionId = partitionId;
-		_stats = new SimkaStatistics(nbBanks, computeSimpleDistances, computeComplexDistances, tmpDir, datasetIds);
+		_stats = new SimkaStatistics(nbBanks, nbNewBanks, computeSimpleDistances, computeComplexDistances, tmpDir, datasetIds);
 
-		_processor = new SimkaCountProcessorSimple<span> (_stats, nbBanks, kmerSize, abundanceThreshold, SUM, false, minShannonIndex);
+		_processor = new SimkaCountProcessorSimple<span> (_stats, nbBanks, nbBanks, kmerSize, abundanceThreshold, SUM, false, minShannonIndex);
 
 		_bufferKmers.resize(MERGE_BUFFER_SIZE);
 		_bufferCounts.resize(MERGE_BUFFER_SIZE);
@@ -105,7 +104,7 @@ public:
 	void use () {}
 	void forget () {}
 };
-
+*/
 
 
 
@@ -187,7 +186,7 @@ public:
 		return get<0>(_it->item());
 	}
 
-	u_int16_t getBankId(){
+	u_int64_t& getBankId(){
 		return get<1>(_it->item());
 	}
 
@@ -208,55 +207,7 @@ public:
 };
 
 
-class SimkaCounterBuilderMerge
-{
-public:
 
-    /** Constructor.
-     * \param[in] nbBanks : number of banks parsed during kmer counting.
-     */
-	SimkaCounterBuilderMerge (CountVector& abundancePerBank)  :  _abundancePerBank(abundancePerBank)  {}
-
-    /** Get the number of banks.
-     * \return the number of banks. */
-    size_t size() const  { return _abundancePerBank.size(); }
-
-    /** Initialization of the counting for the current kmer. This method should be called
-     * when a kmer is seen for the first time.
-     * \param[in] idxBank : bank index where the new current kmer has been found. */
-    void init (size_t idxBank, CountNumber abundance)
-    {
-        for (size_t k=0; k<_abundancePerBank.size(); k++)  { _abundancePerBank[k]=0; }
-        _abundancePerBank [idxBank]= abundance;
-    }
-
-    /** Increase the abundance of the current kmer for the provided bank index.
-     * \param[in] idxBank : index of the bank */
-    void increase (size_t idxBank, CountNumber abundance)  {  _abundancePerBank [idxBank] += abundance;  }
-
-    /** Set the abundance of the current kmer for the provided bank index.
-     * \param[in] idxBank : index of the bank */
-    //void set (CountNumber val, size_t idxBank=0)  {  _abundancePerBank [idxBank] = val;  }
-
-    /** Get the abundance of the current kmer for the provided bank index.
-     * \param[in] idxBank : index of the bank
-     * \return the abundance of the current kmer for the given bank. */
-    //CountNumber operator[] (size_t idxBank) const  { return _abundancePerBank[idxBank]; }
-
-    /** */
-    //const CountVector& get () const { return _abundancePerBank; }
-
-    void print(const string& kmer){
-		cout << kmer << ": ";
-    	for(size_t i=0; i<size(); i++){
-    		cout << _abundancePerBank[i] << " ";
-    	}
-    	cout << endl;
-    }
-
-private:
-    CountVector& _abundancePerBank;
-};
 
 
 
@@ -600,7 +551,7 @@ public:
 
     	_outputFilename = _outputDir + "/solid/part_" + Stringify::format("%i", partitionId) + "/__p__" + Stringify::format("%i", mergeId) + ".gz.temp";
     	_outputGzFile = new BagGzFile<Kmer_BankId_Count>(_outputFilename);
-    	_cachedBag = new BagCache<Kmer_BankId_Count>(_outputGzFile, 10000);
+    	_cachedBag = new BagCache<Kmer_BankId_Count>(_outputGzFile, SIMKA2_LZ4_CACHE_NB_ITEMS);
 
     }
 
@@ -609,7 +560,7 @@ public:
 
     void execute(){
 
-		vector<IterableGzFile<Kmer_BankId_Count>* > partitions;
+		vector<Iterable<Kmer_BankId_Count>* > partitions;
 		vector<StorageIt<span>*> its;
 
 		size_t _nbBanks = _datasetIds.size();
@@ -618,7 +569,7 @@ public:
 			//cout << _datasetIds[i] << endl;
 			string filename = _outputDir + "/solid/part_" +  Stringify::format("%i", _partitionId) + "/__p__" + Stringify::format("%i", _datasetIds[i]) + ".gz";
 			//cout << "\t\t" << filename << endl;
-			IterableGzFile<Kmer_BankId_Count>* partition = new IterableGzFile<Kmer_BankId_Count>(filename, 10000);
+			Iterable<Kmer_BankId_Count>* partition = new IterableGzFile<Kmer_BankId_Count>(filename);
 			partitions.push_back(partition);
 			its.push_back(new StorageIt<span>(partition->iterator(), i, _partitionId));
 			//nbKmers += partition->estimateNbItems();
@@ -947,8 +898,10 @@ public:
 		//createProcessor(p);
 
 		//PARALLEL line to remove
-		_stats = new SimkaStatistics(_nbBanks, p.computeSimpleDistances, p.computeComplexDistances, p.outputDir, _datasetIds);
-		_processor = new SimkaCountProcessorSimple<span> (_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, p.minShannonIndex);
+		_stats = new SimkaStatistics(_nbBanks, _nbBanks, p.computeSimpleDistances, p.computeComplexDistances);
+		_stats->loadInfoSimka1(p.outputDir, _datasetIds);
+
+		_processor = new SimkaCountProcessorSimple<span> (_stats, _nbBanks, _nbBanks, p.kmerSize, p.minShannonIndex);
 		//_processor->use();
 
 
@@ -957,7 +910,7 @@ public:
 
 
 		string line;
-		vector<IterableGzFile<Kmer_BankId_Count>* > partitions;
+		vector<Iterable<Kmer_BankId_Count>* > partitions;
 		vector<StorageIt<span>*> its;
 		u_int64_t nbKmers = 0;
 
@@ -965,7 +918,7 @@ public:
     		size_t datasetId = get<1>(filenameSizes[i]);
     		string filename = p.outputDir + "/solid/part_" + Stringify::format("%i", p.partitionId) + "/__p__" + Stringify::format("%i", datasetId) + ".gz";
     		//cout << filename << endl;
-    		IterableGzFile<Kmer_BankId_Count>* partition = new IterableGzFile<Kmer_BankId_Count>(filename, 10000);
+    		Iterable<Kmer_BankId_Count>* partition = new IterableGzFile<Kmer_BankId_Count>(filename);
     		partitions.push_back(partition);
     		its.push_back(new StorageIt<span>(partition->iterator(), i, _partitionId));
     		//nbKmers += partition->estimateNbItems();
@@ -1061,11 +1014,44 @@ public:
 			it->_it->first();
 		}
 
+		/*
+		cout << its.size() << endl;
+		its[1]->_it->first();
+		while(1){
+			StorageIt<span>* it = its[1];
+			it->_it->next();
+
+
+			if(it->abundance() > 10000)
+	    	cout << it->value().toString(31) << " " << it->getBankId() <<  " "<< it->abundance() << "  " << it->_bankId << endl;
+
+			if(it->_it->isDone()){
+				exit(1);
+			}
+		}*/
+		/*
+		for(size_t i=0; i<its.size(); i++){
+			cout << i << endl;
+			while(1){
+				StorageIt<span>* it = its[i];
+				it->_it->next();
+				if(it->getBankId() > 13){
+					cout << i << endl;
+				}
+				if(it->_it->isDone()){
+					break;
+					//exit(1);
+				}
+			}
+		}*/
+
 	    //fill the  priority queue with the first elems
 	    for (size_t ii=0; ii<its.size(); ii++)
 	    {
 	    	//pq.push(Kmer_BankId_Count(ii,its[ii]->value()));
-	    	pq.push(kxp(its[ii]->value(), its[ii]->getBankId(), its[ii]->abundance(), its[ii]));
+			if (!its[ii]->_it->isDone()){
+				pq.push(kxp(its[ii]->value(), its[ii]->getBankId(), its[ii]->abundance(), its[ii]));
+			}
 	    }
 
 	    if (pq.size() != 0) // everything empty, no kmer at all
@@ -1091,7 +1077,8 @@ public:
 			    	bestIt = get<3>(pq.top()); pq.pop();
 				}
 
-		    	//cout << bestIt->value().toString(31) << " " << bestIt->getBankId() <<  " "<< bestIt->abundance() << endl;
+				//if(bestIt->abundance() > 10000)
+		    	//cout << bestIt->value().toString(31) << " " << bestIt->getBankId() <<  " "<< bestIt->abundance() << "  " << bestIt->_bankId << endl;
 
 				if (bestIt->value() != previous_kmer )
 				{
@@ -1101,6 +1088,8 @@ public:
 			    	bestIt = get<3>(pq.top()); pq.pop();
 					//best_p = get<1>(pq.top()) ; pq.pop();
 
+			    	//cout << bestIt->_bankId << endl;
+			    	//cout << bestIt->getBankId() << endl;
 					//if new best is diff, this is the end of this kmer
 					if(bestIt->value()!=previous_kmer )
 					{
@@ -1188,7 +1177,7 @@ public:
 
 	void insert(const Type& kmer, const CountVector& counts, size_t nbBankThatHaveKmer){
 
-		//cout << kmer.toString(31) << endl;
+		//cout << kmer.toString(31) << "   ";
 		//for(size_t i=0; i<counts.size(); i++){
 		//	cout << counts[i] << " ";
 		//}
@@ -1254,6 +1243,7 @@ public:
 		//_processors.push_back(proc);
 	}
 
+	/*
 	void resetCommands(){
 		for (size_t i=0; i<_nbCores; i++){
 			DistanceCommand<span>* cmd = dynamic_cast<DistanceCommand<span>*>(_cmds[i]);
@@ -1262,7 +1252,6 @@ public:
 
 	}
 
-	/*
 	void dispatch(){
 
 

@@ -22,5 +22,6 @@ int main (int argc, char* argv[])
 	while(ret != 0){
 		ret = system(command.c_str());
 		nanosleep((const struct timespec[]){{0, 10000000L}}, NULL);
+		if(ret != 0) cout << ret << endl;
 	}
 }

@@ -22,6 +22,8 @@
 #define TOOLS_SIMKA_SRC_SIMKADISTANCE_HPP_
 
 #include <gatb/gatb_core.hpp>
+#include "SimkaCommon.hpp"
+#include "../export/SimkaDistanceMatrixBinary.hpp"
 
 const string STR_SIMKA_DISTANCE_BRAYCURTIS = "-bray-curtis";
 const string STR_SIMKA_DISTANCE_CHORD = "-chord";
@@ -69,14 +71,56 @@ class SimkaStatistics{
 
 public:
 
-	SimkaStatistics(size_t nbBanks, bool computeSimpleDistances, bool computeComplexDistances, const string& tmpDir, const vector<string>& datasetIds);
+	SimkaStatistics(size_t nbBanks, size_t nbNewBanks, bool computeSimpleDistances, bool computeComplexDistances);
 	SimkaStatistics& operator+=  (const SimkaStatistics& other);
 	void print();
 	void load(const string& filename);
 	void save(const string& filename);
-	void outputMatrix(const string& outputDir, const vector<string>& _bankNames);
+	void outputMatrix(const string& outputDirTemp, const vector<string>& _bankNames);
+
+	void loadInfoSimka1(const string& tmpDir, const vector<string>& datasetIds){
+		_totalReads = 0;
+
+		for(size_t i=0; i<_nbBanks; i++){
+
+			string name = datasetIds[i];
+			string countFilename = tmpDir + "/count_synchro/" +  name + ".ok";
+
+			string line;
+			ifstream file(countFilename.c_str());
+			vector<string> lines;
+			while(getline(file, line)){
+				if(line == "") continue;
+				lines.push_back(line);
+			}
+			file.close();
+
+			u_int64_t nbReads = strtoull(lines[0].c_str(), NULL, 10);
+
+
+			_datasetNbReads[i] = nbReads;
+			_nbSolidDistinctKmersPerBank[i] = strtoull(lines[1].c_str(), NULL, 10);
+			_nbSolidKmersPerBank[i] = strtoull(lines[2].c_str(), NULL, 10);
+
+
+			if(_computeSimpleDistances){
+				_chord_sqrt_N2[i] = sqrt(strtoull(lines[3].c_str(), NULL, 10));
+			}
+
+			_totalReads += nbReads;
+			/*
+			for (size_t j=0; j<_nbCores; j++){
+				DistanceCommand<span>* cmd = dynamic_cast<DistanceCommand<span>*>(_cmds[j]);
+				cmd->_stats->_datasetNbReads[i] = nbReads;
+				cmd->_stats->_nbSolidDistinctKmersPerBank[i] = strtoull(lines[1].c_str(), NULL, 10);
+				cmd->_stats->_nbSolidKmersPerBank[i] = strtoull(lines[2].c_str(), NULL, 10);
+				cmd->_stats->_chord_sqrt_N2[i] = sqrt(strtoull(lines[3].c_str(), NULL, 10));
+			}*/
+		}
+	}
 
     size_t _nbBanks;
+    size_t _nbNewBanks;
     size_t _symetricDistanceMatrixSize;
     bool _computeSimpleDistances;
     bool _computeComplexDistances;
@@ -89,10 +133,10 @@ public:
 	vector<u_int64_t> _nbDistinctKmersSharedByBanksThreshold;
 	vector<u_int64_t> _nbKmersSharedByBanksThreshold;
 
-	vector<u_int64_t> _matrixNbDistinctSharedKmers;
+	vector<vector<u_int64_t> > _matrixNbDistinctSharedKmers;
 	vector<vector<u_int64_t> > _matrixNbSharedKmers;
 
-	vector<u_int64_t> _brayCurtisNumerator;
+	vector<vector<u_int64_t> > _brayCurtisNumerator;
 	//vector<vector<u_int64_t> > _brayCurtisNumerator;
 	//vector<vector<double> > _kullbackLeibler;
 
@@ -134,7 +178,6 @@ public:
 
 private:
 
-	void dumpMatrix(const string& outputDir, const vector<string>& _bankNames, const string& outputFilename, const vector<vector<float> >& matrix);
 	string _outputFilenameSuffix;
 };
 
@@ -143,346 +186,444 @@ class SimkaDistance {
 
 public:
 
+	vector<vector<float> > _matrix;
+
+
 	SimkaDistance(SimkaStatistics& stats);
-	//virtual ~SimkaDistance();
 
-	//vector<vector<float> > getMatrixSorensen(SIMKA_MATRIX_TYPE type);
-	//vector<vector<float> > getMatrixJaccard();
-	//vector<vector<float> > getMatrixAKS(SIMKA_MATRIX_TYPE type);
-	//vector<vector<float> > getMatrixBrayCurtis();
-	//vector<vector<float> > getMatrixKullbackLeibler();
+	void clearMatrix(){
+		/*
+		for(size_t i=0; i<_matrix.size(); i++){
+			for(size_t j=0; j<_matrix.size(); j++){
+				_matrix[i][j] = 0;
+			}
+		}*/
+	}
 
-    vector<vector<float> > _matrixJaccardAbundance(){
-    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    void _matrixJaccardAbundance(){
+    	clearMatrix();
 
-    	for(size_t i=0; i<_nbBanks; i++){
-    		for(size_t j=i+1; j<_nbBanks; j++){
+    	//for(size_t i=0; i<_nbBanks; i++){
+    	//	for(size_t j=i+1; j<_nbBanks; j++){
+		for(size_t j=0; j<_nbNewBanks; j++){
+			for(size_t i=0; i<j; i++){
     			double dist = distance_abundance_jaccard(i, j);
-    			matrix[i][j] = dist;
-    			matrix[j][i] = dist;
+    			_matrix[i][j] = dist;
+    			_matrix[j][i] = dist;
     		}
     	}
 
-		return matrix;
+
     }
 
-    vector<vector<float> > _matrixBrayCurtis(){
-    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    void _matrixBrayCurtis(){
 
-    	for(size_t i=0; i<_nbBanks; i++){
-    		for(size_t j=i+1; j<_nbBanks; j++){
-    			double dist = distance_abundance_brayCurtis(i, j, j + ((_nbBanks-1)*i) - (i*(i-1)/2));
-    			matrix[i][j] = dist;
-    			matrix[j][i] = dist;
-    		}
-    	}
+    	clearMatrix();
 
-		return matrix;
+		size_t nbOldBanks = _nbBanks - _nbNewBanks;
+
+		//cout << _matrix.size() << " " << _matrix[0].size() << "   " << _nbNewBanks << endl;
+		for(size_t i=0; i<nbOldBanks; i++){
+			for(size_t j=0; j<_nbNewBanks; j++){
+
+				double dist = distance_abundance_brayCurtis(i, j, j+nbOldBanks);
+				_matrix[i][j] = dist;
+
+			}
+		}
+
+		for(size_t i=nbOldBanks; i<_nbBanks; i++){
+			for(size_t j=(i-nbOldBanks)+1; j<_nbNewBanks; j++){
+
+				double dist = distance_abundance_brayCurtis(i, j, j+nbOldBanks);
+				_matrix[i][j] = dist;
+
+
+				size_t iTemp = i-nbOldBanks;
+				size_t i2 = j;
+				size_t j2 = iTemp;
+				i2 += nbOldBanks;
+				_matrix[i2][j2] = dist;
+
+			}
+		}
+
+
     }
 
-    vector<vector<float> > _matrixChord(){
-    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    void _matrixChord(){
+    	clearMatrix();
 
-    	for(size_t i=0; i<_nbBanks; i++){
-    		for(size_t j=i+1; j<_nbBanks; j++){
+		for(size_t j=0; j<_nbNewBanks; j++){
+			for(size_t i=0; i<j; i++){
     			double dist = distance_abundance_chord(i, j);
-    			matrix[i][j] = dist;
-    			matrix[j][i] = dist;
+    			_matrix[i][j] = dist;
+    			_matrix[j][i] = dist;
     		}
     	}
 
-		return matrix;
+
     }
 
-    vector<vector<float> > _matrixHellinger(){
-    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    void _matrixHellinger(){
+    	clearMatrix();
 
-    	for(size_t i=0; i<_nbBanks; i++){
-    		for(size_t j=i+1; j<_nbBanks; j++){
+		for(size_t j=0; j<_nbNewBanks; j++){
+			for(size_t i=0; i<j; i++){
     			double dist = distance_abundance_hellinger(i, j);
-    			matrix[i][j] = dist;
-    			matrix[j][i] = dist;
+    			_matrix[i][j] = dist;
+    			_matrix[j][i] = dist;
     		}
     	}
 
-		return matrix;
+
     }
 
-    vector<vector<float> > _matrixWhittaker(){
-    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    void _matrixWhittaker(){
+    	clearMatrix();
 
-    	for(size_t i=0; i<_nbBanks; i++){
-    		for(size_t j=i+1; j<_nbBanks; j++){
+		for(size_t j=0; j<_nbNewBanks; j++){
+			for(size_t i=0; i<j; i++){
     			double dist = distance_abundance_whittaker(i, j);
-    			matrix[i][j] = dist;
-    			matrix[j][i] = dist;
+    			_matrix[i][j] = dist;
+    			_matrix[j][i] = dist;
     		}
     	}
 
-		return matrix;
+
     }
 
-    vector<vector<float> > _matrixKullbackLeibler(){
-    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    void _matrixKullbackLeibler(){
+    	clearMatrix();
 
-    	for(size_t i=0; i<_nbBanks; i++){
-    		for(size_t j=i+1; j<_nbBanks; j++){
+		for(size_t j=0; j<_nbNewBanks; j++){
+			for(size_t i=0; i<j; i++){
     			double dist = distance_abundance_kullbackLeibler(i, j);
-    			matrix[i][j] = dist;
-    			matrix[j][i] = dist;
+    			_matrix[i][j] = dist;
+    			_matrix[j][i] = dist;
     		}
     	}
 
-		return matrix;
+
     }
 
-    vector<vector<float> > _matrixCanberra(){
-    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    void _matrixCanberra(){
+    	clearMatrix();
     	u_int64_t a, b, c;
 
-    	for(size_t i=0; i<_nbBanks; i++){
-    		for(size_t j=i+1; j<_nbBanks; j++){
+		for(size_t j=0; j<_nbNewBanks; j++){
+			for(size_t i=0; i<j; i++){
 
-    			get_abc(i, j, j + ((_nbBanks-1)*i) - (i*(i-1)/2), a, b ,c);
+    			get_abc(i, j, j, a, b ,c);
     			double dist = distance_abundance_canberra(i, j, a, b, c);
-    			matrix[i][j] = dist;
-    			matrix[j][i] = dist;
+    			_matrix[i][j] = dist;
+    			_matrix[j][i] = dist;
     		}
     	}
 
-		return matrix;
+
     }
 
-    vector<vector<float> > _matrixKulczynski(){
-    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    void _matrixKulczynski(){
+    	clearMatrix();
 
-    	for(size_t i=0; i<_nbBanks; i++){
-    		for(size_t j=i+1; j<_nbBanks; j++){
+		for(size_t j=0; j<_nbNewBanks; j++){
+			for(size_t i=0; i<j; i++){
     			double dist = distance_abundance_kulczynski(i, j);
-    			matrix[i][j] = dist;
-    			matrix[j][i] = dist;
+    			_matrix[i][j] = dist;
+    			_matrix[j][i] = dist;
     		}
     	}
 
-		return matrix;
+
     }
 
-    vector<vector<float> > _matrixSymJaccardAbundance(){
-    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    void _matrixSymJaccardAbundance(){
+    	clearMatrix();
 
-    	for(size_t i=0; i<_nbBanks; i++){
-    		for(size_t j=i+1; j<_nbBanks; j++){
+		for(size_t j=0; j<_nbNewBanks; j++){
+			for(size_t i=0; i<j; i++){
     			double dist = distance_abundance_jaccard_simka(i, j, SYMETRICAL);
-    			matrix[i][j] = dist;
-    			matrix[j][i] = dist;
+    			_matrix[i][j] = dist;
+    			_matrix[j][i] = dist;
     		}
     	}
 
-		return matrix;
+
     }
 
-    vector<vector<float> > _matrixAsymJaccardAbundance(){
-    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    void _matrixAsymJaccardAbundance(){
+    	clearMatrix();
 
-    	for(size_t i=0; i<_nbBanks; i++){
-    		for(size_t j=i+1; j<_nbBanks; j++){
-    			matrix[i][j] = distance_abundance_jaccard_simka(i, j, ASYMETRICAL);
-    			matrix[j][i] = distance_abundance_jaccard_simka(j, i, ASYMETRICAL);
+		for(size_t j=0; j<_nbNewBanks; j++){
+			for(size_t i=0; i<j; i++){
+    			_matrix[i][j] = distance_abundance_jaccard_simka(i, j, ASYMETRICAL);
+    			_matrix[j][i] = distance_abundance_jaccard_simka(j, i, ASYMETRICAL);
     		}
     	}
 
-		return matrix;
+
     }
 
-    vector<vector<float> > _matrixOchiai(){
-    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    void _matrixOchiai(){
+    	clearMatrix();
 
-    	for(size_t i=0; i<_nbBanks; i++){
-    		for(size_t j=i+1; j<_nbBanks; j++){
+		for(size_t j=0; j<_nbNewBanks; j++){
+			for(size_t i=0; i<j; i++){
     			double dist = distance_abundance_ochiai(i, j);
-    			matrix[i][j] = dist;
-    			matrix[j][i] = dist;
+    			_matrix[i][j] = dist;
+    			_matrix[j][i] = dist;
     		}
     	}
 
-		return matrix;
+
     }
 
-    vector<vector<float> > _matrixSorensen(){
-    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    void _matrixSorensen(){
+    	clearMatrix();
 
-    	for(size_t i=0; i<_nbBanks; i++){
-    		for(size_t j=i+1; j<_nbBanks; j++){
+		for(size_t j=0; j<_nbNewBanks; j++){
+			for(size_t i=0; i<j; i++){
     			double dist = distance_abundance_sorensen(i, j);
-    			matrix[i][j] = dist;
-    			matrix[j][i] = dist;
+    			_matrix[i][j] = dist;
+    			_matrix[j][i] = dist;
     		}
     	}
 
-		return matrix;
+
     }
 
-    vector<vector<float> > _matrix_presenceAbsence_sorensenBrayCurtis(){
-    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    void _matrix_presenceAbsence_sorensenBrayCurtis(){
+    	clearMatrix();
     	u_int64_t a, b, c;
 
-    	for(size_t i=0; i<_nbBanks; i++){
-    		for(size_t j=i+1; j<_nbBanks; j++){
+		for(size_t j=0; j<_nbNewBanks; j++){
+			for(size_t i=0; i<j; i++){
 
-    			get_abc(i, j, j + ((_nbBanks-1)*i) - (i*(i-1)/2), a, b ,c);
+    			get_abc(i, j, j, a, b ,c);
 
     			double dist = distance_presenceAbsence_sorensenBrayCurtis(a, b, c);
-    			matrix[i][j] = dist;
-    			matrix[j][i] = dist;
+    			_matrix[i][j] = dist;
+    			_matrix[j][i] = dist;
     		}
     	}
 
-		return matrix;
+
     }
 
-    vector<vector<float> > _matrix_presenceAbsence_Whittaker(){
-    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    void _matrix_presenceAbsence_Whittaker(){
+    	clearMatrix();
     	u_int64_t a, b, c;
 
-    	for(size_t i=0; i<_nbBanks; i++){
-    		for(size_t j=i+1; j<_nbBanks; j++){
+		for(size_t j=0; j<_nbNewBanks; j++){
+			for(size_t i=0; i<j; i++){
 
-    			get_abc(i, j, j + ((_nbBanks-1)*i) - (i*(i-1)/2), a, b ,c);
+    			get_abc(i, j, j, a, b ,c);
 
     			double dist = distance_presenceAbsence_whittaker(a, b, c);
-    			matrix[i][j] = dist;
-    			matrix[j][i] = dist;
+    			_matrix[i][j] = dist;
+    			_matrix[j][i] = dist;
     		}
     	}
 
-		return matrix;
+
     }
 
-    vector<vector<float> > _matrix_presenceAbsence_kulczynski(){
-    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    void _matrix_presenceAbsence_kulczynski(){
+    	clearMatrix();
     	u_int64_t a, b, c;
 
-    	for(size_t i=0; i<_nbBanks; i++){
-    		for(size_t j=i+1; j<_nbBanks; j++){
+		for(size_t j=0; j<_nbNewBanks; j++){
+			for(size_t i=0; i<j; i++){
 
-    			get_abc(i, j, j + ((_nbBanks-1)*i) - (i*(i-1)/2), a, b ,c);
+    			get_abc(i, j, j, a, b ,c);
 
     			double dist = distance_presenceAbsence_kulczynski(a, b, c);
-    			matrix[i][j] = dist;
-    			matrix[j][i] = dist;
+    			_matrix[i][j] = dist;
+    			_matrix[j][i] = dist;
     		}
     	}
 
-		return matrix;
+
     }
 
-    vector<vector<float> > _matrix_presenceAbsence_ochiai(){
-    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    void _matrix_presenceAbsence_ochiai(){
+    	clearMatrix();
     	u_int64_t a, b, c;
 
-    	for(size_t i=0; i<_nbBanks; i++){
-    		for(size_t j=i+1; j<_nbBanks; j++){
+		for(size_t j=0; j<_nbNewBanks; j++){
+			for(size_t i=0; i<j; i++){
 
-    			get_abc(i, j, j + ((_nbBanks-1)*i) - (i*(i-1)/2), a, b ,c);
+    			get_abc(i, j, j, a, b ,c);
 
     			double dist = distance_presenceAbsence_ochiai(a, b, c);
-    			matrix[i][j] = dist;
-    			matrix[j][i] = dist;
+    			_matrix[i][j] = dist;
+    			_matrix[j][i] = dist;
     		}
     	}
 
-		return matrix;
+
     }
 
-    vector<vector<float> > _matrix_presenceAbsence_chordHellinger(){
-    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    void _matrix_presenceAbsence_chordHellinger(){
+    	clearMatrix();
     	u_int64_t a, b, c;
 
-    	for(size_t i=0; i<_nbBanks; i++){
-    		for(size_t j=i+1; j<_nbBanks; j++){
+    	if(_nbBanks == _nbNewBanks){
 
-    			get_abc(i, j, j + ((_nbBanks-1)*i) - (i*(i-1)/2), a, b ,c);
+			for(size_t i=0; i<_nbBanks; i++){
+				for(size_t j=i+1; j<_nbBanks; j++){
 
-    			double dist = distance_presenceAbsence_chordHellinger(a, b, c);
-    			matrix[i][j] = dist;
-    			matrix[j][i] = dist;
-    		}
+        			get_abc(i, j, j, a, b ,c);
+
+        			double dist = distance_presenceAbsence_chordHellinger(a, b, c);
+        			//cout << a << "  " << b << " " << c << "  " << dist << endl;
+        			_matrix[i][j] = dist;
+        			_matrix[j][i] = dist;
+        		}
+        	}
+
+    	}
+    	else{
+
+    		size_t nbOldBanks = _nbBanks - _nbNewBanks;
+
+    		//cout << _matrix.size() << " " << _matrix[0].size() << "   " << _nbNewBanks << endl;
+			for(size_t i=0; i<nbOldBanks; i++){
+				for(size_t j=0; j<_nbNewBanks; j++){
+
+    				//cout << i << " " << j << endl;
+        			get_abc(i, j, j+nbOldBanks, a, b ,c);
+
+        			double dist = distance_presenceAbsence_chordHellinger(a, b, c);
+        			_matrix[i][j] = dist;
+
+        		}
+        	}
+
+			for(size_t i=nbOldBanks; i<_nbBanks; i++){
+				for(size_t j=(i-nbOldBanks)+1; j<_nbNewBanks; j++){
+
+        			get_abc(i, j, j+nbOldBanks, a, b ,c);
+
+        			double dist = distance_presenceAbsence_chordHellinger(a, b, c);
+        			_matrix[i][j] = dist;
+
+
+        			size_t iTemp = i-nbOldBanks;
+        			size_t i2 = j;
+        			size_t j2 = iTemp;
+        			i2 += nbOldBanks;
+        			_matrix[i2][j2] = dist;
+
+        		}
+        	}
     	}
 
-		return matrix;
     }
 
-    vector<vector<float> > _matrix_presenceAbsence_jaccardCanberra(){
-    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    void _matrix_presenceAbsence_jaccardCanberra(){
+    	clearMatrix();
     	u_int64_t a, b, c;
 
-    	for(size_t i=0; i<_nbBanks; i++){
-    		for(size_t j=i+1; j<_nbBanks; j++){
+		size_t nbOldBanks = _nbBanks - _nbNewBanks;
 
-    			get_abc(i, j, j + ((_nbBanks-1)*i) - (i*(i-1)/2), a, b ,c);
+		//cout << _matrix.size() << " " << _matrix[0].size() << "   " << _nbNewBanks << endl;
+		for(size_t i=0; i<nbOldBanks; i++){
+			for(size_t j=0; j<_nbNewBanks; j++){
 
-    			double dist = distance_presenceAbsence_jaccardCanberra(a, b, c);
-    			matrix[i][j] = dist;
-    			matrix[j][i] = dist;
+				//cout << i << " " << j << endl;
+				get_abc(i, j, j+nbOldBanks, a, b ,c);
+
+				double dist = distance_presenceAbsence_jaccardCanberra(a, b, c);
+				_matrix[i][j] = dist;
+
+			}
+		}
+
+		for(size_t i=nbOldBanks; i<_nbBanks; i++){
+			for(size_t j=(i-nbOldBanks)+1; j<_nbNewBanks; j++){
+
+				get_abc(i, j, j+nbOldBanks, a, b ,c);
+
+				double dist = distance_presenceAbsence_jaccardCanberra(a, b, c);
+				_matrix[i][j] = dist;
+
+
+				size_t iTemp = i-nbOldBanks;
+				size_t i2 = j;
+				size_t j2 = iTemp;
+				i2 += nbOldBanks;
+				_matrix[i2][j2] = dist;
+
+			}
+		}
+
+
+
+    }
+
+    void _matrix_presenceAbsence_jaccard_simka(){
+    	clearMatrix();
+
+		for(size_t j=0; j<_nbNewBanks; j++){
+			for(size_t i=0; i<j; i++){
+
+    			double dist = distance_presenceAbsence_jaccard_simka(i, j, SYMETRICAL);
+    			_matrix[i][j] = dist;
+    			_matrix[j][i] = dist;
     		}
     	}
 
-		return matrix;
+
     }
 
-    vector<vector<float> > _matrix_presenceAbsence_jaccard_simka(){
-    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
+    void _matrix_presenceAbsence_jaccard_simka_asym(){
+    	clearMatrix();
 
-    	for(size_t i=0; i<_nbBanks; i++){
-    		for(size_t j=i+1; j<_nbBanks; j++){
+		for(size_t j=0; j<_nbNewBanks; j++){
+			for(size_t i=0; i<j; i++){
 
-    			double dist = distance_presenceAbsence_jaccard_simka(i, j, j + ((_nbBanks-1)*i) - (i*(i-1)/2), SYMETRICAL);
-    			matrix[i][j] = dist;
-    			matrix[j][i] = dist;
+    			_matrix[i][j] = distance_presenceAbsence_jaccard_simka(i, j, ASYMETRICAL);
+    			_matrix[j][i] = distance_presenceAbsence_jaccard_simka(j, i, ASYMETRICAL);
     		}
     	}
 
-		return matrix;
-    }
 
-    vector<vector<float> > _matrix_presenceAbsence_jaccard_simka_asym(){
-    	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
-
-    	for(size_t i=0; i<_nbBanks; i++){
-    		for(size_t j=i+1; j<_nbBanks; j++){
-
-    			matrix[i][j] = distance_presenceAbsence_jaccard_simka(i, j, j + ((_nbBanks-1)*i) - (i*(i-1)/2), ASYMETRICAL);
-    			matrix[j][i] = distance_presenceAbsence_jaccard_simka(j, i, j + ((_nbBanks-1)*i) - (i*(i-1)/2), ASYMETRICAL);
-    		}
-    	}
-
-		return matrix;
     }
 
 
-    vector<vector<float> > computeJaccardDistanceFromBrayCurtis(const vector<vector<float> >& brayDistanceMatrix){
-    	vector<vector<float> > jaccardDistanceMatrix = createSquaredMatrix(_nbBanks);
+    void computeJaccardDistanceFromBrayCurtis(const vector<vector<float> >& brayDistanceMatrix){
+    	//vector<vector<float> > jaccardDistanceMatrix = createSquaredMatrix(_nbBanks, _nbNewBanks);
 
-    	for(size_t i=0; i<_nbBanks; i++){
-    		for(size_t j=0; j<_nbBanks; j++){
+		for(size_t j=0; j<_nbNewBanks; j++){
+			for(size_t i=0; i<j; i++){
     			double B = brayDistanceMatrix[i][j];
     			double J = (2*B) / (1+B);
-    			jaccardDistanceMatrix[i][j] = J;
+    			_matrix[i][j] = J;
     		}
     	}
 
-    	return jaccardDistanceMatrix;
     }
 
+    /*
+    static void SimkaDistance::createSquaredMatrix(size_t n, size_t m, vector<vector<float> >& matrix){
+
+        matrix.resize(n);
+        for(size_t i=0; i<n; i++)
+        	matrix[i].resize(m, 0);
+
+        //
+
+    }*/
 
 private:
 
 
-	vector<vector<float> > createSquaredMatrix(size_t n);
-	void get_abc(size_t bank1, size_t bank2, size_t symetricIndex, u_int64_t& a, u_int64_t& b, u_int64_t& c);
+	void get_abc(size_t bank1, size_t bank2, size_t j2, u_int64_t& a, u_int64_t& b, u_int64_t& c);
 
 
-    double distance_abundance_brayCurtis(size_t bank1, size_t bank2, size_t symetricIndex);
+    double distance_abundance_brayCurtis(size_t bank1, size_t bank2, size_t j2);
     double distance_abundance_chord(size_t i, size_t j);
     double distance_abundance_hellinger(size_t i, size_t j);
     //double distance_abundance_jaccard_intersection(size_t i, size_t j);
@@ -504,12 +645,16 @@ private:
     double distance_presenceAbsence_ochiai(u_int64_t& ua, u_int64_t& ub, u_int64_t& uc);
     double distance_presenceAbsence_sorensenBrayCurtis(u_int64_t& ua, u_int64_t& ub, u_int64_t& uc);
     double distance_presenceAbsence_jaccardCanberra(u_int64_t& ua, u_int64_t& ub, u_int64_t& uc);
-    double distance_presenceAbsence_jaccard_simka(size_t i, size_t j, size_t symetricIndex, SIMKA_MATRIX_TYPE type);
+    double distance_presenceAbsence_jaccard_simka(size_t i, size_t j, SIMKA_MATRIX_TYPE type);
 
 	SimkaStatistics& _stats;
 	//SimkaDistanceParam _distanceParams;
 	size_t _nbBanks;
+	size_t _nbNewBanks;
 
 };
+
+
+
 
 #endif /* TOOLS_SIMKA_SRC_SIMKADISTANCE_HPP_ */
