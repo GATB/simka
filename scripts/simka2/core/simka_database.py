@@ -34,7 +34,11 @@ class SimkaDatabase():
 				self.entries.append(id)
 				self.entries_infos[id] = relative_filename
 			self.database_file.close()
+		else:
 
+			self.database_file = open(self.database_filename, "w")
+			self.database_file.write("ID;Kmer_Spectrum_Filename\n")
+			self.database_file.close()
 
 
 	def load_settings(self):
@@ -47,6 +51,7 @@ class SimkaDatabase():
 			lines.append(line)
 		self._kmerSize = int(lines[0].replace(" ", "").replace("kmer-size:", ""))
 		self._nbPartitions = int(lines[1].replace(" ", "").replace("nb-partitions:", ""))
+		self._abundanceMin = int(lines[2].replace(" ", "").replace("abundance-min:", ""))
 
 	def create_dirs(self):
 		self.kmer_spectrums_relative_dir = "kmer_spectrums"
@@ -68,20 +73,22 @@ class SimkaDatabase():
 		dir = os.path.join(self.dirname, "distance", "matrix_binary_temp")
 		if not os.path.exists(dir): os.mkdir(dir)
 
-	def save(self):
-		self.database_file = open(self.database_filename, "w")
-		self.database_file.write("ID;Kmer_Spectrum_Filename\n")
+	#def save(self):
 
 		#for id, filename in self.items.items():
-		for id in self.entries:
-			filename = self.entries_infos[id]
-			self.database_file.write(id + ";" + filename + "\n")
+	#	for id in self.entries:
+	#		filename = self.entries_infos[id]
+	#		self.database_file.write(id + ";" + filename + "\n")
 
-		self.database_file.close()
+	#	self.database_file.close()
 
 	def add_entry(self, id, relative_filename):
 		self.entries.append(id)
 		self.entries_infos[id] = relative_filename
+
+		self.database_file = open(self.database_filename, "a")
+		self.database_file.write(id + ";" + relative_filename + "\n")
+		self.database_file.close()
 
 	def contains_entry(self, id):
 		return id in self.entries_infos

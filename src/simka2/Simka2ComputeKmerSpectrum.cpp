@@ -182,14 +182,7 @@ public:
 		partitionKmerCounts();
 		saveInfos();
 
-		//system(("rm -rf " + _outputDirTemp).c_str());
-		//System::file().rmdir(_outputDirTemp);
-
-		//cout << "heo" << endl;
-		//delete config;
-		//cout << "heo" << endl;
-		//writeFinishSignal();
-		//cout << "heo" << endl;*/
+		writeFinishSignal();
 	}
 
 	void parseArgs(){
@@ -584,12 +577,12 @@ public:
         outputInfoFile.close();
 	}
 
-	//void writeFinishSignal(){
+	void writeFinishSignal(){
 
-	//	string finishFilename = _outputDir + "/success";
-	//	IFile* file = System::file().newFile(finishFilename, "w");
-	//	delete file;
-	//}
+		string finishFilename = _outputDir + "/success";
+		IFile* file = System::file().newFile(finishFilename, "w");
+		delete file;
+	}
 
 
 

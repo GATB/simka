@@ -207,7 +207,7 @@ public:
 		_nbBanks = _database._entries.size();
 		_nbNewBanks = _nbBanks - _database._nbProcessedDataset;
 
-		cout << "Simka2Distance (createDatabase):   " << _nbBanks << "   " << _nbNewBanks << endl;
+		//cout << "Simka2Distance (createDatabase):   " << _nbBanks << "   " << _nbNewBanks << endl;
 		//cout << "uniqDirs: " << _database._uniqKmerSpectrumDirs.size() << endl;
 		/*
 		_allIds.push_back(datasetID);

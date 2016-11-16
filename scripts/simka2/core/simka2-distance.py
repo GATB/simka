@@ -37,15 +37,17 @@ def mergeKmerSpectrums():
 	os.system(command)
 
 def computeDistance():
-	uniqKmerSpectrumDirs = set()
 
-	for id, kmerSpectrumDir in DATABASE.entries_infos.items():
-		uniqKmerSpectrumDirs.add(kmerSpectrumDir)
+	#uniqKmerSpectrumDirs = set()
 
-	distanceInputFilename = os.path.join(DATABASE.dirname, "distance", "_input.txt")
-	distanceInputFile = open(distanceInputFilename, "w")
-	for dir in uniqKmerSpectrumDirs:
-		distanceInputFile.write(dir + "\n")
+	#for id, kmerSpectrumDir in DATABASE.entries_infos.items():
+	#	uniqKmerSpectrumDirs.add(kmerSpectrumDir)
+
+	#distanceInputFilename = os.path.join(DATABASE.dirname, "distance", "_input.txt")
+	#distanceInputFile = open(distanceInputFilename, "w")
+	#for dir in uniqKmerSpectrumDirs:
+	#	distanceInputFile.write(dir + "\n")
+	#distanceInputFile.close()
 
 	for i in range(0, DATABASE._nbPartitions):
 		command = os.path.join(args._simkaBinDir, "simka2-distance") + \

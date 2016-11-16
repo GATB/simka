@@ -105,8 +105,10 @@ void simka2_loadStatInfos(const string& databaseDir, set<string>::iterator si, s
 		u_int64_t nbMergedBanks = 0;
 		string mergeInfoFilename = databaseDir + "/" + dir + "/merge_info.bin";
 
+		//cout << mergeInfoFilename << endl;
 		ifstream mergedLinkFile(mergeInfoFilename.c_str(), std::ios::binary);
 		mergedLinkFile.read((char*)(&nbMergedBanks), sizeof(nbMergedBanks));
+		//cout << nbMergedBanks << endl;
 
 		//cout << dir << "  " << nbMergedBanks << endl;
 
