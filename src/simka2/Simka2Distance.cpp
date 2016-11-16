@@ -185,6 +185,7 @@ public:
 		delete _stats;
 		delete _processor;
 
+		writeFinishSignal();
 
 	}
 
@@ -244,10 +245,9 @@ public:
 	}
 
 	void writeFinishSignal(){
-
-		//string finishFilename = _outputDir + "/" + _datasetID + "-success";
-		//IFile* file = System::file().newFile(finishFilename, "w");
-		//delete file;
+		string finishFilename = _dirMatrixParts + "/" + Stringify::format("%i", _partitionId) + "-success";
+		IFile* file = System::file().newFile(finishFilename, "w");
+		delete file;
 	}
 
 

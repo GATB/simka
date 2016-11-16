@@ -37,17 +37,19 @@ class ComputeKmerSpectrumAll():
 	def __init__(self):
 		self.database = SimkaDatabase(args._databaseDir)
 		self.nbDatasetToProcess = 0
+		#self.jobCores = None
+		#self.jobMemory = None
 
 	def execute(self):
 
 		self.countNbDatasetToProcess()
 
 		self.resourceAllocator = Simka2ResourceAllocator(bool(args._isHPC), int(args._nbCores), int(args._maxMemory), int(args._maxJobs))
-		self.resourceAllocator.maxJobMerge = self.database._nbPartitions
-		self.resourceAllocator.nbSamples = self.nbDatasetToProcess
-		self.resourceAllocator.execute()
+		#self.resourceAllocator.maxJobMerge = self.database._nbPartitions
+		#self.resourceAllocator.nbSamples = self.nbDatasetToProcess
+		maxJobs, self.jobCores, self.jobMemory = self.resourceAllocator.executeForCountJobs(self.nbDatasetToProcess)
 
-		self.jobScheduler = JobScheduler(self.resourceAllocator.maxJobCount, self.nbDatasetToProcess)
+		self.jobScheduler = JobScheduler(maxJobs, self.nbDatasetToProcess)
 
 		self.computeKmerSpectrums()
 		self.jobScheduler.join()
@@ -144,8 +146,8 @@ class ComputeKmerSpectrumAll():
 			" -nb-dataset " + str(nbPairedDatasets) + \
 			" -abundance-min " + str(self.database._abundanceMin) + \
 			" -nb-partitions " + str(self.database._nbPartitions) + \
-			" -max-memory " + str(self.resourceAllocator.memoryPerJob) + \
-			" -nb-cores " + str(self.resourceAllocator.coresPerJob) + \
+			" -max-memory " + str(self.jobMemory) + \
+			" -nb-cores " + str(self.jobCores) + \
 			"   > /dev/null 2>&1     &"
 
 		#print("compute_kmer_spectrums_all.py: Add log file system")

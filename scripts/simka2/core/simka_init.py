@@ -20,8 +20,8 @@ args =  parser.parse_args()
 def init_settings():
 
     resourceAllocator = Simka2ResourceAllocator(bool(args._isHPC), int(args._nbCores), int(args._maxMemory), int(args._maxJobs))
-    resourceAllocator.execute()
-    nbPartitions = min(200, resourceAllocator.maxJobMerge)
+    maxJobs, coresPerJob = resourceAllocator.executeForDistanceJobs(-1)
+    nbPartitions = min(200, maxJobs)
 
     settings_file = open(os.path.join(args._databaseDir, "settings.txt"), "w")
     settings_file.write("kmer-size: " + args._kmerSize + "\n")
