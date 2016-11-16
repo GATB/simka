@@ -110,8 +110,13 @@ public:
 			string matrixFilename = _dirBinaryMatrices + "/" + matrixFilenames[i];
 			if(matrixFilename.find("mat_") == string::npos) continue;
 
-			cout << matrixFilenames[i] << endl;
-			writeMatrixASCII(matrixFilenames[i], matrixFilename);
+			string distanceName = matrixFilenames[i];
+			string ext = ".bin";
+			std::string::size_type it = distanceName.find(ext);
+			distanceName.erase(it, ext.length());
+
+			cout << distanceName << endl;
+			writeMatrixASCII(distanceName, matrixFilename);
 		}
 
 	}

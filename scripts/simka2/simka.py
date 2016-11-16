@@ -86,13 +86,19 @@ os.system(command)
 
 #-----------------------------------------------------------------------------
 # Write the list of available dataset ids on disk for distance exporter
-# Dataset ids are retrieved from the simka database
+# Dataset ids are retrieved from input filename (-in)
+# It allows the final distance matrix to have dataset in the same order
+# than supplied input filename (-in)
 #-----------------------------------------------------------------------------
 datasetIdsFilename = os.path.join(tmpComputationDir, "__simka_dataset_ids.txt")
 datasetIdsFile = open(datasetIdsFilename, "w")
-database = SimkaDatabase(databaseDir)
-for id in database.entries:
+inputFile = open(args._inputFilename, "r")
+for line in inputFile:
+    line = line.strip()
+    if line == "": continue
+    id, filenames = line.replace(" ", "").split(":")
     datasetIdsFile.write(id + "\n")
+    print id
 datasetIdsFile.close()
 
 #-----------------------------------------------------------------------------
