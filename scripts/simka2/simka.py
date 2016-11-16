@@ -90,16 +90,15 @@ os.system(command)
 # It allows the final distance matrix to have dataset in the same order
 # than supplied input filename (-in)
 #-----------------------------------------------------------------------------
-datasetIdsFilename = os.path.join(tmpComputationDir, "__simka_dataset_ids.txt")
-datasetIdsFile = open(datasetIdsFilename, "w")
-inputFile = open(args._inputFilename, "r")
-for line in inputFile:
-    line = line.strip()
-    if line == "": continue
-    id, filenames = line.replace(" ", "").split(":")
-    datasetIdsFile.write(id + "\n")
-    print id
-datasetIdsFile.close()
+#datasetIdsFilename = os.path.join(tmpComputationDir, "__simka_dataset_ids.txt")
+#datasetIdsFile = open(datasetIdsFilename, "w")
+#inputFile = open(args._inputFilename, "r")
+#for line in inputFile:
+#    line = line.strip()
+#    if line == "": continue
+#    id, filenames = line.replace(" ", "").split(":")
+#    datasetIdsFile.write(id + "\n")
+#datasetIdsFile.close()
 
 #-----------------------------------------------------------------------------
 # Run the distance exporter
@@ -109,8 +108,8 @@ datasetIdsFile.close()
 #-----------------------------------------------------------------------------
 command = os.path.join(args._simkaBinDir, "simkaDistanceExport") + \
     " -out " + args._outputDir + \
-    " -in " + os.path.join(databaseDir, "distance", "matrix_binary") + \
-    " -in-ids " + datasetIdsFilename
+    " -in " + os.path.join(databaseDir, "distance", "matrix_binary") #+ \
+    #" -in-ids " + datasetIdsFilename
 os.system(command)
 
 #Remove tmp dir (k-mer spectrums, dist...)
