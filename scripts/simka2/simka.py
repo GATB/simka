@@ -1,5 +1,6 @@
 
 import os, sys, argparse, shutil
+from core.simka_database import SimkaDatabase
 
 
 parser = argparse.ArgumentParser(description='Simka options')
@@ -48,6 +49,10 @@ if not os.path.exists(tmpComputationDir):
 if not os.path.exists(args._outputDir):
     os.makedirs(args._outputDir)
 
+
+
+#-----------------------------------------------------------------------------
+
 # Init simka
 command = "python " + \
     os.path.join(SCRIPT_DIR, "core", "simka_init.py") + \
@@ -79,12 +84,35 @@ command = "python " + \
     " -simka-bin " + args._simkaBinDir
 os.system(command)
 
+#-----------------------------------------------------------------------------
+# Write the list of available dataset ids on disk for distance exporter
+# Dataset ids are retrieved from the simka database
+#-----------------------------------------------------------------------------
+datasetIdsFilename = os.path.join(tmpComputationDir, "__simka_dataset_ids.txt")
+datasetIdsFile = open(datasetIdsFilename, "w")
+database = SimkaDatabase(databaseDir)
+for id in database.entries:
+    datasetIdsFile.write(id + "\n")
+datasetIdsFile.close()
+
+#-----------------------------------------------------------------------------
+# Run the distance exporter
+# The distance exporter reads matrices in binary format (-in)
+# extracts the rows/columns depending on supplied datasets id (-in-ids)
+# and outputs distance matrices in ascii format readable by R (-out)
+#-----------------------------------------------------------------------------
 command = os.path.join(args._simkaBinDir, "simkaDistanceExport") + \
     " -out " + args._outputDir + \
-    " -in " + os.path.join(databaseDir, "distance", "matrix_binary")
+    " -in " + os.path.join(databaseDir, "distance", "matrix_binary") + \
+    " -in-ids " + datasetIdsFilename
 os.system(command)
 
 #Remove tmp dir (k-mer spectrums, dist...)
 if not args._keepTmp:
     shutil.rmtree(databaseDir)
-    shutil.rmtree(tmpComputationDir)
+
+shutil.rmtree(tmpComputationDir)
+
+
+print("\n\n")
+print("Results dir: " + args._outputDir)
