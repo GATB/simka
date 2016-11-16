@@ -93,22 +93,19 @@ void simka2_transferDatasetInfo(ifstream& source, ofstream& dest){
 
 
 
-void simka2_loadStatInfos(const string& databaseDir, set<string>::iterator si, set<string>::iterator ei, const vector<string>& ids, vector<string>& kmerSpectrumDirs, SimkaStatistics* stats){
+void simka2_loadStatInfos(const string& databaseDir, const set<string>& uniqDirs, const vector<string>& ids, vector<string>& kmerSpectrumDirs, SimkaStatistics* stats, map<string, string>& datasetFilenames){
 	map<string, vector<u_int64_t> > datasetInfos;
+	map<string, string> test;
 
 	//for(size_t i=0; i<_database._uniqKmerSpectrumDirs.size(); i++){
-	for (set<string>::iterator i = si; i != ei; i++) {
+	for (set<string>::iterator i = uniqDirs.begin(); i != uniqDirs.end(); i++) {
 		string dir = *i;
-
-		kmerSpectrumDirs.push_back(databaseDir + "/" + dir);
 
 		u_int64_t nbMergedBanks = 0;
 		string mergeInfoFilename = databaseDir + "/" + dir + "/merge_info.bin";
 
-		//cout << mergeInfoFilename << endl;
 		ifstream mergedLinkFile(mergeInfoFilename.c_str(), std::ios::binary);
 		mergedLinkFile.read((char*)(&nbMergedBanks), sizeof(nbMergedBanks));
-		//cout << nbMergedBanks << endl;
 
 		//cout << dir << "  " << nbMergedBanks << endl;
 
@@ -134,6 +131,8 @@ void simka2_loadStatInfos(const string& databaseDir, set<string>::iterator si, s
 		//cout << nbMergedBanks << endl;
 	}
 
+	set<string> dirPresent;
+
 	for(size_t i=0; i<ids.size(); i++){
 		string id = ids[i];
 		vector<u_int64_t> infos = datasetInfos[id];
@@ -147,8 +146,16 @@ void simka2_loadStatInfos(const string& databaseDir, set<string>::iterator si, s
 			stats->_chord_sqrt_N2[i] = sqrt(infos[3]);
 		}
 
-		//cout << infos[0] << endl;
+		string dir = databaseDir + "/" + datasetFilenames[id];
+		if(dirPresent.find(dir) != dirPresent.end()) continue;
+
+		kmerSpectrumDirs.push_back(dir);
+		dirPresent.insert(dir);
+
+		//cout << kmerSpectrumDirs.size() << endl;
 	}
+
+
 }
 
 
