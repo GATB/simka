@@ -1,5 +1,5 @@
 
-import os, time, sys
+import os, time, sys, multiprocessing
 
 
 
@@ -7,21 +7,69 @@ class Simka2ResourceAllocator():
 
     MIN_MEMORY_PER_JOB = 500
 
-    def __init__(self, nbSamples, nbCores, maxMemory, maxJobs):
+    def __init__(self, isHPC, nbCores, maxMemory, maxJobs):
+        self.isHPC = isHPC
         self.nbCores = nbCores
         self.maxMemory = maxMemory
         self.maxJobs = maxJobs
-        self.nbSamples = nbSamples
+        #self.nbSamples = nbSamples
         #---
+        self.nbSamples = None
         self.maxJobCount = None
         self.maxJobMerge = None
         self.memoryPerJob = None
         self.coresPerJob = None
 
+        if self.nbCores == 0:
+            self.nbCores = multiprocessing.cpu_count()
+
+
     def execute(self):
+        if self.isHPC:
+            self.execute_HPC()
+        else:
+            self.execute_singleNode()
+
+    def execute_singleNode(self):
+
+        maxjob_byCore = self.nbCores/2
+
+        if not (self.nbSamples is None):
+            maxjob_byCore = min(maxjob_byCore, self.nbSamples)
+
+        maxjob_byCore = max(maxjob_byCore, 1)
+
+        #maxjob_byCore = min(self.nbCores/2, self.nbSamples)
+
+        maxjob_byMemory = self.maxMemory/Simka2ResourceAllocator.MIN_MEMORY_PER_JOB
+        maxjob_byMemory = max(maxjob_byMemory, 1)
+
+        maxJobs = min(maxjob_byCore, maxjob_byMemory)
+        self.maxJobCount = maxJobs
+
+        if self.maxJobMerge is None:
+            self.maxJobMerge = self.nbCores
+
+
+        self.maxJobCount = min(self.maxJobCount, self.nbCores)
+        self.maxJobMerge = min(self.maxJobMerge, self.nbCores)
+
+        self.coresPerJob = self.nbCores / self.maxJobCount
+        self.coresPerJob = max(1, self.coresPerJob)
+
+        self.memoryPerJob = self.maxMemory / self.maxJobCount
+        self.memoryPerJob = max(self.memoryPerJob, Simka2ResourceAllocator.MIN_MEMORY_PER_JOB)
+
+        self.coresPerMergeJob = self.nbCores / self.maxJobMerge
+        self.coresPerMergeJob = max(1, self.coresPerMergeJob)
+
+        #print self.coresPerJob, self.memoryPerJob, self.maxJobCount, self.maxJobMerge
+
+    def execute_HPC(self):
 
         if self.maxJobs == 0:
-            maxjob_byCore = min(self.nbCores/2, self.nbSamples)
+            maxjob_byCore = self.nbCores/2
+            #maxjob_byCore = min(self.nbCores/2, self.nbSamples)
 
             maxjob_byCore = max(maxjob_byCore, 1)
 
@@ -46,10 +94,6 @@ class Simka2ResourceAllocator():
 
         self.coresPerMergeJob = self.nbCores / self.maxJobMerge
         self.coresPerMergeJob = max(1, self.coresPerMergeJob)
-
-
-
-
 
 
 

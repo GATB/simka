@@ -53,8 +53,12 @@ command = "python " + \
     os.path.join(SCRIPT_DIR, "core", "simka_init.py") + \
     " -database-dir " + databaseDir + \
     " -kmer-size " + args._kmerSize + \
+    " -nb-cores " + args._nbCores + \
+    " -max-memory " + args._maxMemory + \
+    " -max-jobs " + "0" + \
     " -abundance-min " + args._abundanceMin
 os.system(command)
+
 
 #Compute all k-mer spectrums
 command = "python " + \
@@ -62,7 +66,10 @@ command = "python " + \
     " -database-dir " + databaseDir + \
     " -out-tmp " + tmpComputationDir + \
     " -in " + args._inputFilename + \
-    " -simka-bin " + args._simkaBinDir
+    " -simka-bin " + args._simkaBinDir + \
+    " -nb-cores " + args._nbCores + \
+    " -max-memory " + args._maxMemory + \
+    " -max-jobs " + "0"
 os.system(command)
 
 #Compute distance between k-mer spectrums

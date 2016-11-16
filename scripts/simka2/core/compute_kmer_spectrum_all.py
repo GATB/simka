@@ -1,7 +1,7 @@
 
 import os, sys, argparse, shutil
 from simka_database import SimkaDatabase
-from simka2_utils import JobScheduler
+from simka2_utils import JobScheduler, Simka2ResourceAllocator
 
 #----------------------------------------------------------------------
 #----------------------------------------------------------------------
@@ -12,6 +12,11 @@ parser.add_argument('-out-tmp', action="store", dest="_outputDirTemp")
 parser.add_argument('-database-dir', action="store", dest="_databaseDir")
 #parser.add_argument('-simka-scripts', action="store", dest="_simkaScriptsDir")
 parser.add_argument('-simka-bin', action="store", dest="_simkaBinDir")
+
+parser.add_argument('-max-jobs', action="store", dest="_maxJobs", help="maximum number of job that can be submitted at a given time", default="0")
+parser.add_argument('-nb-cores', action="store", dest="_nbCores", help="number of cores", default="0")
+parser.add_argument('-max-memory', action="store", dest="_maxMemory", help="max memory (MB)", default="8000")
+parser.add_argument('-hpc', action="store_true", dest="_isHPC", help="compute with cluster or grid system")
 
 #print parser.parse_args(['-in', '-bval', '-c', '3'])
 args =  parser.parse_args()
@@ -32,13 +37,17 @@ class ComputeKmerSpectrumAll():
 	def __init__(self):
 		self.database = SimkaDatabase(args._databaseDir)
 		self.nbDatasetToProcess = 0
-		self.maxJobs = 1
 
 	def execute(self):
 
 		self.countNbDatasetToProcess()
 
-		self.jobScheduler = JobScheduler(self.maxJobs, self.nbDatasetToProcess)
+		self.resourceAllocator = Simka2ResourceAllocator(bool(args._isHPC), int(args._nbCores), int(args._maxMemory), int(args._maxJobs))
+		self.resourceAllocator.maxJobMerge = self.database._nbPartitions
+		self.resourceAllocator.nbSamples = self.nbDatasetToProcess
+		self.resourceAllocator.execute()
+
+		self.jobScheduler = JobScheduler(self.resourceAllocator.maxJobCount, self.nbDatasetToProcess)
 
 		self.computeKmerSpectrums()
 		self.jobScheduler.join()
@@ -135,11 +144,13 @@ class ComputeKmerSpectrumAll():
 			" -nb-dataset " + str(nbPairedDatasets) + \
 			" -abundance-min " + str(self.database._abundanceMin) + \
 			" -nb-partitions " + str(self.database._nbPartitions) + \
+			" -max-memory " + str(self.resourceAllocator.memoryPerJob) + \
+			" -nb-cores " + str(self.resourceAllocator.coresPerJob) + \
 			"   > /dev/null 2>&1     &"
 
 		#print("compute_kmer_spectrums_all.py: Add log file system")
 
-		#print(command)
+		print(command)
 		os.system(command)
 
 		checkPointFilename = os.path.join(kmerSpectrumOutputDir, "success")
