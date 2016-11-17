@@ -138,7 +138,8 @@ class ComputeKmerSpectrumAll():
 		#		  " -out " + outputDir + \
 		#		  " -nb-dataset " + str(nbPairedDatasets) + \
 		#		  " -simka-bin " + args._simkaBinDir
-		command = os.path.join(args._simkaBinDir,"simka2-computeKmerSpectrum") + \
+		command = os.path.join(args._simkaBinDir, "simkaCountProcess") + " " + \
+			os.path.join(args._simkaBinDir,"simka2-computeKmerSpectrum") + \
 			" -id " + id + \
 			" -in " + inputFilename + \
 			" -out-tmp " + outputDirTemp + \

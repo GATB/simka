@@ -94,6 +94,7 @@ public:
 		_cachedBag->flush();
     	delete _cachedBag;
 
+    	/*
 		for(size_t i=0; i<this->_datasetToMergeDirs.size(); i++){
 			//cout << _datasetIds[i] << endl;
 			//string filename = _datasetToMergeDirs[i];
@@ -111,7 +112,7 @@ public:
 		//cout << _outputFilename << "   ->   " << newOutputFilename << endl;
     	System::file().rename(_outputFilename, newOutputFilename); //remove .temp at the end of new merged file
     	_outputFilename = newOutputFilename;
-
+		*/
     	//saveMergeInfos();
     }
 

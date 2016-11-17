@@ -47,7 +47,6 @@ class SimkaKmerSpectrumMerger():
 		#---
 		self.mergeKmerSpectrums()
 
-		self.database.save()
 
 	def mergeKmerSpectrums(self):
 
@@ -225,9 +224,12 @@ class SimkaKmerSpectrumMerger():
 
 	def mergeEnd(self, merge_input_filename, dataset_to_merge_ids, merge_dest_id):
 
-		#merge_input_filename = self.mergeEndData[0]
-		#dataset_to_merge_ids = self.mergeEndData[1]
-		#merge_dest_id = self.mergeEndData[2]
+		mergeDir = self.database.get_kmer_spectrum_dir_of_id(merge_dest_id, True)
+
+		for i in range(0, self.database._nbPartitions):
+			os.remove(os.path.join(mergeDir, str(i) + ".gz"))
+			shutil.move(os.path.join(mergeDir, str(i) + ".gz.temp"), os.path.join(mergeDir, str(i) + ".gz"))
+
 
 		#save merge infos
 		command = os.path.join(args._simkaBinDir, "simka2-merge") + \
@@ -244,10 +246,13 @@ class SimkaKmerSpectrumMerger():
 			old_dir = self.database.get_kmer_spectrum_dir_of_id(id, True)
 			shutil.rmtree(old_dir)
 
-			#newRelativeDir = DATABASE.get_kmer_spectrum_dir_of_id(merge_dest_id, False)
 			self.database.change_entries(id, merge_dest_id)
-			#DATABASE.items[id] = newRelativeDir
-			#merge_input_file.write( + "\n")
+
+		self.database.save()
+
+		#for id in dataset_to_merge_ids:
+
+		#exit(1)
 
 
 	def getDirSize(self, dirpath):
