@@ -42,8 +42,8 @@ class Simka_ComputeDistance():
 	def execute(self):
 
 
-		print ("Attention remettere le merge dans simka2-distance main()")
-		#mergeKmerSpectrums()
+		#print ("Attention remettere le merge dans simka2-distance main()")
+		self.mergeKmerSpectrums()
 
 		self.resourceAllocator = Simka2ResourceAllocator(bool(args._isHPC), int(args._nbCores), int(args._maxMemory), int(args._maxJobs))
 		maxJobs, jobCores = self.resourceAllocator.executeForDistanceJobs(self.database._nbPartitions)

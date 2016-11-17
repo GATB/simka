@@ -88,6 +88,9 @@ class ProgressBar():
         self.max = max
         self.progress = 0
 
+    def start(self):
+        self.progress = 0
+
     def step(self, value):
         self.progress += value
         self.display()
@@ -116,6 +119,12 @@ class JobScheduler():
         self.jobQueueToRemove = []
 
         self.progressBar = ProgressBar(progressTotalJobs)
+
+    def start(self):
+        self.nbJobs = 0
+        self.jobQueue = []
+        self.jobQueueToRemove = []
+        self.progressBar.start()
 
     #jobData specif: (checkPointFilemane, endJobMethod, (endJobMethodArgs, ...))
     def submitJob(self, jobData):

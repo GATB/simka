@@ -154,6 +154,8 @@ public:
 	string _mergeDestDir;
 	u_int64_t _nbMergedBanks;
 	bool _justSaveMergeInfos;
+	string _databaseDir;
+	string _tmpDir;
 
 	Simka2MergeAlgorithm(IProperties* options):
 		Algorithm("simka", -1, options)
@@ -176,11 +178,12 @@ public:
 		//cout << "heo" << endl;
 		//delete config;
 		//cout << "heo" << endl;
-		//writeFinishSignal();
+		writeFinishSignal();
 	}
 
 	void parseArgs(){
 
+    	_databaseDir =  getInput()->getStr(STR_SIMKA2_DATABASE_DIR);
     	_inputFilename =  getInput()->getStr(STR_URI_INPUT);
     	_partitionId =   getInput()->getInt(STR_SIMKA2_PARTITION_ID);
     	_outputDir =  getInput()->getStr(STR_URI_INPUT);
@@ -188,6 +191,7 @@ public:
     	_justSaveMergeInfos =  getInput()->get("-save-merge-info");
     	//_kmerSize =  getInput()->getStr(STR_URI_INPUT);
 
+    	_tmpDir = _databaseDir + "/merge";
 	}
 
 
@@ -580,10 +584,9 @@ public:
 	}*/
 
 	void writeFinishSignal(){
-
-		//string finishFilename = _outputDir + "/" + _datasetID + "-success";
-		//IFile* file = System::file().newFile(finishFilename, "w");
-		//delete file;
+		string finishFilename = _tmpDir + "/" + Stringify::format("%i", _partitionId) + "-success";
+		IFile* file = System::file().newFile(finishFilename, "w");
+		delete file;
 	}
 
 
@@ -611,6 +614,7 @@ public:
 	    IOptionsParser* parser = getParser();//new OptionsParser ("Simka2 - Compute Kmer Spectrum");
 
 	    //parser->push_front (new OptionOneParam (STR_URI_OUTPUT, "output directory for merged kmer spectrum", true));
+	    parser->push_front (new OptionOneParam (STR_SIMKA2_DATABASE_DIR, "dir path to a simka database", true));
 	    parser->push_front (new OptionOneParam (STR_URI_INPUT, "input filename of k-mer spectrums to merge | TODO SPECIF", true));
 	    parser->push_front (new OptionOneParam (STR_SIMKA2_PARTITION_ID, "number of the partition", true));
 	    parser->push_front (new OptionNoParam ("-save-merge-info", ""));

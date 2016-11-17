@@ -73,14 +73,17 @@ class SimkaDatabase():
 		dir = os.path.join(self.dirname, "distance", "matrix_binary_temp")
 		if not os.path.exists(dir): os.mkdir(dir)
 
-	#def save(self):
+	def save(self):
+
+		self.database_file = open(self.database_filename, "w")
+		self.database_file.write("ID;Kmer_Spectrum_Filename\n")
 
 		#for id, filename in self.items.items():
-	#	for id in self.entries:
-	#		filename = self.entries_infos[id]
-	#		self.database_file.write(id + ";" + filename + "\n")
+		for id in self.entries:
+			filename = self.entries_infos[id]
+			self.database_file.write(id + ";" + filename + "\n")
 
-	#	self.database_file.close()
+		self.database_file.close()
 
 	def add_entry(self, id, relative_filename):
 		self.entries.append(id)

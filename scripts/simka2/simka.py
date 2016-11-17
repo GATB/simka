@@ -122,12 +122,15 @@ command = os.path.join(args.simka_bin_dir, "simkaDistanceExport") + \
 os.system(command)
 
 #Copy matrix binaries in result dir
-shutil.copytree(matrixBinaryFilename, os.path.join(args.output_dir, "matrix_binary"))
+matrixBinaryFilenameDest = os.path.join(args.output_dir, "matrix_binary")
+if os.path.exists(matrixBinaryFilenameDest):
+    if matrixBinaryFilenameDest != matrixBinaryFilenameDest:
+        shutil.rmtree(matrixBinaryFilenameDest)
+        shutil.copytree(matrixBinaryFilename, matrixBinaryFilenameDest)
 
 #Remove tmp dir (k-mer spectrums, dist...)
 if not args.keep_tmp:
     shutil.rmtree(databaseDir)
-
 shutil.rmtree(tmpComputationDir)
 
 
