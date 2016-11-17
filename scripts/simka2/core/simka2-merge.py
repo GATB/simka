@@ -24,7 +24,7 @@ class SimkaKmerSpectrumMerger():
 	#MAX_OPEN_FILES = 1000
 	#MAX_OPEN_FILES_PER_MERGE = 100
 	MAX_OPEN_FILES = 1000
-	MAX_OPEN_FILES_PER_MERGE = 100
+	MAX_OPEN_FILES_PER_MERGE = 2
 
 	def __init__(self):
 		self.database = SimkaDatabase(args._databaseDir)
@@ -211,8 +211,8 @@ class SimkaKmerSpectrumMerger():
 				" -in " + merge_input_filename + \
 				" -database-dir " + args._databaseDir + \
 				" -kmer-size " + str(self.database._kmerSize) + \
-				" -partition-id " + str(i) #+ \
-				#"   > /dev/null 2>&1     &"
+				" -partition-id " + str(i) + \
+				"   > /dev/null 2>&1     &"
 			print command
 			os.system(command)
 
@@ -235,7 +235,8 @@ class SimkaKmerSpectrumMerger():
 			" -database-dir " + args._databaseDir + \
 			" -kmer-size " + str(self.database._kmerSize) + \
 			" -partition-id " + "0" + \
-			" -save-merge-info "
+			" -save-merge-info " + \
+			"   > /dev/null 2>&1"
 		os.system(command)
 
 		dataset_to_merge_ids.remove(merge_dest_id)
