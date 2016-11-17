@@ -124,9 +124,8 @@ os.system(command)
 #Copy matrix binaries in result dir
 matrixBinaryFilenameDest = os.path.join(args.output_dir, "matrix_binary")
 if os.path.exists(matrixBinaryFilenameDest):
-    if matrixBinaryFilenameDest != matrixBinaryFilename:
-        shutil.rmtree(matrixBinaryFilenameDest)
-        shutil.copytree(matrixBinaryFilename, matrixBinaryFilenameDest)
+    shutil.rmtree(matrixBinaryFilenameDest)
+shutil.copytree(matrixBinaryFilename, matrixBinaryFilenameDest)
 
 #Remove tmp dir (k-mer spectrums, dist...)
 if not args.keep_tmp:
