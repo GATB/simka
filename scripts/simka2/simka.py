@@ -3,51 +3,59 @@ import os, sys, argparse, shutil
 from core.simka_database import SimkaDatabase
 
 
-parser = argparse.ArgumentParser(description='Simka options')
+parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 
-parser.add_argument('-in', action="store", dest="_inputFilename", help="input file of samples. One sample per line: id1: filename1...")
-parser.add_argument('-out', action="store", dest="_outputDir", default="./simka_results", help="output directory for result files (distance matrices)")
-parser.add_argument('-out-tmp', action="store", dest="_outputDirTmp", help="output directory for temporary files")
-parser.add_argument('-keep-tmp', action="store_true", dest="_keepTmp", help="keep temporary files. Allow to update existing run of simka")
-parser.add_argument('-simka-bin', action="store", dest="_simkaBinDir", help="dir containing simka binaries")
+parserMain = parser.add_argument_group("main options")
+parserCore = parser.add_argument_group("core options")
+parserDistance = parser.add_argument_group("distance options")
+parserKmer = parser.add_argument_group("k-mer options")
+parserRead = parser.add_argument_group("read options")
 
-parser.add_argument('-simple-dist', action="store", dest="_simpleDist", help="compute all simple distances (Chord, Hellinger...)")
-parser.add_argument('-complex-dist', action="store", dest="_complexDist", help="compute all complex distances (Jensen-Shannon...)")
+parserMain.add_argument('-in', action="store", dest="input_filename", help="input file of samples. One sample per line: id1: filename1...", required=True)
+parserMain.add_argument('-out-tmp', action="store", dest="output_dir_temp", help="output directory for temporary files", required=True)
+parserMain.add_argument('-simka-bin', action="store", dest="simka_bin_dir", help="dir containing simka binaries", required=True)
+parserMain.add_argument('-out', action="store", dest="output_dir", default="./simka_results", help="output directory for result files (distance matrices)")
+parserMain.add_argument('-keep-tmp', action="store_true", dest="keep_tmp", help="keep temporary files. Allow to update existing run of simka")
 
-parser.add_argument('-kmer-size', action="store", dest="_kmerSize", help="size of a kmer", default="31")
-parser.add_argument('-abundance-min', action="store", dest="_abundanceMin", help="min abundance a kmer need to be considered", default="2")
-parser.add_argument('-abundance-max', action="store", dest="_abundanceMax", help="max abundance a kmer can have to be considered", default="999999999")
-#parser.add_argument('-kmer-shannon-index', action="store", dest="_simpleDist")
+parserDistance.add_argument('-simple-dist', action="store_true", dest="simple_dist", help="compute all simple distances (Chord, Hellinger...)")
+parserDistance.add_argument('-complex-dist', action="store_true", dest="complex_dist", help="compute all complex distances (Jensen-Shannon...)")
 
-parser.add_argument('-max-reads', action="store", dest="_maxReads", help="maximum number of reads per sample to process. Can be -1: use all reads. Can be 0: estimate it")
-parser.add_argument('-min-read-size', action="store", dest="_minReadSize", help="minimal size a read should have to be kept")
-parser.add_argument('-min-shannon-index', action="store", dest="_minReadShannonIndex", help="minimal Shannon index a read should have to be kept. Float in [0,2]")
+parserKmer.add_argument('-kmer-size', action="store", dest="kmer_size", help="size of a kmer", default="31")
+parserKmer.add_argument('-abundance-min', action="store", dest="abundance_min", help="min abundance a kmer need to be considered", default="2")
+parserKmer.add_argument('-abundance-max', action="store", dest="abundance_max", help="max abundance a kmer can have to be considered", default="999999999")
+#parser.add_argument('-kmer-shannon-index', action="store", dest="simple_dist")
 
-parser.add_argument('-nb-cores', action="store", dest="_nbCores", help="number of cores", default="0")
-parser.add_argument('-max-memory', action="store", dest="_maxMemory", help="max memory (MB)", default="8000")
+parserRead.add_argument('-max-reads', action="store", dest="max_reads", help="maximum number of reads per sample to process. Can be -1: use all reads. Can be 0: estimate it")
+parserRead.add_argument('-min-read-size', action="store", dest="min_read_size", help="minimal size a read should have to be kept")
+parserRead.add_argument('-min-shannon-index', action="store", dest="min_read_shannon_index", help="minimal Shannon index a read should have to be kept. Float in [0,2]")
+
+parserCore.add_argument('-nb-cores', action="store", dest="nb_cores", help="number of cores", default="0")
+parserCore.add_argument('-max-memory', help="max memory (MB)", default="8000")
 
 
-
-if len(sys.argv) == 1:
-    parser.print_help()
-    exit(1)
+#args =  parser.parse_args()
+#print args.max_memory
+#exit(1)
+#if len(sys.argv) == 1:
+#    parser.print_help()
+#    exit(1)
 
 args =  parser.parse_args()
 
 SCRIPT_DIR = os.path.split(os.path.realpath(__file__))[0]
 
 #-----------------------------------------------------------------------------
-if not os.path.exists(args._outputDirTmp):
-    os.makedirs(args._outputDirTmp)
-databaseDir = os.path.join(args._outputDirTmp, "simka_database")
-tmpComputationDir = os.path.join(args._outputDirTmp, "simka_tmp")
+if not os.path.exists(args.output_dir_temp):
+    os.makedirs(args.output_dir_temp)
+databaseDir = os.path.join(args.output_dir_temp, "simka_database")
+tmpComputationDir = os.path.join(args.output_dir_temp, "simka_tmp")
 #if not os.path.exists(databaseDir):
 #    os.makedirs(databaseDir)
 if not os.path.exists(tmpComputationDir):
     os.makedirs(tmpComputationDir)
-if not os.path.exists(args._outputDir):
-    os.makedirs(args._outputDir)
+if not os.path.exists(args.output_dir):
+    os.makedirs(args.output_dir)
 
 
 
@@ -57,11 +65,11 @@ if not os.path.exists(args._outputDir):
 command = "python " + \
     os.path.join(SCRIPT_DIR, "core", "simka_init.py") + \
     " -database-dir " + databaseDir + \
-    " -kmer-size " + args._kmerSize + \
-    " -nb-cores " + args._nbCores + \
-    " -max-memory " + args._maxMemory + \
+    " -kmer-size " + args.kmer_size + \
+    " -nb-cores " + args.nb_cores + \
+    " -max-memory " + args.max_memory + \
     " -max-jobs " + "0" + \
-    " -abundance-min " + args._abundanceMin
+    " -abundance-min " + args.abundance_min
 os.system(command)
 
 
@@ -70,10 +78,10 @@ command = "python " + \
     os.path.join(SCRIPT_DIR, "core", "compute_kmer_spectrum_all.py") + \
     " -database-dir " + databaseDir + \
     " -out-tmp " + tmpComputationDir + \
-    " -in " + args._inputFilename + \
-    " -simka-bin " + args._simkaBinDir + \
-    " -nb-cores " + args._nbCores + \
-    " -max-memory " + args._maxMemory + \
+    " -in " + args.input_filename + \
+    " -simka-bin " + args.simka_bin_dir + \
+    " -nb-cores " + args.nb_cores + \
+    " -max-memory " + args.max_memory + \
     " -max-jobs " + "0"
 os.system(command)
 
@@ -81,7 +89,7 @@ os.system(command)
 command = "python " + \
     os.path.join(SCRIPT_DIR, "core", "simka2-distance.py") + \
     " -database-dir " + databaseDir + \
-    " -simka-bin " + args._simkaBinDir
+    " -simka-bin " + args.simka_bin_dir
 os.system(command)
 
 #-----------------------------------------------------------------------------
@@ -92,7 +100,7 @@ os.system(command)
 #-----------------------------------------------------------------------------
 #datasetIdsFilename = os.path.join(tmpComputationDir, "__simka_dataset_ids.txt")
 #datasetIdsFile = open(datasetIdsFilename, "w")
-#inputFile = open(args._inputFilename, "r")
+#inputFile = open(args.input_filename, "r")
 #for line in inputFile:
 #    line = line.strip()
 #    if line == "": continue
@@ -106,18 +114,22 @@ os.system(command)
 # extracts the rows/columns depending on supplied datasets id (-in-ids)
 # and outputs distance matrices in ascii format readable by R (-out)
 #-----------------------------------------------------------------------------
-command = os.path.join(args._simkaBinDir, "simkaDistanceExport") + \
-    " -out " + args._outputDir + \
-    " -in " + os.path.join(databaseDir, "distance", "matrix_binary") #+ \
+matrixBinaryFilename = os.path.join(databaseDir, "distance", "matrix_binary")
+command = os.path.join(args.simka_bin_dir, "simkaDistanceExport") + \
+    " -out " + args.output_dir + \
+    " -in " + matrixBinaryFilename #+ \
     #" -in-ids " + datasetIdsFilename
 os.system(command)
 
+#Copy matrix binaries in result dir
+shutil.copytree(matrixBinaryFilename, os.path.join(args.output_dir, "matrix_binary"))
+
 #Remove tmp dir (k-mer spectrums, dist...)
-if not args._keepTmp:
+if not args.keep_tmp:
     shutil.rmtree(databaseDir)
 
 shutil.rmtree(tmpComputationDir)
 
 
 print("\n\n")
-print("Results dir: " + args._outputDir)
+print("Results dir: " + args.output_dir)
