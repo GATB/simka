@@ -51,8 +51,8 @@ public:
 	//size_t _nbBanks;
 	//vector<string> _currentDatasetIds;
 
-	DatasetMergerDistance(size_t nbBanks, size_t partitionId, vector<string>& datasetToMergeDirs, SimkaStatistics* stats, SimkaCountProcessorSimple<span>* processor):
-		DiskBasedMergeSort<span>(partitionId, datasetToMergeDirs)
+	DatasetMergerDistance(size_t nbBanks, size_t partitionId, vector<string>& datasetToMergeDirs, SimkaStatistics* stats, SimkaCountProcessorSimple<span>* processor, map<string, u_int64_t>& idToOrder):
+		DiskBasedMergeSort<span>(partitionId, datasetToMergeDirs, idToOrder, true)
     {
 
 
@@ -164,6 +164,7 @@ public:
 	size_t _nbNewBanks;
 
 	string _dirMatrixParts;
+	map<string, u_int64_t> _idToOrder;
 	//string _dirMatrixMatrixBinary;
 
 	Simka2DistanceAlgorithm(IProperties* options):
@@ -208,6 +209,10 @@ public:
 		_nbBanks = _database._entries.size();
 		_nbNewBanks = _nbBanks - _database._nbProcessedDataset;
 
+		for(size_t i=0; i<_database._entries.size(); i++){
+			_idToOrder[_database._entries[i]] = i;
+		}
+
 		//cout << "Simka2Distance (createDatabase):   " << _nbBanks << "   " << _nbNewBanks << endl;
 		//cout << "uniqDirs: " << _database._uniqKmerSpectrumDirs.size() << endl;
 		/*
@@ -220,6 +225,8 @@ public:
 
 	}
 
+
+
 	void initStatistics(){
 
 		_stats = new SimkaStatistics(_nbBanks, _nbNewBanks, _computeSimpleDistances, _computeComplexDistances);
@@ -231,7 +238,7 @@ public:
 
 		_processor = new SimkaCountProcessorSimple<span> (_stats, _nbBanks, _nbNewBanks, _kmerSize, 0);
 
-		DatasetMergerDistance<span> datasetMergerDistance(_nbBanks, _partitionId, _kmerSpectrumDirs, _stats, _processor);
+		DatasetMergerDistance<span> datasetMergerDistance(_nbBanks, _partitionId, _kmerSpectrumDirs, _stats, _processor, _idToOrder);
 		datasetMergerDistance.execute();
 
 		_processor->end();

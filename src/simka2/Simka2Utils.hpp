@@ -263,9 +263,12 @@ public:
 	size_t _partitionId;
 	size_t _nbBanks;
 	vector<string> _currentDatasetIds;
+	vector<u_int64_t> _indexReordering;
+	map<string, u_int64_t>& _idToOrder;
+	bool _needReordering;
 
-    DiskBasedMergeSort(size_t partitionId, vector<string>& datasetToMergeDirs):
-    	_datasetToMergeDirs(datasetToMergeDirs)
+    DiskBasedMergeSort(size_t partitionId, vector<string>& datasetToMergeDirs, map<string, u_int64_t>& idToOrder, bool needReordering):
+    	_datasetToMergeDirs(datasetToMergeDirs), _idToOrder(idToOrder), _needReordering(needReordering)
     {
     	//_outputDir = outputDir;
     	_partitionId = partitionId;
@@ -300,6 +303,7 @@ public:
 
 			//cout << "\tmerge info:    "<< mergeInfoFilename << "    " << System::file().doesExist(mergeInfoFilename) << endl;
 
+	    	cout << endl;
 	    	//if(System::file().doesExist(mergeInfoFilename)){
 				ifstream mergedLinkFile(mergeInfoFilename.c_str(), std::ios::binary);
 				mergedLinkFile.read((char*)(&nbMergedBanks), sizeof(nbMergedBanks));
@@ -312,6 +316,15 @@ public:
 					u_int64_t nbKmers;
 					u_int64_t chord_N2;
 					simka2_readDatasetInfo(mergedLinkFile, datasetID, nbReads, nbDistinctKmers, nbKmers, chord_N2);
+
+					if(_needReordering){
+						//cout << datasetID << "    " << _idToOrder[datasetID] << endl;
+						_indexReordering.push_back(_idToOrder[datasetID]);
+					}
+					else{
+						//cout << datasetID << "    " << i + bankIdOffset << endl;
+						_indexReordering.push_back(i + bankIdOffset);
+					}
 					//string datasetId = _allDatasetIds[_datasetIds[i]];
 					//u_int64_t size = datasetId.size();
 					//mergedLinkFile.write((char const*)(&size), sizeof(size));
@@ -396,7 +409,7 @@ public:
 		{
 			//pq.push(Kmer_BankId_Count(ii,its[ii]->value()));
 			if (!its[ii]->_it->isDone()){
-				pq.push(kxp(its[ii]->value(), its[ii]->getBankId(), its[ii]->abundance(), its[ii]));
+				pq.push(kxp(its[ii]->value(), _indexReordering[its[ii]->getBankId()], its[ii]->abundance(), its[ii]));
 			}
 		}
 
@@ -404,7 +417,7 @@ public:
 		{
 			//get first pointer
 			bestIt = get<3>(pq.top()); pq.pop();
-	    	process(bestIt->value(), bestIt->getBankId(), bestIt->abundance());
+	    	process(bestIt->value(), _indexReordering[bestIt->getBankId()], bestIt->abundance());
 
 	    	//previous_kmer = bestIt->value();
 			//best_p = get<1>(pq.top()) ; pq.pop();
@@ -430,11 +443,11 @@ public:
 				//	process(bestIt->value(), bestIt->getBankId(), bestIt->abundance());
 				//}
 				//else{
-					pq.push(kxp(bestIt->value(), bestIt->getBankId(), bestIt->abundance(), bestIt)); //push new val of this pointer in pq, will be counted later
+					pq.push(kxp(bestIt->value(), _indexReordering[bestIt->getBankId()], bestIt->abundance(), bestIt)); //push new val of this pointer in pq, will be counted later
 
 			    	bestIt = get<3>(pq.top()); pq.pop();
 			    	//previous_kmer = bestIt->value();
-			    	process(bestIt->value(), bestIt->getBankId(), bestIt->abundance());
+			    	process(bestIt->value(), _indexReordering[bestIt->getBankId()], bestIt->abundance());
 			    	//}
 
 		    	//cout << bestIt->value().toString(31) << " " << bestIt->getBankId() <<  " "<< bestIt->abundance() << endl;

@@ -37,6 +37,7 @@ class ComputeKmerSpectrumAll():
 	def __init__(self):
 		self.database = SimkaDatabase(args._databaseDir)
 		self.nbDatasetToProcess = 0
+		self.processed_ids = []
 		#self.jobCores = None
 		#self.jobMemory = None
 

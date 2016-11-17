@@ -21,8 +21,10 @@ args =  parser.parse_args()
 
 class SimkaKmerSpectrumMerger():
 
+	#MAX_OPEN_FILES = 1000
+	#MAX_OPEN_FILES_PER_MERGE = 100
 	MAX_OPEN_FILES = 1000
-	MAX_OPEN_FILES_PER_MERGE = 100
+	MAX_OPEN_FILES_PER_MERGE = 2
 
 	def __init__(self):
 		self.database = SimkaDatabase(args._databaseDir)
@@ -49,6 +51,7 @@ class SimkaKmerSpectrumMerger():
 
 	def mergeKmerSpectrums(self):
 
+		"""
 		usedDatasetIds = {}
 
 		spectrums = []
@@ -99,6 +102,8 @@ class SimkaKmerSpectrumMerger():
 		for id in self.database.entries:
 
 			kmerSpectrumDir = self.database.entries_infos[id]
+			id = self.database.get_id_from_dir(kmerSpectrumDir)
+
 			#id = self.database.get_id_from_dir(kmerSpectrumDir)
 			#datasetID = DATASET_IDS[i]
 			#print(datasetID + " " + getLinkedDataset(datasetID));
@@ -118,11 +123,11 @@ class SimkaKmerSpectrumMerger():
 
 
 
-		while(len(list_kmerSpectrumDirs_Sizes) > SimkaKmerSpectrumMerger.MAX_OPEN_FILES):
+		while(len(list_kmerSpectrumDirs_Sizes) > SimkaKmerSpectrumMerger.MAX_OPEN_FILES_PER_MERGE):
 
 			#//cout << "Start merging pass" << endl;
 			#sort(filenameSizes.begin(),filenameSizes.end(),sortFileBySize);
-			#list_kmerSpectrumDirs_Sizes.sort(key=lambda x: x[1])
+			list_kmerSpectrumDirs_Sizes.sort(key=lambda x: x[1])
 
 			#for i in range(0, len(list_kmerSpectrumDirs_Sizes)):
 			#	print i, list_kmerSpectrumDirs_Sizes[i]
@@ -135,7 +140,7 @@ class SimkaKmerSpectrumMerger():
 
 			#//cout << endl;
 			#//cout << "merging" << endl;
-			for i in range(0, SimkaKmerSpectrumMerger.MAX_OPEN_FILES):
+			for i in range(0, SimkaKmerSpectrumMerger.MAX_OPEN_FILES_PER_MERGE):
 				sfi = list_kmerSpectrumDirs_Sizes[i]
 				#//mergeDatasetIds.push_back(get<2>(sfi));
 				mergeDatasetDirs.append(sfi[0])
@@ -162,10 +167,14 @@ class SimkaKmerSpectrumMerger():
 				#filenameSizes.erase(filenameSizes.begin());
 				del list_kmerSpectrumDirs_Sizes[0]
 
-			self.mergeSomeKmerSpectrums(mergeDatasetDirs, mergeDestID)
+			self.clearTempDir()
+			self.jobScheduler.start()
+			self.mergeSomeKmerSpectrums(os.path.join(self.tempDir, "__merge_input.txt"), mergeDatasetDirs, mergeDestID)
+			self.jobScheduler.join()
+			self.mergeEnd(os.path.join(self.tempDir, "__merge_input.txt"), mergeDatasetDirs, mergeDestID)
 
 			list_kmerSpectrumDirs_Sizes.append((mergeDestID, self.getDirSize(self.database.get_kmer_spectrum_dir_of_id(mergeDestID, True))))
-		"""
+
 
 
 	def mergeSomeKmerSpectrums(self, merge_input_filename, dataset_to_merge_ids, merge_dest_id):
@@ -202,8 +211,8 @@ class SimkaKmerSpectrumMerger():
 				" -in " + merge_input_filename + \
 				" -database-dir " + args._databaseDir + \
 				" -kmer-size " + str(self.database._kmerSize) + \
-				" -partition-id " + str(i) + \
-				"   > /dev/null 2>&1     &"
+				" -partition-id " + str(i) #+ \
+				#"   > /dev/null 2>&1     &"
 			print command
 			os.system(command)
 

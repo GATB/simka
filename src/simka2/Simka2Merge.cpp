@@ -12,6 +12,8 @@
 #include "../minikc/MiniKC.hpp"
 #include <gatb/kmer/impl/RepartitionAlgorithm.hpp>
 #include <gatb/kmer/impl/ConfigurationAlgorithm.hpp>
+#include "Simka2Database.hpp"
+
 //#include "SimkaAlgorithm.hpp"
 //#include "SimkaAlgorithm.hpp"
 
@@ -61,11 +63,12 @@ public:
 	//size_t _partitionId;
 	Bag<Kmer_BankId_Count>* _outputGzFile;
 	Bag<Kmer_BankId_Count>* _cachedBag;
+	map<string, u_int64_t> _dummyIdToOrder;
 	//size_t _nbBanks;
 	//vector<string> _currentDatasetIds;
 
 	DatasetMergerWriter(size_t partitionId, vector<string>& datasetToMergeDirs):
-		DiskBasedMergeSort<span>(partitionId, datasetToMergeDirs)
+		DiskBasedMergeSort<span>(partitionId, datasetToMergeDirs, _dummyIdToOrder, false)
     {
     	//_outputDir = outputDir;
     	//_partitionId = partitionId;
@@ -166,6 +169,7 @@ public:
 	void execute(){
 		parseArgs();
 		layoutInputFilename();
+		//createIdsOrderIndex();
 		//loadLinks();
 		merge();
 		//partitionKmerCounts();
@@ -232,6 +236,16 @@ public:
 		_nbBanks = _kmerSpectrumDirs.size();
 		_mergeDestDir = _kmerSpectrumDirs[0];
 	}
+
+	/*
+	void createIdsOrderIndex(){
+
+		Simka2Database database(_databaseDir);
+
+		for(size_t i=0; i<database._entries.size(); i++){
+			_idToOrder[database._entries[i]] = i;
+		}
+	}*/
 
 	/*
 	void loadLinks(){
