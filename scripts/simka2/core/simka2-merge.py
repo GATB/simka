@@ -21,8 +21,8 @@ args =  parser.parse_args()
 
 class SimkaKmerSpectrumMerger():
 
-	MAX_OPEN_FILES = 10
-	MAX_OPEN_FILES_PER_MERGE = 50
+	MAX_OPEN_FILES = 6
+	MAX_OPEN_FILES_PER_MERGE = 2
 
 	def __init__(self):
 		self.database = SimkaDatabase(args._databaseDir)
@@ -49,9 +49,20 @@ class SimkaKmerSpectrumMerger():
 
 	def mergeKmerSpectrums(self):
 
+		usedDatasetIds = {}
+
 		spectrums = []
 		for id in self.database.entries:
+
+			kmerSpectrumDir = self.database.entries_infos[id]
+			id = self.database.get_id_from_dir(kmerSpectrumDir)
+
+			if id in usedDatasetIds:
+				continue
+			usedDatasetIds[id] = True
+
 			spectrums.append(id)
+
 
 		while(len(spectrums) > SimkaKmerSpectrumMerger.MAX_OPEN_FILES_PER_MERGE):
 
