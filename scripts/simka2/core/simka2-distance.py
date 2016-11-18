@@ -1,7 +1,7 @@
 
 import os, sys, argparse, shutil
 from simka2_database import SimkaDatabase
-from simka2_utils import Simka2ResourceAllocator, JobScheduler
+from simka2_utils import Simka2ResourceAllocator, JobScheduler, ProgressBar
 
 parser = argparse.ArgumentParser(description='Description')
 
@@ -48,8 +48,9 @@ class Simka_ComputeDistance():
 		self.resourceAllocator = Simka2ResourceAllocator(bool(args._isHPC), int(args._nbCores), int(args._maxMemory), int(args._maxJobs))
 		maxJobs, jobCores = self.resourceAllocator.executeForDistanceJobs(self.database._nbPartitions)
 
-		self.jobScheduler = JobScheduler(maxJobs, self.database._nbPartitions)
+		self.jobScheduler = JobScheduler(maxJobs, ProgressBar("Computing distances", self.database._nbPartitions))
 
+		self.jobScheduler.start()
 		self.computeDistanceParts()
 		self.jobScheduler.join()
 

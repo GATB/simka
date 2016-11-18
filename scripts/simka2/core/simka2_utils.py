@@ -1,7 +1,8 @@
 
 import os, time, sys, multiprocessing
 
-
+import datetime
+import dateutil.relativedelta
 
 class Simka2ResourceAllocator():
 
@@ -84,12 +85,16 @@ class Simka2ResourceAllocator():
 
 class ProgressBar():
 
-    def __init__(self, max):
+    def __init__(self, text, max):
+        self.text = text
         self.max = max
         self.progress = 0
+        self.start_time = 0
 
     def start(self):
         self.progress = 0
+        self.start_time = time.time()
+        self.display()
 
     def step(self, value):
         self.progress += value
@@ -97,9 +102,12 @@ class ProgressBar():
 
     def display(self):
         progress_percent = float(self.progress) / float(self.max) * 100
+
+        duration = int(time.time() - self.start_time)
+        duration_str = str(datetime.timedelta(seconds=duration))
         #---
         sys.stdout.write('\r')
-        sys.stdout.write(str(round(progress_percent, 1)) + "%")
+        sys.stdout.write("[" + str(round(progress_percent, 1)) + "%] " +  self.text + "    [Time: " + duration_str + "]")
 
         if self.progress == self.max:
             sys.stdout.write("\n")
@@ -112,19 +120,19 @@ class ProgressBar():
 
 class JobScheduler():
 
-    def __init__(self, maxJobs, progressTotalJobs):
+    def __init__(self, maxJobs, progressBar=None):
         self.maxJobs = maxJobs
         self.nbJobs = 0
         self.jobQueue = []
         self.jobQueueToRemove = []
-
-        self.progressBar = ProgressBar(progressTotalJobs)
+        #---
+        self.progressBar = progressBar
 
     def start(self):
         self.nbJobs = 0
         self.jobQueue = []
         self.jobQueueToRemove = []
-        self.progressBar.start()
+        if self.progressBar is not None: self.progressBar.start()
 
     #jobData specif: (checkPointFilemane, endJobMethod, (endJobMethodArgs, ...))
     def submitJob(self, jobData):
@@ -155,7 +163,7 @@ class JobScheduler():
                     isJobAvailbale = True
                     self.nbJobs -= 1
                     jobData[1](jobData[2]) #Call job end method (jobData[1]) with args (jobData[2])
-                    self.progressBar.step(1)
+                    if self.progressBar is not None: self.progressBar.step(1)
 
             if isJobAvailbale:
                 for checkPointFilenameToRemove in self.jobQueueToRemove:

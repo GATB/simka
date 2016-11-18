@@ -1,7 +1,7 @@
 
 import os, sys, argparse, shutil
 from simka2_database import SimkaDatabase
-from simka2_utils import JobScheduler, Simka2ResourceAllocator
+from simka2_utils import JobScheduler, Simka2ResourceAllocator, ProgressBar
 
 #----------------------------------------------------------------------
 #----------------------------------------------------------------------
@@ -50,8 +50,9 @@ class ComputeKmerSpectrumAll():
 		#self.resourceAllocator.nbSamples = self.nbDatasetToProcess
 		maxJobs, self.jobCores, self.jobMemory = self.resourceAllocator.executeForCountJobs(self.nbDatasetToProcess)
 
-		self.jobScheduler = JobScheduler(maxJobs, self.nbDatasetToProcess)
+		self.jobScheduler = JobScheduler(maxJobs, ProgressBar("Computing k-mer spectrums", self.nbDatasetToProcess))
 
+		self.jobScheduler.start()
 		self.computeKmerSpectrums()
 		self.jobScheduler.join()
 

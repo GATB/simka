@@ -1,7 +1,7 @@
 
 import os, sys, argparse, shutil
 from simka2_database import SimkaDatabase
-from simka2_utils import Simka2ResourceAllocator, JobScheduler
+from simka2_utils import Simka2ResourceAllocator, JobScheduler, ProgressBar
 
 
 #----------------------------------------------------------------------
@@ -42,7 +42,7 @@ class SimkaKmerSpectrumMerger():
 		maxJobs, jobCores = self.resourceAllocator.executeForDistanceJobs(self.database._nbPartitions)
 		maxJobs = min(maxJobs, maxJobsByOpenFile)
 
-		self.jobScheduler = JobScheduler(maxJobs, self.database._nbPartitions)
+		self.jobScheduler = JobScheduler(maxJobs, ProgressBar("Merging k-mer spectrums", self.database._nbPartitions))
 
 		#---
 		self.mergeKmerSpectrums()
