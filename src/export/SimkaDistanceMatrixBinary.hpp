@@ -8,6 +8,8 @@
 #ifndef GATB_SIMKA_SRC_CORE_SIMKADISTANCEMATRIXBINARY_HPP_
 #define GATB_SIMKA_SRC_CORE_SIMKADISTANCEMATRIXBINARY_HPP_
 
+#include "../utils/SimkaIoUtils.hpp"
+
 class SimkaDistanceMatrixBinary {
 public:
 
@@ -21,7 +23,7 @@ public:
 		matrixInfoFile.write((char const*)(&nbNewBanks), sizeof(nbNewBanks));
 
 		for(size_t i=bankNames.size()-nbNewBanks; i<bankNames.size(); i++){
-			simka2_writeString(bankNames[i], matrixInfoFile);
+			SimkaIoUtils::SimkaIoUtils::simka2_writeString(bankNames[i], matrixInfoFile);
 		}
 
 		matrixInfoFile.close();
@@ -45,7 +47,7 @@ public:
 
 		for(size_t i=0; i<bankNames.size(); i++){
 			string bankName;
-			simka2_readString(bankName, matrixInfoFile);
+			SimkaIoUtils::simka2_readString(bankName, matrixInfoFile);
 			bankNames[i] = bankName;
 		}
 

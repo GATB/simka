@@ -22,7 +22,6 @@
 #define TOOLS_SIMKA_SRC_SIMKADISTANCE_HPP_
 
 #include <gatb/gatb_core.hpp>
-#include "SimkaCommon.hpp"
 #include "../export/SimkaDistanceMatrixBinary.hpp"
 
 const string STR_SIMKA_DISTANCE_BRAYCURTIS = "-bray-curtis";

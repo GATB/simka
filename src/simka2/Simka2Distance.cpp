@@ -67,7 +67,7 @@ public:
     }
 
 	void process(Type& kmer, u_int64_t bankId, u_int64_t abundance){
-    	//cout << kmer.toString(31) << " " << bankId <<  " "<< abundance << endl;
+    	//cout << kmer.toString(61) << " " << bankId <<  " "<< abundance << endl;
 
 		if(_isInit){
 			if(kmer == _lastKmer){

@@ -91,7 +91,7 @@ class Simka_ComputeDistance():
 		#break
 
 	def computeDistanceFinal(self):
-		command = os.path.join(args._simkaBinDir, "simka2-distance-final") + \
+		command = os.path.join(args._simkaBinDir, "simka2-distanceFinal") + \
 			" -database-dir " + args._databaseDir + \
 			" -kmer-size " + str(self.database._kmerSize) + \
 			" -nb-partitions " + str(self.database._nbPartitions)

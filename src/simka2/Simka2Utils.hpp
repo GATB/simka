@@ -8,6 +8,7 @@
 #ifndef GATB_SIMKA_SRC_SIMKA2_SIMKA2UTILS_HPP_
 #define GATB_SIMKA_SRC_SIMKA2_SIMKA2UTILS_HPP_
 
+#include "../utils/SimkaIoUtils.hpp"
 #include "../core/SimkaDistance.hpp"
 //#define SIMKA2_NB_PARTITIONS 200
 
@@ -20,68 +21,7 @@ const string STR_SIMKA2_INPUT_IDS = "-in-ids";
 //const string STR_SIMKA2_DISTANCE_INPUT_1 = "-in-already-computed";
 //const string STR_SIMKA2_DISTANCE_INPUT_2 = "-in-to-compute";
 
-string getDatasetID(const string& kmerSpectrumDir){
-	string datasetID = System::file().getBaseName(kmerSpectrumDir);
-	//datasetID.erase(datasetID.end()-string("_kmerSpectrum").size(), datasetID.end());
-	return datasetID;
-}
 
-
-
-u_int64_t simka2_getFileSize(const string& filename){
-	std::ifstream in(filename, std::ifstream::ate | std::ifstream::binary);
-	u_int64_t size = in.tellg();
-	in.close();
-	return size;
-}
-/*
-u_int64_t simka2_getDatasetSize(const string& kmerSpectrumDir){
-	u_int64_t datasetSize = 0;
-	for(size_t partitionID=0; partitionID<SIMKA2_NB_PARTITIONS; partitionID++){
-		string partFilename = kmerSpectrumDir + "/" + Stringify::format("%i", partitionID) + ".gz";
-		datasetSize += simka2_getFileSize(partFilename);
-	}
-	return datasetSize;
-}
-*/
-
-
-
-void simka2_writeDatasetInfo(ofstream& file, const string& datasetID, u_int64_t nbReads, u_int64_t nbDistinctKmers, u_int64_t nbKmers, u_int64_t chord_N2){
-    simka2_writeString(datasetID, file);
-    file.write((char const*)(&nbReads), sizeof(nbReads));
-    file.write((char const*)(&nbDistinctKmers), sizeof(nbDistinctKmers));
-    file.write((char const*)(&nbKmers), sizeof(nbKmers));
-    file.write((char const*)(&chord_N2), sizeof(chord_N2));
-}
-
-void simka2_readDatasetInfo(ifstream& file, string& datasetID, u_int64_t& nbReads, u_int64_t& nbDistinctKmers, u_int64_t& nbKmers, u_int64_t& chord_N2){
-	simka2_readString(datasetID, file);
-	file.read((char *)(&nbReads), sizeof(nbReads));
-	file.read((char *)(&nbDistinctKmers), sizeof(nbDistinctKmers));
-	file.read((char *)(&nbKmers), sizeof(nbKmers));
-	file.read((char *)(&chord_N2), sizeof(chord_N2));
-}
-
-void simka2_transferDatasetInfo(ifstream& source, ofstream& dest){
-	string datasetID;
-	u_int64_t nbReads;
-	u_int64_t nbDistinctKmers;
-	u_int64_t nbKmers;
-	u_int64_t chord_N2;
-
-	simka2_readString(datasetID, source);
-	source.read((char *)(&nbReads), sizeof(nbReads));
-	source.read((char *)(&nbDistinctKmers), sizeof(nbDistinctKmers));
-	source.read((char *)(&nbKmers), sizeof(nbKmers));
-	source.read((char *)(&chord_N2), sizeof(chord_N2));
-
-    simka2_writeString(datasetID, dest);
-    dest.write((char const*)(&nbReads), sizeof(nbReads));
-    dest.write((char const*)(&nbDistinctKmers), sizeof(nbDistinctKmers));
-    dest.write((char const*)(&nbKmers), sizeof(nbKmers));
-    dest.write((char const*)(&chord_N2), sizeof(chord_N2));
-}
 
 
 
@@ -116,7 +56,7 @@ void simka2_loadStatInfos(const string& databaseDir, const set<string>& uniqDirs
 			u_int64_t nbDistinctKmers;
 			u_int64_t nbKmers;
 			u_int64_t chord_N2;
-			simka2_readDatasetInfo(mergedLinkFile, datasetID, nbReads, nbDistinctKmers, nbKmers, chord_N2);
+			SimkaIoUtils::simka2_readDatasetInfo(mergedLinkFile, datasetID, nbReads, nbDistinctKmers, nbKmers, chord_N2);
 
 			vector<u_int64_t> infos;
 			infos.push_back(nbReads);
@@ -315,7 +255,7 @@ public:
 					u_int64_t nbDistinctKmers;
 					u_int64_t nbKmers;
 					u_int64_t chord_N2;
-					simka2_readDatasetInfo(mergedLinkFile, datasetID, nbReads, nbDistinctKmers, nbKmers, chord_N2);
+					SimkaIoUtils::simka2_readDatasetInfo(mergedLinkFile, datasetID, nbReads, nbDistinctKmers, nbKmers, chord_N2);
 
 					if(_needReordering){
 						//cout << datasetID << "    " << _idToOrder[datasetID] << endl;

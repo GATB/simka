@@ -7,11 +7,11 @@
 
 #include <gatb/gatb_core.hpp>
 #include "../core/SimkaUtils.hpp"
-#include "../core/SimkaCommon.hpp"
 #include "Simka2Utils.hpp"
 #include "../minikc/MiniKC.hpp"
 #include <gatb/kmer/impl/RepartitionAlgorithm.hpp>
 #include <gatb/kmer/impl/ConfigurationAlgorithm.hpp>
+#include "../utils/SimkaIoUtils.hpp"
 //#include "SimkaAlgorithm.hpp"
 //#include "SimkaAlgorithm.hpp"
 
@@ -562,7 +562,7 @@ public:
         u_int64_t kmerSize = _kmerSize;
 
         outputInfoFile.write((char const*)(&nbDatasets), sizeof(nbDatasets));
-        simka2_writeDatasetInfo(outputInfoFile, _datasetID, _nbReads, nbDistinctKmers, nbKmers, chord_N2);
+        SimkaIoUtils::simka2_writeDatasetInfo(outputInfoFile, _datasetID, _nbReads, nbDistinctKmers, nbKmers, chord_N2);
         /*
         outputInfoFile.write((char const*)(&_datasetIDbin), sizeof(_datasetIDbin));
         outputInfoFile.write((char const*)(&datasetIdSize), sizeof(datasetIdSize));

@@ -63,7 +63,7 @@ if not os.path.exists(args.output_dir):
 
 # Init simka
 command = "python " + \
-    os.path.join(SCRIPT_DIR, "core", "simka2_init.py") + \
+    os.path.join(SCRIPT_DIR, "core", "simka2-init.py") + \
     " -database-dir " + databaseDir + \
     " -kmer-size " + args.kmer_size + \
     " -nb-cores " + args.nb_cores + \
@@ -108,24 +108,29 @@ os.system(command)
 #    datasetIdsFile.write(id + "\n")
 #datasetIdsFile.close()
 
+
+#-----------------------------------------------------------------------------
+# Copy distance matrix binaries in result dir
+#-----------------------------------------------------------------------------
+matrixBinaryFilename = os.path.join(databaseDir, "distance", "matrix_binary")
+matrixBinaryFilenameDest = os.path.join(args.output_dir, "matrix_binary")
+if os.path.exists(matrixBinaryFilenameDest):
+    shutil.rmtree(matrixBinaryFilenameDest)
+shutil.copytree(matrixBinaryFilename, matrixBinaryFilenameDest)
+matrixBinaryFilename = matrixBinaryFilenameDest
+
 #-----------------------------------------------------------------------------
 # Run the distance exporter
 # The distance exporter reads matrices in binary format (-in)
 # extracts the rows/columns depending on supplied datasets id (-in-ids)
 # and outputs distance matrices in ascii format readable by R (-out)
 #-----------------------------------------------------------------------------
-matrixBinaryFilename = os.path.join(databaseDir, "distance", "matrix_binary")
-command = os.path.join(args.simka_bin_dir, "simkaDistanceExport") + \
+command = os.path.join(args.simka_bin_dir, "simka2-export") + \
     " -out " + args.output_dir + \
     " -in " + matrixBinaryFilename #+ \
     #" -in-ids " + datasetIdsFilename
 os.system(command)
 
-#Copy matrix binaries in result dir
-matrixBinaryFilenameDest = os.path.join(args.output_dir, "matrix_binary")
-if os.path.exists(matrixBinaryFilenameDest):
-    shutil.rmtree(matrixBinaryFilenameDest)
-shutil.copytree(matrixBinaryFilename, matrixBinaryFilenameDest)
 
 #Remove tmp dir (k-mer spectrums, dist...)
 if not args.keep_tmp:

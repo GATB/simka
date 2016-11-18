@@ -6,8 +6,8 @@
  */
 
 #include <gatb/gatb_core.hpp>
+#include "../utils/SimkaIoUtils.hpp"
 #include "../core/SimkaUtils.hpp"
-#include "../core/SimkaCommon.hpp"
 #include "Simka2Utils.hpp"
 #include "../minikc/MiniKC.hpp"
 #include <gatb/kmer/impl/RepartitionAlgorithm.hpp>
@@ -221,7 +221,7 @@ public:
 			line.erase(std::remove(line.begin(),line.end(),' '),line.end());
 			if(line == "") continue;
 
-			string datasetID = getDatasetID(line);//System::file().getBaseName(line);
+			string datasetID = SimkaIoUtils::getDatasetID(line);//System::file().getBaseName(line);
 			//datasetID.erase(datasetID.end()-string("_kmerSpectrum").size(), datasetID.end());
 
 
@@ -386,7 +386,7 @@ public:
 				//mergedLinkFile.write(datasetId.c_str(), size);
 				//cout << datasetId << endl;
 
-				simka2_transferDatasetInfo(mergedLinkFile, kmerSpectrumInfoFile);
+				SimkaIoUtils::simka2_transferDatasetInfo(mergedLinkFile, kmerSpectrumInfoFile);
 
 				//cout << size << " " << linkedDatasetID << endl;
 				//simka2_writeString(linkedDatasetID, kmerSpectrumInfoFile);
