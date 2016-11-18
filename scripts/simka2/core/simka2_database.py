@@ -97,11 +97,12 @@ class SimkaDatabase():
 		return id in self.entries_infos
 
 	#Called after a merge of k-mer spectrums, all merged dataset have to changed their path to the merged destination
-	def change_entries(self, old_id, new_id):
+	def change_entries(self, old_ids, new_id):
 		new_id_filename = self.get_kmer_spectrum_dir_of_id(new_id, False)
 
 		for id, filename in self.entries_infos.items():
-			if self.get_id_from_dir(filename) == old_id:
+			filename_id = self.get_id_from_dir(filename)
+			if filename_id in old_ids:
 				self.entries_infos[id] = new_id_filename
 
 	def get_default_kmer_spectrum_dir_of_id(self, id, abs_path):

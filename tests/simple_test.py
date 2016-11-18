@@ -11,7 +11,7 @@ if os.path.exists("__results__"):
 os.mkdir(dir)
 
 def decompress_simka_results(dir):
-	result_filenames = glob.glob(os.path.join(dir, '*'))
+	result_filenames = glob.glob(os.path.join(dir, '*.csv*'))
 	for filename_gz in result_filenames:
 		#filename_gz = result_dir + "/" + filename
 		with gzip.open(filename_gz, 'rb') as f:
@@ -25,37 +25,38 @@ def __test_matrices(simka_vs_truth, result_dir, truth_dir):
 	ok = True
 
 	decompress_simka_results(result_dir)
-	result_filenames = glob.glob(os.path.join(result_dir, '*'))
-	result_filenames.remove(result_dir + "/mat_abundance_jaccard.csv") #This distance is computed from Bray Curtis distance
-	
-	
+	result_filenames = glob.glob(os.path.join(result_dir, '*.csv*'))
+
 	if simka_vs_truth:
-		truth_filenames = glob.glob(os.path.join(truth_dir, '*'))
+		truth_filenames = glob.glob(os.path.join(truth_dir, '*.csv*'))
 	else: #simka vs simka
 		#if result_dir+"/mat_abundance_jaccard.csv" in truth_filenames: #comparing simka results vs simka results
 		#truth_filenames.remove(result_dir+"/mat_abundance_jaccard.csv") #This distance is computed from Bray Curtis distance
 		decompress_simka_results(truth_dir)
-		truth_filenames = glob.glob(os.path.join(truth_dir, '*'))
-		truth_filenames.remove(truth_dir + "/mat_abundance_jaccard.csv") #This distance is computed from Bray Curtis distance
+		truth_filenames = glob.glob(os.path.join(truth_dir, '*.csv*'))
 
 	truth_filenames.sort()
 	result_filenames.sort()
 
-	for i in range(0, len(result_filenames)):
+	for result_filename in result_filenames:
+		distanceName = os.path.split(result_filename)[1]
+		for truth_filename in truth_filenames:
+			distanceName2 = os.path.split(truth_filename)[1]
+			if distanceName != distanceName2: continue
 
-		res_file = open(result_filenames[i], "r")
-		truth_file = open(truth_filenames[i], "r")
-		
-		#print res_file, truth_file
-		res_str = res_file.read()
-		truth_str = truth_file.read()
+			res_file = open(result_filename, "r")
+			truth_file = open(truth_filename, "r")
+			
+			#print res_file, truth_file
+			res_str = res_file.read()
+			truth_str = truth_file.read()
 
-		res_file.close()
-		truth_file.close()
+			res_file.close()
+			truth_file.close()
 
-		if(res_str != truth_str):
-			print("\t- TEST ERROR:    " + result_filenames[i])
-			ok = False
+			if(res_str != truth_str):
+				print("\t- TEST ERROR:    " + result_filenames[i])
+				ok = False
 
 	return ok
 
@@ -78,37 +79,39 @@ def test_parallelization():
 
 #test k=31 t=0
 print("TESTING k=31 t=0")
-command = "../build/bin/simka -in ../example/simka_input.txt -out ./__results__/results_k31_t0 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 31 -abundance-min 0 -verbose 0"
+command = "python ../scripts/simka2/simka.py -in ../example/simka_input.txt -out ./__results__/results_k31_t0 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 31 -abundance-min 0 -simka-bin ../build/bin"
 print(command)
+os.system(command + suffix)
+command = "../build/bin/simka2-export -out __results__/results_k31_t0/ -in-ids ids_order.txt -in __results__/results_k31_t0/matrix_binary/"
 os.system(command + suffix)
 test_dists("results_k31_t0")
 
 #test k=21 t=0
 print("TESTING k=21 t=0")
-command = "../build/bin/simka -in ../example/simka_input.txt -out ./__results__/results_k21_t0 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 0 -verbose 0"
+command = "python ../scripts/simka2/simka.py -in ../example/simka_input.txt -out ./__results__/results_k21_t0 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 0 -simka-bin ../build/bin"
 print(command)
 os.system(command + suffix)
 test_dists("results_k21_t0")
 
 #test k=31 t=2
 print("TESTING k=31 t=2")
-command = "../build/bin/simka -in ../example/simka_input.txt -out ./__results__/results_k31_t2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 31 -abundance-min 2 -verbose 0"
+command = "python ../scripts/simka2/simka.py -in ../example/simka_input.txt -out ./__results__/results_k31_t2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 31 -abundance-min 2 -simka-bin ../build/bin"
 print(command)
 os.system(command + suffix)
 test_dists("results_k31_t2")
 
 #test k=21 t=2
 print("TESTING k=21 t=2")
-command = "../build/bin/simka -in ../example/simka_input.txt -out ./__results__/results_k21_t2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 2 -verbose 0"
+command = "python ../scripts/simka2/simka.py -in ../example/simka_input.txt -out ./__results__/results_k21_t2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 2 -simka-bin ../build/bin"
 print(command)
 os.system(command + suffix)
 test_dists("results_k21_t2")
 
 #test resources 1
 print("TESTING parallelization")
-command = "../build/bin/simka -in ../example/simka_input.txt -out ./__results__/results_resources1 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 0 -nb-cores 20 -max-memory 4000  -verbose 0"
+command = "python ../scripts/simka2/simka.py -in ../example/simka_input.txt -out ./__results__/results_resources1 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 0 -nb-cores 20 -max-memory 4000  -simka-bin ../build/bin"
 os.system(command + suffix)
-command = "../build/bin/simka -in ../example/simka_input.txt -out ./__results__/results_resources2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 0 -nb-cores 2 -max-memory 2000  -verbose 0"
+command = "python ../scripts/simka2/simka.py -in ../example/simka_input.txt -out ./__results__/results_resources2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 0 -nb-cores 2 -max-memory 2000  -simka-bin ../build/bin"
 os.system(command + suffix)
 test_parallelization()
 

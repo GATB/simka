@@ -168,7 +168,7 @@ class SimkaKmerSpectrumMerger():
 
 			self.clearTempDir()
 			self.jobScheduler.start()
-			self.mergeSomeKmerSpectrums(os.path.join(self.tempDir, "__merge_input.txt"), mergeDatasetDirs, mergeDestID)
+			self.mergeSmallestKmerSpectrums(os.path.join(self.tempDir, "__merge_input.txt"), mergeDatasetDirs, mergeDestID)
 			self.jobScheduler.join()
 			self.mergeEnd(os.path.join(self.tempDir, "__merge_input.txt"), mergeDatasetDirs, mergeDestID)
 
@@ -176,7 +176,7 @@ class SimkaKmerSpectrumMerger():
 
 
 
-	def mergeSomeKmerSpectrums(self, merge_input_filename, dataset_to_merge_ids, merge_dest_id):
+	def mergeSmallestKmerSpectrums(self, merge_input_filename, dataset_to_merge_ids, merge_dest_id):
 
 		#print dataset_to_merge_ids
 		#merge_input_filename = os.path.join(self.database.dirname, "__merge_input.txt")
@@ -242,11 +242,14 @@ class SimkaKmerSpectrumMerger():
 		os.system(command)
 
 		dataset_to_merge_ids.remove(merge_dest_id)
+
+		dataset_to_merge_ids_index = {}
 		for id in dataset_to_merge_ids:
 			old_dir = self.database.get_kmer_spectrum_dir_of_id(id, True)
 			shutil.rmtree(old_dir)
+			dataset_to_merge_ids_index[id] = True
 
-			self.database.change_entries(id, merge_dest_id)
+		self.database.change_entries(dataset_to_merge_ids_index, merge_dest_id)
 
 		self.database.save()
 
