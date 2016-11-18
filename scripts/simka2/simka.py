@@ -1,6 +1,6 @@
 
 import os, sys, argparse, shutil
-from core.simka_database import SimkaDatabase
+from core.simka2_database import SimkaDatabase
 
 
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -63,7 +63,7 @@ if not os.path.exists(args.output_dir):
 
 # Init simka
 command = "python " + \
-    os.path.join(SCRIPT_DIR, "core", "simka_init.py") + \
+    os.path.join(SCRIPT_DIR, "core", "simka2_init.py") + \
     " -database-dir " + databaseDir + \
     " -kmer-size " + args.kmer_size + \
     " -nb-cores " + args.nb_cores + \
@@ -75,7 +75,7 @@ os.system(command)
 
 #Compute all k-mer spectrums
 command = "python " + \
-    os.path.join(SCRIPT_DIR, "core", "compute_kmer_spectrum_all.py") + \
+    os.path.join(SCRIPT_DIR, "core", "simka2-count.py") + \
     " -database-dir " + databaseDir + \
     " -out-tmp " + tmpComputationDir + \
     " -in " + args.input_filename + \

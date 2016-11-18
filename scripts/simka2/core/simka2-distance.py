@@ -1,6 +1,6 @@
 
 import os, sys, argparse, shutil
-from simka_database import SimkaDatabase
+from simka2_database import SimkaDatabase
 from simka2_utils import Simka2ResourceAllocator, JobScheduler
 
 parser = argparse.ArgumentParser(description='Description')
