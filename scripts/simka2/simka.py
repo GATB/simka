@@ -33,35 +33,25 @@ parserRead.add_argument('-min-shannon-index', action="store", dest="min_read_sha
 parserCore.add_argument('-nb-cores', action="store", dest="nb_cores", help="number of cores", default="0")
 parserCore.add_argument('-max-memory', help="max memory (MB)", default="8000")
 
-
-#args =  parser.parse_args()
-#print args.max_memory
-#exit(1)
-#if len(sys.argv) == 1:
-#    parser.print_help()
-#    exit(1)
-
 args =  parser.parse_args()
 
 SCRIPT_DIR = os.path.split(os.path.realpath(__file__))[0]
 
 #-----------------------------------------------------------------------------
+# Create dirs that hold the simka database and temporary computation files
+#-----------------------------------------------------------------------------
 if not os.path.exists(args.output_dir_temp):
     os.makedirs(args.output_dir_temp)
 databaseDir = os.path.join(args.output_dir_temp, "simka_database")
 tmpComputationDir = os.path.join(args.output_dir_temp, "simka_tmp")
-#if not os.path.exists(databaseDir):
-#    os.makedirs(databaseDir)
 if not os.path.exists(tmpComputationDir):
     os.makedirs(tmpComputationDir)
 if not os.path.exists(args.output_dir):
     os.makedirs(args.output_dir)
 
-
-
 #-----------------------------------------------------------------------------
-
-# Init simka
+# Init Simka database
+#-----------------------------------------------------------------------------
 command = "python " + \
     os.path.join(SCRIPT_DIR, "core", "simka2-init.py") + \
     " -database-dir " + databaseDir + \
@@ -73,7 +63,9 @@ command = "python " + \
 os.system(command)
 
 
-#Compute all k-mer spectrums
+#-----------------------------------------------------------------------------
+# Compute k-mer spectrums
+#-----------------------------------------------------------------------------
 command = "python " + \
     os.path.join(SCRIPT_DIR, "core", "simka2-count.py") + \
     " -database-dir " + databaseDir + \
@@ -85,29 +77,14 @@ command = "python " + \
     " -max-jobs " + "0"
 os.system(command)
 
-#Compute distance between k-mer spectrums
+#-----------------------------------------------------------------------------
+# Compute distances between k-mer spectrums
+#-----------------------------------------------------------------------------
 command = "python " + \
     os.path.join(SCRIPT_DIR, "core", "simka2-distance.py") + \
     " -database-dir " + databaseDir + \
     " -simka-bin " + args.simka_bin_dir
 os.system(command)
-
-#-----------------------------------------------------------------------------
-# Write the list of available dataset ids on disk for distance exporter
-# Dataset ids are retrieved from input filename (-in)
-# It allows the final distance matrix to have dataset in the same order
-# than supplied input filename (-in)
-#-----------------------------------------------------------------------------
-#datasetIdsFilename = os.path.join(tmpComputationDir, "__simka_dataset_ids.txt")
-#datasetIdsFile = open(datasetIdsFilename, "w")
-#inputFile = open(args.input_filename, "r")
-#for line in inputFile:
-#    line = line.strip()
-#    if line == "": continue
-#    id, filenames = line.replace(" ", "").split(":")
-#    datasetIdsFile.write(id + "\n")
-#datasetIdsFile.close()
-
 
 #-----------------------------------------------------------------------------
 # Copy distance matrix binaries in result dir
@@ -127,12 +104,15 @@ matrixBinaryFilename = matrixBinaryFilenameDest
 #-----------------------------------------------------------------------------
 command = os.path.join(args.simka_bin_dir, "simka2-export") + \
     " -out " + args.output_dir + \
-    " -in " + matrixBinaryFilename #+ \
-    #" -in-ids " + datasetIdsFilename
+    " -in " + matrixBinaryFilename
 os.system(command)
 
 
-#Remove tmp dir (k-mer spectrums, dist...)
+#-----------------------------------------------------------------------------
+# Remove tmp dir (k-mer spectrums, dist...)
+# The computed k-mer spectrums and distance matrices are kept if -keep-tmp
+# is set.
+#-----------------------------------------------------------------------------
 if not args.keep_tmp:
     shutil.rmtree(databaseDir)
 shutil.rmtree(tmpComputationDir)
