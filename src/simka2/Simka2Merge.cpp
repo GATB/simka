@@ -67,13 +67,13 @@ public:
 	//size_t _nbBanks;
 	//vector<string> _currentDatasetIds;
 
-	DatasetMergerWriter(size_t partitionId, vector<string>& datasetToMergeDirs):
+	DatasetMergerWriter(size_t partitionId, vector<string>& datasetToMergeDirs, const string& outputDir):
 		DiskBasedMergeSort<span>(partitionId, datasetToMergeDirs, _dummyIdToOrder, false)
     {
     	//_outputDir = outputDir;
     	//_partitionId = partitionId;
 
-		_outputFilename = this->_datasetToMergeDirs[0] + "/" + Stringify::format("%i", this->_partitionId) + ".gz.temp";
+		_outputFilename = outputDir + "/" + Stringify::format("%i", this->_partitionId) + ".gz";
     	//_outputFilename = _outputDir + "/solid/part_" + Stringify::format("%i", partitionId) + "/__p__" + Stringify::format("%i", mergeId) + ".gz.temp";
 
     	_outputGzFile = new BagGzFile<Kmer_BankId_Count>(_outputFilename);
@@ -155,7 +155,7 @@ public:
 	size_t _nbCores;
 	size_t _nbBanks;
 	map<string, string> _links;
-	string _mergeDestDir;
+	//string _mergeDestDir;
 	u_int64_t _nbMergedBanks;
 	bool _justSaveMergeInfos;
 	string _databaseDir;
@@ -191,7 +191,7 @@ public:
     	_databaseDir =  getInput()->getStr(STR_SIMKA2_DATABASE_DIR);
     	_inputFilename =  getInput()->getStr(STR_URI_INPUT);
     	_partitionId =   getInput()->getInt(STR_SIMKA2_PARTITION_ID);
-    	_outputDir =  getInput()->getStr(STR_URI_INPUT);
+    	_outputDir =  getInput()->getStr(STR_URI_OUTPUT);
     	_nbCores =  getInput()->getInt(STR_NB_CORES);
     	_justSaveMergeInfos =  getInput()->get("-save-merge-info");
     	//_kmerSize =  getInput()->getStr(STR_URI_INPUT);
@@ -235,7 +235,7 @@ public:
 		}
 
 		_nbBanks = _kmerSpectrumDirs.size();
-		_mergeDestDir = _kmerSpectrumDirs[0];
+		//_mergeDestDir = _kmerSpectrumDirs[0];
 	}
 
 	/*
@@ -298,7 +298,7 @@ public:
 		}
 		else{
 			//for(size_t i=0; i<0; i++){
-				DatasetMergerWriter<span> diskBasedMergeSort(_partitionId, _kmerSpectrumDirs);
+				DatasetMergerWriter<span> diskBasedMergeSort(_partitionId, _kmerSpectrumDirs, _outputDir);
 				diskBasedMergeSort.execute();
 				//_nbMergedBanks = diskBasedMergeSort._nbBanks;
 				//break;
@@ -353,7 +353,7 @@ public:
     	//_outputFilename = _datasetToMergeDirs[0] + "/" + Stringify::format("%i", partitionId) + ".temp";
 
 
-    	string mergeInfoFilenameTemp = _mergeDestDir + "/merge_info.bin.temp";
+    	string mergeInfoFilenameTemp = _outputDir + "/merge_info.bin";
 		ofstream kmerSpectrumInfoFile(mergeInfoFilenameTemp.c_str(), std::ios::binary);
 
 		kmerSpectrumInfoFile.write((char const*)(&_nbMergedBanks), sizeof(_nbMergedBanks));
@@ -418,9 +418,9 @@ public:
 
 		kmerSpectrumInfoFile.close();
 
-    	string mergeInfoFilename = _mergeDestDir + "/merge_info.bin";
-    	System::file().remove(mergeInfoFilename);
-    	System::file().rename(mergeInfoFilenameTemp, mergeInfoFilename);
+    	//string mergeInfoFilename = _outputDir + "/merge_info.bin";
+    	//System::file().remove(mergeInfoFilename);
+    	//System::file().rename(mergeInfoFilenameTemp, mergeInfoFilename);
 		/*
 		u_int64_t nbBanks = _kmerSpectrumDirs.size();
 
@@ -629,6 +629,7 @@ public:
 	    IOptionsParser* parser = getParser();//new OptionsParser ("Simka2 - Compute Kmer Spectrum");
 
 	    //parser->push_front (new OptionOneParam (STR_URI_OUTPUT, "output directory for merged kmer spectrum", true));
+	    parser->push_front (new OptionOneParam (STR_URI_OUTPUT, "output dir for merged k-mer spectrums", true));
 	    parser->push_front (new OptionOneParam (STR_SIMKA2_DATABASE_DIR, "dir path to a simka database", true));
 	    parser->push_front (new OptionOneParam (STR_URI_INPUT, "input filename of k-mer spectrums to merge | TODO SPECIF", true));
 	    parser->push_front (new OptionOneParam (STR_SIMKA2_PARTITION_ID, "number of the partition", true));

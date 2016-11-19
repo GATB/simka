@@ -61,6 +61,11 @@ class SimkaDatabase():
 		if not os.path.exists(kmer_spectrum_absolute_dir):
 			os.mkdir(kmer_spectrum_absolute_dir)
 
+
+		self.mergeKmerSpectrumRelativeDir = os.path.join(self.kmer_spectrums_relative_dir, "__merged__")
+		self.mergeKmerSpectrumAbsDir = os.path.join(self.dirname, self.mergeKmerSpectrumRelativeDir)
+		if not os.path.exists(self.mergeKmerSpectrumAbsDir): os.mkdir(self.mergeKmerSpectrumAbsDir)
+
 		dir = os.path.join(self.dirname, "distance")
 		if not os.path.exists(dir): os.mkdir(dir)
 
@@ -97,13 +102,13 @@ class SimkaDatabase():
 		return id in self.entries_infos
 
 	#Called after a merge of k-mer spectrums, all merged dataset have to changed their path to the merged destination
-	def change_entries(self, old_ids, new_id):
-		new_id_filename = self.get_kmer_spectrum_dir_of_id(new_id, False)
+	def change_entries(self, mergedDirs, mergeOutputRelativeDir):
+		#new_id_filename = self.get_kmer_spectrum_dir_of_id(new_id, False)
 
 		for id, filename in self.entries_infos.items():
-			filename_id = self.get_id_from_dir(filename)
-			if filename_id in old_ids:
-				self.entries_infos[id] = new_id_filename
+			#filename_id = self.get_id_from_dir(filename)
+			if filename in mergedDirs:
+				self.entries_infos[id] = mergeOutputRelativeDir
 
 	def get_default_kmer_spectrum_dir_of_id(self, id, abs_path):
 		rel_path = os.path.join(self.kmer_spectrums_relative_dir, id)

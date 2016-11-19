@@ -172,7 +172,7 @@ class JobScheduler():
                 self.jobQueueToRemove = []
                 break
             else:
-                time.sleep(0.1)
+                time.sleep(0.00000001)
 
         #print "job finished:  ", self.nbJobs, self.maxJobs
 

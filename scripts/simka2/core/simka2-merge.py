@@ -35,6 +35,8 @@ class SimkaKmerSpectrumMerger():
 			shutil.rmtree(self.tempDir)
 		os.makedirs(self.tempDir)
 
+		print "faire une routine qui check si il y a des merge dir inutile (recup merge id dans database 2) verifier s'il y a des dir non referencer)"
+
 	def execute(self):
 
 		maxJobsByOpenFile = SimkaKmerSpectrumMerger.MAX_OPEN_FILES / SimkaKmerSpectrumMerger.MAX_OPEN_FILES_PER_MERGE
@@ -46,6 +48,18 @@ class SimkaKmerSpectrumMerger():
 
 		#---
 		self.mergeKmerSpectrums()
+
+
+	def getNextMergeID(self):
+		dirs = [f for f in os.listdir(self.database.mergeKmerSpectrumAbsDir) if os.path.isdir(os.path.join(self.database.mergeKmerSpectrumAbsDir, f))]
+		#print("simka2-merge:  ", dirs)
+		dirIndex = set()
+		for dir in dirs:
+			dirIndex.add(int(dir))
+		id = 0
+		while id in dirIndex:
+			id += 1
+		return str(id)
 
 
 	def mergeKmerSpectrums(self):
@@ -96,12 +110,12 @@ class SimkaKmerSpectrumMerger():
 
 		"""
 		list_kmerSpectrumDirs_Sizes = []
-		usedDatasetIds = {}
+		usedDirs = set()
 
 		for id in self.database.entries:
 
-			kmerSpectrumDir = self.database.entries_infos[id]
-			id = self.database.get_id_from_dir(kmerSpectrumDir)
+			kmerSpectrumDir = self.database.get_kmer_spectrum_dir_of_id(id, False)
+			#id = self.database.get_id_from_dir(kmerSpectrumDir)
 
 			#id = self.database.get_id_from_dir(kmerSpectrumDir)
 			#datasetID = DATASET_IDS[i]
@@ -109,16 +123,16 @@ class SimkaKmerSpectrumMerger():
 
 			#datasetID = getLinkedDataset(datasetID)
 
-			if id in usedDatasetIds:
+			if kmerSpectrumDir in usedDirs:
 				continue
-			usedDatasetIds[id] = True
+			usedDirs.add(kmerSpectrumDir)
 
-			kmerSpectrumDir = self.database.get_kmer_spectrum_dir_of_id(id, True)
-			size = self.getDirSize(kmerSpectrumDir)
+			kmerSpectrumAbsDir = self.database.get_kmer_spectrum_dir_of_id(id, True)
+			size = self.getDirSize(kmerSpectrumAbsDir)
 
-			list_kmerSpectrumDirs_Sizes.append((id, size))
+			list_kmerSpectrumDirs_Sizes.append((kmerSpectrumDir, size))
 
-			print("used: " + id)
+			#print("used: " + id)
 
 
 
@@ -153,7 +167,9 @@ class SimkaKmerSpectrumMerger():
 				#//cout << "\t" << get<1>(sfi) << endl;
 			#}
 
-			mergeDestID = mergeDatasetDirs[0]
+			#mergeDestID = mergeDatasetDirs[0]
+			mergeDestID = self.getNextMergeID()
+
 			sys.stdout.write( "    in    " + mergeDestID)
 			print("")
 			#cout << "    in    " << mergeDestID << endl;
@@ -166,23 +182,32 @@ class SimkaKmerSpectrumMerger():
 				#filenameSizes.erase(filenameSizes.begin());
 				del list_kmerSpectrumDirs_Sizes[0]
 
+			mergeOutputRelativeDir = os.path.join(self.database.mergeKmerSpectrumRelativeDir, mergeDestID)
+			mergeOutputAbsDir = os.path.join(self.database.dirname, mergeOutputRelativeDir)
+			#mergeOutputDir = os.path.join(self.database.mergeKmerSpectrumDir, mergeDestID)
+			os.mkdir(mergeOutputAbsDir)
+
 			self.clearTempDir()
 			self.jobScheduler.start()
-			self.mergeSmallestKmerSpectrums(os.path.join(self.tempDir, "__merge_input.txt"), mergeDatasetDirs, mergeDestID)
+			self.mergeSmallestKmerSpectrums(os.path.join(self.tempDir, "__merge_input.txt"), mergeDatasetDirs, mergeOutputRelativeDir)
 			self.jobScheduler.join()
-			self.mergeEnd(os.path.join(self.tempDir, "__merge_input.txt"), mergeDatasetDirs, mergeDestID)
+			self.mergeEnd(os.path.join(self.tempDir, "__merge_input.txt"), mergeDatasetDirs, mergeOutputRelativeDir)
 
-			list_kmerSpectrumDirs_Sizes.append((mergeDestID, self.getDirSize(self.database.get_kmer_spectrum_dir_of_id(mergeDestID, True))))
+			#print("a changeer, path complet au lieu de juste id dans list")
+			list_kmerSpectrumDirs_Sizes.append((mergeOutputRelativeDir, self.getDirSize(mergeOutputAbsDir)))
+			#exit(1)
+
+
+	def mergeSmallestKmerSpectrums(self, merge_input_filename, mergedDirs, mergeOutputRelativeDir):
 
 
 
-	def mergeSmallestKmerSpectrums(self, merge_input_filename, dataset_to_merge_ids, merge_dest_id):
-
+		#if not os.path.exists()
 		#print dataset_to_merge_ids
 		#merge_input_filename = os.path.join(self.database.dirname, "__merge_input.txt")
 		merge_input_file = open(merge_input_filename, "w")
-		for id in dataset_to_merge_ids:
-			merge_input_file.write(self.database.get_kmer_spectrum_dir_of_id(id, True) + "\n")
+		for relDir in mergedDirs:
+			merge_input_file.write(os.path.join(self.database.dirname, relDir) + "\n")
 		merge_input_file.close()
 
 		#print dataset_to_merge_ids
@@ -211,6 +236,7 @@ class SimkaKmerSpectrumMerger():
 				" -database-dir " + args._databaseDir + \
 				" -kmer-size " + str(self.database._kmerSize) + \
 				" -partition-id " + str(i) + \
+				" -out " + os.path.join(self.database.dirname, mergeOutputRelativeDir) + \
 				"   > /dev/null 2>&1     &"
 			print command
 			os.system(command)
@@ -222,13 +248,13 @@ class SimkaKmerSpectrumMerger():
 	def jobEnd(self, data):
 		pass
 
-	def mergeEnd(self, merge_input_filename, dataset_to_merge_ids, merge_dest_id):
+	def mergeEnd(self, merge_input_filename, mergedDirs, mergeOutputRelativeDir):
 
-		mergeDir = self.database.get_kmer_spectrum_dir_of_id(merge_dest_id, True)
+		#mergeDir = self.database.get_kmer_spectrum_dir_of_id(merge_dest_id, True)
 
-		for i in range(0, self.database._nbPartitions):
-			os.remove(os.path.join(mergeDir, str(i) + ".gz"))
-			shutil.move(os.path.join(mergeDir, str(i) + ".gz.temp"), os.path.join(mergeDir, str(i) + ".gz"))
+		#for i in range(0, self.database._nbPartitions):
+		#	os.remove(os.path.join(mergeDir, str(i) + ".gz"))
+		#	shutil.move(os.path.join(mergeDir, str(i) + ".gz.temp"), os.path.join(mergeDir, str(i) + ".gz"))
 
 
 		#save merge infos
@@ -237,25 +263,31 @@ class SimkaKmerSpectrumMerger():
 			" -database-dir " + args._databaseDir + \
 			" -kmer-size " + str(self.database._kmerSize) + \
 			" -partition-id " + "0" + \
+			" -out " + os.path.join(self.database.dirname, mergeOutputRelativeDir) + \
 			" -save-merge-info " + \
 			"   > /dev/null 2>&1"
-		os.system(command)
+		ret = os.system(command)
+		if ret != 0: exit(1)
 
-		dataset_to_merge_ids.remove(merge_dest_id)
+		dirs_to_delete = []
+		for relDir in mergedDirs:
+			dir_that_have_been_merged = os.path.join(self.database.dirname, relDir)
+			dirs_to_delete.append(dir_that_have_been_merged)
 
-		dataset_to_merge_ids_index = {}
-		for id in dataset_to_merge_ids:
-			old_dir = self.database.get_kmer_spectrum_dir_of_id(id, True)
-			shutil.rmtree(old_dir)
-			dataset_to_merge_ids_index[id] = True
+		#dataset_to_merge_ids.remove(merge_dest_id)
 
-		self.database.change_entries(dataset_to_merge_ids_index, merge_dest_id)
-
+		dataset_to_merge_ids_index = set()
+		for relDir in mergedDirs:
+			dataset_to_merge_ids_index.add(relDir)
+		self.database.change_entries(dataset_to_merge_ids_index, mergeOutputRelativeDir)
 		self.database.save()
 
-		#for id in dataset_to_merge_ids:
+
+		for dir in dirs_to_delete:
+			shutil.rmtree(dir)
 
 		#exit(1)
+
 
 
 	def getDirSize(self, dirpath):

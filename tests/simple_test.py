@@ -55,7 +55,7 @@ def __test_matrices(simka_vs_truth, result_dir, truth_dir):
 			truth_file.close()
 
 			if(res_str != truth_str):
-				print("\t- TEST ERROR:    " + result_filenames[i])
+				print("\t- TEST ERROR:    " + distanceName)
 				ok = False
 
 	return ok
@@ -91,12 +91,16 @@ print("TESTING k=21 t=0")
 command = "python ../scripts/simka2/simka.py -in ../example/simka_input.txt -out ./__results__/results_k21_t0 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 0 -simka-bin ../build/bin"
 print(command)
 os.system(command + suffix)
+command = "../build/bin/simka2-export -out __results__/results_k21_t0/ -in-ids ids_order.txt -in __results__/results_k21_t0/matrix_binary/"
+os.system(command + suffix)
 test_dists("results_k21_t0")
 
 #test k=31 t=2
 print("TESTING k=31 t=2")
 command = "python ../scripts/simka2/simka.py -in ../example/simka_input.txt -out ./__results__/results_k31_t2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 31 -abundance-min 2 -simka-bin ../build/bin"
 print(command)
+os.system(command + suffix)
+command = "../build/bin/simka2-export -out __results__/results_k31_t2/ -in-ids ids_order.txt -in __results__/results_k31_t2/matrix_binary/"
 os.system(command + suffix)
 test_dists("results_k31_t2")
 
@@ -105,13 +109,19 @@ print("TESTING k=21 t=2")
 command = "python ../scripts/simka2/simka.py -in ../example/simka_input.txt -out ./__results__/results_k21_t2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 2 -simka-bin ../build/bin"
 print(command)
 os.system(command + suffix)
+command = "../build/bin/simka2-export -out __results__/results_k21_t2/ -in-ids ids_order.txt -in __results__/results_k21_t2/matrix_binary/"
+os.system(command + suffix)
 test_dists("results_k21_t2")
 
 #test resources 1
 print("TESTING parallelization")
 command = "python ../scripts/simka2/simka.py -in ../example/simka_input.txt -out ./__results__/results_resources1 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 0 -nb-cores 20 -max-memory 4000  -simka-bin ../build/bin"
 os.system(command + suffix)
+command = "../build/bin/simka2-export -out __results__/results_resources1/ -in-ids ids_order.txt -in __results__/results_resources1/matrix_binary/"
+os.system(command + suffix)
 command = "python ../scripts/simka2/simka.py -in ../example/simka_input.txt -out ./__results__/results_resources2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 0 -nb-cores 2 -max-memory 2000  -simka-bin ../build/bin"
+os.system(command + suffix)
+command = "../build/bin/simka2-export -out __results__/results_resources2/ -in-ids ids_order.txt -in __results__/results_resources2/matrix_binary/"
 os.system(command + suffix)
 test_parallelization()
 
