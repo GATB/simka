@@ -12,7 +12,6 @@ parser.add_argument('-out-tmp', action="store", dest="_outputDirTemp")
 parser.add_argument('-database-dir', action="store", dest="_databaseDir")
 #parser.add_argument('-simka-scripts', action="store", dest="_simkaScriptsDir")
 parser.add_argument('-simka-bin', action="store", dest="_simkaBinDir")
-
 parser.add_argument('-max-jobs', action="store", dest="_maxJobs", help="maximum number of job that can be submitted at a given time", default="0")
 parser.add_argument('-nb-cores', action="store", dest="_nbCores", help="number of cores", default="0")
 parser.add_argument('-max-memory', action="store", dest="_maxMemory", help="max memory (MB)", default="8000")
