@@ -4,8 +4,6 @@ import os, time, sys, multiprocessing, argparse, math
 import datetime
 import dateutil.relativedelta
 
-
-
 class SimkaCommand():
 
     def create_count(self):
@@ -25,7 +23,7 @@ class SimkaCommand():
     def addHPCargs(command, args):
         if args._isHPC:
             command += " -hpc "
-            command += " -max-jobs " + args.max_jobs
+            command += " -max-jobs " + args._maxJobs
             command += " -submit-command " + "\"" + args.submit_command + "\""
             if args.submit_file != None:
                 command += " -submit-file " + args.submit_file

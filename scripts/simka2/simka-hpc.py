@@ -33,7 +33,7 @@ parserRead.add_argument('-min-shannon-index', action="store", dest="min_read_sha
 
 parserCore.add_argument('-nb-cores', action="store", dest="nb_cores", help="number of cores per job", required=True)
 parserCore.add_argument('-max-memory', action="store", dest="max_memory", help="max memory (MB) per job", required=True)
-parserCore.add_argument('-max-jobs', action="store", dest="max_jobs", help="maximum number of jobs that can be submitted simultaneously", required=True)
+parserCore.add_argument('-max-jobs', action="store", dest="_maxJobs", help="maximum number of jobs that can be submitted simultaneously", required=True)
 parserCore.add_argument('-submit-command', action="store", dest="submit_command", help="command used to submit job", required=True)
 parserCore.add_argument('-submit-file', action="store", dest="submit_file", help="filename to a job file template, for HPC system that required a job file")
 
