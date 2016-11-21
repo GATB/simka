@@ -19,7 +19,7 @@ args =  parser.parse_args()
 
 def init_settings():
 
-    resourceAllocator = Simka2ResourceAllocator(bool(args._isHPC), int(args._nbCores), int(args._maxMemory), int(args._maxJobs))
+    resourceAllocator = Simka2ResourceAllocator(bool(args._isHPC), int(args._nbCores), int(args._maxMemory), int(args._maxJobs), None, None)
     maxJobs, coresPerJob = resourceAllocator.executeForDistanceJobs(-1)
     nbPartitions = min(200, maxJobs)
 

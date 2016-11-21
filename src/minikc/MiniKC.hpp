@@ -137,6 +137,69 @@ public:
 	//vector<size_t>& _cacheIndexes;
 };
 
+
+template<size_t span=KMER_DEFAULT_SPAN>
+class SimkaPartitionWriter
+{
+public:
+
+
+    typedef typename Kmer<span>::Type  Type;
+    typedef typename Kmer<span>::Count Count;
+    //typedef tuple<Count, StorageItKmerCount<span>*> KmerCount_It;
+    typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
+
+
+	string _outputDir;
+	size_t _nbPartitions;
+
+	vector<u_int64_t> _nbKmerPerParts;
+	vector<u_int64_t> _nbDistinctKmerPerParts;
+	vector<u_int64_t> _chordNiPerParts;
+	vector<Bag<Kmer_BankId_Count>* > _bags;
+	vector<Bag<Kmer_BankId_Count>* > _cachedBags;
+
+	SimkaPartitionWriter(const string& oututDir, size_t nbPartitions){
+		_outputDir = oututDir;
+		_nbPartitions = nbPartitions;
+
+		_nbKmerPerParts = vector<u_int64_t>(_nbPartitions, 0);
+		_nbDistinctKmerPerParts =  vector<u_int64_t>(_nbPartitions, 0);
+		_chordNiPerParts = vector<u_int64_t>(_nbPartitions, 0);
+
+
+		//vector<Bag<Kmer_BankId_Count>* > bags;
+		//vector<Bag<Kmer_BankId_Count>* > cachedBags;
+		for(size_t i=0; i<_nbPartitions; i++){
+			//string outputFilename = _outputDir + "/" + _datasetID + "_" + Stringify::format("%i", i) + ".gz";
+			string outputFilename = _outputDir + "/" + Stringify::format("%i", i) + ".gz";
+			Bag<Kmer_BankId_Count>* bag = new BagGzFile<Kmer_BankId_Count>(outputFilename);
+			Bag<Kmer_BankId_Count>* cachedBag = new BagCache<Kmer_BankId_Count>(bag, 10000);
+			_cachedBags.push_back(cachedBag);
+			//BagCache bagCache(*bag, 10000);
+			_bags.push_back(bag);
+		}
+	}
+
+	void insert(Type& kmer, u_int64_t bankId, u_int64_t abundance){
+
+		size_t part = oahash(kmer) % _nbPartitions;
+		_cachedBags[part]->insert(Kmer_BankId_Count(kmer, bankId, abundance));
+		_nbDistinctKmerPerParts[part] += 1;
+		_nbKmerPerParts[part] += abundance;
+		_chordNiPerParts[part] += pow(abundance, 2);
+
+	}
+
+	void end(){
+		for(size_t i=0; i<_nbPartitions; i++){
+			//bags[i]->flush();
+			//cachedBags[i]->flush();
+			delete _cachedBags[i];
+			//delete bags[i];
+		}
+	}
+};
 /*
 
 class SimkaCompressedProcessor_Mini{
@@ -187,7 +250,7 @@ public:
 
 
 template<size_t span>
-class MiniKC : public Algorithm{
+class SimkaMiniKmerCounter : public Algorithm{
 
 public:
 
@@ -213,20 +276,26 @@ public:
 	IBank* _bank;
 	size_t _kmerSize;
 	CountVector* _counts;
-    Repartitor& _repartition;
-    SimkaCompressedProcessor<span>* _proc;
     u_int64_t _nbReads;
+    string _outputDir;
+    size_t _nbPartitions;
+    u_int64_t _abundanceMin;
+    u_int64_t _abundanceMax;
+    SimkaPartitionWriter<span>* _partitionWriter;
 
-	MiniKC(IProperties* options, size_t kmerSize, IBank* bank, Repartitor& repartition, SimkaCompressedProcessor<span>* proc):
-		Algorithm("minikc", -1, options), _repartition(repartition)
+	SimkaMiniKmerCounter(IProperties* options, size_t kmerSize, IBank* bank, string outputDir, size_t nbPartitions, u_int64_t abundanceMin, u_int64_t abundanceMax, SimkaPartitionWriter<span>* partitionWriter):
+		Algorithm("minikc", -1, options)
 	{
 		_bank = bank;
 		_kmerSize = kmerSize;
-		_proc = proc;
-
+		_outputDir = outputDir;
+		_nbPartitions = nbPartitions;
+		_abundanceMin = abundanceMin;
+		_abundanceMax = abundanceMax;
+		_partitionWriter = partitionWriter;
 
 		u_int64_t nbCounts = pow(4, _kmerSize);
-		cout << "Nb distinct kmers (canonical): " << nbCounts << endl;
+		//cout << "Nb distinct kmers (canonical): " << nbCounts << endl;
 		_counts = new CountVector(nbCounts, 0);
 	}
 
@@ -277,30 +346,38 @@ public:
 		}
 
 	}
+
 	void dump(){
 
-		ModelMinimizer model (_kmerSize, 7);
+		//SimkaPartitionWriter<span>* partitionWriter = new SimkaPartitionWriter<span>(_outputDir, _nbPartitions);
+
+		//ModelMinimizer model (_kmerSize, 7);
 		Type kmer;
 
 		//Kmer<>::ModelCanonical _model(_kmerSize);
-		CountVector vec(1, 0);
+		//CountVector vec(1, 0);
 
 		for(size_t i=0; i<_counts->size(); i++){
 
 			CountNumber count = (*_counts)[i];
 			if(count == 0) continue;
+			if(count < _abundanceMin || count > _abundanceMax) continue;
+
 
 			kmer.setVal(i);
 
+			_partitionWriter->insert(kmer, 0, count);
 			//cout << i << " " << model.toString(kmer) << endl;
 			//Type kmer(i);
-            u_int64_t mini = model.getMinimizerValue(kmer);
-			size_t p = this->_repartition (mini);
+            //u_int64_t mini = model.getMinimizerValue(kmer);
+			//size_t p = this->_repartition (mini);
 
-			vec[0] = count;
-			_proc->process(p, kmer, vec, count);
+			//vec[0] = count;
+			//_proc->process(p, kmer, vec, count);
 		}
 
+		_partitionWriter->end();
+		//delete partitionWriter;
 	}
 
 

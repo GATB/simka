@@ -1,7 +1,7 @@
 
 import os, sys, argparse, shutil
 from simka2_database import SimkaDatabase
-from simka2_utils import Simka2ResourceAllocator, JobScheduler, ProgressBar
+from simka2_utils import Simka2ResourceAllocator, JobScheduler, ProgressBar, SimkaCommand
 
 parser = argparse.ArgumentParser(description='Description')
 
@@ -15,6 +15,8 @@ parser.add_argument('-max-jobs', action="store", dest="_maxJobs", help="maximum 
 parser.add_argument('-nb-cores', action="store", dest="_nbCores", help="number of cores", default="0")
 parser.add_argument('-max-memory', action="store", dest="_maxMemory", help="max memory (MB)", default="8000")
 parser.add_argument('-hpc', action="store_true", dest="_isHPC", help="compute with cluster or grid system")
+parser.add_argument('-submit-command', action="store", dest="submit_command", help="command used to submit job")
+parser.add_argument('-submit-file', action="store", dest="submit_file", help="filename to a job file template, for HPC system that required a job file")
 
 #print parser.parse_args(['-in', '-bval', '-c', '3'])
 args =  parser.parse_args()
@@ -45,7 +47,7 @@ class Simka_ComputeDistance():
 		#print ("Attention remettere le merge dans simka2-distance main()")
 		self.mergeKmerSpectrums()
 
-		self.resourceAllocator = Simka2ResourceAllocator(bool(args._isHPC), int(args._nbCores), int(args._maxMemory), int(args._maxJobs))
+		self.resourceAllocator = Simka2ResourceAllocator(bool(args._isHPC), int(args._nbCores), int(args._maxMemory), int(args._maxJobs), args.submit_command, args.submit_file)
 		maxJobs, jobCores = self.resourceAllocator.executeForDistanceJobs(self.database._nbPartitions)
 
 		self.jobScheduler = JobScheduler(maxJobs, ProgressBar("Computing distances", self.database._nbPartitions))
@@ -59,6 +61,12 @@ class Simka_ComputeDistance():
 	def mergeKmerSpectrums(self):
 		merge_script_filename = os.path.join(SIMKA2_SCRIPT_DIR, "./simka2-merge.py")
 		command = "python " + merge_script_filename + " -database-dir " + self.database.dirname + " -simka-bin " + args._simkaBinDir
+		if args._isHPC:
+			command += " -hpc "
+			command += " -max-jobs " + args.max_jobs
+			command += " -submit-command " + args.submit_command
+			if args.submit_file != None:
+				command += " -submit-file " + args.submit_file
 		os.system(command)
 
 	def computeDistanceParts(self):
@@ -83,6 +91,7 @@ class Simka_ComputeDistance():
 			" -kmer-size " + str(self.database._kmerSize) + \
 			" -partition-id " + str(partitionId) + \
 			"   > /dev/null 2>&1     &"
+		command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
 		print command
 		os.system(command)
 
@@ -96,6 +105,8 @@ class Simka_ComputeDistance():
 			" -database-dir " + args._databaseDir + \
 			" -kmer-size " + str(self.database._kmerSize) + \
 			" -nb-partitions " + str(self.database._nbPartitions)
+		print "simka2-distance (computeDistanceFinal):    besoin de la synchro du scheduler ici ?"
+		#command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
 		os.system(command)
 
 	def jobEnd(self, data):

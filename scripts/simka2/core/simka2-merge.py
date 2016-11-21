@@ -1,7 +1,7 @@
 
 import os, sys, argparse, shutil
 from simka2_database import SimkaDatabase
-from simka2_utils import Simka2ResourceAllocator, JobScheduler, ProgressBar
+from simka2_utils import Simka2ResourceAllocator, JobScheduler, ProgressBar, SimkaCommand
 
 
 #----------------------------------------------------------------------
@@ -15,6 +15,8 @@ parser.add_argument('-max-jobs', action="store", dest="_maxJobs", help="maximum 
 parser.add_argument('-nb-cores', action="store", dest="_nbCores", help="number of cores", default="0")
 parser.add_argument('-max-memory', action="store", dest="_maxMemory", help="max memory (MB)", default="8000")
 parser.add_argument('-hpc', action="store_true", dest="_isHPC", help="compute with cluster or grid system")
+parser.add_argument('-submit-command', action="store", dest="submit_command", help="command used to submit job")
+parser.add_argument('-submit-file', action="store", dest="submit_file", help="filename to a job file template, for HPC system that required a job file")
 
 args =  parser.parse_args()
 
@@ -40,7 +42,7 @@ class SimkaKmerSpectrumMerger():
 	def execute(self):
 
 		maxJobsByOpenFile = SimkaKmerSpectrumMerger.MAX_OPEN_FILES / SimkaKmerSpectrumMerger.MAX_OPEN_FILES_PER_MERGE
-		self.resourceAllocator = Simka2ResourceAllocator(bool(args._isHPC), int(args._nbCores), int(args._maxMemory), int(args._maxJobs))
+		self.resourceAllocator = Simka2ResourceAllocator(bool(args._isHPC), int(args._nbCores), int(args._maxMemory), int(args._maxJobs), args.submit_command, args.submit_file)
 		maxJobs, jobCores = self.resourceAllocator.executeForDistanceJobs(self.database._nbPartitions)
 		maxJobs = min(maxJobs, maxJobsByOpenFile)
 
@@ -238,6 +240,7 @@ class SimkaKmerSpectrumMerger():
 				" -partition-id " + str(i) + \
 				" -out " + os.path.join(self.database.dirname, mergeOutputRelativeDir) + \
 				"   > /dev/null 2>&1     &"
+			command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
 			print command
 			os.system(command)
 

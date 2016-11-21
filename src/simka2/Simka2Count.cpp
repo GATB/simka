@@ -118,9 +118,7 @@ public:
 	struct kxpcomp { bool operator() (KmerCount_It& l,KmerCount_It& r) { return (get<0>(r).value < get<0>(l).value); } } ;
 
 	u_int64_t _nbReads;
-	vector<u_int64_t> _nbKmerPerParts;
-	vector<u_int64_t> _nbDistinctKmerPerParts;
-	vector<u_int64_t> _chordNiPerParts;
+
 
 	size_t _nbPartitions;
 	u_int64_t _maxMemory;
@@ -166,6 +164,7 @@ public:
 	bool _computeComplexDistances;
 	bool _keepTmpFiles;
 
+	SimkaPartitionWriter<span>* _partitionWriter;
 
 	Simka2ComputeKmerSpectrumAlgorithm(IProperties* options):
 		Algorithm("simka", -1, options)
@@ -179,8 +178,9 @@ public:
 		parseArgs();
 		//layoutInputFilename();
 		count();
-		partitionKmerCounts();
 		saveInfos();
+
+		delete _partitionWriter;
 
 		writeFinishSignal();
 	}
@@ -346,6 +346,9 @@ public:
 	}*/
 
 	void count(){
+
+		_partitionWriter = new SimkaPartitionWriter<span>(_outputDir, _nbPartitions);
+
 		//vector<string> outInfo;
 
 		IBank* bank = Bank::open(_inputFilename);
@@ -358,48 +361,48 @@ public:
 		//System::file().mkdir(tempDir, -1);
 
 
-		{
+		//cout << i << endl;
+		//string outputDir = p.outputDir + "/comp_part" + to_string(p.datasetId) + "/";
 
-			//cout << i << endl;
-			//string outputDir = p.outputDir + "/comp_part" + to_string(p.datasetId) + "/";
+		//cout << "\tinput: " << p.outputDir + "/input/" + p.bankName << endl;
 
-			//cout << "\tinput: " << p.outputDir + "/input/" + p.bankName << endl;
+		SimkaSequenceFilter sequenceFilter(_minReadSize, _minReadShannonIndex);
 
-			SimkaSequenceFilter sequenceFilter(_minReadSize, _minReadShannonIndex);
-
-			IBank* filteredBank = new SimkaPotaraBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, _maxNbReads, _nbBankPerDataset);
-			// = new SimkaPotaraBankFiltered(bank)
-			LOCAL(filteredBank);
-			//LOCAL(bank);
+		IBank* filteredBank = new SimkaPotaraBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, _maxNbReads, _nbBankPerDataset);
+		// = new SimkaPotaraBankFiltered(bank)
+		LOCAL(filteredBank);
+		//LOCAL(bank);
 
 
-			_h5Filename = _outputDirTemp + "/" +  _datasetID + ".h5";
-			Storage* solidStorage = StorageFactory(STORAGE_HDF5).create (_h5Filename, true, false);
+		_h5Filename = _outputDirTemp + "/" +  _datasetID + ".h5";
+		Storage* solidStorage = StorageFactory(STORAGE_HDF5).create (_h5Filename, true, false);
 
-			ConfigurationAlgorithm<span> configAlgo(filteredBank, _options);
-			configAlgo.execute();
-			RepartitorAlgorithm<span> repart (filteredBank, solidStorage->getGroup(""), configAlgo.getConfiguration());
-			repart.execute ();
-			Repartitor* repartitor = new Repartitor();
-			LOCAL(repartitor);
-			repartitor->load(solidStorage->getGroup(""));
+		ConfigurationAlgorithm<span> configAlgo(filteredBank, _options);
+		configAlgo.execute();
+		RepartitorAlgorithm<span> repart (filteredBank, solidStorage->getGroup(""), configAlgo.getConfiguration());
+		repart.execute ();
+		Repartitor* repartitor = new Repartitor();
+		LOCAL(repartitor);
+		repartitor->load(solidStorage->getGroup(""));
 
 
-			SimkaAbundanceProcessor<span>* proc = new SimkaAbundanceProcessor<span>(_abundanceThreshold.first, _abundanceThreshold.second);
-			CountProcessorDump<span>* procDump = new CountProcessorDump     <span> (solidStorage->getGroup("dsk"), _kmerSize);
+		SimkaAbundanceProcessor<span>* proc = new SimkaAbundanceProcessor<span>(_abundanceThreshold.first, _abundanceThreshold.second);
+		CountProcessorDump<span>* procDump = new CountProcessorDump     <span> (solidStorage->getGroup("dsk"), _kmerSize);
 
 
 
 
-			if(_kmerSize <= 15){
-				cerr << "Mini Kc a remettre" << endl;
-				exit(1);
-				//MiniKC<span> miniKc(p.tool.getInput(), p.kmerSize, filteredBank, *repartitor, proc);
-				//miniKc.execute();
+		if(_kmerSize <= 15){
+			//cerr << "Mini Kc a remettre" << endl;
+			//exit(1);
+			SimkaMiniKmerCounter<span> miniKc(_options, _kmerSize, filteredBank, _outputDir, _nbPartitions, _abundanceThreshold.first, _abundanceThreshold.second, _partitionWriter);
+			miniKc.execute();
 
-				//nbReads = miniKc._nbReads;
-			}
-			else{
+			_nbReads = miniKc._nbReads;
+		}
+		else{
+
+			{
 				//SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, caches, cacheIndexes, p.abundanceMin, p.abundanceMax);
 				std::vector<ICountProcessor<span>* > procs;
 				//procs.push_back(proc);
@@ -427,6 +430,8 @@ public:
 				_nbReads = algo.getInfo()->getInt("seq_number");
 				_localNbPartitions = algo.getConfig()._nb_partitions;
 			}
+
+			partitionKmerCounts();
 		}
 
 
@@ -435,22 +440,6 @@ public:
 
 	void partitionKmerCounts(){
 
-		_nbKmerPerParts = vector<u_int64_t>(_nbPartitions, 0);
-		_nbDistinctKmerPerParts =  vector<u_int64_t>(_nbPartitions, 0);
-		_chordNiPerParts = vector<u_int64_t>(_nbPartitions, 0);
-
-
-		vector<Bag<Kmer_BankId_Count>* > bags;
-		vector<Bag<Kmer_BankId_Count>* > cachedBags;
-		for(size_t i=0; i<_nbPartitions; i++){
-			//string outputFilename = _outputDir + "/" + _datasetID + "_" + Stringify::format("%i", i) + ".gz";
-			string outputFilename = _outputDir + "/" + Stringify::format("%i", i) + ".gz";
-			Bag<Kmer_BankId_Count>* bag = new BagGzFile<Kmer_BankId_Count>(outputFilename);
-			Bag<Kmer_BankId_Count>* cachedBag = new BagCache<Kmer_BankId_Count>(bag, 10000);
-			cachedBags.push_back(cachedBag);
-			//BagCache bagCache(*bag, 10000);
-			bags.push_back(bag);
-		}
 
 
 		Storage* solidStorage = 0;
@@ -493,11 +482,7 @@ public:
 			//bestPart =
 			//bestIt = get<3>(pq.top()); pq.pop();
 			KmerCount_It kmerCountIt = pq.top(); pq.pop();
-			size_t part = oahash(get<0>(kmerCountIt).value) % _nbPartitions;
-			cachedBags[part]->insert(Kmer_BankId_Count(get<0>(kmerCountIt).value, _datasetIDbin, get<0>(kmerCountIt).abundance));
-			_nbDistinctKmerPerParts[part] += 1;
-			_nbKmerPerParts[part] += get<0>(kmerCountIt).abundance;
-			_chordNiPerParts[part] += pow(get<0>(kmerCountIt).abundance, 2);
+			_partitionWriter->insert(get<0>(kmerCountIt).value, _datasetIDbin, get<0>(kmerCountIt).abundance);
 
 			bestIt = get<1>(kmerCountIt);
 
@@ -520,6 +505,9 @@ public:
 				//pq.push(kxp(bestIt->value(), bestIt->getBankId(), bestIt->abundance(), bestIt)); //push new val of this pointer in pq, will be counted later
 
 				bestIt = get<1>(pq.top()); pq.pop();
+
+				_partitionWriter->insert(bestIt->item().value, _datasetIDbin, bestIt->item().abundance);
+				/*
 				//_cachedBag->insert(Kmer_BankId_Count(bestIt->value(), bestIt->getBankId(), bestIt->abundance()));
 				size_t part = oahash(bestIt->item().value) % _nbPartitions;
 				//cout << part << " " << p.nbPartitions << endl;
@@ -529,17 +517,11 @@ public:
 				//Kmer_BankId_Count item(kmer, _bankIndex, count[0]);
 				_nbDistinctKmerPerParts[part] += 1;
 				_nbKmerPerParts[part] += bestIt->item().abundance;
-				_chordNiPerParts[part] += pow(bestIt->item().abundance, 2);
+				_chordNiPerParts[part] += pow(bestIt->item().abundance, 2);*/
 			}
 		}
 
-
-		for(size_t i=0; i<_nbPartitions; i++){
-			//bags[i]->flush();
-			//cachedBags[i]->flush();
-			delete cachedBags[i];
-			//delete bags[i];
-		}
+		_partitionWriter->end();
 
 	}
 
@@ -550,9 +532,9 @@ public:
 		u_int64_t nbKmers = 0;
 		u_int64_t chord_N2 = 0;
 		for(size_t i=0; i<_nbPartitions; i++){
-			nbDistinctKmers += _nbDistinctKmerPerParts[i];
-			nbKmers += _nbKmerPerParts[i];
-			chord_N2 += _chordNiPerParts[i];
+			nbDistinctKmers += _partitionWriter->_nbDistinctKmerPerParts[i];
+			nbKmers += _partitionWriter->_nbKmerPerParts[i];
+			chord_N2 += _partitionWriter->_chordNiPerParts[i];
 		}
 
         ofstream outputInfoFile(_outputDir + "/merge_info.bin", std::ios::binary);

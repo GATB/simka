@@ -1,7 +1,7 @@
 
 import os, sys, argparse, shutil
 from simka2_database import SimkaDatabase
-from simka2_utils import JobScheduler, Simka2ResourceAllocator, ProgressBar
+from simka2_utils import JobScheduler, Simka2ResourceAllocator, ProgressBar, SimkaCommand
 
 #----------------------------------------------------------------------
 #----------------------------------------------------------------------
@@ -17,6 +17,9 @@ parser.add_argument('-max-jobs', action="store", dest="_maxJobs", help="maximum 
 parser.add_argument('-nb-cores', action="store", dest="_nbCores", help="number of cores", default="0")
 parser.add_argument('-max-memory', action="store", dest="_maxMemory", help="max memory (MB)", default="8000")
 parser.add_argument('-hpc', action="store_true", dest="_isHPC", help="compute with cluster or grid system")
+#parser.add_argument('-max-jobs', action="store", dest="max_jobs", help="maximum number of jobs that can be submitted simultaneously")
+parser.add_argument('-submit-command', action="store", dest="submit_command", help="command used to submit job")
+parser.add_argument('-submit-file', action="store", dest="submit_file", help="filename to a job file template, for HPC system that required a job file")
 
 #print parser.parse_args(['-in', '-bval', '-c', '3'])
 args =  parser.parse_args()
@@ -44,12 +47,13 @@ class ComputeKmerSpectrumAll():
 	def execute(self):
 
 		self.countNbDatasetToProcess()
+		if self.nbDatasetToProcess == 0: return
 
-		self.resourceAllocator = Simka2ResourceAllocator(bool(args._isHPC), int(args._nbCores), int(args._maxMemory), int(args._maxJobs))
+		self.resourceAllocator = Simka2ResourceAllocator(bool(args._isHPC), int(args._nbCores), int(args._maxMemory), int(args._maxJobs), args.submit_command, args.submit_file)
 		#self.resourceAllocator.maxJobMerge = self.database._nbPartitions
 		#self.resourceAllocator.nbSamples = self.nbDatasetToProcess
 		maxJobs, self.jobCores, self.jobMemory = self.resourceAllocator.executeForCountJobs(self.nbDatasetToProcess)
-
+		#print maxJobs, self.jobCores, self.jobMemory
 		self.jobScheduler = JobScheduler(maxJobs, ProgressBar("Computing k-mer spectrums", self.nbDatasetToProcess))
 
 		self.jobScheduler.start()
@@ -152,7 +156,7 @@ class ComputeKmerSpectrumAll():
 			" -max-memory " + str(self.jobMemory) + \
 			" -nb-cores " + str(self.jobCores) + \
 			"   > /dev/null 2>&1     &"
-
+		command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
 		#print("compute_kmer_spectrums_all.py: Add log file system")
 
 		print(command)

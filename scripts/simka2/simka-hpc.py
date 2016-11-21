@@ -1,15 +1,14 @@
 
+
 import os, sys, argparse
 from core.simka2_utils import ArgumentFormatterSimka, SimkaParser
-
-
 
 
 parser = SimkaParser(formatter_class=ArgumentFormatterSimka)
 
 
 parserMain = parser.add_argument_group("main options")
-parserCore = parser.add_argument_group("core options")
+parserCore = parser.add_argument_group("HPC options")
 parserDistance = parser.add_argument_group("distance options")
 parserKmer = parser.add_argument_group("k-mer options")
 parserRead = parser.add_argument_group("read options")
@@ -32,11 +31,13 @@ parserRead.add_argument('-max-reads', action="store", dest="max_reads", default=
 parserRead.add_argument('-min-read-size', action="store", dest="min_read_size", default="0", help="minimal size a read should have to be kept")
 parserRead.add_argument('-min-shannon-index', action="store", dest="min_read_shannon_index", default="0", help="minimal Shannon index a read should have to be kept. Float in [0,2]")
 
-parserCore.add_argument('-nb-cores', action="store", dest="nb_cores", help="number of cores", default="0")
-parserCore.add_argument('-max-memory', action="store", dest="max_memory", help="max memory (MB)", default="8000")
+parserCore.add_argument('-nb-cores', action="store", dest="nb_cores", help="number of cores per job", default="0")
+parserCore.add_argument('-max-memory', action="store", dest="max_memory", help="max memory (MB) per job", default="8000")
+parserCore.add_argument('-max-jobs', action="store", dest="max_jobs", help="maximum number of jobs that can be submitted simultaneously", required=True)
+parserCore.add_argument('-submit-command', action="store", dest="submit_command", help="command used to submit job", required=True)
+parserCore.add_argument('-submit-file', action="store", dest="submit_file", help="filename to a job file template, for HPC system that required a job file")
 
 args =  parser.parse_args()
-
 
 
 
@@ -46,4 +47,8 @@ SCRIPT_DIR = os.path.split(os.path.realpath(__file__))[0]
 command = "python " + os.path.join(SCRIPT_DIR, "simka-pipeline.py")
 for i in range(1, len(sys.argv)):
     command += " " + sys.argv[i] + " "
+
+#We notify that simka is run in HPC mode
+command += " -hpc "
+
 os.system(command)
