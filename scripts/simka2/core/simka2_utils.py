@@ -26,7 +26,7 @@ class SimkaCommand():
         if args._isHPC:
             command += " -hpc "
             command += " -max-jobs " + args.max_jobs
-            command += " -submit-command " + args.submit_command
+            command += " -submit-command " + "\"" + args.submit_command + "\""
             if args.submit_file != None:
                 command += " -submit-file " + args.submit_file
         return command

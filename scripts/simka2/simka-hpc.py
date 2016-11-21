@@ -42,13 +42,16 @@ args =  parser.parse_args()
 
 
 
-
 SCRIPT_DIR = os.path.split(os.path.realpath(__file__))[0]
 command = "python " + os.path.join(SCRIPT_DIR, "simka-pipeline.py")
 for i in range(1, len(sys.argv)):
-    command += " " + sys.argv[i] + " "
+    if sys.argv[i][0] == "-":
+        command += " " + sys.argv[i] + " "
+    else:
+        command += " \"" + sys.argv[i] + "\" "
 
 #We notify that simka is run in HPC mode
 command += " -hpc "
 
+print command
 os.system(command)
