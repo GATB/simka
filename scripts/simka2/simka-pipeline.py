@@ -83,7 +83,8 @@ command = "python " + \
     " -nb-cores " + args.nb_cores + \
     " -max-memory " + args.max_memory
 command = SimkaCommand.addHPCargs(command, args)
-os.system(command)
+ret = os.system(command)
+if ret != 0: exit(1)
 
 #-----------------------------------------------------------------------------
 # Compute distances between k-mer spectrums
@@ -93,7 +94,8 @@ command = "python " + \
     " -database-dir " + databaseDir + \
     " -simka-bin " + args.simka_bin_dir
 command = SimkaCommand.addHPCargs(command, args)
-os.system(command)
+ret = os.system(command)
+if ret != 0: exit(1)
 
 #-----------------------------------------------------------------------------
 # Copy distance matrix binaries in result dir
