@@ -66,9 +66,10 @@ command += " -database-dir " + databaseDir
 command += " -kmer-size " + args.kmer_size
 command += " -nb-cores " + args.nb_cores
 command += " -max-memory " + args.max_memory
-command += " -max-jobs " + "0"
 command += " -abundance-min " + args.abundance_min
-os.system(command)
+command = SimkaCommand.addHPCargs(command, args)
+ret = os.system(command)
+if ret != 0: exit(1)
 
 
 #-----------------------------------------------------------------------------

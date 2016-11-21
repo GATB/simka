@@ -13,6 +13,8 @@ parser.add_argument('-nb-cores', action="store", dest="_nbCores", help="number o
 parser.add_argument('-max-memory', action="store", dest="_maxMemory", help="max memory (MB)", default="8000")
 parser.add_argument('-max-jobs', action="store", dest="_maxJobs", help="maximum number of job that can be submitted at a given time", default="0")
 parser.add_argument('-hpc', action="store_true", dest="_isHPC", help="compute with cluster or grid system")
+parser.add_argument('-submit-command', action="store", dest="submit_command", help="command used to submit job")
+parser.add_argument('-submit-file', action="store", dest="submit_file", help="filename to a job file template, for HPC system that required a job file")
 
 args =  parser.parse_args()
 
@@ -23,6 +25,7 @@ def init_settings():
     maxJobs, coresPerJob = resourceAllocator.executeForDistanceJobs(-1)
     nbPartitions = min(200, maxJobs)
 
+    print maxJobs
     settings_file = open(os.path.join(args._databaseDir, "settings.txt"), "w")
     settings_file.write("kmer-size: " + args._kmerSize + "\n")
     settings_file.write("nb-partitions: " + str(nbPartitions)  + "\n")
