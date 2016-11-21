@@ -61,12 +61,7 @@ class Simka_ComputeDistance():
 	def mergeKmerSpectrums(self):
 		merge_script_filename = os.path.join(SIMKA2_SCRIPT_DIR, "./simka2-merge.py")
 		command = "python " + merge_script_filename + " -database-dir " + self.database.dirname + " -simka-bin " + args._simkaBinDir
-		if args._isHPC:
-			command += " -hpc "
-			command += " -max-jobs " + args.max_jobs
-			command += " -submit-command " + args.submit_command
-			if args.submit_file != None:
-				command += " -submit-file " + args.submit_file
+		command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
 		os.system(command)
 
 	def computeDistanceParts(self):

@@ -53,5 +53,4 @@ for i in range(1, len(sys.argv)):
 #We notify that simka is run in HPC mode
 command += " -hpc "
 
-print command
 os.system(command)
