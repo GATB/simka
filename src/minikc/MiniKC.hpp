@@ -275,7 +275,7 @@ public:
 
 	IBank* _bank;
 	size_t _kmerSize;
-	CountVector* _counts;
+	vector<u_int64_t>* _counts;
     u_int64_t _nbReads;
     string _outputDir;
     size_t _nbPartitions;
@@ -296,7 +296,7 @@ public:
 
 		u_int64_t nbCounts = pow(4, _kmerSize);
 		//cout << "Nb distinct kmers (canonical): " << nbCounts << endl;
-		_counts = new CountVector(nbCounts, 0);
+		_counts = new vector<u_int64_t>(nbCounts, 0);
 	}
 
 	void execute(){
@@ -359,7 +359,7 @@ public:
 
 		for(size_t i=0; i<_counts->size(); i++){
 
-			CountNumber count = (*_counts)[i];
+			u_int64_t count = (*_counts)[i];
 			if(count == 0) continue;
 			if(count < _abundanceMin || count > _abundanceMax) continue;
 
