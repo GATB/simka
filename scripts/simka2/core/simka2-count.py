@@ -52,7 +52,7 @@ class ComputeKmerSpectrumAll():
 		self.resourceAllocator = Simka2ResourceAllocator(bool(args._isHPC), int(args._nbCores), int(args._maxMemory), int(args._maxJobs), args.submit_command, args.submit_file)
 		#self.resourceAllocator.maxJobMerge = self.database._nbPartitions
 		#self.resourceAllocator.nbSamples = self.nbDatasetToProcess
-		maxJobs, self.jobCores, self.jobMemory = self.resourceAllocator.executeForCountJobs(self.nbDatasetToProcess)
+		maxJobs, self.jobCores, self.jobMemory = self.resourceAllocator.executeForCountJobs(self.nbDatasetToProcess, self.database._kmerSize)
 		#print maxJobs, self.jobCores, self.jobMemory
 		self.jobScheduler = JobScheduler(maxJobs, ProgressBar("Computing k-mer spectrums", self.nbDatasetToProcess))
 

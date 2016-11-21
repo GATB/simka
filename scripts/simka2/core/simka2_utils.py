@@ -1,5 +1,5 @@
 
-import os, time, sys, multiprocessing, argparse
+import os, time, sys, multiprocessing, argparse, math
 
 import datetime
 import dateutil.relativedelta
@@ -53,11 +53,11 @@ class Simka2ResourceAllocator():
         if self.nbCores == 0:
             self.nbCores = multiprocessing.cpu_count()
 
-    def executeForCountJobs(self, nbSamplesToProcess):
+    def executeForCountJobs(self, nbSamplesToProcess, kmerSize):
         if self.isHPC:
-            return self.execute_count_HPC(nbSamplesToProcess)
+            return self.execute_count_HPC(nbSamplesToProcess, kmerSize)
         else:
-            return self.execute_count_singleNode(nbSamplesToProcess)
+            return self.execute_count_singleNode(nbSamplesToProcess, kmerSize)
 
     def executeForDistanceJobs(self, nbPartitions):
         if self.isHPC:
@@ -65,13 +65,22 @@ class Simka2ResourceAllocator():
         else:
             return self.execute_distance_singleNode(nbPartitions)
 
-    def execute_count_singleNode(self, nbSamplesToProcess):
+    def execute_count_singleNode(self, nbSamplesToProcess, kmerSize):
 
         maxjob_byCore = self.nbCores/2
         maxjob_byCore = max(maxjob_byCore, 1)
         #maxjob_byCore = max(maxjob_byCore, 1)
 
-        maxjob_byMemory = self.maxMemory/Simka2ResourceAllocator.MIN_MEMORY_PER_JOB
+        minMemory = 0
+        if kmerSize <= 15:
+            minMemory = int(float(math.pow(4, kmerSize)*8)/(1<<20))
+        else:
+            minMemory = Simka2ResourceAllocator.MIN_MEMORY_PER_JOB
+
+        if self.maxMemory < minMemory:
+            raise Exception("Not enough memory, you provide (" + str(self.maxMemory) + " MB), Simka need (" + str(minMemory) + "MB)")
+
+        maxjob_byMemory = self.maxMemory/minMemory
         maxjob_byMemory = max(maxjob_byMemory, 1)
 
         maxJobs = min(maxjob_byCore, maxjob_byMemory)
@@ -82,7 +91,7 @@ class Simka2ResourceAllocator():
         jobCores = max(1, jobCores)
 
         jobMemory = self.maxMemory / maxJobs
-        jobMemory = max(jobMemory, Simka2ResourceAllocator.MIN_MEMORY_PER_JOB)
+        jobMemory = max(jobMemory, minMemory)
 
         #print self.coresPerJob, self.memoryPerJob, self.maxJobCount, self.maxJobMerge
         return (maxJobs, jobCores, jobMemory)
@@ -103,13 +112,20 @@ class Simka2ResourceAllocator():
 
         return (maxJobs, jobCores)
 
-    def execute_count_HPC(self, nbSamplesToProcess):
+    def execute_count_HPC(self, nbSamplesToProcess, kmerSize):
 
         #maxCountJob = self.maxJobs
-
+        minMemory = 0
+        if kmerSize <= 15:
+            minMemory = int(float(math.pow(4, kmerSize)*8)/(1<<20))
+        else:
+            minMemory = Simka2ResourceAllocator.MIN_MEMORY_PER_JOB
 
         jobCores = self.nbCores
         jobMemory = self.maxMemory
+
+        if jobMemory < minMemory:
+            raise Exception("Not enough memory per jobs, you provide (" + str(jobMemory) + " MB), Simka need (" + str(minMemory) + ")")
 
         #maxjob_byCore = self.maxJobs/2
         #maxjob_byCore = min(maxjob_byCore, nbSamplesToProcess)
