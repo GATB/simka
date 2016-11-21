@@ -63,7 +63,9 @@ class Simka_ComputeDistance():
 		command = "python " + merge_script_filename + " -database-dir " + self.database.dirname + " -simka-bin " + args._simkaBinDir
 		command = SimkaCommand.addHPCargs(command, args)
 		print command
-		os.system(command)
+		ret = os.system(command)
+		if ret != 0: exit(1)
+
 
 	def computeDistanceParts(self):
 
