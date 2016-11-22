@@ -37,4 +37,4 @@ rm -rf temp_output
 printf "\nCommand used:\n" 
 printf "\t$command\n"
 printf "Command for creating heatmaps and dendrogram:\n"
-printf "\tpython ../../scripts/create_heatmaps.py output/\n"
+printf "\tpython ../scripts/create_heatmaps.py output/\n"
