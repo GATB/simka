@@ -182,7 +182,6 @@ class ProgressBar():
         self.display()
 
     def display(self):
-        return
         progress_percent = float(self.progress) / float(self.max) * 100
 
         duration = int(time.time() - self.start_time)
