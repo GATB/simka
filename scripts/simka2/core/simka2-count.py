@@ -124,7 +124,11 @@ class ComputeKmerSpectrumAll():
 
 		os.makedirs(kmerSpectrumOutputDir)
 
-		checkPointFilename = os.path.join(kmerSpectrumOutputDir, "success")
+		checkPointFilename = kmerSpectrumOutputDir + "/"#os.path.join(kmerSpectrumOutputDir, "success")
+		successCheckPointFilename = checkPointFilename + "success"
+		unsuccessCheckPointFilename = checkPointFilename + "unsuccess"
+		if os.path.exists(unsuccessCheckPointFilename): os.remove(unsuccessCheckPointFilename)
+
 		#if not os.path.exists(args._outputDirTemp):
 		#	os.makedirs(args._outputDirTemp)
 
@@ -157,11 +161,11 @@ class ComputeKmerSpectrumAll():
 			" -nb-partitions " + str(self.database._nbPartitions) + \
 			" -max-memory " + str(self.jobMemory) + \
 			" -nb-cores " + str(self.jobCores) + \
-			" &" #   > /dev/null 2>&1     &"
+			"  > /dev/null 2>&1     &"
 		command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
 		#print("compute_kmer_spectrums_all.py: Add log file system")
 
-		#print(command)
+		print(command)
 		os.system(command)
 
 		self.jobScheduler.submitJob((checkPointFilename, self.jobEnd, (id, self.database.get_default_kmer_spectrum_dir_of_id(id, False), outputDirTemp)))

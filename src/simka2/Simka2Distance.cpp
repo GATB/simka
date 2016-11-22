@@ -186,7 +186,7 @@ public:
 		delete _stats;
 		delete _processor;
 
-		writeFinishSignal();
+		//writeFinishSignal();
 
 	}
 

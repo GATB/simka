@@ -9,8 +9,17 @@ for i in range(2, len(sys.argv)):
 
 command += " > /dev/null 2>&1  "
 #print command
-ret = os.system(command)
-if ret != 0:
+
+core_dump_error = 35584
+ret = core_dump_error
+
+while(ret == core_dump_error):
+    ret = os.system(command)
     print ret
+
+print ret
+#Success
+if ret == 0:
+    f = open(checkpointFilename + "success", "w").close()
 else:
-    f = open(checkpointFilename, "w").close()
+    f = open(checkpointFilename + "unsuccess", "w").close()

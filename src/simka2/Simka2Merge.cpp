@@ -183,7 +183,7 @@ public:
 		//cout << "heo" << endl;
 		//delete config;
 		//cout << "heo" << endl;
-		writeFinishSignal();
+		//writeFinishSignal();
 	}
 
 	void parseArgs(){

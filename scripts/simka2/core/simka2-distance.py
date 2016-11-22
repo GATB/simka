@@ -24,7 +24,7 @@ args =  parser.parse_args()
 
 #SIMKA_BIN = os.path.dirname(os.path.realpath(__file__)) + "/../../build/bin/"
 
-SIMKA2_SCRIPT_DIR = os.path.split(os.path.realpath(__file__))[0]
+SCRIPT_DIR = os.path.split(os.path.realpath(__file__))[0]
 
 #----------------------------------------------------------------------
 #----------------------------------------------------------------------
@@ -59,7 +59,7 @@ class Simka_ComputeDistance():
 		self.computeDistanceFinal()
 
 	def mergeKmerSpectrums(self):
-		merge_script_filename = os.path.join(SIMKA2_SCRIPT_DIR, "./simka2-merge.py")
+		merge_script_filename = os.path.join(SCRIPT_DIR, "./simka2-merge.py")
 		command = "python " + merge_script_filename + " -database-dir " + self.database.dirname + " -simka-bin " + args._simkaBinDir
 		command = SimkaCommand.addHPCargs(command, args)
 		print command
@@ -84,7 +84,14 @@ class Simka_ComputeDistance():
 			self.computeDistancePart(i)
 
 	def computeDistancePart(self, partitionId):
-		command = os.path.join(args._simkaBinDir, "simka2-distance") + \
+
+		checkPointFilename = os.path.join(self.tempDir, str(partitionId) + "-")
+		unsuccessCheckPointFilename = checkPointFilename + "unsuccess"
+		if os.path.exists(unsuccessCheckPointFilename): os.remove(unsuccessCheckPointFilename)
+
+		command = "python " + os.path.join(SCRIPT_DIR, "simka2-run-job.py") + " " + \
+			checkPointFilename + " " + \
+			os.path.join(args._simkaBinDir, "simka2-distance") + \
 			" -database-dir " + args._databaseDir + \
 			" -kmer-size " + str(self.database._kmerSize) + \
 			" -partition-id " + str(partitionId) + \
@@ -93,7 +100,6 @@ class Simka_ComputeDistance():
 		print command
 		os.system(command)
 
-		checkPointFilename = os.path.join(self.tempDir, str(partitionId) + "-success")
 		self.jobScheduler.submitJob((checkPointFilename, self.jobEnd, ()))
 		#print("lala")
 		#break

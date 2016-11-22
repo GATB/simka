@@ -238,14 +238,18 @@ class JobScheduler():
 
             for jobData in self.jobQueue:
 
-                checkPointFilename = jobData[0]
+                successCheckPointFilename = jobData[0] + "success"
+                unsuccessCheckPointFilename = jobData[0] + "unsuccess"
 
-                if os.path.exists(checkPointFilename):
+                if os.path.exists(successCheckPointFilename):
                     self.jobQueueToRemove.append(jobData)
                     isJobAvailbale = True
                     self.nbJobs -= 1
                     jobData[1](jobData[2]) #Call job end method (jobData[1]) with args (jobData[2])
                     if self.progressBar is not None: self.progressBar.step(1)
+                elif os.path.exists(unsuccessCheckPointFilename):
+                    print("A job failed, exiting simka")
+                    exit(1)
 
             if isJobAvailbale:
                 for checkPointFilenameToRemove in self.jobQueueToRemove:

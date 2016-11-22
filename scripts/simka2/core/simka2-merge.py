@@ -20,6 +20,8 @@ parser.add_argument('-submit-file', action="store", dest="submit_file", help="fi
 
 args =  parser.parse_args()
 
+SCRIPT_DIR = os.path.split(os.path.realpath(__file__))[0]
+
 
 class SimkaKmerSpectrumMerger():
 
@@ -233,7 +235,14 @@ class SimkaKmerSpectrumMerger():
 
 		#command = "./bin/simkaCountProcess \"./bin/simka2-computeKmerSpectrum -id F1 -in /Users/gbenoit/workspace/gits/gatb-simka/example/B.fasta -out-tmp /local/output/o_simka2_test/ -out /local/output/o_simka2_result\""
 		for i in range(0, self.database._nbPartitions):
-			command = os.path.join(args._simkaBinDir, "simka2-merge") + \
+
+			checkPointFilename = os.path.join(self.tempDir, str(i) + "-")
+			unsuccessCheckPointFilename = checkPointFilename + "unsuccess"
+			if os.path.exists(unsuccessCheckPointFilename): os.remove(unsuccessCheckPointFilename)
+
+			command = "python " + os.path.join(SCRIPT_DIR, "simka2-run-job.py") + " " + \
+				checkPointFilename + " " + \
+				os.path.join(args._simkaBinDir, "simka2-merge") + \
 				" -in " + merge_input_filename + \
 				" -database-dir " + args._databaseDir + \
 				" -kmer-size " + str(self.database._kmerSize) + \
@@ -244,7 +253,6 @@ class SimkaKmerSpectrumMerger():
 			print command
 			os.system(command)
 
-			checkPointFilename = os.path.join(self.tempDir, str(i) + "-success")
 			self.jobScheduler.submitJob((checkPointFilename, self.jobEnd, ()))
 
 
