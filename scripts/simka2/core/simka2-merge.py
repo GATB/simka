@@ -9,7 +9,7 @@ from simka2_utils import Simka2ResourceAllocator, JobScheduler, ProgressBar, Sim
 parser = argparse.ArgumentParser(description='Description')
 
 parser.add_argument('-database-dir', action="store", dest="_databaseDir")
-parser.add_argument('-simka-bin', action="store", dest="_simkaBinDir")
+#parser.add_argument('-simka-bin', action="store", dest="_simkaBinDir")
 
 parser.add_argument('-max-jobs', action="store", dest="_maxJobs", help="maximum number of job that can be submitted at a given time", default="0")
 parser.add_argument('-nb-cores', action="store", dest="_nbCores", help="number of cores", default="0")
@@ -242,7 +242,7 @@ class SimkaKmerSpectrumMerger():
 
 			command = "python " + os.path.join(SCRIPT_DIR, "simka2-run-job.py") + " " + \
 				checkPointFilename + " " + \
-				os.path.join(args._simkaBinDir, "simka2-merge") + \
+				os.path.join(SCRIPT_DIR, "..", "bin", "simka2-merge") + \
 				" -in " + merge_input_filename + \
 				" -database-dir " + args._databaseDir + \
 				" -kmer-size " + str(self.database._kmerSize) + \
@@ -269,7 +269,7 @@ class SimkaKmerSpectrumMerger():
 
 
 		#save merge infos
-		command = os.path.join(args._simkaBinDir, "simka2-merge") + \
+		command = os.path.join(SCRIPT_DIR, "..", "bin", "simka2-merge") + \
 			" -in " + merge_input_filename + \
 			" -database-dir " + args._databaseDir + \
 			" -kmer-size " + str(self.database._kmerSize) + \

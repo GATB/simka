@@ -16,7 +16,7 @@ parserRead = parser.add_argument_group("read options")
 
 parserMain.add_argument('-in', action="store", dest="input_filename", help="input file of samples. One sample per line: id1: filename1...", required=True)
 parserMain.add_argument('-out-tmp', action="store", dest="output_dir_temp", help="output directory for temporary files", required=True)
-parserMain.add_argument('-simka-bin', action="store", dest="simka_bin_dir", help="dir containing simka binaries", required=True)
+#parserMain.add_argument('-simka-bin', action="store", dest="simka_bin_dir", help="dir containing simka binaries", required=True)
 parserMain.add_argument('-out', action="store", dest="output_dir", default="./simka_results", help="output directory for result files (distance matrices)")
 parserMain.add_argument('-keep-tmp', action="store_true", dest="keep_tmp", help="keep temporary files. Allow to update existing run of simka")
 
@@ -75,14 +75,14 @@ if ret != 0: exit(1)
 #-----------------------------------------------------------------------------
 # Compute k-mer spectrums
 #-----------------------------------------------------------------------------
-command = "python " + \
-    os.path.join(SCRIPT_DIR, "core", "simka2-count.py") + \
-    " -database-dir " + databaseDir + \
-    " -out-tmp " + tmpComputationDir + \
-    " -in " + args.input_filename + \
-    " -simka-bin " + args.simka_bin_dir + \
-    " -nb-cores " + args.nb_cores + \
-    " -max-memory " + args.max_memory
+command = "python "
+command += os.path.join(SCRIPT_DIR, "core", "simka2-count.py")
+command += " -database-dir " + databaseDir
+command += " -out-tmp " + tmpComputationDir
+command += " -in " + args.input_filename
+#command += " -simka-bin " + args.simka_bin_dir + \
+command += " -nb-cores " + args.nb_cores
+command += " -max-memory " + args.max_memory
 command = SimkaCommand.addHPCargs(command, args)
 ret = os.system(command)
 if ret != 0: exit(1)
@@ -90,10 +90,10 @@ if ret != 0: exit(1)
 #-----------------------------------------------------------------------------
 # Compute distances between k-mer spectrums
 #-----------------------------------------------------------------------------
-command = "python " + \
-    os.path.join(SCRIPT_DIR, "core", "simka2-distance.py") + \
-    " -database-dir " + databaseDir + \
-    " -simka-bin " + args.simka_bin_dir
+command = "python "
+command += os.path.join(SCRIPT_DIR, "core", "simka2-distance.py")
+command += " -database-dir " + databaseDir
+#command += " -simka-bin " + args.simka_bin_dir
 command = SimkaCommand.addHPCargs(command, args)
 ret = os.system(command)
 if ret != 0: exit(1)
@@ -114,7 +114,7 @@ matrixBinaryFilename = matrixBinaryFilenameDest
 # extracts the rows/columns depending on supplied datasets id (-in-ids)
 # and outputs distance matrices in ascii format readable by R (-out)
 #-----------------------------------------------------------------------------
-command = os.path.join(args.simka_bin_dir, "simka2-export") + \
+command = os.path.join(SCRIPT_DIR, "bin", "simka2-export") + \
     " -out " + args.output_dir + \
     " -in " + matrixBinaryFilename
 os.system(command)

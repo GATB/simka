@@ -16,7 +16,7 @@ parserRead = parser.add_argument_group("read options")
 
 parserMain.add_argument('-in', action="store", dest="input_filename", help="input file of samples. One sample per line: id1: filename1...", required=True)
 parserMain.add_argument('-out-tmp', action="store", dest="output_dir_temp", help="output directory for temporary files", required=True)
-parserMain.add_argument('-simka-bin', action="store", dest="simka_bin_dir", help="dir containing simka binaries", required=True)
+#parserMain.add_argument('-simka-bin', action="store", dest="simka_bin_dir", help="dir containing simka binaries", required=True)
 parserMain.add_argument('-out', action="store", dest="output_dir", default="./simka_results", help="output directory for result files (distance matrices)")
 parserMain.add_argument('-keep-tmp', action="store_true", dest="keep_tmp", help="keep temporary files. Allow to update existing run of simka")
 

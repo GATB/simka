@@ -73,14 +73,14 @@ include_directories (include ${gatb-core-includes} ${PROJECT_SOURCE_DIR}/src/cor
 # we define the files to be compiled
 file (GLOB_RECURSE  ProjectFiles  src/core/Simka*) #  ${PROJECT_BINARY_DIR}/src/core/template/*.cpp)
 
-SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
-set(PROJECT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/bin)
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../scripts/simka2/bin)
+set(PROJECT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/../scripts/simka2/bin)
 
 
 #-- simka2
 
-add_executable        (simkaCountProcess  src/minikc/SimkaCountProcess.cpp ${ProjectFiles})
-target_link_libraries (simkaCountProcess  ${gatb-core-libraries})
+#add_executable        (simkaCountProcess  src/minikc/SimkaCountProcess.cpp ${ProjectFiles})
+#target_link_libraries (simkaCountProcess  ${gatb-core-libraries})
 
 add_executable        (simka2-export  src/export/SimkaDistanceExporter.cpp ${ProjectFiles})
 target_link_libraries (simka2-export  ${gatb-core-libraries})

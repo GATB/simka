@@ -6,7 +6,7 @@ from simka2_utils import Simka2ResourceAllocator, JobScheduler, ProgressBar, Sim
 parser = argparse.ArgumentParser(description='Description')
 
 parser.add_argument('-database-dir', action="store", dest="_databaseDir")
-parser.add_argument('-simka-bin', action="store", dest="_simkaBinDir")
+#parser.add_argument('-simka-bin', action="store", dest="_simkaBinDir")
 parser.add_argument('-out-tmp', action="store", dest="_outputDirTemp")
 #parser.add_argument('-in', action="store", dest="_inputFilename")
 #parser.add_argument('-out', action="store", dest="_outputDir")
@@ -60,7 +60,7 @@ class Simka_ComputeDistance():
 
 	def mergeKmerSpectrums(self):
 		merge_script_filename = os.path.join(SCRIPT_DIR, "./simka2-merge.py")
-		command = "python " + merge_script_filename + " -database-dir " + self.database.dirname + " -simka-bin " + args._simkaBinDir
+		command = "python " + merge_script_filename + " -database-dir " + self.database.dirname# + " -simka-bin " + args._simkaBinDir
 		command = SimkaCommand.addHPCargs(command, args)
 		print command
 		ret = os.system(command)
@@ -91,7 +91,7 @@ class Simka_ComputeDistance():
 
 		command = "python " + os.path.join(SCRIPT_DIR, "simka2-run-job.py") + " " + \
 			checkPointFilename + " " + \
-			os.path.join(args._simkaBinDir, "simka2-distance") + \
+			os.path.join(SCRIPT_DIR, "..", "bin", "simka2-distance") + \
 			" -database-dir " + args._databaseDir + \
 			" -kmer-size " + str(self.database._kmerSize) + \
 			" -partition-id " + str(partitionId) + \
@@ -105,7 +105,7 @@ class Simka_ComputeDistance():
 		#break
 
 	def computeDistanceFinal(self):
-		command = os.path.join(args._simkaBinDir, "simka2-distanceFinal") + \
+		command = os.path.join(SCRIPT_DIR, "..", "bin", "simka2-distanceFinal") + \
 			" -database-dir " + args._databaseDir + \
 			" -kmer-size " + str(self.database._kmerSize) + \
 			" -nb-partitions " + str(self.database._nbPartitions)
