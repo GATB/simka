@@ -124,6 +124,7 @@ class ComputeKmerSpectrumAll():
 
 		os.makedirs(kmerSpectrumOutputDir)
 
+		checkPointFilename = os.path.join(kmerSpectrumOutputDir, "success")
 		#if not os.path.exists(args._outputDirTemp):
 		#	os.makedirs(args._outputDirTemp)
 
@@ -142,7 +143,9 @@ class ComputeKmerSpectrumAll():
 		#		  " -out " + outputDir + \
 		#		  " -nb-dataset " + str(nbPairedDatasets) + \
 		#		  " -simka-bin " + args._simkaBinDir
-		command = os.path.join(args._simkaBinDir, "simkaCountProcess") + " " + \
+		#command = os.path.join(args._simkaBinDir, "simkaCountProcess") + " " + \
+		command = "python " + os.path.join(SCRIPT_DIR, "simka2-run-job.py") + " " + \
+			checkPointFilename + " " + \
 			os.path.join(args._simkaBinDir,"simka2-count") + \
 			" -id " + id + \
 			" -in " + inputFilename + \
@@ -154,14 +157,13 @@ class ComputeKmerSpectrumAll():
 			" -nb-partitions " + str(self.database._nbPartitions) + \
 			" -max-memory " + str(self.jobMemory) + \
 			" -nb-cores " + str(self.jobCores) + \
-			"   > /dev/null 2>&1     &"
+			" &" #   > /dev/null 2>&1     &"
 		command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
 		#print("compute_kmer_spectrums_all.py: Add log file system")
 
-		print(command)
+		#print(command)
 		os.system(command)
 
-		checkPointFilename = os.path.join(kmerSpectrumOutputDir, "success")
 		self.jobScheduler.submitJob((checkPointFilename, self.jobEnd, (id, self.database.get_default_kmer_spectrum_dir_of_id(id, False), outputDirTemp)))
 
 	def jobEnd(self, data):

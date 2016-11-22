@@ -182,7 +182,7 @@ public:
 
 		delete _partitionWriter;
 
-		writeFinishSignal();
+		//writeFinishSignal();
 	}
 
 	void parseArgs(){
@@ -377,13 +377,14 @@ public:
 		_h5Filename = _outputDirTemp + "/" +  _datasetID + ".h5";
 		Storage* solidStorage = StorageFactory(STORAGE_HDF5).create (_h5Filename, true, false);
 
+		/*
 		ConfigurationAlgorithm<span> configAlgo(filteredBank, _options);
 		configAlgo.execute();
 		RepartitorAlgorithm<span> repart (filteredBank, solidStorage->getGroup(""), configAlgo.getConfiguration());
 		repart.execute ();
 		Repartitor* repartitor = new Repartitor();
 		LOCAL(repartitor);
-		repartitor->load(solidStorage->getGroup(""));
+		repartitor->load(solidStorage->getGroup(""));*/
 
 
 		SimkaAbundanceProcessor<span>* proc = new SimkaAbundanceProcessor<span>(_abundanceThreshold.first, _abundanceThreshold.second);
@@ -404,7 +405,7 @@ public:
 
 			{
 				//SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, caches, cacheIndexes, p.abundanceMin, p.abundanceMax);
-				std::vector<ICountProcessor<span>* > procs;
+				//std::vector<ICountProcessor<span>* > procs;
 				//procs.push_back(proc);
 				ICountProcessor<span>* result = 0;
 
@@ -417,10 +418,11 @@ public:
 
 				result->setName ("dsk");
 
-				//SortingCountAlgorithm<span> algo (filteredBank, props);
-				SortingCountAlgorithm<span> algo (filteredBank, configAlgo.getConfiguration(), repartitor,
-						procs,
-						_options);
+
+				SortingCountAlgorithm<span> algo (filteredBank, _options);
+				//SortingCountAlgorithm<span> algo (filteredBank, configAlgo.getConfiguration(), repartitor,
+				//		procs,
+				//		_options);
 				algo.addProcessor(result);
 				algo.execute();
 

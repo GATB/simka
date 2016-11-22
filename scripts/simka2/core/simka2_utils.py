@@ -182,6 +182,7 @@ class ProgressBar():
         self.display()
 
     def display(self):
+        return
         progress_percent = float(self.progress) / float(self.max) * 100
 
         duration = int(time.time() - self.start_time)
@@ -335,4 +336,5 @@ class ArgumentFormatterSimka(argparse.HelpFormatter):
         return ''.join([part
                         for part in part_strings
                         if part and part is not argparse.SUPPRESS and not "optional arguments:" in part and not "__none__" in part and not "--help" in part])
+
 
