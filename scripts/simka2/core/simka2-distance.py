@@ -48,7 +48,7 @@ class Simka_ComputeDistance():
 		self.mergeKmerSpectrums()
 
 		self.resourceAllocator = Simka2ResourceAllocator(bool(args._isHPC), int(args._nbCores), int(args._maxMemory), int(args._maxJobs), args.submit_command, args.submit_file)
-		maxJobs, jobCores = self.resourceAllocator.executeForDistanceJobs(self.database._nbPartitions)
+		maxJobs, self.jobCores = self.resourceAllocator.executeForDistanceJobs(self.database._nbPartitions)
 
 		self.jobScheduler = JobScheduler(maxJobs, ProgressBar("Computing distances", self.database._nbPartitions))
 
@@ -79,37 +79,62 @@ class Simka_ComputeDistance():
 		#for dir in uniqKmerSpectrumDirs:
 		#	distanceInputFile.write(dir + "\n")
 		#distanceInputFile.close()
+		jobCommandsId = 0
 
-		for i in range(0, self.database._nbPartitions):
-			self.computeDistancePart(i)
+		i = 0
+		while(i < self.database._nbPartitions):
+			self.jobCommandsFile = open(os.path.join(self.tempDir, "commands_input_" + str(jobCommandsId)), "w")
+			for j in range(0, self.jobCores):
+				self.constructJobCommand(i)
+				i += 1
+				if i == self.database._nbPartitions:
+					break
+			jobCommandsId += 1
+			self.jobCommandsFile.close()
 
-	def computeDistancePart(self, partitionId):
+		for i in range(0, jobCommandsId):
+			checkPointFilename = os.path.join(self.tempDir, "commands_" + str(i) + "-")
+			unsuccessCheckPointFilename = checkPointFilename + "unsuccess"
+			if os.path.exists(unsuccessCheckPointFilename): os.remove(unsuccessCheckPointFilename)
+
+			command = " python " + os.path.join(SCRIPT_DIR, "simka2-run-job.py") + " "
+			command += checkPointFilename + " "
+			command += " python " + os.path.join(SCRIPT_DIR, "simka2-run-job-multi.py") + " "
+			command += " " + os.path.join(self.tempDir, "commands_input_" + str(i))
+			#command += "   > /dev/null 2>&1     &"
+			command += " & "
+			command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
+			os.system(command)
+			#print command
+
+			self.jobScheduler.submitJob((checkPointFilename, self.jobEnd, ()))
+			#print("lala")
+			#break
+
+
+	def constructJobCommand(self, partitionId):
 
 		checkPointFilename = os.path.join(self.tempDir, str(partitionId) + "-")
 		unsuccessCheckPointFilename = checkPointFilename + "unsuccess"
 		if os.path.exists(unsuccessCheckPointFilename): os.remove(unsuccessCheckPointFilename)
 
-		command = "python " + os.path.join(SCRIPT_DIR, "simka2-run-job.py") + " " + \
-			checkPointFilename + " " + \
-			os.path.join(SCRIPT_DIR, "..", "bin", "simka2-distance") + \
-			" -database-dir " + args._databaseDir + \
-			" -kmer-size " + str(self.database._kmerSize) + \
-			" -partition-id " + str(partitionId) + \
-			"   > /dev/null 2>&1     &"
-		command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
-		print command
-		os.system(command)
+		command = "python " + os.path.join(SCRIPT_DIR, "simka2-run-job.py") + " "
+		command += checkPointFilename + " "
+		command += os.path.join(SCRIPT_DIR, "..", "bin", "simka2-distance")
+		command += " -database-dir " + args._databaseDir
+		command += " -kmer-size " + str(self.database._kmerSize)
+		command += " -partition-id " + str(partitionId)
+		command += "   > /dev/null 2>&1     &"
 
-		self.jobScheduler.submitJob((checkPointFilename, self.jobEnd, ()))
-		#print("lala")
-		#break
+		self.jobCommandsFile.write(checkPointFilename + "|" + command + "\n")
+
 
 	def computeDistanceFinal(self):
 		command = os.path.join(SCRIPT_DIR, "..", "bin", "simka2-distanceFinal") + \
 			" -database-dir " + args._databaseDir + \
 			" -kmer-size " + str(self.database._kmerSize) + \
 			" -nb-partitions " + str(self.database._nbPartitions)
-		print "simka2-distance (computeDistanceFinal):    besoin de la synchro du scheduler ici ?"
+		print "simka2-distance (computeDistanceFinal):    besoin de pouvoir submit ce job en HPC mode ?"
 		#command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
 		os.system(command)
 

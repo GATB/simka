@@ -4,6 +4,12 @@ import os, time, sys, multiprocessing, argparse, math
 import datetime
 import dateutil.relativedelta
 
+class SimkaSettings():
+
+	MAX_OPEN_FILES = 1000
+	MIN_FILES_TO_START_MERGE = 1000
+	MAX_OPEN_FILES_PER_MERGE = 100
+
 class SimkaCommand():
 
     def create_count(self):
@@ -157,7 +163,7 @@ class Simka2ResourceAllocator():
 
         maxJobs = min(maxJobs, self.maxJobs)
 
-        jobCores = 1
+        jobCores = self.nbCores
 
         return (maxJobs, jobCores)
 

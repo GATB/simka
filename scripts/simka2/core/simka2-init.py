@@ -23,9 +23,8 @@ def init_settings():
 
     resourceAllocator = Simka2ResourceAllocator(bool(args._isHPC), int(args._nbCores), int(args._maxMemory), int(args._maxJobs), None, None)
     maxJobs, coresPerJob = resourceAllocator.executeForDistanceJobs(-1)
-    nbPartitions = min(200, maxJobs)
+    nbPartitions = min(200, maxJobs*coresPerJob)
 
-    print maxJobs
     settings_file = open(os.path.join(args._databaseDir, "settings.txt"), "w")
     settings_file.write("kmer-size: " + args._kmerSize + "\n")
     settings_file.write("nb-partitions: " + str(nbPartitions)  + "\n")

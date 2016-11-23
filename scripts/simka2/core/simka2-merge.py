@@ -1,7 +1,7 @@
 
 import os, sys, argparse, shutil
 from simka2_database import SimkaDatabase
-from simka2_utils import Simka2ResourceAllocator, JobScheduler, ProgressBar, SimkaCommand
+from simka2_utils import Simka2ResourceAllocator, JobScheduler, ProgressBar, SimkaCommand, SimkaSettings
 
 
 #----------------------------------------------------------------------
@@ -25,10 +25,6 @@ SCRIPT_DIR = os.path.split(os.path.realpath(__file__))[0]
 
 class SimkaKmerSpectrumMerger():
 
-	#MAX_OPEN_FILES = 1000
-	#MAX_OPEN_FILES_PER_MERGE = 100
-	MAX_OPEN_FILES = 1000
-	MAX_OPEN_FILES_PER_MERGE = 100
 
 	def __init__(self):
 		self.database = SimkaDatabase(args._databaseDir)
@@ -43,15 +39,15 @@ class SimkaKmerSpectrumMerger():
 
 	def execute(self):
 
-		maxJobsByOpenFile = SimkaKmerSpectrumMerger.MAX_OPEN_FILES / SimkaKmerSpectrumMerger.MAX_OPEN_FILES_PER_MERGE
+		maxJobsByOpenFile = SimkaSettings.MAX_OPEN_FILES / SimkaSettings.MAX_OPEN_FILES_PER_MERGE
 		self.resourceAllocator = Simka2ResourceAllocator(bool(args._isHPC), int(args._nbCores), int(args._maxMemory), int(args._maxJobs), args.submit_command, args.submit_file)
-		maxJobs, jobCores = self.resourceAllocator.executeForDistanceJobs(self.database._nbPartitions)
+		maxJobs, self.jobCores = self.resourceAllocator.executeForDistanceJobs(self.database._nbPartitions)
 		maxJobs = min(maxJobs, maxJobsByOpenFile)
 
 		self.jobScheduler = JobScheduler(maxJobs, ProgressBar("Merging k-mer spectrums", self.database._nbPartitions))
 
 		#---
-		self.mergeKmerSpectrums()
+		self.mergeKmerSpectrumsWhile()
 
 
 	def getNextMergeID(self):
@@ -65,6 +61,26 @@ class SimkaKmerSpectrumMerger():
 			id += 1
 		return str(id)
 
+
+	def mergeKmerSpectrumsWhile(self):
+
+		while True:
+
+			needMerge = False
+			usedDirs = set()
+
+			for id in self.database.entries:
+				kmerSpectrumDir = self.database.get_kmer_spectrum_dir_of_id(id, False)
+				usedDirs.add(kmerSpectrumDir)
+
+				if len(usedDirs) > SimkaSettings.MIN_FILES_TO_START_MERGE:
+					needMerge = True
+					break
+
+			if needMerge:
+				self.mergeKmerSpectrums()
+			else:
+				break
 
 	def mergeKmerSpectrums(self):
 
@@ -140,7 +156,7 @@ class SimkaKmerSpectrumMerger():
 
 
 
-		while(len(list_kmerSpectrumDirs_Sizes) > SimkaKmerSpectrumMerger.MAX_OPEN_FILES_PER_MERGE):
+		while(len(list_kmerSpectrumDirs_Sizes) > SimkaSettings.MAX_OPEN_FILES_PER_MERGE):
 
 			#//cout << "Start merging pass" << endl;
 			#sort(filenameSizes.begin(),filenameSizes.end(),sortFileBySize);
@@ -157,7 +173,7 @@ class SimkaKmerSpectrumMerger():
 
 			#//cout << endl;
 			#//cout << "merging" << endl;
-			for i in range(0, SimkaKmerSpectrumMerger.MAX_OPEN_FILES_PER_MERGE):
+			for i in range(0, SimkaSettings.MAX_OPEN_FILES_PER_MERGE):
 				sfi = list_kmerSpectrumDirs_Sizes[i]
 				#//mergeDatasetIds.push_back(get<2>(sfi));
 				mergeDatasetDirs.append(sfi[0])
@@ -214,6 +230,90 @@ class SimkaKmerSpectrumMerger():
 			merge_input_file.write(os.path.join(self.database.dirname, relDir) + "\n")
 		merge_input_file.close()
 
+		jobCommandsId = 0
+
+		i = 0
+		while(i < self.database._nbPartitions):
+			self.jobCommandsFile = open(os.path.join(self.tempDir, "commands_input_" + str(jobCommandsId)), "w")
+			for j in range(0, self.jobCores):
+				self.constructJobCommand(i, merge_input_filename, mergeOutputRelativeDir)
+				i += 1
+				if i == self.database._nbPartitions:
+					break
+			jobCommandsId += 1
+			self.jobCommandsFile.close()
+
+		for i in range(0, jobCommandsId):
+			checkPointFilename = os.path.join(self.tempDir, "commands_" + str(i) + "-")
+			unsuccessCheckPointFilename = checkPointFilename + "unsuccess"
+			if os.path.exists(unsuccessCheckPointFilename): os.remove(unsuccessCheckPointFilename)
+
+			command = " python " + os.path.join(SCRIPT_DIR, "simka2-run-job.py") + " "
+			command += checkPointFilename + " "
+			command += " python " + os.path.join(SCRIPT_DIR, "simka2-run-job-multi.py") + " "
+			command += " " + os.path.join(self.tempDir, "commands_input_" + str(i))
+			#command += "   > /dev/null 2>&1     &"
+			command += " & "
+			command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
+			os.system(command)
+			#print command
+
+			self.jobScheduler.submitJob((checkPointFilename, self.jobEnd, ()))
+
+		#print dataset_to_merge_ids
+
+		#print id
+		#outputDir = os.path.join(DATABASE.get_kmer_spectrum_dir_of_id(id, True))
+
+		#successFilename = os.path.join(outputDir, "success")
+
+		#if os.path.exists(successFilename):
+		#	return
+
+		#if os.path.exists(outputDir):
+		#	shutil.rmtree(outputDir)
+		#	os.mkdir(outputDir)
+
+		#self.mergeEndData = []
+		#self.mergeEndData[0] = merge_input_filename
+		#self.mergeEndData[1] = dataset_to_merge_ids
+		#self.mergeEndData[2] = merge_dest_id
+
+		#command = "./bin/simkaCountProcess \"./bin/simka2-computeKmerSpectrum -id F1 -in /Users/gbenoit/workspace/gits/gatb-simka/example/B.fasta -out-tmp /local/output/o_simka2_test/ -out /local/output/o_simka2_result\""
+
+
+	def constructJobCommand(self, partitionId, merge_input_filename, mergeOutputRelativeDir):
+
+		checkPointFilename = os.path.join(self.tempDir, str(partitionId) + "-")
+		unsuccessCheckPointFilename = checkPointFilename + "unsuccess"
+		if os.path.exists(unsuccessCheckPointFilename): os.remove(unsuccessCheckPointFilename)
+
+		command = "python " + os.path.join(SCRIPT_DIR, "simka2-run-job.py") + " " + \
+			checkPointFilename + " " + \
+			os.path.join(SCRIPT_DIR, "..", "bin", "simka2-merge") + \
+			" -in " + merge_input_filename + \
+			" -database-dir " + args._databaseDir + \
+			" -kmer-size " + str(self.database._kmerSize) + \
+			" -partition-id " + str(partitionId) + \
+			" -out " + os.path.join(self.database.dirname, mergeOutputRelativeDir) + \
+			"   > /dev/null 2>&1     &"
+
+		self.jobCommandsFile.write(checkPointFilename + "|" + command + "\n")
+
+
+	"""
+	def mergeSmallestKmerSpectrums(self, merge_input_filename, mergedDirs, mergeOutputRelativeDir):
+
+
+
+		#if not os.path.exists()
+		#print dataset_to_merge_ids
+		#merge_input_filename = os.path.join(self.database.dirname, "__merge_input.txt")
+		merge_input_file = open(merge_input_filename, "w")
+		for relDir in mergedDirs:
+			merge_input_file.write(os.path.join(self.database.dirname, relDir) + "\n")
+		merge_input_file.close()
+
 		#print dataset_to_merge_ids
 
 		#print id
@@ -254,7 +354,7 @@ class SimkaKmerSpectrumMerger():
 			os.system(command)
 
 			self.jobScheduler.submitJob((checkPointFilename, self.jobEnd, ()))
-
+	"""
 
 	def jobEnd(self, data):
 		pass

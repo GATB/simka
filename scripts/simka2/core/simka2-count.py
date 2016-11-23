@@ -43,6 +43,7 @@ class ComputeKmerSpectrumAll():
 		#self.jobCores = None
 		#self.jobMemory = None
 
+
 	def execute(self):
 
 		self.countNbDatasetToProcess()
@@ -165,7 +166,7 @@ class ComputeKmerSpectrumAll():
 		command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
 		#print("compute_kmer_spectrums_all.py: Add log file system")
 
-		print(command)
+		#print(command)
 		os.system(command)
 
 		self.jobScheduler.submitJob((checkPointFilename, self.jobEnd, (id, self.database.get_default_kmer_spectrum_dir_of_id(id, False), outputDirTemp)))
@@ -205,7 +206,6 @@ class ComputeKmerSpectrumAll():
 
 	def getOutputDirTemp(self, id):
 		return os.path.join(args._outputDirTemp, id + "_temp")
-
 
 
 c = ComputeKmerSpectrumAll()
