@@ -1,0 +1,2 @@
+F: A.fasta
+G: B.fasta
