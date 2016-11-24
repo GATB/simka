@@ -53,12 +53,10 @@ SimkaStatistics::SimkaStatistics(size_t nbBanks, size_t nbNewBanks, bool compute
 	//_nbKmersSharedByBanksThreshold.resize(_nbBanks, 0);
 
 	_matrixNbDistinctSharedKmers.resize(_nbBanks);
-	_matrixNbSharedKmers.resize(_nbBanks);
 	_brayCurtisNumerator.resize(_nbBanks);
 
 	for(size_t i=0; i<_nbBanks; i++){
 		_matrixNbDistinctSharedKmers[i].resize(_nbNewBanks, 0);
-		_matrixNbSharedKmers[i].resize(_nbNewBanks, 0);
 		_brayCurtisNumerator[i].resize(_nbNewBanks, 0);
 		//_kullbackLeibler[i].resize(nbBanks, 0);
 	}
@@ -66,6 +64,7 @@ SimkaStatistics::SimkaStatistics(size_t nbBanks, size_t nbNewBanks, bool compute
 
 
 	if(_computeSimpleDistances){
+		_matrixNbSharedKmers.resize(_nbBanks);
 		//_abundance_jaccard_intersection.resize(_nbBanks);
 		//for(size_t i=0; i<_nbBanks; i++){
 		//	_abundance_jaccard_intersection[i].resize(nbBanks, 0);
@@ -76,6 +75,7 @@ SimkaStatistics::SimkaStatistics(size_t nbBanks, size_t nbNewBanks, bool compute
 		//_chord_N2j.resize(_nbBanks);
 		for(size_t i=0; i<_nbBanks; i++){
 			_chord_NiNj[i].resize(_nbNewBanks, 0);
+			_matrixNbSharedKmers[i].resize(_nbNewBanks, 0);
 			//_chord_N2i[i].resize(nbBanks, 0);
 			//_chord_N2j[i].resize(nbBanks, 0);
 		}
@@ -142,7 +142,6 @@ SimkaStatistics& SimkaStatistics::operator+=  (const SimkaStatistics& other){
 
 	for(size_t i=0; i<_nbBanks; i++){
 		for(size_t j=0; j<_nbNewBanks; j++){
-			_matrixNbSharedKmers[i][j] += other._matrixNbSharedKmers[i][j];
 			_brayCurtisNumerator[i][j] += other._brayCurtisNumerator[i][j];
 			_matrixNbDistinctSharedKmers[i][j] += other._matrixNbDistinctSharedKmers[i][j];
 		}
@@ -154,6 +153,7 @@ SimkaStatistics& SimkaStatistics::operator+=  (const SimkaStatistics& other){
 	if(_computeSimpleDistances){
 		for(size_t i=0; i<_nbBanks; i++){
 			for(size_t j=0; j<_nbNewBanks; j++){
+				_matrixNbSharedKmers[i][j] += other._matrixNbSharedKmers[i][j];
 					_chord_NiNj[i][j] += other._chord_NiNj[i][j];
 					_hellinger_SqrtNiNj[i][j] += other._hellinger_SqrtNiNj[i][j];
 					_kulczynski_minNiNj[i][j] += other._kulczynski_minNiNj[i][j];
@@ -332,7 +332,6 @@ void SimkaStatistics::load(const string& filename){
     	//cout << i << endl;
     	//cout << _nbBanks << endl;
     	//cout << _matrixNbDistinctSharedKmers[i].size() << endl;
-            for(size_t j=0; j<_nbNewBanks; j++){ _matrixNbSharedKmers[i][j] = it->item(); it->next();}
             for(size_t j=0; j<_nbNewBanks; j++){ _matrixNbDistinctSharedKmers[i][j] = it->item(); it->next();}
             for(size_t j=0; j<_nbNewBanks; j++){ _brayCurtisNumerator[i][j] = it->item(); it->next();}
 
@@ -347,6 +346,7 @@ void SimkaStatistics::load(const string& filename){
 	if(_computeSimpleDistances){
 	    for(size_t i=0; i<_nbBanks; i++){ _chord_sqrt_N2[i] = it->item(); it->next();}
 	    for(size_t i=0; i<_nbBanks; i++){
+            for(size_t j=0; j<_nbNewBanks; j++){ _matrixNbSharedKmers[i][j] = it->item(); it->next();}
 			for(size_t j=0; j<_nbNewBanks; j++){ _chord_NiNj[i][j] = it->item(); it->next();}
 			for(size_t j=0; j<_nbNewBanks; j++){ _hellinger_SqrtNiNj[i][j] = it->item(); it->next();}
 			for(size_t j=0; j<_nbNewBanks; j++){ _kulczynski_minNiNj[i][j] = it->item(); it->next();}
@@ -442,7 +442,6 @@ void SimkaStatistics::save (const string& filename){
     	//cout << i << endl;
     	//cout << _nbBanks << endl;
     	//cout << _matrixNbDistinctSharedKmers[i].size() << endl;
-            for(size_t j=0; j<_nbNewBanks; j++){ file->insert((long double)_matrixNbSharedKmers[i][j]);}
             for(size_t j=0; j<_nbNewBanks; j++){ file->insert((long double)_matrixNbDistinctSharedKmers[i][j]);}
             for(size_t j=0; j<_nbNewBanks; j++){ file->insert((long double)_brayCurtisNumerator[i][j]);}
 
@@ -458,6 +457,7 @@ void SimkaStatistics::save (const string& filename){
 	if(_computeSimpleDistances){
 	    for(size_t i=0; i<_nbBanks; i++){ file->insert((long double)_chord_sqrt_N2[i]);}
 	    for(size_t i=0; i<_nbBanks; i++){
+            for(size_t j=0; j<_nbNewBanks; j++){ file->insert((long double)_matrixNbSharedKmers[i][j]);}
 			for(size_t j=0; j<_nbNewBanks; j++){ file->insert((long double)_chord_NiNj[i][j]);}
 			for(size_t j=0; j<_nbNewBanks; j++){ file->insert((long double)_hellinger_SqrtNiNj[i][j]);}
 			for(size_t j=0; j<_nbNewBanks; j++){ file->insert((long double)_kulczynski_minNiNj[i][j]);}
