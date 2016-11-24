@@ -39,10 +39,11 @@ class SimkaKmerSpectrumMerger():
 
 	def execute(self):
 
-		maxJobsByOpenFile = SimkaSettings.MAX_OPEN_FILES / SimkaSettings.MAX_OPEN_FILES_PER_MERGE
+		#maxJobsByOpenFile = SimkaSettings.MAX_OPEN_FILES / SimkaSettings.MAX_OPEN_FILES_PER_MERGE
 		self.resourceAllocator = Simka2ResourceAllocator(bool(args._isHPC), int(args._nbCores), int(args._maxMemory), int(args._maxJobs), args.submit_command, args.submit_file)
 		maxJobs, self.jobCores = self.resourceAllocator.executeForDistanceJobs(self.database._nbPartitions)
-		maxJobs = min(maxJobs, maxJobsByOpenFile)
+		#maxJobs = min(maxJobs, maxJobsByOpenFile)
+		#self.max_merged_datasets =
 
 		self.jobScheduler = JobScheduler(maxJobs, ProgressBar("Merging k-mer spectrums", self.database._nbPartitions))
 
