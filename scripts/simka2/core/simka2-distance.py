@@ -117,8 +117,8 @@ class Simka_ComputeDistance():
 			command += checkPointFilename + " "
 			command += " python " + os.path.join(SCRIPT_DIR, "simka2-run-job-multi.py") + " "
 			command += " " + os.path.join(self.tempDir, "commands_input_" + str(i))
-			#command += "   > /dev/null 2>&1     &"
-			command += " & "
+			command += "   > /dev/null 2>&1     &"
+			#scommand += " & "
 			command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
 			os.system(command)
 			#print command
@@ -154,7 +154,8 @@ class Simka_ComputeDistance():
 			" -max-datasets " + str(self.maximumProcessedDatasets)
 		print "simka2-distance (computeDistanceFinal):    besoin de pouvoir submit ce job en HPC mode ?"
 		#command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
-		os.system(command)
+		ret = os.system(command)
+		if ret != 0: exit(1)
 
 	def jobEnd(self, data):
 		pass

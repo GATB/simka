@@ -253,8 +253,8 @@ class SimkaKmerSpectrumMerger():
 			command += checkPointFilename + " "
 			command += " python " + os.path.join(SCRIPT_DIR, "simka2-run-job-multi.py") + " "
 			command += " " + os.path.join(self.tempDir, "commands_input_" + str(i))
-			#command += "   > /dev/null 2>&1     &"
-			command += " & "
+			command += "   > /dev/null 2>&1     &"
+			#command += " & "
 			command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
 			os.system(command)
 			#print command
