@@ -46,4 +46,6 @@ SCRIPT_DIR = os.path.split(os.path.realpath(__file__))[0]
 command = "python " + os.path.join(SCRIPT_DIR, "simka-pipeline.py")
 for i in range(1, len(sys.argv)):
     command += " " + sys.argv[i] + " "
-os.system(command)
+
+ret = os.system(command)
+exit(ret)

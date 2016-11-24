@@ -117,7 +117,8 @@ matrixBinaryFilename = matrixBinaryFilenameDest
 command = os.path.join(SCRIPT_DIR, "bin", "simka2-export") + \
     " -out " + args.output_dir + \
     " -in " + matrixBinaryFilename
-os.system(command)
+ret = os.system(command)
+if ret != 0: exit(1)
 
 
 #-----------------------------------------------------------------------------
