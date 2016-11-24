@@ -17,6 +17,7 @@ const string STR_SIMKA2_DATABASE_DIR = "-database-dir";
 const string STR_SIMKA2_NB_PARTITION = "-nb-partitions";
 const string STR_SIMKA2_PARTITION_ID = "-partition-id";
 const string STR_SIMKA2_INPUT_IDS = "-in-ids";
+const string STR_SIMKA2_DISTANCE_MAX_PROCESSABLE_DATASETS = "-max-datasets";
 
 //const string STR_SIMKA2_DISTANCE_INPUT_1 = "-in-already-computed";
 //const string STR_SIMKA2_DISTANCE_INPUT_2 = "-in-to-compute";
@@ -243,7 +244,7 @@ public:
 
 			//cout << "\tmerge info:    "<< mergeInfoFilename << "    " << System::file().doesExist(mergeInfoFilename) << endl;
 
-	    	cout << endl;
+	    	//cout << endl;
 	    	//if(System::file().doesExist(mergeInfoFilename)){
 				ifstream mergedLinkFile(mergeInfoFilename.c_str(), std::ios::binary);
 				mergedLinkFile.read((char*)(&nbMergedBanks), sizeof(nbMergedBanks));

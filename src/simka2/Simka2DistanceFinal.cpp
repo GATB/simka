@@ -39,6 +39,7 @@ public:
 
 	Simka2Database _database;
 	size_t _nbPartitions;
+	size_t _maxDatasets;
 
 	SimkaStatistics* _stats;
 
@@ -79,6 +80,7 @@ public:
     	//_partitionId = getInput()->getInt(STR_SIMKA2_PARTITION_ID);
     	_databaseDir =  getInput()->getStr(STR_SIMKA2_DATABASE_DIR);
     	_nbPartitions =  getInput()->getInt(STR_SIMKA2_NB_PARTITION);
+    	_maxDatasets = getInput()->getInt(STR_SIMKA2_DISTANCE_MAX_PROCESSABLE_DATASETS);
 
 
     	_dirMatrixParts = _databaseDir + "/distance/temp_parts";
@@ -92,6 +94,7 @@ public:
 
 		_nbBanks = _database._entries.size();
 		_nbNewBanks = _nbBanks - _database._nbProcessedDataset;
+		_nbNewBanks = min(_nbNewBanks, _maxDatasets);
 
 	}
 
@@ -219,11 +222,11 @@ public:
 
 		SimkaDistanceMatrixBinary::loadMatrix(newMatrixFilename, _matrix);
 
-		for(size_t i=0; i<_matrix.size(); i++){
-			for(size_t j=0; j<_matrix[i].size(); j++){
-				cout << _matrix[i][j] << endl;
-			}
-		}
+		//for(size_t i=0; i<_matrix.size(); i++){
+		//	for(size_t j=0; j<_matrix[i].size(); j++){
+		//		cout << _matrix[i][j] << endl;
+		//	}
+		//}
 
 		u_int64_t oldRowSize = sizeof(float)*_nbOldBanks;
 		u_int64_t newRowSize = sizeof(float)*_nbNewBanks;
@@ -300,6 +303,7 @@ public:
 	    //parser->push_front (new OptionOneParam (STR_URI_OUTPUT, "output directory for merged kmer spectrum", true));
 	    parser->push_front (new OptionOneParam (STR_SIMKA2_DATABASE_DIR, "dir path to a simka database", true));
 	    parser->push_front (new OptionOneParam (STR_SIMKA2_NB_PARTITION, "number of partitions", true));
+	    parser->push_front (new OptionOneParam (STR_SIMKA2_DISTANCE_MAX_PROCESSABLE_DATASETS, "maximum number of datasets that can be processed", true));
 	    //parser->push_front (new OptionOneParam (STR_SIMKA2_PARTITION_ID, "number of the partition", true));
 	    //parser->push_front (new OptionOneParam (STR_SIMKA2_DISTANCE_MATRIX_DIR, "input filename of k-mer spectrums for which distances has to be computed", true));
 

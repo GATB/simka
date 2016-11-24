@@ -59,7 +59,7 @@ public:
 
 	static void writeMatrixBinary(const string& distanceMatricesDir, const string& distanceName, const vector<vector<float> >& distanceMatrix){
 
-
+		/*
 		cout << "lala write" << endl;
 		for(size_t i=0; i<distanceMatrix.size(); i++){
 
@@ -68,7 +68,7 @@ public:
 			}
 			cout << endl;
 		}
-		cout << endl;
+		cout << endl;*/
 		//string distanceMatrixDir = distanceMatricesDir + "/" + distanceName;
 		//if(System::file().doesExist(distanceMatrixDir)){
 
@@ -106,7 +106,7 @@ public:
 
 		inputFile.close();
 
-
+		/*
 		cout << "lala read" << endl;
 		for(size_t i=0; i<distanceMatrix.size(); i++){
 
@@ -115,7 +115,7 @@ public:
 			}
 			cout << endl;
 		}
-		cout << endl;
+		cout << endl;*/
 
 	}
 

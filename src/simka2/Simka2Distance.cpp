@@ -149,6 +149,7 @@ public:
 	bool _computeComplexDistances;
 	size_t _kmerSize;
 	size_t _partitionId;
+	size_t _maxDatasets;
 
 	Simka2Database _database;
 	vector<string> _allIds;
@@ -196,6 +197,7 @@ public:
     	_kmerSize =  getInput()->getInt(STR_KMER_SIZE);
     	_partitionId = getInput()->getInt(STR_SIMKA2_PARTITION_ID);
     	_databaseDir =  getInput()->getStr(STR_SIMKA2_DATABASE_DIR);
+    	_maxDatasets = getInput()->getInt(STR_SIMKA2_DISTANCE_MAX_PROCESSABLE_DATASETS);
 
     	_dirMatrixParts = _databaseDir + "/distance/temp_parts";
     	//_dirMatrixMatrixBinary = _databaseDir + "/distance/matrix_binary";
@@ -208,6 +210,7 @@ public:
 
 		_nbBanks = _database._entries.size();
 		_nbNewBanks = _nbBanks - _database._nbProcessedDataset;
+		_nbNewBanks = min(_nbNewBanks, _maxDatasets);
 
 		for(size_t i=0; i<_database._entries.size(); i++){
 			_idToOrder[_database._entries[i]] = i;
@@ -284,6 +287,7 @@ public:
 	    //parser->push_front (new OptionOneParam (STR_URI_OUTPUT, "output directory for merged kmer spectrum", true));
 	    parser->push_front (new OptionOneParam (STR_SIMKA2_DATABASE_DIR, "dir path to a simka database", true));
 	    parser->push_front (new OptionOneParam (STR_SIMKA2_PARTITION_ID, "number of the partition", true));
+	    parser->push_front (new OptionOneParam (STR_SIMKA2_DISTANCE_MAX_PROCESSABLE_DATASETS, "maximum number of datasets that can be processed", true));
 	    //parser->push_front (new OptionOneParam (STR_SIMKA2_DISTANCE_MATRIX_DIR, "input filename of k-mer spectrums for which distances has to be computed", true));
 
 	    IOptionsParser* kmerParser = new OptionsParser ("kmer");

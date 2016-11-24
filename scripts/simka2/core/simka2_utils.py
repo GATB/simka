@@ -63,11 +63,11 @@ class Simka2ResourceAllocator():
         else:
             return self.execute_count_singleNode(nbSamplesToProcess, kmerSize)
 
-    def executeForDistanceJobs(self, nbPartitions):
+    def executeForDistanceJobs(self, nbPartitions, nbProcessedDatasets=-1, nbDatasets=-1):
         if self.isHPC:
-            return self.execute_distance_HPC(nbPartitions)
+            return self.execute_distance_HPC(nbPartitions, nbProcessedDatasets, nbDatasets)
         else:
-            return self.execute_distance_singleNode(nbPartitions)
+            return self.execute_distance_singleNode(nbPartitions, nbProcessedDatasets, nbDatasets)
 
     def execute_count_singleNode(self, nbSamplesToProcess, kmerSize):
 
@@ -80,9 +80,11 @@ class Simka2ResourceAllocator():
             minMemory = int(float(math.pow(4, kmerSize)*8)/(1<<20))
         else:
             minMemory = Simka2ResourceAllocator.MIN_MEMORY_PER_JOB
+        minMemory = max(minMemory, 1)
 
         if self.maxMemory < minMemory:
-            raise Exception("Not enough memory, you provide (" + str(self.maxMemory) + " MB), Simka need (" + str(minMemory) + "MB)")
+            print("Not enough memory, you provide (" + str(self.maxMemory) + " MB), Simka need (" + str(minMemory) + "MB)")
+            exit(1)
 
         maxjob_byMemory = self.maxMemory/minMemory
         maxjob_byMemory = max(maxjob_byMemory, 1)
@@ -100,7 +102,9 @@ class Simka2ResourceAllocator():
         #print self.coresPerJob, self.memoryPerJob, self.maxJobCount, self.maxJobMerge
         return (maxJobs, jobCores, jobMemory)
 
-    def execute_distance_singleNode(self, nbPartitions):
+    #nbProcessedDatasets is the number of datasets for which distance has already been computed by Simka
+    #nbDatasets is the total amount of datasets in the database
+    def execute_distance_singleNode(self, nbPartitions, nbProcessedDatasets=-1, nbDatasets=-1):
 
         maxJobs = 0
 
@@ -111,10 +115,65 @@ class Simka2ResourceAllocator():
 
         maxJobs = min(maxJobs, self.nbCores)
 
-        jobCores = self.nbCores / maxJobs
-        jobCores = max(1, jobCores)
+        #jobCores = self.nbCores / maxJobs
+        #jobCores = max(1, jobCores)
+        jobCores = 1
 
-        return (maxJobs, jobCores)
+        #nbProcessedDatasets == -1 if this method is called by simka2-merge which not required memory
+        #print "lala", nbProcessedDatasets
+        if nbProcessedDatasets == -1:
+            return (maxJobs, jobCores)
+
+
+        nbDistances = 2 #AB-BrayCurtis and PA-Jaccard
+
+        N = nbDatasets
+        Nold = nbProcessedDatasets
+        Nnew = nbDatasets-nbProcessedDatasets
+        minMemoryPerCore = 8*N*Nnew * nbDistances
+
+        maxCore_byMemory = int((self.maxMemory*1<<20) / minMemoryPerCore)
+        print "min memory per core: ", minMemoryPerCore, N, nbProcessedDatasets
+        print "max cores by memory: ", maxCore_byMemory
+
+        N = Nnew
+
+        #Memory required by Simka2-distance is (No = nbProcessedDatasets), 8 Bytes for storing any counts
+        #Mem = 8NN + 8NNo
+        #So given available memory, we can resolve this quadratic equation to know how much datasets we can process N
+        #8NN + 8NNo - Mem = 0
+        #a=8 b=8No c=-Mem
+        if maxCore_byMemory <= 0:
+            availableMemory = self.maxMemory * (1<<20) / nbDistances
+            a = 8
+            b = 8*nbProcessedDatasets
+            c = -availableMemory
+
+            d = b**2-4*a*c
+
+            if d < 0:
+                print "Not enougth memory"
+                exit(1)
+            elif d == 0:
+                x1 = -b / (2*a)
+            else: # if d > 0
+                x1 = (-b + math.sqrt(d)) / (2*a)
+                x2 = (-b - math.sqrt(d)) / (2*a)
+
+            #print x1, x2
+            N = int(x1)
+            #print N
+
+            if N <= 0:
+                print("Not enough memory")
+                exit(1)
+
+            maxCore_byMemory = 1
+
+        maxJobs = min(maxJobs, maxCore_byMemory)
+        maxJobs = max(maxJobs, 1)
+
+        return (maxJobs, jobCores, N)
 
     def execute_count_HPC(self, nbSamplesToProcess, kmerSize):
 
@@ -153,7 +212,8 @@ class Simka2ResourceAllocator():
 
 
 
-    def execute_distance_HPC(self, nbPartitions):
+    def execute_distance_HPC(self, nbPartitions, nbProcessedDatasets=-1, nbDatasets=-1):
+        """
         maxJobs = 0
 
         if nbPartitions == -1:
@@ -166,6 +226,76 @@ class Simka2ResourceAllocator():
         jobCores = self.nbCores
 
         return (maxJobs, jobCores)
+        """
+
+        maxJobs = 0
+
+        if nbPartitions == -1:
+            maxJobs = self.nbCores
+        else:
+            maxJobs = nbPartitions
+
+        maxJobs = min(maxJobs, self.maxJobs)
+
+        #jobCores = self.nbCores / maxJobs
+        #jobCores = max(1, jobCores)
+        jobCores = self.nbCores
+
+        #nbProcessedDatasets == -1 if this method is called by simka2-merge which not required memory
+        #print "lala", nbProcessedDatasets
+        if nbProcessedDatasets == -1:
+            return (maxJobs, jobCores)
+
+
+        nbDistances = 2 #AB-BrayCurtis and PA-Jaccard
+
+        N = nbDatasets
+        Nold = nbProcessedDatasets
+        Nnew = nbDatasets-nbProcessedDatasets
+        minMemoryPerCore = 8*N*Nnew * nbDistances
+
+        maxCore_byMemory = int((self.maxMemory*1<<20) / minMemoryPerCore)
+        print "min memory per core: ", minMemoryPerCore, N, nbProcessedDatasets
+        print "max cores by memory: ", maxCore_byMemory
+
+        N = Nnew
+
+        #Memory required by Simka2-distance is (No = nbProcessedDatasets), 8 Bytes for storing any counts
+        #Mem = 8NN + 8NNo
+        #So given available memory, we can resolve this quadratic equation to know how much datasets we can process N
+        #8NN + 8NNo - Mem = 0
+        #a=8 b=8No c=-Mem
+        if maxCore_byMemory <= 0:
+            availableMemory = self.maxMemory * (1<<20) / nbDistances
+            a = 8
+            b = 8*nbProcessedDatasets
+            c = -availableMemory
+
+            d = b**2-4*a*c
+
+            if d < 0:
+                print "Not enougth memory"
+                exit(1)
+            elif d == 0:
+                x1 = -b / (2*a)
+            else: # if d > 0
+                x1 = (-b + math.sqrt(d)) / (2*a)
+                x2 = (-b - math.sqrt(d)) / (2*a)
+
+            #print x1, x2
+            N = int(x1)
+            #print N
+
+            if N <= 0:
+                print("Not enough memory")
+                exit(1)
+
+            maxCore_byMemory = 1
+
+        jobCores = min(jobCores, maxCore_byMemory)
+        jobCores = max(jobCores, 1)
+
+        return (maxJobs, jobCores, N)
 
 
 
@@ -263,7 +393,7 @@ class JobScheduler():
                 self.jobQueueToRemove = []
                 break
             else:
-                time.sleep(0.00000001)
+                time.sleep(0.1)
 
         #print "job finished:  ", self.nbJobs, self.maxJobs
 

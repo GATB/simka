@@ -1,5 +1,5 @@
 
-import os, sys, argparse, shutil
+import os, sys, argparse, shutil, struct
 from simka2_database import SimkaDatabase
 from simka2_utils import Simka2ResourceAllocator, JobScheduler, ProgressBar, SimkaCommand
 
@@ -26,6 +26,16 @@ args =  parser.parse_args()
 
 SCRIPT_DIR = os.path.split(os.path.realpath(__file__))[0]
 
+
+def getNbFileProccessed():
+	nbFileProcessed = 0
+	filename = os.path.join(args._databaseDir, "distance", "matrix_binary", "matrix_infos.bin")
+	if os.path.exists(filename):
+		f = open(filename, mode='rb')
+		nbFileProcessed = struct.unpack("Q", f.read(8))[0]
+		f.close()
+	return nbFileProcessed
+
 #----------------------------------------------------------------------
 #----------------------------------------------------------------------
 
@@ -47,9 +57,15 @@ class Simka_ComputeDistance():
 		#print ("Attention remettere le merge dans simka2-distance main()")
 		self.mergeKmerSpectrums()
 
+		#---
+		# get the number of datasets for which the distance has already been computed by simka
+		nbFileProcessed = getNbFileProccessed()
+		#---
+		print "nb file processed: ", nbFileProcessed
 		self.resourceAllocator = Simka2ResourceAllocator(bool(args._isHPC), int(args._nbCores), int(args._maxMemory), int(args._maxJobs), args.submit_command, args.submit_file)
-		maxJobs, self.jobCores = self.resourceAllocator.executeForDistanceJobs(self.database._nbPartitions)
-
+		maxJobs, self.jobCores, self.maximumProcessedDatasets = self.resourceAllocator.executeForDistanceJobs(self.database._nbPartitions, nbFileProcessed, len(self.database.entries))
+		#print maxJobs, self.jobCores, self.maximumProcessedDatasets, args._maxMemory
+		print "maximum number of processed files:",  self.maximumProcessedDatasets, maxJobs, self.jobCores
 		self.jobScheduler = JobScheduler(maxJobs, ProgressBar("Computing distances", self.database._nbPartitions))
 
 		self.jobScheduler.start()
@@ -124,6 +140,7 @@ class Simka_ComputeDistance():
 		command += " -database-dir " + args._databaseDir
 		command += " -kmer-size " + str(self.database._kmerSize)
 		command += " -partition-id " + str(partitionId)
+		command += " -max-datasets " + str(self.maximumProcessedDatasets)
 		command += "   > /dev/null 2>&1     &"
 
 		self.jobCommandsFile.write(checkPointFilename + "|" + command + "\n")
@@ -133,7 +150,8 @@ class Simka_ComputeDistance():
 		command = os.path.join(SCRIPT_DIR, "..", "bin", "simka2-distanceFinal") + \
 			" -database-dir " + args._databaseDir + \
 			" -kmer-size " + str(self.database._kmerSize) + \
-			" -nb-partitions " + str(self.database._nbPartitions)
+			" -nb-partitions " + str(self.database._nbPartitions) + \
+			" -max-datasets " + str(self.maximumProcessedDatasets)
 		print "simka2-distance (computeDistanceFinal):    besoin de pouvoir submit ce job en HPC mode ?"
 		#command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
 		os.system(command)
@@ -151,5 +169,22 @@ class Simka_ComputeDistance():
 		#print "\n", id, "\n"
 
 
-c = Simka_ComputeDistance()
-c.execute()
+
+
+
+
+
+
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+
+database = SimkaDatabase(args._databaseDir)
+nbFileToProcess = len(database.entries)
+while(True):
+	nbFileProcessed = getNbFileProccessed()
+	print "lOL", nbFileProcessed
+	if nbFileProcessed == nbFileToProcess: break
+
+	c = Simka_ComputeDistance()
+	c.execute()

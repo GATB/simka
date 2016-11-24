@@ -41,8 +41,6 @@ parserCore.add_argument('-submit-file', action="store", dest="submit_file", help
 
 args =  parser.parse_args()
 
-
-
 SCRIPT_DIR = os.path.split(os.path.realpath(__file__))[0]
 
 #-----------------------------------------------------------------------------
@@ -93,6 +91,8 @@ if ret != 0: exit(1)
 command = "python "
 command += os.path.join(SCRIPT_DIR, "core", "simka2-distance.py")
 command += " -database-dir " + databaseDir
+command += " -nb-cores " + args.nb_cores
+command += " -max-memory " + args.max_memory
 #command += " -simka-bin " + args.simka_bin_dir
 command = SimkaCommand.addHPCargs(command, args)
 ret = os.system(command)
