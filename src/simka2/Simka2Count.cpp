@@ -53,32 +53,38 @@ template<typename Filter> class SimkaPotaraBankFiltered : public BankDelegate
 {
 public:
 
-	Iterator<Sequence>* _it;
 
-	SimkaPotaraBankFiltered (IBank* ref, const Filter& filter, u_int64_t maxReads, size_t nbDatasets) : BankDelegate (ref), _filter(filter)  {
-		//_nbReadsPerDataset = nbReadsPerDataset;
+	SimkaPotaraBankFiltered (IBank* ref, const Filter& filter, u_int64_t maxReads, size_t nbDatasets) : BankDelegate (ref), _ref2(0), _filter(filter)  {
 		_maxReads = maxReads;
 		_nbDatasets = nbDatasets;
+		setRef2(_ref->iterator ());
 	}
 
 
+
 	~SimkaPotaraBankFiltered(){
-		delete _it;
+
+	    std::vector<Iterator<Sequence>*> itBanks =  _ref2->getComposition();
+	    for(size_t i=0; i<itBanks.size(); i++){
+	    	delete itBanks[i];
+	    }
+
+	    //_ref2->
+		setRef2(0);
 	}
 
     Iterator<Sequence>* iterator ()
     {
-
-        _it = _ref->iterator ();
-        //std::vector<Iterator<Sequence>*> iterators = it->getComposition();
-        return new SimkaInputIterator<Sequence, Filter> (_it, _nbDatasets, _maxReads, _filter);
-    	//return filterIt;
+        return new SimkaInputIterator<Sequence, Filter> (_ref2, _nbDatasets, _maxReads, _filter);
 
     }
 
 private:
 
-	//vector<u_int64_t> _nbReadsPerDataset;
+
+    Iterator<Sequence>* _ref2;
+    void setRef2 (Iterator<Sequence>* ref2)  { SP_SETATTR(ref2); }
+
     u_int64_t _maxReads;
     Filter _filter;
     u_int64_t _nbReadToProcess;
