@@ -11,9 +11,10 @@ for i in range(2, len(sys.argv)):
 #print command
 
 core_dump_error = 35584
+core_dump_error2 = 32256
 ret = core_dump_error
 
-while(ret == core_dump_error):
+while(ret == core_dump_error or ret == core_dump_error2):
     ret = os.system(command)
     #print ret
 

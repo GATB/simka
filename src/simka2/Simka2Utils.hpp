@@ -275,6 +275,8 @@ public:
 					//simka2_readString(linkedDatasetID, mergedLinkFile);
 					//_currentDatasetIds.push_back(linkedDatasetID);
 					//cout << "\tmerge info:" << linkedDatasetID << endl;
+
+					cout << datasetID << endl;
 				}
 				mergedLinkFile.close();
 

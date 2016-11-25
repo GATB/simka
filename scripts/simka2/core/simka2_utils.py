@@ -230,7 +230,7 @@ class Simka2ResourceAllocator():
         maxJobs = 0
 
         if nbPartitions == -1:
-            maxJobs = self.nbCores
+            maxJobs = self.maxJobs
         else:
             maxJobs = nbPartitions
 

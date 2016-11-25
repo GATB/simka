@@ -374,24 +374,6 @@ public:
 		//LOCAL(bank);
 
 
-		_h5Filename = _outputDirTemp + "/" +  _datasetID + ".h5";
-		Storage* solidStorage = StorageFactory(STORAGE_HDF5).create (_h5Filename, true, false);
-
-
-		ConfigurationAlgorithm<span> configAlgo(filteredBank, _options);
-		configAlgo.execute();
-		RepartitorAlgorithm<span> repart (filteredBank, solidStorage->getGroup(""), configAlgo.getConfiguration());
-		repart.execute ();
-		Repartitor* repartitor = new Repartitor();
-		LOCAL(repartitor);
-		repartitor->load(solidStorage->getGroup(""));
-
-
-		SimkaAbundanceProcessor<span>* proc = new SimkaAbundanceProcessor<span>(_abundanceThreshold.first, _abundanceThreshold.second);
-		CountProcessorDump<span>* procDump = new CountProcessorDump     <span> (solidStorage->getGroup("dsk"), _kmerSize);
-		cout << "lala " << _h5Filename << endl;
-
-
 
 		if(_kmerSize <= 15){
 			//cerr << "Mini Kc a remettre" << endl;
@@ -404,6 +386,23 @@ public:
 		else{
 
 			{
+
+				_h5Filename = _outputDirTemp + "/" +  _datasetID + ".h5";
+				Storage* solidStorage = StorageFactory(STORAGE_HDF5).create (_h5Filename, true, false);
+				LOCAL(solidStorage);
+
+				ConfigurationAlgorithm<span> configAlgo(filteredBank, _options);
+				configAlgo.execute();
+				RepartitorAlgorithm<span> repart (filteredBank, solidStorage->getGroup(""), configAlgo.getConfiguration());
+				repart.execute ();
+				Repartitor* repartitor = new Repartitor();
+				LOCAL(repartitor);
+				repartitor->load(solidStorage->getGroup(""));
+
+
+				SimkaAbundanceProcessor<span>* proc = new SimkaAbundanceProcessor<span>(_abundanceThreshold.first, _abundanceThreshold.second);
+				CountProcessorDump<span>* procDump = new CountProcessorDump     <span> (solidStorage->getGroup("dsk"), _kmerSize);
+
 				//SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, caches, cacheIndexes, p.abundanceMin, p.abundanceMax);
 				std::vector<ICountProcessor<span>* > procs;
 				//procs.push_back(proc);
@@ -473,7 +472,9 @@ public:
 		for (size_t ii=0; ii<its.size(); ii++)
 		{
 			//pq.push(Kmer_BankId_Count(ii,its[ii]->value()));
-			pq.push(KmerCount_It(its[ii]->item(), its[ii]));
+			if (!its[ii]->_it->isDone()){
+				pq.push(KmerCount_It(its[ii]->item(), its[ii]));
+			}
 		}
 
 		StorageItKmerCount<span>* bestIt;
@@ -525,6 +526,9 @@ public:
 
 		_partitionWriter->end();
 
+		for(size_t i=0; i<its.size(); i++){
+			delete its[i];
+		}
 		//System::file().remove();
 	}
 
