@@ -178,7 +178,7 @@ class ComputeKmerSpectrumAll():
 
 		self.database.add_entry(id, kmerSpectrumOutputDir)
 
-		#shutil.rmtree(outputDirTemp)
+		shutil.rmtree(outputDirTemp)
 
 		#print "\n", id, "\n"
 
