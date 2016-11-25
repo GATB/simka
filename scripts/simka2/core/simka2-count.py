@@ -166,7 +166,7 @@ class ComputeKmerSpectrumAll():
 		command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
 		#print("compute_kmer_spectrums_all.py: Add log file system")
 
-		#print(command)
+		print(command)
 		os.system(command)
 
 		self.jobScheduler.submitJob((checkPointFilename, self.jobEnd, (id, self.database.get_default_kmer_spectrum_dir_of_id(id, False), outputDirTemp)))
@@ -178,7 +178,7 @@ class ComputeKmerSpectrumAll():
 
 		self.database.add_entry(id, kmerSpectrumOutputDir)
 
-		shutil.rmtree(outputDirTemp)
+		#shutil.rmtree(outputDirTemp)
 
 		#print "\n", id, "\n"
 
