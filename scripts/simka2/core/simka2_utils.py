@@ -2,7 +2,6 @@
 import os, time, sys, multiprocessing, argparse, math
 
 import datetime
-import dateutil.relativedelta
 
 class SimkaSettings():
 
