@@ -107,15 +107,19 @@ For further instructions on using simka, see User Manual, below.
 Simka computes several ecology distances between N (metagenomic) read sets at the k-mer level.
 Simka is implemented with the GATB library (http://gatb.inria.fr/).
 
-##Simka scripts and code organisation
+##Simka overall organisation
 * example
-	- 1-basic_usage (learn how to use simka by running simple example)
+	- 1-basic_usage (learn how to use simka by running simple examples)
 	- 2-hpc_usage (learn how to run simka on cloud or grid systems)
 	- 3-simka-pipeline (understand how works each piece of Simka)
 	- data (show how to layout simka input)
 * scripts
-	- visualization (collection of R script to visualize Simka results)
-	- simka2 (collection of python script for running Simka)
+	- visualization (collection of R scripts to visualize Simka results)
+	- simka2
+		- bin (simka binaries location after compilation)
+		- core (collection of python scripts for running Simka)
+		- simka.py (main script for running simka)
+		- simka-hpc.py (script for running simka in HPC mode)
 * src
 	- source code of Simka written in c++
 * tests
@@ -183,7 +187,9 @@ These distances have the advantage of having a symmetrical and asymmetrical vers
 
 The result directory also contains a directory named "matrix_binary" that can be used by the simka distance exporter to create quickly new distance matrices from supplied list of dataset ID.
 
-##Generating heatmaps and clustering
+##Visualizaing simka results
+
+Simka results can be visualized through heatmaps, hierarchical clustering and PCA.
 	
 Requirements: R, gplots and ggplot2 package
 
@@ -195,55 +201,55 @@ Example:
 
 where simka_results_dir in the folder containing the distances matrices of Simka (-out)
 
-
 ##Usage for simka
 
 To see simka in-line help:
 
-    ./bin/simka
+    python ./scripts/simka2/simka.py
 
+To learn quickly and easily how to use simka, run python scripts in "example" directory.
 
-##The options of simka by command examples
+##Simka command examples
 
 Run the toy example:
 
-    ./bin/simka -in example/simka_input.txt -out results -out-tmp temp_output
+    python ./scripts/simka2/simka.py -in ./example/data/simka_input.txt -out simka_results -out-tmp simka_temp
 
 Compute all the distances that Simka can provide (Bray-Curtis, Jensen-Shannon…):
 
-    ./bin/simka … -simple-dist -complex-dist
+    python ./scripts/simka2/simka.py … -simple-dist -complex-dist
 
 Change the kmer size
 
-    ./bin/simka … -kmer-size 31
+    python ./scripts/simka2/simka.py … -kmer-size 31
 
 Filter kmers seen one time (potentially erroneous) and very high abundance kmers (potentially contaminants):
 
-    ./bin/simka … -abundance-min 2 -abundance-max 200
+    python ./scripts/simka2/simka.py … -abundance-min 2 -abundance-max 200
 
 Filter over the sequences of the reads and k-mers:
 
 Minimum read size of 90. Discards low complexity reads and k-mers (shannon index < 1.5)
 
-    ./bin/simka … -min-read-size 90 -read-shannon-index 1.5 -kmer-shannon-index 1.5
+    python ./scripts/simka2/simka.py … -min-read-size 90 -read-shannon-index 1.5 -kmer-shannon-index 1.5
 
 Consider a subset of the reads of the input dataset (for dataset with non-uniform reads per sample):
 
 Considers all the reads of each samples (default)
 
-    ./bin/simka … -max-reads -1
+    python ./scripts/simka2/simka.py … -max-reads -1
 
 Let Simka compute automatically the maximum of read per samples (normalization)
 
-    ./bin/simka … -max-reads 0
+    python ./scripts/simka2/simka.py … -max-reads 0
 
 Used only the first 1000 reads of each samples:
 
-    ./bin/simka … -max-reads 1000
+    python ./scripts/simka2/simka.py … -max-reads 1000
 
 Allow more memory and cores improve the execution time:
 
-    ./bin/simka … -max-memory 20000 -nb-cores 8
+    python ./scripts/simka2/simka.py … -max-memory 20000 -nb-cores 8
 
 
 ##Computer cluster options
