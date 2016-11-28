@@ -66,7 +66,7 @@ class Simka_ComputeDistance():
 		maxJobs, self.jobCores, self.maximumProcessedDatasets = self.resourceAllocator.executeForDistanceJobs(self.database._nbPartitions, nbFileProcessed, len(self.database.entries))
 		#print maxJobs, self.jobCores, self.maximumProcessedDatasets, args._maxMemory
 		print "maximum number of processed files:",  self.maximumProcessedDatasets, maxJobs, self.jobCores
-		self.jobScheduler = JobScheduler(maxJobs, ProgressBar("Computing distances", self.database._nbPartitions))
+		self.jobScheduler = JobScheduler(maxJobs, ProgressBar("Computing distances", self.resourceAllocator.getNbDistanceJobToSubmit(self.database._nbPartitions, self.jobCores)))
 
 		self.jobScheduler.start()
 		self.computeDistanceParts()

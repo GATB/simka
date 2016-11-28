@@ -45,7 +45,7 @@ class SimkaKmerSpectrumMerger():
 		#maxJobs = min(maxJobs, maxJobsByOpenFile)
 		#self.max_merged_datasets =
 
-		self.jobScheduler = JobScheduler(maxJobs, ProgressBar("Merging k-mer spectrums", self.database._nbPartitions))
+		self.jobScheduler = JobScheduler(maxJobs, ProgressBar("Merging k-mer spectrums", self.resourceAllocator.getNbDistanceJobToSubmit(self.database._nbPartitions, self.jobCores)))
 
 		#---
 		self.mergeKmerSpectrumsWhile()

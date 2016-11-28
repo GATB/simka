@@ -297,7 +297,19 @@ class Simka2ResourceAllocator():
         return (maxJobs, jobCores, N)
 
 
-
+    def getNbDistanceJobToSubmit(self, nbPartitions, jobCores):
+        i = 0
+        nbJobs = 0
+        while(i < nbPartitions):
+            #self.jobCommandsFile = open(os.path.join(self.tempDir, "commands_input_" + str(jobCommandsId)), "w")
+            for j in range(0, jobCores):
+                #self.constructJobCommand(i)
+                i += 1
+                if i == nbPartitions:
+                    break
+            nbJobs += 1
+            #self.jobCommandsFile.close()
+        return nbJobs
 
 class ProgressBar():
 
