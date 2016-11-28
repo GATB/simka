@@ -1,8 +1,11 @@
 
 
 import os, shutil, sys
-
 os.chdir(os.path.split(os.path.realpath(__file__))[0])
+
+
+
+
 
 export_bin = "../../scripts/simka2/bin/simka2-export"
 input_dir = "simka_results/matrix_binary"

@@ -1,7 +1,10 @@
 
 import os, shutil, sys
-
 os.chdir(os.path.split(os.path.realpath(__file__))[0])
+
+
+
+
 
 simka_script_dir = "../../scripts/simka2"
 output_dir = "simka_results"
