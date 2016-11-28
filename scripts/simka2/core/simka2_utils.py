@@ -394,7 +394,7 @@ class JobScheduler():
                     jobData[1](jobData[2]) #Call job end method (jobData[1]) with args (jobData[2])
                     if self.progressBar is not None: self.progressBar.step(1)
                 elif os.path.exists(unsuccessCheckPointFilename):
-                    print("A job failed, exiting simka")
+                    print("A job failed (" + jobData[0] + "), exiting simka")
                     exit(1)
 
             if isJobAvailbale:
