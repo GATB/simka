@@ -14,6 +14,20 @@ if not os.path.exists(input_dir):
     print("Please run first example before: 1-simple_test.py")
     exit(1)
 
+
+
+
+
+print("\nSimka distance exporter allow you to manipulate the results of Simka.")
+print("\tBy default, simka provides distance matrices containing all processed datasets, the distance exporter allow you to:")
+print("\t1) Quickly create new distance matrices containing only your desired datasets")
+print("\t2) Set the order of datasets in the distance matrices")
+print("\n\tThe executable " + export_bin + " is used to export the distance matrices, its parameters are the follow:")
+print("\t-in: dir to simka distance matrices in binary format. This directory called \"matrix_binary\" is located in simka results dir")
+print("\t-out: output directory for new distance matrices")
+print("\t-in-ids: a file containing the desired datasets in the new distance matrices (one dataset ID per line)")
+
+
 #-----------------------------------------------------------------------------
 # Export distance matrices with all datasets available (no order specified)
 #-----------------------------------------------------------------------------
@@ -22,7 +36,7 @@ command += " -in " + input_dir
 command += " -out " + "distance_matrices_all"
 os.system(command + " > /dev/null 2>&1  ")
 
-print("\nExport distance matrices with all datasets available (no order specified)")
+print("\n\nExport distance matrices with all datasets available (no order specified)")
 print("\tcommand used:")
 print("\t" + command)
 

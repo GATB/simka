@@ -4,33 +4,6 @@ import os, shutil, sys
 os.chdir(os.path.split(os.path.realpath(__file__))[0])
 
 
-
-"""
-main options:
-  -in                  (1 arg) :    input file of samples. One sample per line: id1: filename1...
-  -out-tmp             (1 arg) :    output directory for temporary files
-  -out                 (1 arg) :    output directory for result files (distance matrices) [Default: ./simka_results]
-  -keep-tmp            (0 arg) :    keep temporary files. Allow to update existing run of simka
-
-core options:
-  -nb-cores            (1 arg) :    number of cores [Default: 0]
-  -max-memory          (1 arg) :    max memory (MB) [Default: 8000]
-
-distance options:
-  -simple-dist         (0 arg) :    compute all simple distances (Chord, Hellinger...)
-  -complex-dist        (0 arg) :    compute all complex distances (Jensen-Shannon...)
-
-k-mer options:
-  -kmer-size           (1 arg) :    size of a kmer [Default: 31]
-  -abundance-min       (1 arg) :    min abundance a kmer need to be considered [Default: 2]
-  -abundance-max       (1 arg) :    max abundance a kmer can have to be considered [Default: 999999999]
-
-read options:
-  -max-reads           (1 arg) :    maximum number of reads per sample to process [Default: 0]
-  -min-read-size       (1 arg) :    minimal size a read should have to be kept [Default: 0]
-  -min-shannon-index   (1 arg) :    minimal Shannon index a read should have to be kept. Float in [0,2] [Default: 0]
-"""
-
 #-----------------------------------------------------------------------------
 # Set required simka parameters
 #-----------------------------------------------------------------------------

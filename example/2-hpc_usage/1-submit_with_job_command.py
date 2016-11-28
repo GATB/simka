@@ -1,93 +1,55 @@
 
-import os, sys, random, shutil
-
-scriptDir = sys.argv[1]
-binDir = sys.argv[2]
-inputFilename = sys.argv[3]
-maxSamples = max(int(sys.argv[4]), 1)
+import os, shutil, sys
+os.chdir(os.path.split(os.path.realpath(__file__))[0])
 
 
-CURRENT_DIR = os.path.split(os.path.realpath(__file__))[0]
-
-#----------------------------------------------
-def clear():
-	filename = os.path.join(os.path.split(inputFilename)[0], "______next_simka_input.txt")
-	if os.path.exists(filename): os.remove(filename)
-	
-	#dir = os.path.join(CURRENT_DIR, "simka_results")
-	#if os.path.exists(dir): shutil.rmtree(dir)
-	dir = os.path.join(CURRENT_DIR, "simka_tmp")
-	if os.path.exists(dir): shutil.rmtree(dir)
-
-clear()
-#----------------------------------------------
-
-nbSamplesToProcess = 0
-
-inputFile = open(inputFilename, "r")
-for line in inputFile:
-	line = line.strip()
-	if line == "": continue
-
-	nbSamplesToProcess += 1
+#-----------------------------------------------------------------------------
+# Set required simka parameters
+#-----------------------------------------------------------------------------
+simka_script_dir = "../../scripts/simka2"
+input_filename = "../data/simka_input.txt"
+output_dir = "simka_results"
+temp_dir = "simka_temp"
 
 
+#-----------------------------------------------------------------------------
+# Create the command to execute
+#-----------------------------------------------------------------------------
+command = "python "
+command += os.path.join(simka_script_dir, "simka-hpc.py")
+command += " -in " + input_filename
+command += " -out " + output_dir
+command += " -out-tmp " + temp_dir
 
-#----------------------------------------------
-def createNextInput(nbSamplesToPick, passId):
+#-----------------------------------------------------------------------------
+# Add the HPC parameters
+#-----------------------------------------------------------------------------
+command += " -nb-cores " + "16"
+command += " -max-memory " + "8000"
+command += " -max-jobs " + "10"
+command += " -submit-command " + "\"qsub -pe make 8 -M 8000\""
 
-	#filename = os.path.join(CURRENT_DIR, str(passId) + "__next_simka_input.txt")
-	filename = os.path.join(os.path.split(inputFilename)[0], "______next_simka_input.txt")
-	if os.path.exists(filename):
-		os.remove(filename)
-	
-	file = open(filename, "w")
-	
-	nbSamplesPicked = 0
-	
-	for line in inputFile:
-		line = line.strip()
-		if line == "": continue
-	
-		file.write(line + "\n")
-		nbSamplesPicked += 1
+#-----------------------------------------------------------------------------
+# Run Simka
+#-----------------------------------------------------------------------------
+#os.system(command + " > /dev/null 2>&1  ")
 
-		if nbSamplesPicked >= nbSamplesToPick: break
+#-----------------------------------------------------------------------------
+# Clear temporary computation dir
+#-----------------------------------------------------------------------------
+if os.path.exists(temp_dir):
+	shutil.rmtree(temp_dir)
 
-	file.close()
+print("\nThis script can only be run if your system is equiped of a job scheduling system")
+print("\nHigh perfomance computing (HPC) can be achieved by using the script " + os.path.join(simka_script_dir, "simka-hpc.py"))
+print("This special version of Simka provides new options specific to HPC:")
+print("\t-nb-cores X: simka will use X cores PER job")
+print("\t-max-memory X: simka will use a maximum of X MB of memory PER job")
+print("\t-max-jobs X: simka will submit a maximum of X jobs simultaneously")
+print("\t-submit-command X:")
+print("\t\tthe prefix to add to commands to be able to submit them to your job scheduling system.")
+print("\t\tThis is usually an executable containg the string \'sub\'")
+print("\t\tAlso indicate allowed number of cores and memory per job in this command if it's possible (see example below)")
 
-	return filename
-
-
-inputFile.seek(0)
-nbSamplesProcessed = 0
-passId = 0
-
-while(nbSamplesProcessed < nbSamplesToProcess):
-	nbSamples = random.randint(1, maxSamples)
-	
-	nbSamplesRemaining = nbSamplesToProcess - nbSamplesProcessed
-	nbSamples = min(nbSamples, nbSamplesRemaining)
-	
-	filename = createNextInput(nbSamples, passId)
-	
-	command = "python " + os.path.join(scriptDir, "simka.py") + \
-		" -in " + filename + \
-		" -out-tmp " + os.path.join(CURRENT_DIR, "simka_tmp") + \
-		" -simka-bin " + binDir + \
-		" -out " + os.path.join(CURRENT_DIR, "simka_results") + \
-		" -keep-tmp "
-
-	os.system(command)
-	#print command
-
-	#print nbSamples
-
-	nbSamplesProcessed += nbSamples
-
-	passId += 1
-
-
-
-inputFile.close()
-clear()
+print("\n\tcommand used:")
+print("\t" + command)
