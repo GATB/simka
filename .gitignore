@@ -4,3 +4,5 @@
 *.png
 *.csv.gz
 *.csv
+*.pdf
+*.bin
