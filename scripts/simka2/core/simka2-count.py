@@ -1,7 +1,7 @@
 
 import os, sys, argparse, shutil
 from simka2_database import SimkaDatabase
-from simka2_utils import JobScheduler, Simka2ResourceAllocator, ProgressBar, SimkaCommand
+from simka2_utils import JobScheduler, Simka2ResourceAllocator, ProgressBar, SimkaCommand, SimkaSettings
 
 #----------------------------------------------------------------------
 #----------------------------------------------------------------------
@@ -184,7 +184,8 @@ class ComputeKmerSpectrumAll():
 
 		shutil.rmtree(outputDirTemp)
 
-		#print "\n", id, "\n"
+		kmerSpectrumOutputDirAbs = os.path.join(self.database.dirname, kmerSpectrumOutputDir)
+		SimkaSettings.saveDirSize(kmerSpectrumOutputDirAbs)
 
 	def countNbDatasetToProcess(self):
 
@@ -210,6 +211,7 @@ class ComputeKmerSpectrumAll():
 
 	def getOutputDirTemp(self, id):
 		return os.path.join(args._outputDirTemp, id + "_temp")
+
 
 
 c = ComputeKmerSpectrumAll()

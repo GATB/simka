@@ -1,13 +1,34 @@
 
-import os, time, sys, multiprocessing, argparse, math
+import os, time, sys, multiprocessing, argparse, math, struct
 
 import datetime
 
 class SimkaSettings():
 
-	#MAX_OPEN_FILES = 1000
-	MIN_FILES_TO_START_MERGE = 1000
-	MAX_OPEN_FILES_PER_MERGE = 100
+    #MAX_OPEN_FILES = 1000
+    MIN_FILES_TO_START_MERGE = 2
+    MAX_OPEN_FILES_PER_MERGE = 2
+
+    @staticmethod
+    def getDirSize(dirpath):
+        #glob.glob(inputDir + "*.gz")
+        return sum(os.path.getsize(os.path.join(dirpath, f)) for f in os.listdir(dirpath))
+
+    @staticmethod
+    def saveDirSize(dirpath):
+        size = SimkaSettings.getDirSize(dirpath)
+        #print dirpath, size
+        f = open(os.path.join(dirpath, "dir_size.bin"), mode='wb')
+        f.write(struct.pack("Q", size))
+        f.close()
+
+    @staticmethod
+    def loadDirSize(dirpath):
+        f = open(os.path.join(dirpath, "dir_size.bin"), mode='rb')
+        size = struct.unpack("Q", f.read(8))[0]
+        f.close()
+        #print dirpath, size
+        return size
 
 class SimkaCommand():
 

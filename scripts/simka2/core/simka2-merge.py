@@ -149,7 +149,7 @@ class SimkaKmerSpectrumMerger():
 			usedDirs.add(kmerSpectrumDir)
 
 			kmerSpectrumAbsDir = self.database.get_kmer_spectrum_dir_of_id(id, True)
-			size = self.getDirSize(kmerSpectrumAbsDir)
+			size = SimkaSettings.loadDirSize(kmerSpectrumAbsDir)
 
 			list_kmerSpectrumDirs_Sizes.append((kmerSpectrumDir, size))
 
@@ -217,7 +217,7 @@ class SimkaKmerSpectrumMerger():
 			self.mergeEnd(os.path.join(self.tempDir, "__merge_input.txt"), mergeDatasetDirs, mergeOutputRelativeDir)
 
 			#print("a changeer, path complet au lieu de juste id dans list")
-			list_kmerSpectrumDirs_Sizes.append((mergeOutputRelativeDir, self.getDirSize(mergeOutputAbsDir)))
+			list_kmerSpectrumDirs_Sizes.append((mergeOutputRelativeDir, SimkaSettings.loadDirSize(mergeOutputAbsDir)))
 			#exit(1)
 
 
@@ -383,6 +383,7 @@ class SimkaKmerSpectrumMerger():
 		ret = os.system(command)
 		if ret != 0: exit(1)
 
+
 		dirs_to_delete = []
 		for relDir in mergedDirs:
 			dir_that_have_been_merged = os.path.join(self.database.dirname, relDir)
@@ -400,12 +401,11 @@ class SimkaKmerSpectrumMerger():
 		for dir in dirs_to_delete:
 			shutil.rmtree(dir)
 
+		SimkaSettings.saveDirSize(os.path.join(self.database.dirname, mergeOutputRelativeDir))
+
 		#exit(1)
 
 
-
-	def getDirSize(self, dirpath):
-		return sum(os.path.getsize(os.path.join(dirpath, f)) for f in os.listdir(dirpath))
 
 
 c = SimkaKmerSpectrumMerger()
