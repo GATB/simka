@@ -74,7 +74,7 @@ class SimkaKmerSpectrumMerger():
 				kmerSpectrumDir = self.database.get_kmer_spectrum_dir_of_id(id, False)
 				usedDirs.add(kmerSpectrumDir)
 
-				if len(usedDirs) > SimkaSettings.MIN_FILES_TO_START_MERGE:
+				if len(usedDirs) > SimkaSettings.MAX_OPEN_FILES_PER_MERGE:
 					needMerge = True
 					break
 
@@ -153,6 +153,8 @@ class SimkaKmerSpectrumMerger():
 
 			list_kmerSpectrumDirs_Sizes.append((kmerSpectrumDir, size))
 
+			if len(list_kmerSpectrumDirs_Sizes) > SimkaSettings.MIN_FILES_TO_START_MERGE:
+				break
 			#print("used: " + id)
 
 
