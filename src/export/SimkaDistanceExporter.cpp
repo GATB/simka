@@ -36,7 +36,8 @@ public:
 	vector<string> _wantedIds;
 	vector<size_t> _wantedIdsIndex;
 	map<string, size_t> _idToIndex;
-	size_t _matrixSize;
+	size_t _inputMatrixSize;
+	size_t _outputMatrixSize;
 
 	SimkaDistanceExporterAlgorithm(IProperties* options):
 		Algorithm("simkaDistanceExporter", -1, options)
@@ -86,8 +87,10 @@ public:
 			}
 		}
 
-		_matrixSize = _wantedIds.size();
-		cout << "matrix size: " << _matrixSize << endl;
+		_inputMatrixSize = _ids.size();
+		_outputMatrixSize = _wantedIds.size();
+		cout << "original matrix size: " << _inputMatrixSize << endl;
+		cout << "output matrix size: " << _outputMatrixSize << endl;
 	}
 
 	void createIdsIndex(){
@@ -96,8 +99,8 @@ public:
 			_idToIndex[_ids[i]] = i;
 		}
 
-		_wantedIdsIndex.resize(_matrixSize);
-		for(size_t i=0; i<_matrixSize; i++){
+		_wantedIdsIndex.resize(_outputMatrixSize);
+		for(size_t i=0; i<_outputMatrixSize; i++){
 			_wantedIdsIndex[i] = _idToIndex[_wantedIds[i]];
 		}
 	}
@@ -123,21 +126,21 @@ public:
 
 	void writeMatrixASCII(const string& distanceName, const string& binaryMatrixFilename){
 
-		vector<float> rowData(_matrixSize, 0);
+		vector<float> rowData(_inputMatrixSize, 0);
 		ifstream binaryMatrixFile(binaryMatrixFilename.c_str(), ios::binary);
 		string filename = _outputDir + "/" + distanceName + ".csv";
 		gzFile out = gzopen((filename + ".gz").c_str(),"wb");
 
 		string str = "";
 
-		for(size_t i=0; i<_matrixSize; i++){
+		for(size_t i=0; i<_outputMatrixSize; i++){
 			str += ";" + _wantedIds[i];
 		}
 		str += '\n';
 		gzwrite(out, str.c_str(), str.size());
 
 
-		for(size_t i=0; i<_matrixSize; i++){
+		for(size_t i=0; i<_outputMatrixSize; i++){
 
 			str = "";
 			str += _wantedIds[i] + ";";
@@ -145,7 +148,7 @@ public:
 			size_t rowIndex = _wantedIdsIndex[i];
 			SimkaDistanceMatrixBinary::loadRow(rowIndex, binaryMatrixFile, rowData);
 
-			for(size_t j=0; j<_matrixSize; j++){
+			for(size_t j=0; j<_outputMatrixSize; j++){
 
 				str += Stringify::format("%f", rowData[_wantedIdsIndex[j]]) + ";";
 
