@@ -76,9 +76,12 @@ class Simka_ComputeDistance():
 
 	def mergeKmerSpectrums(self):
 		merge_script_filename = os.path.join(SCRIPT_DIR, "./simka2-merge.py")
-		command = "python " + merge_script_filename + " -database-dir " + self.database.dirname# + " -simka-bin " + args._simkaBinDir
+		command = "python " + merge_script_filename
+		command += " -database-dir " + self.database.dirname
+		command += " -nb-cores " + args._nbCores
+		command += " -max-memory " + args._maxMemory
 		command = SimkaCommand.addHPCargs(command, args)
-		print command
+		#print command
 		ret = os.system(command)
 		if ret != 0: exit(1)
 
