@@ -10,6 +10,7 @@
 Simka is a de novo comparative metagenomics tool. Simka represents each dataset as a k-mer spectrum and compute several classical ecological distances between them.
 
 Developper: Gaëtan Benoit.
+
 Contact: gaetan.benoit@inria.fr
 
 #Reference
@@ -207,9 +208,10 @@ To see simka in-line help:
 
     python ./scripts/simka2/simka.py
 
-To learn quickly and easily how to use simka, run python scripts in "example" directory.
-
 ##Simka command examples
+
+Commands listed below are simple and basic usage of Simka.
+To learn quickly and easily how to use simka and discover advanced usage, run python scripts in "example" directory.
 
 Run the toy example:
 
@@ -223,27 +225,21 @@ Change the kmer size
 
     python ./scripts/simka2/simka.py … -kmer-size 31
 
-Filter kmers seen one time (potentially erroneous) and very high abundance kmers (potentially contaminants):
+Filter kmers seen one time (potentially erroneous) and very abundant kmers (potentially contaminants):
 
-    python ./scripts/simka2/simka.py … -abundance-min 2 -abundance-max 200
+    python ./scripts/simka2/simka.py … -abundance-min 2 -abundance-max 10000
 
-Filter over the sequences of the reads and k-mers:
+Control read quality (minimum read size of 90 and discards low complexity reads)
 
-Minimum read size of 90. Discards low complexity reads and k-mers (shannon index < 1.5)
-
-    python ./scripts/simka2/simka.py … -min-read-size 90 -read-shannon-index 1.5 -kmer-shannon-index 1.5
+    python ./scripts/simka2/simka.py … -min-read-size 90 -read-shannon-index 1.5
 
 Consider a subset of the reads of the input dataset (for dataset with non-uniform reads per sample):
 
 Considers all the reads of each samples (default)
 
-    python ./scripts/simka2/simka.py … -max-reads -1
-
-Let Simka compute automatically the maximum of read per samples (normalization)
-
     python ./scripts/simka2/simka.py … -max-reads 0
 
-Used only the first 1000 reads of each samples:
+Use only the first 1000 reads of each samples:
 
     python ./scripts/simka2/simka.py … -max-reads 1000
 
@@ -251,31 +247,42 @@ Allow more memory and cores improve the execution time:
 
     python ./scripts/simka2/simka.py … -max-memory 20000 -nb-cores 8
 
+##Simka examples
 
-##Computer cluster options
+Simka examples are organised as follow:
+* 1-basic_usage
+	- learn how to use simka by running simple examples
+* 2-hpc_usage
+	- learn how to run Simka with high performance computing (HPC)
+* 3-simka-pipeline
+	- understand how works each piece of Simka
+* data
+	- show how to layout simka input
 
-Simka can be ran on computer cluster equipped of a job scheduling system such as SGE. Giving a job file template and a submission command, Simka will take care of creating and synchronizing the jobs until the end of the execution.
-
-You must provide the filenames to two job templates, one for counting and one for merging (-count-file -count-merge).
-
-There are example of file templates in the folder ‘example/potara_job’.
-
-And you must provide a submission command for both job (-count-cmd -merge-cmd)
-
-Example for SGE:
-
-    -count-cmd ‘qsub  -pe make 8’ -merge-cmd qsub
-
-The option -max-count and -max-merge controls the maximum of simultaneous jobs. They have to be fixed if you system have a maximum of jobs restriction.
-
-Command example:
-
-    ./bin/simka … -count-file example/potara_job/sge/job_count -merge-file example/potara_job/sge/job_merge \
-    -count-cmd qsub -pe make 34 -merge-cmd qsub \
-    -max-count 6 -max-merge 18 -nb-cores 200 -max-memory 500000
-    
-Simka will run a maximum of 6 simultaneous counting jobs, each using 200/6 cores and 500000/6 MB of memory. Simka will run a maximum of 18 merging jobs. A merging job can not be ran on more than 1 core and use very low memory. By default Simka use -nb-cores/2 counting jobs simultaneously and -nb-cores merging jobs simultaneously.
-
+* 1-basic_usage
+	- 1-simple_test.py
+		- run Simka with its default parameters
+	- 2-visualization.py
+		- run a collection of R scripts for visualizing simka results
+	- 3-export_distances.py
+		- extract quickly columns and rows from the distance matrices
+		- reorder dataset IDs in distance matrices
+	- 4-add_new_datasets.py
+		- show how it is possible to add new dataset to existing distances matrices
+	- 5-simka_parameters.py
+		- overview of simka optional parameters
+* 2-hpc_usage
+	- 1-submit_with_job_command.py
+		- for system that submit job through a submit command
+	- 2-submit_with_job_file.py
+		- for system that ssubmit job through a command and a job file
+* 3-simka_pipeline
+	- 1-init_simka_database.py
+		- database initilization (records simka parameters like k-mer size)
+	- 2-compute_kmers_spectrums.py
+		- compute k-mer spectrums (one per dataset)
+	- 3-compute_distances.py
+		- compute distances between k-mer spectrums
 
 ##Possible issues with Simka
 
