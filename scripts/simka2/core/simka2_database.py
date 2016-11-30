@@ -56,7 +56,8 @@ class SimkaDatabase():
 		self._maxReads = int(lines[4].replace(" ", "").replace("max-reads:", ""))
 		self._minReadSize = int(lines[5].replace(" ", "").replace("min-read-size:", ""))
 		self._minShannonIndex = int(lines[6].replace(" ", "").replace("min-shannon-index:", ""))
-
+		self._computeSimpleDist = (True if (lines[7].replace(" ", "").replace("simple-dist:", "") == "1") else False)
+		self._computeComplexDist = (True if (lines[8].replace(" ", "").replace("complex-dist:", "") == "1") else False)
 
 	def create_dirs(self):
 		self.kmer_spectrums_relative_dir = "kmer_spectrums"
