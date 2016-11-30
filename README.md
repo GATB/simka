@@ -169,7 +169,7 @@ This option must target a directory on your faster disk with some free space.
 One may want to add new datasets to existing Simka results without recomputing everything again (for instance, if your metagenomic project is incomplete).
 This can only be achieved by keeping those temporary files on the disk using the option -keep-tmp of Simka.
 
-###Results output
+###Result output
 
 Simka results will be stored in the directory indicated by -out option.
 
@@ -188,11 +188,11 @@ These distances have the advantage of having a symmetrical and asymmetrical vers
 
 The result directory also contains a directory named "matrix_binary" that can be used by the simka distance exporter to create quickly new distance matrices from supplied list of dataset ID.
 
-##Visualizaing simka results
+##Visualize simka results
 
 Simka results can be visualized through heatmaps, hierarchical clustering and PCA.
 	
-Requirements: R, gplots and ggplot2 package
+Requirements: R, gplots package
 
 Run the script create_heatmaps.py (located in "scripts/visualization" folder).
 
@@ -201,6 +201,8 @@ Example:
     python create_heatmaps.py simka_results_dir
 
 where simka_results_dir in the folder containing the distances matrices of Simka (-out)
+
+used axis for the PCA can be changed at the begining of the script "pca.r" (PCA_AXIS1 and PCA_AXIS2)
 
 ##Usage for simka
 
