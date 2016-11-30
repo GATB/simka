@@ -160,6 +160,7 @@ class ComputeKmerSpectrumAll():
 			" -kmer-size " + str(self.database._kmerSize) + \
 			" -nb-dataset " + str(nbPairedDatasets) + \
 			" -abundance-min " + str(self.database._abundanceMin) + \
+			" -abundance-max " + str(self.database._abundanceMax) + \
 			" -nb-partitions " + str(self.database._nbPartitions) + \
 			" -max-memory " + str(self.jobMemory) + \
 			" -nb-cores " + str(self.jobCores)

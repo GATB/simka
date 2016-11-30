@@ -13,6 +13,7 @@ parserCore = parser.add_argument_group("core options")
 parserDistance = parser.add_argument_group("distance options")
 parserKmer = parser.add_argument_group("k-mer options")
 parserRead = parser.add_argument_group("read options")
+parserDev = parser.add_argument_group("advanced (developer) options")
 
 parserMain.add_argument('-in', action="store", dest="input_filename", help="input file of samples. One sample per line: id1: filename1...", required=True)
 parserMain.add_argument('-out-tmp', action="store", dest="output_dir_temp", help="output directory for temporary files", required=True)
@@ -25,7 +26,7 @@ parserDistance.add_argument('-complex-dist', action="store_true", dest="complex_
 
 parserKmer.add_argument('-kmer-size', action="store", dest="kmer_size", help="size of a kmer", default="31")
 parserKmer.add_argument('-abundance-min', action="store", dest="abundance_min", help="min abundance a kmer need to be considered", default="2")
-parserKmer.add_argument('-abundance-max', action="store", dest="abundance_max", help="max abundance a kmer can have to be considered", default="999999999")
+parserKmer.add_argument('-abundance-max', action="store", dest="abundance_max", help="max abundance a kmer can have to be considered", default="0")
 #parser.add_argument('-kmer-shannon-index', action="store", dest="simple_dist")
 
 parserRead.add_argument('-max-reads', action="store", dest="max_reads", default="0", help="maximum number of reads per sample to process")
@@ -38,6 +39,8 @@ parserCore.add_argument('-hpc', action="store_true", dest="_isHPC", help="comput
 parserCore.add_argument('-max-jobs', action="store", dest="_maxJobs", help="maximum number of jobs that can be submitted simultaneously", default="0")
 parserCore.add_argument('-submit-command', action="store", dest="submit_command", help="command used to submit job")
 parserCore.add_argument('-submit-file', action="store", dest="submit_file", help="filename to a job file template, for HPC system that required a job file")
+
+parserDev.add_argument('-nb-partitions', action="store", dest="nb_partitions", help="number of partition files per k-mer spectrums", default="0")
 
 args =  parser.parse_args()
 
@@ -65,6 +68,8 @@ command += " -kmer-size " + args.kmer_size
 command += " -nb-cores " + args.nb_cores
 command += " -max-memory " + args.max_memory
 command += " -abundance-min " + args.abundance_min
+command += " -abundance-max " + args.abundance_max
+command += " -nb-partitions " + args.nb_partitions
 command = SimkaCommand.addHPCargs(command, args)
 ret = os.system(command)
 if ret != 0: exit(1)

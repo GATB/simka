@@ -52,6 +52,7 @@ class SimkaDatabase():
 		self._kmerSize = int(lines[0].replace(" ", "").replace("kmer-size:", ""))
 		self._nbPartitions = int(lines[1].replace(" ", "").replace("nb-partitions:", ""))
 		self._abundanceMin = int(lines[2].replace(" ", "").replace("abundance-min:", ""))
+		self._abundanceMax = int(lines[3].replace(" ", "").replace("abundance-max:", ""))
 
 	def create_dirs(self):
 		self.kmer_spectrums_relative_dir = "kmer_spectrums"

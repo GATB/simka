@@ -9,26 +9,35 @@ parser = argparse.ArgumentParser(description='Description')
 parser.add_argument('-database-dir', action="store", dest="_databaseDir")
 parser.add_argument('-kmer-size', action="store", dest="_kmerSize", default="31")
 parser.add_argument('-abundance-min', action="store", dest="_abundanceMin", default="2")
+parser.add_argument('-abundance-max', action="store", dest="abundance_max", help="max abundance a kmer can have to be considered", default="0")
 parser.add_argument('-nb-cores', action="store", dest="_nbCores", help="number of cores", default="0")
 parser.add_argument('-max-memory', action="store", dest="_maxMemory", help="max memory (MB)", default="8000")
 parser.add_argument('-max-jobs', action="store", dest="_maxJobs", help="maximum number of job that can be submitted at a given time", default="0")
 parser.add_argument('-hpc', action="store_true", dest="_isHPC", help="compute with cluster or grid system")
 parser.add_argument('-submit-command', action="store", dest="submit_command", help="command used to submit job")
 parser.add_argument('-submit-file', action="store", dest="submit_file", help="filename to a job file template, for HPC system that required a job file")
+parser.add_argument('-nb-partitions', action="store", dest="nb_partitions", help="number of partition files per k-mer spectrums", default="0")
 
 args =  parser.parse_args()
 
 
 def init_settings():
 
-    resourceAllocator = Simka2ResourceAllocator(bool(args._isHPC), int(args._nbCores), int(args._maxMemory), int(args._maxJobs), None, None)
-    maxJobs, coresPerJob = resourceAllocator.executeForDistanceJobs(-1)
-    nbPartitions = min(200, maxJobs*coresPerJob)
+    nbPartitions = args.nb_partitions
+    if nbPartitions == "0":
+        resourceAllocator = Simka2ResourceAllocator(bool(args._isHPC), int(args._nbCores), int(args._maxMemory), int(args._maxJobs), None, None)
+        maxJobs, coresPerJob = resourceAllocator.executeForDistanceJobs(-1)
+        nbPartitions = min(200, maxJobs*coresPerJob)
 
     settings_file = open(os.path.join(args._databaseDir, "settings.txt"), "w")
     settings_file.write("kmer-size: " + args._kmerSize + "\n")
     settings_file.write("nb-partitions: " + str(nbPartitions)  + "\n")
     settings_file.write("abundance-min: " + args._abundanceMin  + "\n")
+    if args.abundance_max == "0":
+        settings_file.write("abundance-max: " + str((2**31-1))  + "\n")
+    else:
+        settings_file.write("abundance-max: " + args.abundance_max  + "\n")
+
     settings_file.close()
 
 
