@@ -206,11 +206,14 @@ public:
 
 	void createDatabases(){
 
-		_database = Simka2Database(_databaseDir);
+		_database = Simka2Database(_databaseDir, _maxDatasets);
 
 		_nbBanks = _database._entries.size();
 		_nbNewBanks = _nbBanks - _database._nbProcessedDataset;
-		_nbNewBanks = min(_nbNewBanks, _maxDatasets);
+		//_nbNewBanks = min(_nbNewBanks, _maxDatasets);
+
+		cout << "Database size: " << _nbBanks << endl;
+		cout << "Nb new banks to process: " << _nbNewBanks << endl;
 
 		for(size_t i=0; i<_database._entries.size(); i++){
 			_idToOrder[_database._entries[i]] = i;

@@ -53,17 +53,16 @@ class Simka_ComputeDistance():
 
 	def execute(self):
 
-
-		#print ("Attention remettere le merge dans simka2-distance main()")
-		self.mergeKmerSpectrums()
-
 		#---
 		# get the number of datasets for which the distance has already been computed by simka
-		nbFileProcessed = getNbFileProccessed()
+		self.nbFileProcessed = getNbFileProccessed()
 		#---
-		print "nb file processed: ", nbFileProcessed
+		print "nb file processed: ", self.nbFileProcessed
 		self.resourceAllocator = Simka2ResourceAllocator(bool(args._isHPC), int(args._nbCores), int(args._maxMemory), int(args._maxJobs), args.submit_command, args.submit_file)
-		maxJobs, self.jobCores, self.maximumProcessedDatasets = self.resourceAllocator.executeForDistanceJobs(self.database._nbPartitions, nbFileProcessed, len(self.database.entries))
+		maxJobs, self.jobCores, self.maximumProcessedDatasets = self.resourceAllocator.executeForDistanceJobs(self.database._nbPartitions, self.nbFileProcessed, len(self.database.entries))
+
+		self.mergeKmerSpectrums()
+
 		#print maxJobs, self.jobCores, self.maximumProcessedDatasets, args._maxMemory
 		print "maximum number of processed files:",  self.maximumProcessedDatasets, maxJobs, self.jobCores
 		self.jobScheduler = JobScheduler(maxJobs, ProgressBar("Computing distances", self.resourceAllocator.getNbDistanceJobToSubmit(self.database._nbPartitions, self.jobCores)))
@@ -80,6 +79,7 @@ class Simka_ComputeDistance():
 		command += " -database-dir " + self.database.dirname
 		command += " -nb-cores " + args._nbCores
 		command += " -max-memory " + args._maxMemory
+		command += " -max-datasets " + str(self.nbFileProcessed+self.maximumProcessedDatasets)
 		command = SimkaCommand.addHPCargs(command, args)
 		#print command
 		ret = os.system(command)
@@ -143,7 +143,7 @@ class Simka_ComputeDistance():
 		command += " -database-dir " + args._databaseDir
 		command += " -kmer-size " + str(self.database._kmerSize)
 		command += " -partition-id " + str(partitionId)
-		command += " -max-datasets " + str(self.maximumProcessedDatasets)
+		command += " -max-datasets " + str(self.nbFileProcessed+self.maximumProcessedDatasets)
 		command += "   > /dev/null 2>&1     &"
 
 		self.jobCommandsFile.write(checkPointFilename + "|" + command + "\n")
@@ -154,7 +154,7 @@ class Simka_ComputeDistance():
 			" -database-dir " + args._databaseDir + \
 			" -kmer-size " + str(self.database._kmerSize) + \
 			" -nb-partitions " + str(self.database._nbPartitions) + \
-			" -max-datasets " + str(self.maximumProcessedDatasets)
+			" -max-datasets " + str(self.nbFileProcessed+self.maximumProcessedDatasets)
 		print "simka2-distance (computeDistanceFinal):    besoin de pouvoir submit ce job en HPC mode ?"
 		#command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
 		ret = os.system(command)

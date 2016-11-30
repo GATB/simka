@@ -75,7 +75,7 @@ public:
 	void print();
 	void load(const string& filename);
 	void save(const string& filename);
-	void outputMatrix(const string& outputDirTemp, const vector<string>& _bankNames);
+	void outputMatrix(const string& outputDirTemp, const vector<string>& _bankNames, u_int64_t nbProcessedDatasets, u_int64_t nbNewDatasets);
 
 	void loadInfoSimka1(const string& tmpDir, const vector<string>& datasetIds){
 		_totalReads = 0;

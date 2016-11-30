@@ -14,15 +14,14 @@ class SimkaDistanceMatrixBinary {
 public:
 
 
-	static void saveMatrixIds(const string& dir, const vector<string>& bankNames, u_int64_t nbNewBanks){
-
+	static void saveMatrixIds(const string& dir, const vector<string>& bankNames, u_int64_t nbProcessedDatasets, u_int64_t nbNewDatasets){
 
 		string matrixInfoFilename = dir + "/matrix_infos.bin";
 		ofstream matrixInfoFile(matrixInfoFilename.c_str(), std::ios::binary);
 
-		matrixInfoFile.write((char const*)(&nbNewBanks), sizeof(nbNewBanks));
+		matrixInfoFile.write((char const*)(&nbNewDatasets), sizeof(nbNewDatasets));
 
-		for(size_t i=bankNames.size()-nbNewBanks; i<bankNames.size(); i++){
+		for(size_t i=nbProcessedDatasets; i<(nbProcessedDatasets+nbNewDatasets); i++){
 			SimkaIoUtils::SimkaIoUtils::simka2_writeString(bankNames[i], matrixInfoFile);
 		}
 

@@ -17,12 +17,14 @@ public:
 	map<string, string> _entriesInfos;
 	set<string> _uniqKmerSpectrumDirs;
 	u_int64_t _nbProcessedDataset;
+	u_int64_t _maxDatasets;
 
 	Simka2Database(){
 	}
 
-	Simka2Database(const string& dir){
+	Simka2Database(const string& dir, u_int64_t maxDatasets){
 		_dir = dir;
+		_maxDatasets = maxDatasets;
 		load();
 	}
 
@@ -31,11 +33,12 @@ public:
 	}
 
 	void load(){
-		loadDatabase();
 		loadDistanceMatrixInfo();
+		loadDatabase();
 	}
 
 	void loadDatabase(){
+		u_int64_t nbDatasets = 0;
 		string databaseFilename = _dir + "/simka_database.csv";
 
 		ifstream databaseFile(databaseFilename.c_str());
@@ -47,6 +50,8 @@ public:
 		getline(databaseFile, line); //skip header
 
 		while(getline(databaseFile, line)){
+
+			if(nbDatasets >= _maxDatasets) break;
 
 			line.erase(std::remove(line.begin(),line.end(),' '),line.end());
 			if(line == "") continue;
@@ -65,6 +70,7 @@ public:
 			_entriesInfos[id] = kmerSpectrumDir;
 			_uniqKmerSpectrumDirs.insert(kmerSpectrumDir);
 
+			nbDatasets += 1;
 		}
 
 		databaseFile.close();

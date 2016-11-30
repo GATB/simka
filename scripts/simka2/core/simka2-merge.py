@@ -17,6 +17,7 @@ parser.add_argument('-max-memory', action="store", dest="_maxMemory", help="max 
 parser.add_argument('-hpc', action="store_true", dest="_isHPC", help="compute with cluster or grid system")
 parser.add_argument('-submit-command', action="store", dest="submit_command", help="command used to submit job")
 parser.add_argument('-submit-file', action="store", dest="submit_file", help="filename to a job file template, for HPC system that required a job file")
+parser.add_argument('-max-datasets', action="store", dest="max_datasets", help="maximum datasets to considered in the database")
 
 args =  parser.parse_args()
 
@@ -70,7 +71,10 @@ class SimkaKmerSpectrumMerger():
 			needMerge = False
 			usedDirs = set()
 
-			for id in self.database.entries:
+			#for id in self.database.entries:
+			for i in range(0, int(args.max_datasets)):
+				id = self.database.entries[i]
+
 				kmerSpectrumDir = self.database.get_kmer_spectrum_dir_of_id(id, False)
 				usedDirs.add(kmerSpectrumDir)
 
@@ -133,7 +137,9 @@ class SimkaKmerSpectrumMerger():
 		list_kmerSpectrumDirs_Sizes = []
 		usedDirs = set()
 
-		for id in self.database.entries:
+		#for id in self.database.entries:
+		for i in range(0, int(args.max_datasets)):
+			id = self.database.entries[i]
 
 			kmerSpectrumDir = self.database.get_kmer_spectrum_dir_of_id(id, False)
 			#id = self.database.get_id_from_dir(kmerSpectrumDir)

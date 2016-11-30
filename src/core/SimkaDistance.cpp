@@ -567,12 +567,12 @@ void SimkaStatistics::save (const string& filename){
 }
 
 
-void SimkaStatistics::outputMatrix(const string& outputDirTemp, const vector<string>& bankNames){
+void SimkaStatistics::outputMatrix(const string& outputDirTemp, const vector<string>& bankNames, u_int64_t nbProcessedDatasets, u_int64_t nbNewDatasets){
 
 	SimkaDistance _simkaDistance(*this);
 
 
-	SimkaDistanceMatrixBinary::saveMatrixIds(outputDirTemp, bankNames, _nbNewBanks);
+	SimkaDistanceMatrixBinary::saveMatrixIds(outputDirTemp, bankNames, nbProcessedDatasets, nbNewDatasets);
 
 	//_outputFilenameSuffix = "";
 

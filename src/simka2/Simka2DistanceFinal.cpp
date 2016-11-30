@@ -70,7 +70,7 @@ public:
 		cout << _oldIds.size() << " " << _newIds.size() << endl;
 		_oldIds.insert( _oldIds.end(), _newIds.begin(), _newIds.end() ); //concat two vectors
 		cout << _oldIds.size() << " " << _newIds.size() << endl;
-		SimkaDistanceMatrixBinary::saveMatrixIds(_dirMatrixMatrixBinary, _oldIds, _oldIds.size());
+		SimkaDistanceMatrixBinary::saveMatrixIds(_dirMatrixMatrixBinary, _oldIds, 0, _oldIds.size());
 	}
 
 	void parseArgs(){
@@ -90,11 +90,11 @@ public:
 
 	void createDatabases(){
 
-		_database = Simka2Database(_databaseDir);
+		_database = Simka2Database(_databaseDir, _maxDatasets);
 
 		_nbBanks = _database._entries.size();
 		_nbNewBanks = _nbBanks - _database._nbProcessedDataset;
-		_nbNewBanks = min(_nbNewBanks, _maxDatasets);
+		//_nbNewBanks = min(_nbNewBanks, _maxDatasets);
 
 	}
 
@@ -136,7 +136,7 @@ public:
 		//for(size_t i=0; i<this->_nbBanks; i++){
 		//	cout << mainStats._nbSolidDistinctKmersPerBank[i] << endl;
 		//}
-		mainStats.outputMatrix(_dirMatrixMatrixBinaryTmp, _database._entries);
+		mainStats.outputMatrix(_dirMatrixMatrixBinaryTmp, _database._entries, _database._nbProcessedDataset, _nbNewBanks);
 
 		mergeDistanceMatrix();
 
