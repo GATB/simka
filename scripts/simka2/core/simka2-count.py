@@ -175,7 +175,7 @@ class ComputeKmerSpectrumAll():
 		logFile.write(command + "\n\n")
 		logFile.close()
 
-		os.system(command + " >> " + logFilename + " 2>&1")
+		os.system(command + " >> " + logFilename + " 2>&1   &")
 
 		self.jobScheduler.submitJob((checkPointFilename, self.jobEnd, (id, self.database.get_default_kmer_spectrum_dir_of_id(id, False), outputDirTemp)))
 
