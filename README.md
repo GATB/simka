@@ -251,7 +251,7 @@ Allow more memory and cores improve the execution time:
 
 ##Simka examples
 
-Simka examples are organised as follow:
+Simka examples are located in the "example" dir. This folder is organised as follow:
 * 1-basic_usage
 	- learn how to use simka by running simple examples
 * 2-hpc_usage
