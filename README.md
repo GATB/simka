@@ -261,6 +261,7 @@ Simka examples are organised as follow:
 * data
 	- show how to layout simka input
 
+A brief description of each examples:
 * 1-basic_usage
 	- 1-simple_test.py
 		- run Simka with its default parameters
@@ -270,7 +271,7 @@ Simka examples are organised as follow:
 		- extract quickly columns and rows from the distance matrices
 		- reorder dataset IDs in distance matrices
 	- 4-add_new_datasets.py
-		- show how it is possible to add new dataset to existing distances matrices
+		- show how it is possible to add new datasets to existing distance matrices
 	- 5-simka_parameters.py
 		- overview of simka optional parameters
 * 2-hpc_usage
@@ -286,13 +287,4 @@ Simka examples are organised as follow:
 	- 3-compute_distances.py
 		- compute distances between k-mer spectrums
 
-##Possible issues with Simka
 
-TOO MUCH OPENED FILES
-
-Simka is a disk-based method. Depending on the chosen options (-nb-cores -max-memory), it is possible that Simka required a lot of open files.
-
-You can fix this issue in two ways:
-
-* increasing the maximum open files limit imposed by your system: ulimit -n maxFiles
-* reducing the number of files opened by Simka by using the option -max-count and -max-merge
