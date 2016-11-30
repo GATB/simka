@@ -171,6 +171,8 @@ This can only be achieved by keeping those temporary files on the disk using the
 
 ###Result output
 
+Simka results are distance matrices. A distance matrix is a squared matrix of size N (where N is the number of input datasets). Each value in the matrix give you the distance between a pair of datasets. These values are usually in the range [0, 1]. A distance value of 0 means that the pair of dataset is perfectly similar. The higher the distance value is, the more dissimilar is the pair of datasets.
+
 Simka results will be stored in the directory indicated by -out option.
 
 By default, Simka compute a abundance-based Bray-Curtis distance matrix and a presence-absence-based Jaccard distance matrix.
@@ -186,7 +188,7 @@ The matrice names follow this template:
 The distance matrices containing ‘simka’ are distances introduces by the comparead method.
 These distances have the advantage of having a symmetrical and asymmetrical version.
 
-The result directory also contains a directory named "matrix_binary" that can be used by the simka distance exporter to create quickly new distance matrices from supplied list of dataset ID.
+The result directory also contains a directory named "matrix_binary" that can be used by the simka distance exporter to create quickly new distance matrices from supplied list of dataset ID (see "example" section).
 
 ##Visualize simka results
 
@@ -261,7 +263,7 @@ Simka examples are located in the "example" dir. This folder is organised as fol
 * data
 	- show how to layout simka input
 
-A brief description of each examples:
+A brief description of each example:
 * 1-basic_usage
 	- 1-simple_test.py
 		- run Simka with its default parameters
