@@ -17,6 +17,9 @@ parser.add_argument('-hpc', action="store_true", dest="_isHPC", help="compute wi
 parser.add_argument('-submit-command', action="store", dest="submit_command", help="command used to submit job")
 parser.add_argument('-submit-file', action="store", dest="submit_file", help="filename to a job file template, for HPC system that required a job file")
 parser.add_argument('-nb-partitions', action="store", dest="nb_partitions", help="number of partition files per k-mer spectrums", default="0")
+parser.add_argument('-max-reads', action="store", dest="max_reads", default="0", help="maximum number of reads per sample to process")
+parser.add_argument('-min-read-size', action="store", dest="min_read_size", default="0", help="minimal size a read should have to be kept")
+parser.add_argument('-min-shannon-index', action="store", dest="min_read_shannon_index", default="0", help="minimal Shannon index a read should have to be kept. Float in [0,2]")
 
 args =  parser.parse_args()
 
@@ -37,6 +40,9 @@ def init_settings():
         settings_file.write("abundance-max: " + str((2**31-1))  + "\n")
     else:
         settings_file.write("abundance-max: " + args.abundance_max  + "\n")
+    settings_file.write("max-reads: " + args.max_reads  + "\n")
+    settings_file.write("min-read-size: " + args.min_read_size  + "\n")
+    settings_file.write("min-shannon-index: " + args.min_read_shannon_index  + "\n")
 
     settings_file.close()
 

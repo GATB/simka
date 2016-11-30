@@ -53,6 +53,10 @@ class SimkaDatabase():
 		self._nbPartitions = int(lines[1].replace(" ", "").replace("nb-partitions:", ""))
 		self._abundanceMin = int(lines[2].replace(" ", "").replace("abundance-min:", ""))
 		self._abundanceMax = int(lines[3].replace(" ", "").replace("abundance-max:", ""))
+		self._maxReads = int(lines[4].replace(" ", "").replace("max-reads:", ""))
+		self._minReadSize = int(lines[5].replace(" ", "").replace("min-read-size:", ""))
+		self._minShannonIndex = int(lines[6].replace(" ", "").replace("min-shannon-index:", ""))
+
 
 	def create_dirs(self):
 		self.kmer_spectrums_relative_dir = "kmer_spectrums"

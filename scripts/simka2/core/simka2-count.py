@@ -158,6 +158,9 @@ class ComputeKmerSpectrumAll():
 			" -out-tmp " + outputDirTemp + \
 			" -out " + kmerSpectrumOutputDir + \
 			" -kmer-size " + str(self.database._kmerSize) + \
+			" -max-reads " + str(self.database._maxReads) + \
+			" -min-read-size " + str(self.database._minReadSize) + \
+			" -read-shannon-index " + str(self.database._minShannonIndex) + \
 			" -nb-dataset " + str(nbPairedDatasets) + \
 			" -abundance-min " + str(self.database._abundanceMin) + \
 			" -abundance-max " + str(self.database._abundanceMax) + \
