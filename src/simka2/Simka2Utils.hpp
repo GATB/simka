@@ -125,7 +125,8 @@ public:
     	_bankId = bankId;
     	_partitionId = partitionId;
     	_bankIdOffset = bankIdOffset;
-
+    	//cout << _bankIdOffset << endl;
+    	//cout << this << endl;
 
 		//Iterator<Count>* it2 = partition1.iterator();
 		//Collection<Count>& kmers1 = (*partition1)[_partitionId];
@@ -161,6 +162,7 @@ public:
 	}
 
 	u_int64_t getBankId(){
+		//cout << "lol  " << get<1>(_it->item()) << "   " << _bankIdOffset << endl;
 		return (((u_int64_t)(get<1>(_it->item()))) + _bankIdOffset);
 	}
 
@@ -276,7 +278,7 @@ public:
 					//_currentDatasetIds.push_back(linkedDatasetID);
 					//cout << "\tmerge info:" << linkedDatasetID << endl;
 
-					cout << datasetID << endl;
+					//cout << datasetID << endl;
 				}
 				mergedLinkFile.close();
 
@@ -382,6 +384,10 @@ public:
 					bestIt = get<3>(pq.top()); pq.pop();
 				}
 
+				//cout << "lol" << endl << endl;
+				//cout << bestIt->getBankId() << endl;
+				//cout << _indexReordering[bestIt->getBankId()] << endl;
+
 				//if(bestIt->value() == previous_kmer){
 				//	process(bestIt->value(), bestIt->getBankId(), bestIt->abundance());
 				//}
@@ -390,6 +396,14 @@ public:
 
 			    	bestIt = get<3>(pq.top()); pq.pop();
 			    	//previous_kmer = bestIt->value();
+
+			    	//cout << bestIt << " " << bestIt->_bankIdOffset << " " << bestIt->getBankId() << endl; !!
+					//cout << bestIt->getBankId() << endl;
+					//cout << _indexReordering[bestIt->getBankId()] << endl;
+
+			    	//bestIt->value();
+			    	//_indexReordering[bestIt->getBankId()];
+			    	//bestIt->abundance();
 			    	process(bestIt->value(), _indexReordering[bestIt->getBankId()], bestIt->abundance());
 			    	//}
 

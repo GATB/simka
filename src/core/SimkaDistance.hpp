@@ -38,6 +38,97 @@ enum SIMKA_MATRIX_TYPE{
 	ASYMETRICAL,
 };
 
+class DistanceMatrixData
+{
+
+public:
+
+	//size_t _nbBanks;
+	//size_t _nbNewBanks;
+
+	vector<vector<u_int64_t> > _matrix_rectangular;
+	vector<vector<u_int64_t> > _matrix_squaredHalf;
+
+	DistanceMatrixData(){};
+
+	void resize(u_int64_t nbBanks, u_int64_t nbNewBanks){
+
+		//cout << "Create distance matrix data" << endl;
+		//cout << "\t" << nbBanks << " " << nbNewBanks << endl << endl;
+		//_nbBanks = nbBanks;
+		//_nbNewBanks = nbNewBanks;
+
+		u_int64_t nbOldBanks = nbBanks - nbNewBanks;
+
+		if(nbOldBanks > 0){
+			_matrix_rectangular.resize(nbNewBanks);
+		}
+		else{
+			_matrix_rectangular.resize(0);
+		}
+
+		_matrix_squaredHalf.resize(nbNewBanks-1);
+
+		for(size_t i=0; i<_matrix_rectangular.size(); i++){
+			_matrix_rectangular[i].resize(nbOldBanks);
+		}
+
+		u_int64_t size = nbNewBanks-1;
+		for(size_t i=0; i<_matrix_squaredHalf.size(); i++){
+			_matrix_squaredHalf[i].resize(size);
+			size -= 1;
+		}
+	}
+
+	DistanceMatrixData& operator+=  (const DistanceMatrixData& other){
+		for(size_t i=0; i<_matrix_rectangular.size(); i++){
+			for(size_t j=0; j<_matrix_rectangular[i].size(); j++){
+				_matrix_rectangular[i][j] += other._matrix_rectangular[i][j];
+			}
+		}
+
+		for(size_t i=0; i<_matrix_squaredHalf.size(); i++){
+			for(size_t j=0; j<_matrix_squaredHalf[i].size(); j++){
+				_matrix_squaredHalf[i][j] += other._matrix_squaredHalf[i][j];
+			}
+		}
+
+		return *this;
+	}
+
+	void load(Iterator<long double>* gzIt){
+		for(size_t i=0; i<_matrix_rectangular.size(); i++){
+			for(size_t j=0; j<_matrix_rectangular[i].size(); j++){
+				_matrix_rectangular[i][j] = gzIt->item();
+				gzIt->next();
+			}
+		}
+
+		for(size_t i=0; i<_matrix_squaredHalf.size(); i++){
+			for(size_t j=0; j<_matrix_squaredHalf[i].size(); j++){
+				_matrix_squaredHalf[i][j] = gzIt->item();
+				gzIt->next();
+			}
+		}
+	}
+
+	void save (Bag<long double>* bag){
+
+		for(size_t i=0; i<_matrix_rectangular.size(); i++){
+			for(size_t j=0; j<_matrix_rectangular[i].size(); j++){
+				bag->insert((long double)_matrix_rectangular[i][j]);
+			}
+		}
+
+		for(size_t i=0; i<_matrix_squaredHalf.size(); i++){
+			for(size_t j=0; j<_matrix_squaredHalf[i].size(); j++){
+				bag->insert((long double)_matrix_squaredHalf[i][j]);
+			}
+		}
+
+	}
+
+};
 /*
 class SimkaDistanceParam{
 
@@ -135,7 +226,7 @@ public:
 	vector<vector<u_int64_t> > _matrixNbDistinctSharedKmers;
 	vector<vector<u_int64_t> > _matrixNbSharedKmers;
 
-	vector<vector<u_int64_t> > _brayCurtisNumerator;
+	DistanceMatrixData _brayCurtisNumerator;
 	//vector<vector<u_int64_t> > _brayCurtisNumerator;
 	//vector<vector<double> > _kullbackLeibler;
 
@@ -185,7 +276,9 @@ class SimkaDistance {
 
 public:
 
-	vector<vector<float> > _matrix;
+	vector<vector<float> > _matrix; //to remove
+	vector<vector<float> > _matrix_rectangular;
+	vector<vector<float> > _matrix_squaredHalf;
 
 
 	SimkaDistance(SimkaStatistics& stats);
@@ -221,20 +314,78 @@ public:
 
 		size_t nbOldBanks = _nbBanks - _nbNewBanks;
 
+		//cout << "lala" << endl;
+		//cout << _stats._brayCurtisNumerator._matrix_rectangular.size() << endl;
+		//cout << _stats._brayCurtisNumerator._matrix_rectangular[0].size() << endl;
+		//cout << _stats._brayCurtisNumerator._matrix_squaredHalf.size() << endl;
+		//cout << _stats._brayCurtisNumerator._matrix_squaredHalf[0].size() << endl;
+
+		for(size_t i=0; i<_stats._brayCurtisNumerator._matrix_rectangular.size(); i++){
+			for(size_t j=0; j<_stats._brayCurtisNumerator._matrix_rectangular[i].size(); j++){
+
+				double dist = distance_abundance_brayCurtis(i+nbOldBanks, j, i, j, _stats._brayCurtisNumerator._matrix_rectangular);
+				_matrix_rectangular[i][j] = dist;
+			}
+		}
+
+		for(size_t i=0; i<_stats._brayCurtisNumerator._matrix_squaredHalf.size(); i++){
+
+			u_int64_t jOffset = _stats._brayCurtisNumerator._matrix_squaredHalf.size() - _stats._brayCurtisNumerator._matrix_squaredHalf[i].size();
+
+			for(size_t j=0; j<_stats._brayCurtisNumerator._matrix_squaredHalf[i].size(); j++){
+
+				double dist = distance_abundance_brayCurtis(i+nbOldBanks, j+nbOldBanks+1+jOffset, i, j, _stats._brayCurtisNumerator._matrix_squaredHalf);
+				_matrix_squaredHalf[i][j] = dist;
+			}
+		}
+
+		/*
+		cout << endl;
+		cout << endl;
+		for(size_t i=0; i<_stats._nbSolidKmersPerBank.size(); i++){
+			cout << _stats._nbSolidKmersPerBank[i] << " ";
+		}
+		cout << endl;
+		cout << endl;
+		for(size_t i=0; i<_stats._brayCurtisNumerator._matrix_rectangular.size(); i++){
+			for(size_t j=0; j<_stats._brayCurtisNumerator._matrix_rectangular[i].size(); j++){
+				cout << _stats._brayCurtisNumerator._matrix_rectangular[i][j] << " ";
+			}
+			cout << endl;
+		}
+		cout << endl;
+
+
+		cout << endl;
+		for(size_t i=0; i<_stats._brayCurtisNumerator._matrix_rectangular.size(); i++){
+			for(size_t j=0; j<_stats._brayCurtisNumerator._matrix_rectangular[i].size(); j++){
+				cout << _matrix_rectangular[i][j] << " ";
+			}
+			cout << endl;
+		}*/
+
 		//cout << _matrix.size() << " " << _matrix[0].size() << "   " << _nbNewBanks << endl;
+		/*
 		for(size_t i=0; i<nbOldBanks; i++){
 			for(size_t j=0; j<_nbNewBanks; j++){
 
-				double dist = distance_abundance_brayCurtis(i, j, j+nbOldBanks);
+				double dist = distance_abundance_brayCurtis(i, j, i, j+nbOldBanks, _stats._brayCurtisNumerator._matrix_rectangular);
 				_matrix[i][j] = dist;
 
 			}
 		}
 
-		for(size_t i=nbOldBanks; i<_nbBanks; i++){
-			for(size_t j=(i-nbOldBanks)+1; j<_nbNewBanks; j++){
+		cout << "Final matrix size: " << _matrix.size() << " " << _matrix[0].size() << endl;
 
-				double dist = distance_abundance_brayCurtis(i, j, j+nbOldBanks);
+
+		u_int64_t jOffset = 1;
+
+		for(size_t i=nbOldBanks; i<_nbBanks; i++){
+			cout << i << endl;
+			for(size_t j=(i-nbOldBanks)+1; j<_nbNewBanks; j++){
+				cout << "\t" << j << endl;
+
+				double dist = distance_abundance_brayCurtis(i-nbOldBanks-jOffset, j, i, j+nbOldBanks, _stats._brayCurtisNumerator._matrix_squaredHalf);
 				_matrix[i][j] = dist;
 
 
@@ -245,8 +396,33 @@ public:
 				_matrix[i2][j2] = dist;
 
 			}
-		}
 
+			jOffset += 1;
+		}
+		*/
+
+		/*
+		u_int64_t jOffset = 1;
+
+		for(size_t i=0; i<_nbNewBanks; i++){
+			cout << i << endl;
+			for(size_t j=i+1; j<_nbNewBanks; j++){
+				cout << "\t" << j << endl;
+
+				double dist = distance_abundance_brayCurtis(i+nbOldBanks, j-jOffset, i+nbOldBanks, j, _stats._brayCurtisNumerator._matrix_squaredHalf);
+				_matrix[i+nbOldBanks][j] = dist;
+
+
+				size_t iTemp = i-nbOldBanks;
+				size_t i2 = j;
+				size_t j2 = iTemp;
+				i2 += nbOldBanks;
+				_matrix[i2][j2] = dist;
+
+			}
+
+			jOffset += 1;
+		}*/
 
     }
 
@@ -622,7 +798,38 @@ private:
 	void get_abc(size_t bank1, size_t bank2, size_t j2, u_int64_t& a, u_int64_t& b, u_int64_t& c);
 
 
-    double distance_abundance_brayCurtis(size_t bank1, size_t bank2, size_t j2);
+    double distance_abundance_brayCurtis(size_t i, size_t j, size_t i2, size_t j2, vector<vector<u_int64_t>>& crossedData){
+
+    	//double intersection = _stats._abundance_jaccard_intersection[i][j];
+    	double union_ = _stats._nbSolidKmersPerBank[i] + _stats._nbSolidKmersPerBank[j];
+
+    	if(union_ == 0) return 1;
+
+    	double intersection = 2 * crossedData[i2][j2];
+
+    	double jaccard = 1 - intersection / union_;
+
+    	//cout << jaccard << "   " << _stats._nbSolidKmersPerBank[i] << " " <<  _stats._nbSolidKmersPerBank[j] << "  " << _stats._brayCurtisNumerator[i][j] << endl;
+    	return jaccard;
+    }
+
+    /*
+    double distance_abundance_brayCurtis_squaredHalf(size_t i, size_t j, size_t j2){
+
+    	//double intersection = _stats._abundance_jaccard_intersection[i][j];
+    	double union_ = _stats._nbSolidKmersPerBank[i] + _stats._nbSolidKmersPerBank[j2];
+
+    	if(union_ == 0) return 1;
+
+    	double intersection = 2 * _stats._brayCurtisNumerator[i][j];
+
+    	double jaccard = 1 - intersection / union_;
+
+    	//cout << jaccard << "   " << _stats._nbSolidKmersPerBank[i] << " " <<  _stats._nbSolidKmersPerBank[j] << "  " << _stats._brayCurtisNumerator[i][j] << endl;
+    	return jaccard;
+    }*/
+
+
     double distance_abundance_chord(size_t i, size_t j);
     double distance_abundance_hellinger(size_t i, size_t j);
     //double distance_abundance_jaccard_intersection(size_t i, size_t j);

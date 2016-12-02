@@ -67,8 +67,9 @@ public:
     }
 
 	void process(Type& kmer, u_int64_t bankId, u_int64_t abundance){
-    	//cout << kmer.toString(61) << " " << bankId <<  " "<< abundance << endl;
 
+		//return;
+    	//cout << kmer.toString(31) << " " << bankId <<  " "<< abundance << endl;
 		if(_isInit){
 			if(kmer == _lastKmer){
 				_solidCounter->increase(bankId, abundance);
@@ -117,8 +118,10 @@ public:
 
 
 	void end(){
+		//cout << "ENNNNNNNNNNNNNNNNNNNNNNNND" << endl;
 		insert(_lastKmer, _abundancePerBank, _nbBankThatHaveKmer);
 		delete _solidCounter;
+		//cout << "ENNNNNNNNNNNNNNNNNNNNNNNND2" << endl;
     }
 
 
@@ -182,7 +185,6 @@ public:
 
 
 		saveStats();
-
 
 		delete _stats;
 		delete _processor;
@@ -248,7 +250,6 @@ public:
 		datasetMergerDistance.execute();
 
 		_processor->end();
-
 
 	}
 

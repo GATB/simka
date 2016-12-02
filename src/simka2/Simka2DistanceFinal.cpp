@@ -67,6 +67,8 @@ public:
 		//initStatistics();
 		distance();
 
+		mergeDistanceMatrix();
+
 		cout << _oldIds.size() << " " << _newIds.size() << endl;
 		_oldIds.insert( _oldIds.end(), _newIds.begin(), _newIds.end() ); //concat two vectors
 		cout << _oldIds.size() << " " << _newIds.size() << endl;
@@ -128,7 +130,6 @@ public:
 			//nbKmers += stats._nbKmers;
 		}
 
-
 		//cout << mainStats._nbDistinctKmers << endl;
 		//cout << "Nb kmers: " << nbKmers << endl;
 
@@ -138,9 +139,8 @@ public:
 		//}
 		mainStats.outputMatrix(_dirMatrixMatrixBinaryTmp, _database._entries, _database._nbProcessedDataset, _nbNewBanks);
 
-		mergeDistanceMatrix();
-
 		mainStats.print();
+
 	}
 
 	void mergeDistanceMatrix(){
@@ -154,9 +154,9 @@ public:
 
 		cout << _nbBanks << " " << _nbOldBanks << " " << _nbNewBanks << endl;
 
-		_matrix.resize(_nbBanks);
+		_matrix.resize(_nbNewBanks);
 	    for(size_t i=0; i<_matrix.size(); i++)
-	    	_matrix[i].resize(_nbNewBanks, 0);
+	    	_matrix[i].resize(_nbBanks, 0);
 
 
 
@@ -222,11 +222,14 @@ public:
 
 		SimkaDistanceMatrixBinary::loadMatrix(newMatrixFilename, _matrix);
 
-		//for(size_t i=0; i<_matrix.size(); i++){
-		//	for(size_t j=0; j<_matrix[i].size(); j++){
-		//		cout << _matrix[i][j] << endl;
-		//	}
-		//}
+		/*
+		cout << "lala" << endl;
+		for(size_t i=0; i<_matrix.size(); i++){
+			for(size_t j=0; j<_matrix[i].size(); j++){
+				cout << _matrix[i][j] << "\t";
+			}
+			cout << endl;
+		}*/
 
 		u_int64_t oldRowSize = sizeof(float)*_nbOldBanks;
 		u_int64_t newRowSize = sizeof(float)*_nbNewBanks;
@@ -242,7 +245,7 @@ public:
 			mergedMatrixFile.write((char*)oldRowData.data(), oldRowSize);
 
 			for(size_t j=0; j<_nbNewBanks; j++){
-				newRowData[j] = _matrix[i][j];
+				newRowData[j] = _matrix[j][i];
 			}
 
 			mergedMatrixFile.write((char*)newRowData.data(), newRowSize);
@@ -254,7 +257,7 @@ public:
 			//mergedMatrixFile.write((char*)oldRowData.data(), oldRowSize);
 
 			for(size_t j=0; j<_nbBanks; j++){
-				rowData[j] = _matrix[j][i];
+				rowData[j] = _matrix[i][j];
 			}
 
 			mergedMatrixFile.write((char*)rowData.data(), rowSize);

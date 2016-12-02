@@ -56,7 +56,19 @@ public:
 	}
 
 
-	static void writeMatrixBinary(const string& distanceMatricesDir, const string& distanceName, const vector<vector<float> >& distanceMatrix){
+
+	static void writeMatrixBinaryFromSplits(const string& distanceMatricesDir, const string& distanceName, const vector<vector<float> >& distanceMatrix_rectangular, const vector<vector<float> >& distanceMatrix_squaredHalf){
+
+		/*
+
+		cout << endl;
+		cout << endl;
+		for(size_t i=0; i<distanceMatrix_squaredHalf.size(); i++){
+			for(size_t j=0; j<distanceMatrix_squaredHalf[i].size(); j++){
+				cout << distanceMatrix_squaredHalf[i][j] << " ";
+			}
+			cout << endl;
+		}*/
 
 		/*
 		cout << "lala write" << endl;
@@ -81,7 +93,97 @@ public:
 
 		ofstream outputFile(filename.c_str(), ios::binary);
 
+		u_int64_t nbOldBanks = 0;
+		if(distanceMatrix_rectangular.size() > 0){
+			nbOldBanks = distanceMatrix_rectangular[0].size();
+		}
+
+
+		u_int64_t nbNewBanks = distanceMatrix_squaredHalf.size() + 1;
+		u_int64_t nbBanks = nbOldBanks + nbNewBanks;
+
+		if(nbOldBanks > 0){
+			if(nbNewBanks > 1){
+				for(size_t i=0; i<nbNewBanks; i++){
+					writeMatrixBinaryFromSplits_rectangular(outputFile, i, distanceMatrix_rectangular);
+					writeMatrixBinaryFromSplits_squaredHalf(outputFile, i, distanceMatrix_squaredHalf);
+					//cout << endl;
+				}
+			}
+			else{
+				for(size_t i=0; i<nbNewBanks; i++){
+					writeMatrixBinaryFromSplits_rectangular(outputFile, i, distanceMatrix_rectangular);
+				}
+			}
+		}
+		else{
+			for(size_t i=0; i<nbNewBanks; i++){
+				writeMatrixBinaryFromSplits_squaredHalf(outputFile, i, distanceMatrix_squaredHalf);
+			}
+		}
+
+
 		//cout << distanceMatrix.size() << "   " << distanceMatrix[0].size() << endl;
+
+		//for(size_t i=0; i<distanceMatrix.size(); i++){
+		//	outputFile.write((const char*)distanceMatrix[i].data(), sizeof(float)*distanceMatrix[i].size());
+		//}
+
+		outputFile.close();
+	}
+
+	static void writeMatrixBinaryFromSplits_rectangular(ofstream& outputFile, size_t i, const vector<vector<float> >& distanceMatrix_rectangular){
+
+		//cout << endl;
+		//cout << distanceMatrix_rectangular.size() << " " << distanceMatrix_rectangular[i].size() << endl;
+		//cout << endl;
+		//for(size_t j=0; j<distanceMatrix_rectangular[i].size(); j++){
+		//	cout << distanceMatrix_rectangular[i][j] << "\t";
+		//}
+
+		outputFile.write((const char*)distanceMatrix_rectangular[i].data(), sizeof(float)*distanceMatrix_rectangular[i].size());
+	}
+
+	static void writeMatrixBinaryFromSplits_squaredHalf(ofstream& outputFile, size_t i, const vector<vector<float> >& distanceMatrix_squaredHalf){
+		u_int64_t nbNewBanks = distanceMatrix_squaredHalf.size() + 1;
+
+		//for(size_t i=0; i<nbNewBanks; i++){
+
+			u_int64_t jOffset = distanceMatrix_squaredHalf.size() - distanceMatrix_squaredHalf[i].size();
+
+			for(size_t j=0; j<nbNewBanks; j++){
+
+				//cout << i << " " << j << endl;
+				if(i == j){
+					float distanceZero = 0;
+					//cout << distanceZero << "\t\t";
+					outputFile.write((const char*)&distanceZero, sizeof(distanceZero));
+				}
+				else if(j < i){
+
+					u_int64_t iOffset = distanceMatrix_squaredHalf.size() - distanceMatrix_squaredHalf[j].size();
+
+					float value = distanceMatrix_squaredHalf[j][i-iOffset-1];
+					//cout << value << "\t\t";
+					outputFile.write((const char*)&value, sizeof(value));
+				}
+				else{
+					float value = distanceMatrix_squaredHalf[i][j-jOffset-1];
+					//cout << value << "\t\t";
+					outputFile.write((const char*)&value, sizeof(value));
+				}
+				//double dist = distance_abundance_brayCurtis(i+nbOldBanks, j+nbOldBanks+1+jOffset, i, j, _stats._brayCurtisNumerator._matrix_squaredHalf);
+				//_matrix_squaredHalf[i][j] = dist;
+			}
+
+			//cout << endl;
+		//}
+	}
+
+	static void writeMatrixBinary(const string& distanceMatricesDir, const string& distanceName, const vector<vector<float> >& distanceMatrix){
+		string filename = distanceMatricesDir + "/" + distanceName + ".bin";
+
+		ofstream outputFile(filename.c_str(), ios::binary);
 
 		for(size_t i=0; i<distanceMatrix.size(); i++){
 			outputFile.write((const char*)distanceMatrix[i].data(), sizeof(float)*distanceMatrix[i].size());

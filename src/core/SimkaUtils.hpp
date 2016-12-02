@@ -618,11 +618,20 @@ public:
 
 	void updateDistanceDefault(const CountVector& counts){
 
+		/*
+		cout << _stats->_brayCurtisNumerator._matrix_squaredHalf.size() << endl;
+		for(size_t i=0; i<_stats->_brayCurtisNumerator._matrix_squaredHalf.size(); i++){
+			cout << i << endl;
+			for(size_t j=0; j<_stats->_brayCurtisNumerator._matrix_squaredHalf[i].size(); j++){
+				cout << "\t" << j << endl;
+			}
+		}*/
 
 		for(size_t ii=0; ii<_sharedNewBanks.size(); ii++){
 
 			u_int64_t i = _sharedNewBanks[ii];
 			u_int64_t abundanceI = counts[i];
+			u_int64_t jOffset = _stats->_brayCurtisNumerator._matrix_squaredHalf.size() - _stats->_brayCurtisNumerator._matrix_squaredHalf[i-_bankOffset].size();// + 1;
 
 			for(size_t jj=ii+1; jj<_sharedNewBanks.size(); jj++){
 
@@ -633,13 +642,16 @@ public:
 
 				//_stats->_matrixNbSharedKmers[i][j] += counts[i];
 				//_stats->_matrixNbSharedKmers[j][i] += counts[j];
-				_stats->_matrixNbDistinctSharedKmers[i][j - _bankOffset] += 1;
+				//_stats->_matrixNbDistinctSharedKmers[i][j] += 1;
 
-				//cout << i << " " << j << "    " << (j + ((_nbBanks-1)*i) - (i*(i-1)/2)) << endl;
-				//cout << _stats->_brayCurtisNumerator.size() << " " << _stats->_brayCurtisNumerator[0].size() << "     " << i << " " << j << endl;
-				_stats->_brayCurtisNumerator[i][j - _bankOffset] += min(abundanceI, abundanceJ);
 
-				//cout << i << " " << j << endl;
+				//cout << "\t    " << _stats->_brayCurtisNumerator._matrix_squaredHalf.size() << " " << i-_bankOffset << endl;
+				//cout << "\t        " << _stats->_brayCurtisNumerator._matrix_squaredHalf[i-_bankOffset].size() << " " << (j-_bankOffset-jOffset-1) << endl;
+				//cout << i << " " << j << "     " << _stats->_brayCurtisNumerator._matrix_squaredHalf.size() << " " << _stats->_brayCurtisNumerator._matrix_squaredHalf[i].size() << endl;
+				//cout << i-jOffset << " " << j-jOffset-1 << endl;
+				//cout << jOffset << endl;
+				_stats->_brayCurtisNumerator._matrix_squaredHalf[i-_bankOffset][j-_bankOffset-jOffset-1] += min(abundanceI, abundanceJ);
+
 			}
 		}
 
@@ -657,17 +669,17 @@ public:
 		}
 		cout << "---" << endl;*/
 
+		//cout << "---" << endl;
 
+		for(size_t ii=0; ii<_sharedNewBanks.size(); ii++){
 
-		for(size_t ii=0; ii<_sharedOldBanks.size(); ii++){
-
-			u_int64_t i = _sharedOldBanks[ii];
+			u_int64_t i = _sharedNewBanks[ii];
 			u_int64_t abundanceI = counts[i];
 
-			for(size_t jj=0; jj<_sharedNewBanks.size(); jj++){
+			for(size_t jj=0; jj<_sharedOldBanks.size(); jj++){
 
 				//u_int64_t i = _sharedNewBanks[ii];
-				u_int64_t j = _sharedNewBanks[jj];
+				u_int64_t j = _sharedOldBanks[jj];
 				//size_t symetricIndex = j + ((_nbBanks-1)*i) - (i*(i-1)/2);
 
 				//u_int64_t abundanceI = counts[i];
@@ -675,10 +687,13 @@ public:
 
 				//_stats->_matrixNbSharedKmers[i][j] += counts[i];
 				//_stats->_matrixNbSharedKmers[j][i] += counts[j];
-				_stats->_matrixNbDistinctSharedKmers[i][j - _bankOffset] += 1;
+				//_stats->_matrixNbDistinctSharedKmers[i][j - _bankOffset] += 1;
 
 				//cout << i << " " << j << "    " << (j + ((_nbBanks-1)*i) - (i*(i-1)/2)) << endl;
-				_stats->_brayCurtisNumerator[i][j - _bankOffset] += min(abundanceI, abundanceJ);
+				//cout << _stats->_brayCurtisNumerator._matrix_rectangular.size() << "      " << i << " " << j << endl;
+				//cout << "\t" << _stats->_brayCurtisNumerator._matrix_rectangular.size() << " " << i-_bankOffset << endl;
+				//cout << "\t" << _stats->_brayCurtisNumerator._matrix_rectangular[i-_bankOffset].size() << " " << j << endl;
+				_stats->_brayCurtisNumerator._matrix_rectangular[i-_bankOffset][j] += min(abundanceI, abundanceJ);
 
 				//(counts.size()-1) - (j - _bankOffset) - _bankOffset
 				//cout << _stats->_brayCurtisNumerator.size() << " " << _stats->_brayCurtisNumerator[0].size() << "     " << i << " " << j << endl;
@@ -981,11 +996,15 @@ public:
     {
         for (size_t k=0; k<_abundancePerBank.size(); k++)  { _abundancePerBank[k]=0; }
         _abundancePerBank [idxBank]= abundance;
+    	//cout << _abundancePerBank.size() << " " << idxBank << " " << abundance << endl;
     }
 
     /** Increase the abundance of the current kmer for the provided bank index.
      * \param[in] idxBank : index of the bank */
-    void increase (size_t idxBank, CountNumber abundance)  {  _abundancePerBank [idxBank] += abundance;  }
+    void increase (size_t idxBank, CountNumber abundance)  {
+    	//cout << _abundancePerBank.size() << " " << idxBank << " " << abundance << endl;
+    	_abundancePerBank [idxBank] += abundance;
+    }
 
     /** Set the abundance of the current kmer for the provided bank index.
      * \param[in] idxBank : index of the bank */
@@ -1007,7 +1026,6 @@ public:
     	cout << endl;
     }
 
-private:
     CountVector& _abundancePerBank;
 };
 
