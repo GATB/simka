@@ -150,9 +150,9 @@ class Simka2ResourceAllocator():
         N = nbDatasets
         Nold = nbProcessedDatasets
         Nnew = nbDatasets-nbProcessedDatasets
-        minMemoryPerCore = 8*N*Nnew * nbDistances
+        minMemoryPerCore = ((8*Nold*Nnew) + (8*((Nnew*(Nnew-1))/2))) * nbDistances
 
-        maxCore_byMemory = int((self.maxMemory*1<<20) / minMemoryPerCore)
+        maxCore_byMemory = int((100000) / minMemoryPerCore)
         print "min memory per core: ", minMemoryPerCore, N, nbProcessedDatasets
         print "max cores by memory: ", maxCore_byMemory
 
@@ -163,9 +163,10 @@ class Simka2ResourceAllocator():
         #So given available memory, we can resolve this quadratic equation to know how much datasets we can process N
         #8NN + 8NNo - Mem = 0
         #a=8 b=8No c=-Mem
+        #In last simka version, memory used by the 8NN part is just half of it N(N-1)/2, for simplification I juste replace 8NN by 8/2NN = 4NN
         if maxCore_byMemory <= 0:
-            availableMemory = self.maxMemory * (1<<20) / nbDistances
-            a = 8
+            availableMemory = 100000 / nbDistances
+            a = 4
             b = 8*nbProcessedDatasets
             c = -availableMemory
 
@@ -272,7 +273,7 @@ class Simka2ResourceAllocator():
         N = nbDatasets
         Nold = nbProcessedDatasets
         Nnew = nbDatasets-nbProcessedDatasets
-        minMemoryPerCore = 8*N*Nnew * nbDistances
+        minMemoryPerCore = ((8*Nold*Nnew) + (8*((Nnew*(Nnew-1))/2))) * nbDistances
 
         maxCore_byMemory = int((self.maxMemory*1<<20) / minMemoryPerCore)
         print "min memory per core: ", minMemoryPerCore, N, nbProcessedDatasets
@@ -285,9 +286,10 @@ class Simka2ResourceAllocator():
         #So given available memory, we can resolve this quadratic equation to know how much datasets we can process N
         #8NN + 8NNo - Mem = 0
         #a=8 b=8No c=-Mem
+        #In last simka version, memory used by the 8NN part is just half of it N(N-1)/2, for simplification I juste replace 8NN by 8/2NN = 4NN
         if maxCore_byMemory <= 0:
             availableMemory = self.maxMemory * (1<<20) / nbDistances
-            a = 8
+            a = 4
             b = 8*nbProcessedDatasets
             c = -availableMemory
 
