@@ -111,23 +111,27 @@ public:
 		SimkaStatistics mainStats(this->_nbBanks, this->_nbNewBanks, this->_computeSimpleDistances, this->_computeComplexDistances);
 		simka2_loadStatInfos(_databaseDir, _database._uniqKmerSpectrumDirs, _database._entries, kmerSpectrumDirs, &mainStats, _database._entriesInfos);
 
-		for(size_t i=0; i<_nbPartitions; i++){
-
-			//cout << mainStats._nbDistinctKmers << endl;
-			string filename = _dirMatrixParts + "/" + Stringify::format("%i", i) + ".gz";
-			//string filename =  + "/stats/part_" + SimkaAlgorithm<>::toString(i) + ".gz";
-			//Storage* storage = StorageFactory(STORAGE_HDF5).load (this->_outputDirTemp + "/stats/part_" + SimkaAlgorithm<>::toString(i) + ".stats");
-			//LOCAL (storage);
-
+		{
 			SimkaStatistics stats(this->_nbBanks, this->_nbNewBanks, this->_computeSimpleDistances, this->_computeComplexDistances);
 			kmerSpectrumDirs.clear();
 			simka2_loadStatInfos(_databaseDir, _database._uniqKmerSpectrumDirs, _database._entries, kmerSpectrumDirs, &stats, _database._entriesInfos);
-			stats.load(filename);
 
-			//cout << stats._nbDistinctKmers << "   " << stats._nbKmers << endl;
-			mainStats += stats;
+			for(size_t i=0; i<_nbPartitions; i++){
 
-			//nbKmers += stats._nbKmers;
+				//cout << mainStats._nbDistinctKmers << endl;
+				string filename = _dirMatrixParts + "/" + Stringify::format("%i", i) + ".gz";
+				//string filename =  + "/stats/part_" + SimkaAlgorithm<>::toString(i) + ".gz";
+				//Storage* storage = StorageFactory(STORAGE_HDF5).load (this->_outputDirTemp + "/stats/part_" + SimkaAlgorithm<>::toString(i) + ".stats");
+				//LOCAL (storage);
+
+				//stats.clear();
+				stats.load(filename);
+
+				//cout << stats._nbDistinctKmers << "   " << stats._nbKmers << endl;
+				mainStats += stats;
+
+				//nbKmers += stats._nbKmers;
+			}
 		}
 
 		//cout << mainStats._nbDistinctKmers << endl;

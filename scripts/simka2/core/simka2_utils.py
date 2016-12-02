@@ -145,7 +145,7 @@ class Simka2ResourceAllocator():
             return (maxJobs, jobCores)
 
 
-        nbDistances = 2 #AB-BrayCurtis and PA-Jaccard
+        nbDistances = 3 #AB-BrayCurtis and PA-Jaccard #+1 distance matrix for storing final distances
 
         N = nbDatasets
         Nold = nbProcessedDatasets
@@ -267,7 +267,7 @@ class Simka2ResourceAllocator():
             return (maxJobs, jobCores)
 
 
-        nbDistances = 2 #AB-BrayCurtis and PA-Jaccard
+        nbDistances = 3  #AB-BrayCurtis and PA-Jaccard #+1 distance matrix for storing final distances
 
         N = nbDatasets
         Nold = nbProcessedDatasets
