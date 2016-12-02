@@ -251,7 +251,7 @@ Allow more memory and cores improve the execution time:
 
     python ./scripts/simka2/simka.py … -max-memory 20000 -nb-cores 8
 
-Run simka in HPC mode, with a maximum of 50 jobs simultaneously, 4 cores and 4 GB of memory per jobs:
+Run simka in HPC mode, with a maximum of 50 jobs simultaneously, 4 cores and 4 GB of memory per job:
 (The job submit command is specific to your HPC system)
 
     python ./scripts/simka2/simka-hpc.py … -nb-cores 4 -max-memory 4000 -max-jobs 50 -submit-command "qsub -pe make 4 -M 4000"

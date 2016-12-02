@@ -7,7 +7,7 @@ from simka2_utils import Simka2ResourceAllocator
 parser = argparse.ArgumentParser(description='Description')
 
 parser.add_argument('-database-dir', action="store", dest="_databaseDir")
-parser.add_argument('-kmer-size', action="store", dest="_kmerSize", default="31")
+parser.add_argument('-kmer-size', action="store", dest="_kmerSize", default="21")
 parser.add_argument('-abundance-min', action="store", dest="_abundanceMin", default="2")
 parser.add_argument('-abundance-max', action="store", dest="abundance_max", help="max abundance a kmer can have to be considered", default="0")
 parser.add_argument('-nb-cores', action="store", dest="_nbCores", help="number of cores", default="0")
