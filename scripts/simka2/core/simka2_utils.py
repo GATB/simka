@@ -193,7 +193,8 @@ class Simka2ResourceAllocator():
 
         maxJobs = min(maxJobs, maxCore_byMemory)
         maxJobs = max(maxJobs, 1)
-
+        N = max(N, 1)
+        
         return (maxJobs, jobCores, N)
 
     def execute_count_HPC(self, nbSamplesToProcess, kmerSize):
@@ -316,6 +317,7 @@ class Simka2ResourceAllocator():
 
         jobCores = min(jobCores, maxCore_byMemory)
         jobCores = max(jobCores, 1)
+        N = max(N, 1)
 
         return (maxJobs, jobCores, N)
 
