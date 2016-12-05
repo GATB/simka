@@ -152,7 +152,7 @@ class Simka2ResourceAllocator():
         Nnew = nbDatasets-nbProcessedDatasets
         minMemoryPerCore = ((8*Nold*Nnew) + (8*((Nnew*(Nnew-1))/2))) * nbDistances
 
-        maxCore_byMemory = int((100000) / minMemoryPerCore)
+        maxCore_byMemory = int((self.maxMemory*1<<20) / minMemoryPerCore)
         print "min memory per core: ", minMemoryPerCore, N, nbProcessedDatasets
         print "max cores by memory: ", maxCore_byMemory
 
@@ -165,7 +165,7 @@ class Simka2ResourceAllocator():
         #a=8 b=8No c=-Mem
         #In last simka version, memory used by the 8NN part is just half of it N(N-1)/2, for simplification I juste replace 8NN by 8/2NN = 4NN
         if maxCore_byMemory <= 0:
-            availableMemory = 100000 / nbDistances
+            availableMemory = self.maxMemory * (1<<20) / nbDistances
             a = 4
             b = 8*nbProcessedDatasets
             c = -availableMemory
