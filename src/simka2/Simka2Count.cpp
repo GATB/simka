@@ -692,6 +692,7 @@ public:
 
 	    //if (Option* p = dynamic_cast<Option*> (dskParser->getParser(STR_MINIMIZER_SIZE)))  {  p->setDefaultValue ("7"); }
 		parser->push_back(dskParser);
+		if (Option* p = dynamic_cast<Option*> (dskParser->getParser(STR_MINIMIZER_SIZE))) { p->setDefaultValue ("7"); }
 		dskParser->setVisible(false);
 
 		parser->getParser(STR_NB_CORES)->setVisible(false);
