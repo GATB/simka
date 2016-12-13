@@ -49,7 +49,7 @@ public:
 	//}
 	struct SortFileBySize
 	{
-	    bool operator()(BankSize_BankId& i, BankSize_BankId& j) const
+	    bool operator()(const BankSize_BankId& i, const BankSize_BankId& j) const
 	    {
 	    	return ( get<0>(i) < get<0>(j) );
 	    }
@@ -115,7 +115,7 @@ public:
 	}
 
 
-	u_int64_t _rngRemainder;
+	int _rngRemainder;
 	u_int64_t _rngMin;
 	int _rngN;
 
