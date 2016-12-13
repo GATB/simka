@@ -88,9 +88,8 @@ public:
 		}
 
 		_inputMatrixSize = _ids.size();
-		_outputMatrixSize = _wantedIds.size();
+		//_outputMatrixSize = _wantedIds.size();
 		cout << "original matrix size: " << _inputMatrixSize << endl;
-		cout << "output matrix size: " << _outputMatrixSize << endl;
 	}
 
 	void createIdsIndex(){
@@ -99,10 +98,20 @@ public:
 			_idToIndex[_ids[i]] = i;
 		}
 
-		_wantedIdsIndex.resize(_outputMatrixSize);
-		for(size_t i=0; i<_outputMatrixSize; i++){
-			_wantedIdsIndex[i] = _idToIndex[_wantedIds[i]];
+		for(size_t i=0; i<_wantedIds.size(); i++){
+			if(_idToIndex.find(_wantedIds[i]) == _idToIndex.end()){
+				cout << "ID not found in distance matrix: " << _wantedIds[i] << endl;
+			}
+			else{
+				_wantedIdsIndex.push_back(_idToIndex[_wantedIds[i]]);
+			}
 		}
+
+		//_wantedIdsIndex.resize(_outputMatrixSize);
+		//for(size_t i=0; i<_outputMatrixSize; i++){
+		//}
+		_outputMatrixSize = _wantedIdsIndex.size();
+		cout << "output matrix size: " << _outputMatrixSize << endl;
 	}
 
 	void writeMatrices(){
@@ -134,7 +143,7 @@ public:
 		string str = "";
 
 		for(size_t i=0; i<_outputMatrixSize; i++){
-			str += ";" + _wantedIds[i];
+			str += ";" + _ids[_wantedIdsIndex[i]];
 		}
 		str += '\n';
 		gzwrite(out, str.c_str(), str.size());
@@ -143,7 +152,7 @@ public:
 		for(size_t i=0; i<_outputMatrixSize; i++){
 
 			str = "";
-			str += _wantedIds[i] + ";";
+			str += _ids[_wantedIdsIndex[i]] + ";";
 
 			size_t rowIndex = _wantedIdsIndex[i];
 			SimkaDistanceMatrixBinary::loadRow(rowIndex, binaryMatrixFile, rowData);
