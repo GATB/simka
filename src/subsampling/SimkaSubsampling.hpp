@@ -44,9 +44,16 @@ public:
 	}
 
 	typedef tuple<u_int64_t, size_t> BankSize_BankId;
-	static bool sortFileBySize (BankSize_BankId& i, BankSize_BankId& j){
-		return ( get<0>(i) < get<0>(j) );
-	}
+	//static bool sortFileBySize (BankSize_BankId& i, BankSize_BankId& j){
+	//	return ( get<0>(i) < get<0>(j) );
+	//}
+	struct SortFileBySize
+	{
+	    bool operator()(BankSize_BankId& i, BankSize_BankId& j) const
+	    {
+	    	return ( get<0>(i) < get<0>(j) );
+	    }
+	};
 
 	void setup(){
 
@@ -67,7 +74,7 @@ public:
 			filenameSizes.push_back(BankSize_BankId(totalSize, i));
 		}
 
-		sort(filenameSizes.begin(),filenameSizes.end(),sortFileBySize);
+		sort(filenameSizes.begin(),filenameSizes.end(),SortFileBySize());
 
 		size_t smallerBankId = get<1>(filenameSizes[0]);
 
