@@ -223,10 +223,11 @@ public:
 	vector<u_int64_t> _nbDistinctKmersSharedByBanksThreshold;
 	vector<u_int64_t> _nbKmersSharedByBanksThreshold;
 
-	vector<vector<u_int64_t> > _matrixNbDistinctSharedKmers;
+	//vector<vector<u_int64_t> > _matrixNbDistinctSharedKmers;
 	vector<vector<u_int64_t> > _matrixNbSharedKmers;
 
 	DistanceMatrixData _brayCurtisNumerator;
+	DistanceMatrixData _matrixNbDistinctSharedKmers;
 	//vector<vector<u_int64_t> > _brayCurtisNumerator;
 	//vector<vector<double> > _kullbackLeibler;
 
@@ -483,6 +484,7 @@ public:
     }
 
     void _matrixCanberra(){
+    	/*
     	clearMatrix();
     	u_int64_t a, b, c;
 
@@ -495,7 +497,7 @@ public:
     			_matrix[j][i] = dist;
     		}
     	}
-
+		*/
 
     }
 
@@ -569,6 +571,7 @@ public:
     }
 
     void _matrix_presenceAbsence_sorensenBrayCurtis(){
+    	/*
     	clearMatrix();
     	u_int64_t a, b, c;
 
@@ -582,11 +585,12 @@ public:
     			_matrix[j][i] = dist;
     		}
     	}
-
+		*/
 
     }
 
     void _matrix_presenceAbsence_Whittaker(){
+    	/*
     	clearMatrix();
     	u_int64_t a, b, c;
 
@@ -600,11 +604,12 @@ public:
     			_matrix[j][i] = dist;
     		}
     	}
-
+		*/
 
     }
 
     void _matrix_presenceAbsence_kulczynski(){
+    	/*
     	clearMatrix();
     	u_int64_t a, b, c;
 
@@ -618,11 +623,12 @@ public:
     			_matrix[j][i] = dist;
     		}
     	}
-
+		*/
 
     }
 
     void _matrix_presenceAbsence_ochiai(){
+    	/*
     	clearMatrix();
     	u_int64_t a, b, c;
 
@@ -636,11 +642,12 @@ public:
     			_matrix[j][i] = dist;
     		}
     	}
-
+		*/
 
     }
 
     void _matrix_presenceAbsence_chordHellinger(){
+    	/*
     	clearMatrix();
     	u_int64_t a, b, c;
 
@@ -694,15 +701,49 @@ public:
         		}
         	}
     	}
-
+		*/
     }
 
     void _matrix_presenceAbsence_jaccardCanberra(){
-    	clearMatrix();
     	u_int64_t a, b, c;
+
+    	clearMatrix();
 
 		size_t nbOldBanks = _nbBanks - _nbNewBanks;
 
+		//cout << "lala" << endl;
+		//cout << _stats._brayCurtisNumerator._matrix_rectangular.size() << endl;
+		//cout << _stats._brayCurtisNumerator._matrix_rectangular[0].size() << endl;
+		//cout << _stats._brayCurtisNumerator._matrix_squaredHalf.size() << endl;
+		//cout << _stats._brayCurtisNumerator._matrix_squaredHalf[0].size() << endl;
+
+		for(size_t i=0; i<_stats._matrixNbDistinctSharedKmers._matrix_rectangular.size(); i++){
+			for(size_t j=0; j<_stats._matrixNbDistinctSharedKmers._matrix_rectangular[i].size(); j++){
+
+
+				get_abc(i+nbOldBanks, j, i, j, _stats._matrixNbDistinctSharedKmers._matrix_rectangular, a, b ,c);
+
+				double dist = distance_presenceAbsence_jaccardCanberra(a, b, c);
+
+				//double dist = distance_abundance_brayCurtis(i+nbOldBanks, j, i, j, _stats._brayCurtisNumerator._matrix_rectangular);
+				_matrix_rectangular[i][j] = dist;
+			}
+		}
+
+		for(size_t i=0; i<_stats._matrixNbDistinctSharedKmers._matrix_squaredHalf.size(); i++){
+
+			u_int64_t jOffset = _stats._matrixNbDistinctSharedKmers._matrix_squaredHalf.size() - _stats._matrixNbDistinctSharedKmers._matrix_squaredHalf[i].size();
+
+			for(size_t j=0; j<_stats._matrixNbDistinctSharedKmers._matrix_squaredHalf[i].size(); j++){
+
+				get_abc(i+nbOldBanks, j+nbOldBanks+1+jOffset, i, j, _stats._matrixNbDistinctSharedKmers._matrix_squaredHalf, a, b ,c);
+				double dist = distance_presenceAbsence_jaccardCanberra(a, b, c);
+				//double dist = distance_abundance_brayCurtis(i+nbOldBanks, j+nbOldBanks+1+jOffset, i, j, _stats._brayCurtisNumerator._matrix_squaredHalf);
+				_matrix_squaredHalf[i][j] = dist;
+			}
+		}
+
+		/*
 		//cout << _matrix.size() << " " << _matrix[0].size() << "   " << _nbNewBanks << endl;
 		for(size_t i=0; i<nbOldBanks; i++){
 			for(size_t j=0; j<_nbNewBanks; j++){
@@ -732,7 +773,7 @@ public:
 				_matrix[i2][j2] = dist;
 
 			}
-		}
+		}*/
 
 
 
@@ -795,7 +836,7 @@ public:
 private:
 
 
-	void get_abc(size_t bank1, size_t bank2, size_t j2, u_int64_t& a, u_int64_t& b, u_int64_t& c);
+	void get_abc(size_t bank1, size_t bank2, size_t i2, size_t j2, vector<vector<u_int64_t>>& crossedData, u_int64_t& a, u_int64_t& b, u_int64_t& c);
 
 
     double distance_abundance_brayCurtis(size_t i, size_t j, size_t i2, size_t j2, vector<vector<u_int64_t>>& crossedData){

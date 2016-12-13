@@ -651,7 +651,7 @@ public:
 				//cout << i-jOffset << " " << j-jOffset-1 << endl;
 				//cout << jOffset << endl;
 				_stats->_brayCurtisNumerator._matrix_squaredHalf[i-_bankOffset][j-_bankOffset-jOffset-1] += min(abundanceI, abundanceJ);
-
+				_stats->_matrixNbDistinctSharedKmers._matrix_squaredHalf[i-_bankOffset][j-_bankOffset-jOffset-1] += 1;
 			}
 		}
 
@@ -694,6 +694,7 @@ public:
 				//cout << "\t" << _stats->_brayCurtisNumerator._matrix_rectangular.size() << " " << i-_bankOffset << endl;
 				//cout << "\t" << _stats->_brayCurtisNumerator._matrix_rectangular[i-_bankOffset].size() << " " << j << endl;
 				_stats->_brayCurtisNumerator._matrix_rectangular[i-_bankOffset][j] += min(abundanceI, abundanceJ);
+				_stats->_matrixNbDistinctSharedKmers._matrix_rectangular[i-_bankOffset][j] += 1;
 
 				//(counts.size()-1) - (j - _bankOffset) - _bankOffset
 				//cout << _stats->_brayCurtisNumerator.size() << " " << _stats->_brayCurtisNumerator[0].size() << "     " << i << " " << j << endl;
