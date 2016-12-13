@@ -18,8 +18,12 @@ int main (int argc, char* argv[])
 	//cout << command << endl;
 
 	//cout << argc << " " << argv << endl;
-	int ret=1;
-	while(ret != 0){
+	int seg_fault_error = 11;
+	int core_dump_error = 35584;
+	int core_dump_error2 = 32256;
+	int ret = core_dump_error;
+
+	while(ret == core_dump_error || ret == core_dump_error2 || ret == seg_fault_error){
 		ret = system(command.c_str());
 		nanosleep((const struct timespec[]){{0, 10000000L}}, NULL);
 	}

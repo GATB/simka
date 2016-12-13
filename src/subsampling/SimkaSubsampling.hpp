@@ -130,6 +130,7 @@ public:
 			else{
 				u_int64_t nbKmersInRead = it->item().getDataSize() - _kmerSize + 1;
 
+				//cout << nbKmersInRead << endl;
 				nbKmersPerReads.push_back(nbKmersInRead);
 				nbKmers += nbKmersInRead;
 			}
@@ -141,7 +142,7 @@ public:
 
 		//cout << "subsampling" << endl;
 		//cout << nbKmersPerReads.size() << endl;
-		setupRandomNumberGenerator(0, nbKmersPerReads.size());
+		setupRandomNumberGenerator(0, nbKmersPerReads.size()-1);
 		//cout << _nbKmersPerReads.size() << endl;
 
 		nbKmers = 0;
@@ -166,8 +167,14 @@ public:
 			int r = generateUniformInt();
 			pickedReads[r] += 1;
 			nbKmers += nbKmersPerReads[r];
-
+			cout << r << "   " << nbKmers  << "    " << nbKmersPerReads[r] << endl;
 		}
+
+		cout << endl;
+		for(size_t i=0; i<pickedReads.size(); i++){
+			cout << pickedReads[i];
+		}
+		cout << endl;
 
 		//return pickedReads;
 		//for(size_t i=0; i<pickedReads.size(); i++){

@@ -266,6 +266,7 @@ public:
 			simkaSubsampling.setup();
 			exit(0);
 		}
+
 		if(this->_options->get(STR_SIMKA_SUBSAMPLING_MAX_READS)){
 			_isSubsampling = true;
 			SimkaSubsampling simkaSubsampling(this->_outputDirTemp, this->_nbBanks, this->_bankNames, this->_kmerSize);

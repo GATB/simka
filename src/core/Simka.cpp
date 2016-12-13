@@ -93,8 +93,8 @@ IOptionsParser* Simka::createOptionsParser (IOptionsParser* parent)
     //Subsampling parser
     IOptionsParser* subsamplingParser = new OptionsParser ("subsampling");
     subsamplingParser->push_back(new OptionNoParam(STR_SIMKA_SUBSAMPLING_SETUP, "provide information for correctly subsampling reads", false));
-    subsamplingParser->push_back(new OptionOneParam(STR_SIMKA_SUBSAMPLING_MAX_READS, "max size of the subsample space (provided by Simka with option: " + string(STR_SIMKA_SUBSAMPLING_SETUP) + ")", false, "100000"));
-    subsamplingParser->push_back(new OptionOneParam(STR_SIMKA_SUBSAMPLING_NB_PICKED_READS, "number of reads to pick randomly (must be smaller than " + string(STR_SIMKA_SUBSAMPLING_MAX_READS) + ")", false, "10000"));
+    subsamplingParser->push_back(new OptionOneParam(STR_SIMKA_SUBSAMPLING_MAX_READS, "max size of the subsample space (provided by Simka with option: " + string(STR_SIMKA_SUBSAMPLING_SETUP) + ")", false));
+    subsamplingParser->push_back(new OptionOneParam(STR_SIMKA_SUBSAMPLING_NB_PICKED_READS, "number of reads to pick randomly (must be smaller than " + string(STR_SIMKA_SUBSAMPLING_MAX_READS) + ")", false));
     //Distances
     //IOptionsParser* distanceParser = new OptionsParser ("distances");
     //distanceParser->push_back (new OptionNoParam (STR_SIMKA_DISTANCE_BRAYCURTIS.c_str(), "compute Bray Curtis distance"));

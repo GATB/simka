@@ -749,19 +749,10 @@ public:
 
 
 
-
-/********************************************************************************/
-/**
- *
- */
 template <class Item, typename Filter> class SimkaInputIterator : public Iterator<Item>
 {
 public:
 
-	/** Constructor.
-	* \param[in] ref : the referred iterator
-	* \param[in] initRef : will call 'first' on the reference if true
-	*/
 	SimkaInputIterator(Iterator<Item>* refs, size_t nbBanks, u_int64_t maxReads, Filter filter, vector<u_int32_t>& subsampleReads)
 	:  _filter(filter), _mainref(0), _subsampleReads(subsampleReads) {
 
@@ -776,6 +767,237 @@ public:
 		_currentInternalBank = 0;
 		_currentDataset = 0;
 		_globalSequenceIndex = 0;
+
+	}
+
+
+    bool isFinished(){
+        if(_currentDataset == _nbDatasets){
+        	_isDone = true;
+        	return true;
+        }
+        //if(_subsampleReads.size() != 0 && _globalSequenceIndex >= _subsampleReads.size()){
+        //    _isDone = true;
+        //   return true;
+        //}
+        return false;
+    }
+
+	void nextDataset(){
+		_currentDataset += 1;
+
+		if(isFinished()) return;
+
+		_currentBank = _currentDataset * _nbBanks;
+
+		_currentInternalBank = 0;
+		_nbReadProcessed = 0;
+
+		if(isFinished()) return;
+
+		_ref = _mainref->getComposition()[_currentBank];
+		_isDone = false;
+		first();
+		//nextBank();
+	}
+
+	void nextBank(){
+		cout << "next bank" << endl;
+		//cout << "next bank "<< endl;
+		_currentInternalBank += 1;
+		if(_nbReadProcessed >= _maxReads || _currentInternalBank == _nbBanks){
+			nextDataset();
+		}
+		else{
+			_isDone = false;
+			_currentBank += 1;
+			_ref = _mainref->getComposition()[_currentBank];
+			first();
+		}
+	}
+
+    void first()
+    {
+
+    	cout << "first" << endl;
+        _ref->first();
+        next();
+        /*
+        while (!_ref->isDone() && _filter(_ref->item())==false){
+            _ref->next();
+        	_globalSequenceIndex += 1;
+        }
+
+        //while(!_ref->isDone() && _globalSequenceIndex < _subsampleReadssize() && _subsampleReads[_globalSequenceIndex] == 0){
+        while(!_ref->isDone() && _subsampleReads[_globalSequenceIndex] == 0){
+            _ref->next();
+        	_globalSequenceIndex += 1;
+        }
+
+        //cout << _globalSequenceIndex << endl;
+        _subsampleReads[_globalSequenceIndex] -= 1;
+
+        _isDone = _ref->isDone();
+
+    	//cout << "\tfirst isdone?: " << _isDone << endl;
+        if(!_isDone){
+        	_nbReadProcessed += 1;
+        	*(this->_item) = _ref->item();
+        }
+		*/
+    }
+
+    //void isValid(){
+    //	return _filter(_ref->item()) &&
+    //}
+
+    void canSubsample(){
+
+    }
+
+	void next(){
+
+		//cout << _maxReads << " " << _nbReadProcessed << endl;
+		//cout << _globalSequenceIndex << endl;
+		if(_maxReads && _nbReadProcessed >= _maxReads){
+			if(isFinished())
+				return;
+			else
+				nextDataset();
+		}
+
+		if(isFinished()){
+			_isDone = true;
+			return;
+		}
+
+		//cout << _ref->item().getIndex() << " " << _globalSequenceIndex << " " << _subsampleReads.size() << _ref->item().toString() << endl;
+		//cout << "\t" << _ref->item().getIndex() << endl;
+
+		//_ref->next();
+
+		//cout << _ref->item().getIndex() << "   " << _subsampleReads[_ref->item().getIndex()] << endl;
+
+		//cout << _globalSequenceIndex << " " << _maxReads << " " << _nbReadProcessed << endl;
+		//verifier que ce truc marche bien quand on concatene des jeux!! _globalSequenceIndex et _nbReadProcessed bien synchro ?
+
+		//cout << _subsampleReads.size() << endl; probleme ici ce truc est utiliser par defaut :o
+		if(_subsampleReads.size() > 0){
+			while (!_ref->isDone()){
+				//cout << endl << _globalSequenceIndex << " " << _subsampleReads[_globalSequenceIndex] << endl;
+				if(_subsampleReads[_globalSequenceIndex] == 0){
+					//cout << _globalSequenceIndex << endl;
+					_ref->next();
+					_globalSequenceIndex += 1;
+					//_nbReadProcessed += 1;
+					//cout << "\tnop: " << _globalSequenceIndex << " " << _maxReads << " " << _nbReadProcessed << endl;
+				}
+				else{
+					//cout << "\t" << _globalSequenceIndex <<  " " << _subsampleReads[_globalSequenceIndex] << endl;
+					_subsampleReads[_globalSequenceIndex] -= 1;
+					//_globalSequenceIndex += 1;
+					//_nbReadProcessed -= 1;
+					break;
+				}
+			}
+		}
+		else{
+			_ref->next();
+			_globalSequenceIndex += 1;
+		}
+
+
+		//_ref->next();
+		//_globalSequenceIndex += 1;
+
+		while (!_ref->isDone()){
+			if(_filter(_ref->item())==false){
+				_ref->next();
+				_globalSequenceIndex += 1;
+			}
+			else{
+				break;
+			}
+		}
+
+		_isDone = _ref->isDone();
+
+		//cout << "haha" << endl;
+		//if(!_isDone){
+			//cout << _currentBank << "  " << _isDone << endl;
+
+		//}
+
+		//cout << _nbReadProcessed << "  " << _currentBank << "    " << _nbBanks << "   " << _maxReads << endl;
+
+
+		if(_isDone){
+			if(isFinished()){
+				//cout << _nbReadProcessed << endl;
+				return;
+			}
+			else{
+				//cout << _nbReadProcessed << endl;
+				nextBank();
+				if(isFinished()){
+					//cout << _nbReadProcessed << endl;
+					return;
+				}
+			}
+		}
+		else{
+			//cout << "\t\t" << _globalSequenceIndex <<  " " << _subsampleReads[_globalSequenceIndex] << endl;
+			*(this->_item) = _ref->item();
+			_nbReadProcessed += 1;
+		}
+
+	}
+
+
+    bool isDone()  {  return _isDone;  }
+
+    Item& item ()  {  return *(this->_item);  }
+
+
+private:
+
+    bool            _isDone;
+    size_t _currentBank;
+    //vector<Iterator<Item>* > _refs;
+    Iterator<Item>* _ref;
+    size_t _nbBanks;
+    u_int64_t _maxReads;
+    Filter _filter;
+    u_int64_t _nbReadProcessed;
+    size_t _currentInternalBank;
+	size_t _currentDataset;
+	size_t _nbDatasets;
+	u_int64_t _globalSequenceIndex;
+
+    Iterator<Item>* _mainref;
+    void setMainref (Iterator<Item>* mainref)  { SP_SETATTR(mainref); }
+
+	vector<u_int32_t>& _subsampleReads;
+};
+
+/*
+template <class Item, typename Filter> class SimkaInputIterator : public Iterator<Item>
+{
+public:
+
+	SimkaInputIterator(Iterator<Item>* refs, size_t nbBanks, u_int64_t maxReads, Filter filter)
+	:  _filter(filter), _mainref(0) {
+
+		setMainref(refs);
+		_ref = _mainref->getComposition()[0];
+		_isDone = false;
+		_nbDatasets = nbBanks;
+		_nbBanks = _mainref->getComposition().size() / _nbDatasets;
+		_maxReads = maxReads;
+		_nbReadProcessed = 0;
+		_currentBank = 0;
+		_currentInternalBank = 0;
+		_currentDataset = 0;
 
 	}
 
@@ -843,45 +1065,10 @@ public:
 			return;
 		}
 
+		//cout << "haha" << endl;
 
-		//cout << _ref->item().getIndex() << "   " << _subsampleReads[_ref->item().getIndex()] << endl;
-
-		cout << _globalSequenceIndex << " " << _maxReads << " " << _nbReadProcessed << endl;
-		verifier que ce truc marche bien quand on concatene des jeux!! _globalSequenceIndex et _nbReadProcessed bien synchro ?
-
-		if(_subsampleReads.size() > 0){
-			while (!_ref->isDone()){
-				if(_subsampleReads[_globalSequenceIndex] == 0){
-					_ref->next();
-					_globalSequenceIndex += 1;
-					_nbReadProcessed += 1;
-					//cout << "\tnop: " << _globalSequenceIndex << " " << _maxReads << " " << _nbReadProcessed << endl;
-				}
-				else{
-					_subsampleReads[_globalSequenceIndex] -= 1;
-					//_globalSequenceIndex += 1;
-					//_nbReadProcessed -= 1;
-					break;
-				}
-			}
-		}
-		else{
-			_ref->next();
-			_globalSequenceIndex += 1;
-		}
-
-		//_ref->next();
-		//_globalSequenceIndex += 1;
-
-		while (!_ref->isDone()){
-			if(_filter(_ref->item())==false){
-				_ref->next();
-				_globalSequenceIndex += 1;
-			}
-			else{
-				break;
-			}
-		}
+		_ref->next();
+		while (!_ref->isDone() && _filter(_ref->item())==false) _ref->next();
 
 		_isDone = _ref->isDone();
 
@@ -920,14 +1107,10 @@ public:
 				nextDataset();
 		}
 
-		//cout << _ref->item().getIndex() << " " << _globalSequenceIndex << " " << _subsampleReads.size() << _ref->item().toString() << endl;
-		//cout << "\t" << _ref->item().getIndex() << endl;
 	}
 
-    /** \copydoc  Iterator::isDone */
     bool isDone()  {  return _isDone;  }
 
-    /** \copydoc  Iterator::item */
     Item& item ()  {  return *(this->_item);  }
 
 
@@ -944,13 +1127,11 @@ private:
     size_t _currentInternalBank;
 	size_t _currentDataset;
 	size_t _nbDatasets;
-	u_int64_t _globalSequenceIndex;
 
     Iterator<Item>* _mainref;
     void setMainref (Iterator<Item>* mainref)  { SP_SETATTR(mainref); }
-
-	vector<u_int32_t>& _subsampleReads;
 };
+*/
 
 
 struct SimkaSequenceFilter

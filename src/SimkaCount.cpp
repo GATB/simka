@@ -280,10 +280,15 @@ public:
 				//cout << "\tinput: " << p.outputDir + "/input/" + p.bankName << endl;
 
 				vector<u_int32_t> subsampleReads;
+
 				if(p.isSubsampling){
 					SimkaSubsampling simkaSubsampler(p.outputDir, p.kmerSize);
 					simkaSubsampler.sampleWithReplacement(p.bankName, p.nbPickedReads, p.maxPickableKmers, subsampleReads);
-					p.maxReads = subsampleReads.size();
+
+					p.maxReads = 0;
+					for(size_t i=0; i<subsampleReads.size(); i++){
+						p.maxReads += subsampleReads[i];
+					}
 				}
 				else{
 					subsampleReads.clear();
