@@ -14,7 +14,7 @@ print("\tThey can all be automatically run on simka results using the script run
 visualization_dir = "../../scripts/visualization"
 distance_matrices_dir = "simka_results"
 output_dir_without_color = "visualization_without_color"
-output_dir_with_color = "visualization_without_color"
+output_dir_with_color = "visualization_with_color"
 
 if not os.path.exists(distance_matrices_dir):
     print("Please run first example before: 1-simple_test.py")
