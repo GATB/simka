@@ -1,35 +1,74 @@
-# Contributors :
-#   Pierre PETERLONGO, pierre.peterlongo@inria.fr [12/06/13]
-#   Nicolas MAILLET, nicolas.maillet@inria.fr     [12/06/13]
-#   Guillaume Collet, guillaume@gcollet.fr        [27/05/14]
-#
-# This software is a computer program whose purpose is to find all the
-# similar reads between sets of NGS reads. It also provide a similarity
-# score between the two samples.
-#
-# Copyright (C) 2014  INRIA
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#Author: Gaetan Benoit
+#Contact: gaetan.benoit@inria.fr
 
 
-#options(echo=TRUE) # if you want see commands in output file
 args <- commandArgs(trailingOnly = TRUE)
-#png(file=args[2],width=800,height=800,res=100)
+distanceMatrixFilename = args[1]
+
+
+distanceMatrix = as.matrix(read.table(file=distanceMatrixFilename, sep=";", header=TRUE, row.names=1))
+
 pdf(file=args[2])
-cr3 = as.matrix(read.table(file=args[1], sep=";", header=TRUE, row.names=1))
-cr3 = cr3*100
+
+print(length(args))
+
+use_metadata = F
+if(length(args) == 4){
+	suppressPackageStartupMessages(library(dendextend))
+	
+	use_metadata = T
+	metadata_table = as.matrix(read.table(file=args[3], sep=";", header=TRUE, row.names=1))
+	metadata_variable = args[4]
+	#print(metadata_table)
+	variables = metadata_table[,metadata_variable]
+	#print(variables)
+	
+	meatadata_index = list()
+	dataset_ids = rownames(metadata_table)
+	for(i in 1:length(dataset_ids)){
+		dataset_id = dataset_ids[i]
+		#print(dataset_id)
+		#print(variables[[i]])
+		meatadata_index[[dataset_id]] = variables[[i]]
+		#print(meatadata_index[[dataset_id]])
+	}
+	
+	colors = c()
+	dataset_ids = rownames(distanceMatrix)
+	for(i in 1:dim(distanceMatrix)[1]){
+		dataset_id = dataset_ids[i]
+		colors = c(colors, meatadata_index[[dataset_id]])
+	}
+	colors_numeric_temp = c()
+	colors_numeric = as.numeric(as.factor(colors))
+	for(i in 1:length(colors_numeric)){
+		colors_numeric_temp = c(colors_numeric_temp, colors_numeric[i]+1)
+	}
+	colors_numeric = colors_numeric_temp
+	#print(colors)
+}
+
+
+
+
+distanceMatrix = distanceMatrix*100
 #inv_cr3 = matrix(100, ncol=dim(cr3)[1], nrow=dim(cr3)[1]) - cr3
-Commet_distance = as.dist(cr3)
-dendo_cr3 = hclust(Commet_distance, method="ward.D2")
-plot(dendo_cr3, main="Simka hierarchical clustering", cex = 0.3, sub = NA, xlab = paste("hierarchical clustering of ",args[1]))
+Commet_distance = as.dist(distanceMatrix)
+hc = hclust(Commet_distance, method="ward.D2")
+dendo_cr3 = as.dendrogram(hc)
+
+if(use_metadata){
+	
+	colors_numeric = colors_numeric[hc$order]
+	dendo_cr3 %>% set("labels_col", colors_numeric) %>% set("branches_k_color", colors_numeric) %>% # change color
+	plot(main="Simka hierarchical clustering", cex = 0.3, xlab="", sub="")
+	legend("topright", title=metadata_variable, legend=unique(colors), col=unique(colors_numeric), pch=16)
+
+} else{
+	plot(dendo_cr3, main="Simka hierarchical clustering", cex = 0.3, xlab="", sub="")
+
+}
+
+
+
+
