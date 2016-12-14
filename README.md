@@ -202,9 +202,9 @@ Example:
 
     python run-visualization.py -in simka_results_dir -out output_figures_dir -pca -heatmap -tree
 
-where simka_results_dir in the folder containing the distances matrices of Simka (-out)
+where simka_results_dir is the folder containing the distances matrices of Simka (-out)
 
-To learn advanced usage, run example: ./example/1-basic_usage/2-visualization.py
+To learn advanced usage, run example: ./example/1-basic_usage/2-visualization.py.
 For instance, you can add annotations to figures (colors) by provding a metadata table in a specific format.
 
 ##Usage for simka
