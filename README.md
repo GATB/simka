@@ -192,19 +192,20 @@ The result directory also contains a directory named "matrix_binary" that can be
 
 ##Visualize simka results
 
-Simka results can be visualized through heatmaps, hierarchical clustering and PCA.
+Simka results can be visualized through heatmaps, hierarchical clustering and PCA (MDS or PCoA to be exact).
 	
-Requirements: R, gplots package
+Requirements: R, gplots package (only for heatmap)
 
-Run the script create_heatmaps.py (located in "scripts/visualization" folder).
+Use the script run-visualization.py (located in "scripts/visualization" folder).
 
 Example: 
 
-    python create_heatmaps.py simka_results_dir
+    python run-visualization.py -in simka_results_dir -out output_figures_dir -pca -heatmap -tree
 
 where simka_results_dir in the folder containing the distances matrices of Simka (-out)
 
-used axis for the PCA can be changed at the begining of the script "pca.r" (PCA_AXIS1 and PCA_AXIS2)
+To learn advanced usage, run example: ./example/1-basic_usage/2-visualization.py
+For instance, you can add annotations to figures (colors) by provding a metadata table in a specific format.
 
 ##Usage for simka
 
