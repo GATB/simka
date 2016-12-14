@@ -53,6 +53,8 @@ def outputHeatmap(outputFilename, matrixAsymFilename, matrixSymFilename):
 #	print(outputFilename)
 #command = "Rscript " +  heatmap_script_filename + " " + join(mat_input_dir, matrixAsymFilename) + " " + join(mat_input_dir, matrixNormFilename) + " " + join(mat_input_dir, outputFilename)
 	command = "Rscript " +  heatmap_script_filename + " " + join(args.input_dir, matrixAsymFilename) + " " + join(args.input_dir, matrixSymFilename) + " " + join(args.output_dir, outputFilename)
+	command = add_metadata_args(command)
+
 	print("\t"+command)
 #print command
 	os.system(command + " > /dev/null 2>&1  ")
@@ -65,7 +67,7 @@ def outputHclust(outputFilename, matrixNormFilename):
 
 	print("\t"+command)
 	#print command
-	os.system(command) # + " > /dev/null 2>&1  ")
+	os.system(command + " > /dev/null 2>&1  ")
 
 def outputPca(outputFilename, matrixNormFilename):
 	if not args.want_pca: return
@@ -78,7 +80,7 @@ def outputPca(outputFilename, matrixNormFilename):
 	#print(args.metadata_filename)
 	#print(args.metadata_variable)
 	#print command
-	os.system(command)# + " > /dev/null 2>&1  ")
+	os.system(command + " > /dev/null 2>&1  ")
 
 def execute():
 	files = [ f for f in listdir(args.input_dir) if isfile(join(args.input_dir,f))]

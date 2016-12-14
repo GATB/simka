@@ -10,7 +10,6 @@ distanceMatrix = as.matrix(read.table(file=distanceMatrixFilename, sep=";", head
 
 pdf(file=args[2])
 
-print(length(args))
 
 use_metadata = F
 if(length(args) == 4){
