@@ -27,7 +27,8 @@ truth_distance_matrix = as.dist(truth_distance_matrix)
 
 compute_mean_correlation = function(distance_matrix_filenames){
 	
-	correlations = c()
+	kendall_correlations = c()
+	spearman_correlations = c()
 	
 	for(filename in distance_matrix_filenames){
 		
@@ -36,16 +37,30 @@ compute_mean_correlation = function(distance_matrix_filenames){
 		
 		m = mantel(truth_distance_matrix, distance_matrix, method="spearman", permutations=1)
 		correlation = round(m$statistic,3)
-		correlations = c(correlations, correlation)
+		spearman_correlations = c(spearman_correlations, correlation)
+		
+		
+		m = mantel(truth_distance_matrix, distance_matrix, method="kendall", permutations=1)
+		correlation = round(m$statistic,3)
+		kendall_correlations = c(kendall_correlations, correlation)
 	}
 	
-	return(mean(correlations))
+	return(list(
+	spearman_mean=mean(spearman_correlations), spearman_sd=sd(spearman_correlations), spearman_se=sd(spearman_correlations)/sqrt(length(spearman_correlations)),
+	kendall_mean=mean(kendall_correlations), kendall_sd=sd(kendall_correlations), kendall_se=sd(kendall_correlations)/sqrt(length(kendall_correlations))
+	)
+	)
 }
 
 #------------------------------------------------------------------
 
 nb_reads = c()
-mean_correlations = c()
+spearman_mean = c()
+spearman_sd = c()
+spearman_se = c()
+kendall_mean = c()
+kendall_sd = c()
+kendall_se = c()
 
 
 inputFile = file(input_filename,open="r")
@@ -62,8 +77,13 @@ for(line in readLines(inputFile)){
 		filenames = c(filenames, fields[i])
 	}
 	
-	mean_correlation = compute_mean_correlation(filenames)
-	mean_correlations = c(mean_correlations, mean_correlation)
+	results = compute_mean_correlation(filenames)
+	spearman_mean = c(spearman_mean, results$spearman_mean)
+	spearman_sd = c(spearman_sd, results$spearman_sd)
+	spearman_se = c(spearman_se, results$spearman_se)
+	kendall_mean = c(kendall_mean, results$kendall_mean)
+	kendall_sd = c(kendall_sd, results$kendall_sd)
+	kendall_se = c(kendall_se, results$kendall_se)
 	
 }
 close(inputFile)
@@ -71,36 +91,70 @@ close(inputFile)
 #------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Create figure
 #------------------------------------------------------------------------------------------------------------------------------------------------------------
-create_figure_correlation = function(df){
+create_figure_correlation_spearman = function(df){
 	
+	#print(df)
 	#mdf = df
 	#mdf <- melt(df, id="ksizes")
 	#print(mdf)
 	
-	p = ggplot(df, aes(x=nb_reads, y=mean_correlations)) +
+	p = ggplot(df, aes(x=nb_reads, y=spearman_mean)) +
 	geom_point() +
-	geom_line()
-	
+	geom_errorbar(aes(ymin=spearman_mean-spearman_sd, ymax=spearman_mean+spearman_sd), color="green")+
+	geom_errorbar(aes(ymin=spearman_mean-spearman_se, ymax=spearman_mean+spearman_se), color="red")+
+	ylim(0, 1)
+
 	p = p + theme_bw() +
 	theme(
 	panel.border = element_rect(colour = "black", fill=NA, size=1),
 	text = element_text(size=10)
 	)
-	p = p + ggtitle("Functional correlation")
-	#p = p + scale_colour_manual(values=COLOR_PALETTE)
+	p = p + xlab("number of reads")
+	p = p + ylab("Spearman correlation")
 	
 	return(p)
+}
+
+create_figure_correlation_kendall = function(df){
 	
+	print(df)
+	#mdf = df
+	#mdf <- melt(df, id="ksizes")
+	#print(mdf)
+	
+	p = ggplot(df, aes(x=nb_reads, y=kendall_mean)) +
+	geom_point() +
+	geom_errorbar(aes(ymin=kendall_mean-kendall_sd, ymax=kendall_mean+kendall_sd), color="green") +
+	geom_errorbar(aes(ymin=kendall_mean-kendall_se, ymax=kendall_mean+kendall_se), color="red") +
+	ylim(0, 1)
+
+	p = p + theme_bw() +
+	theme(
+	panel.border = element_rect(colour = "black", fill=NA, size=1),
+	text = element_text(size=10)
+	)
+	p = p + xlab("number of reads")
+	p = p + ylab("Kendall correlation")
+	
+	
+	return(p)
 }
 
 #------------------------------------------------------------------
 
 df = data.frame(
 nb_reads = nb_reads,
-mean_correlations = mean_correlations
+spearman_mean = spearman_mean,
+spearman_sd = spearman_sd,
+spearman_se = spearman_se,
+kendall_mean = kendall_mean,
+kendall_sd = kendall_sd,
+kendall_se = kendall_se
 )
 
 
-p = create_figure_correlation(df)
-ggsave(p, file="result_figures/correlation_vs_nbReads.png")
 
+p = create_figure_correlation_spearman(df) + ggtitle(paste0("Impact of read filtering - ", distance_name))
+ggsave(p, file=paste0("result_figures", "/",  distance_name, "/", "spearman_vs_nbReads.png"))
+p = create_figure_correlation_kendall(df) + ggtitle(paste0("Impact of read filtering - ", distance_name))
+ggsave(p, file=paste0("result_figures", "/",  distance_name, "/", "kendall_vs_nbReads.png"))
