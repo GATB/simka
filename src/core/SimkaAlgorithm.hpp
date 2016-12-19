@@ -52,6 +52,8 @@ const string STR_SIMKA_COMPUTE_DATA_INFO = "-data-info";
 const string STR_SIMKA_SUBSAMPLING_SETUP = "-subsampling-setup";
 const string STR_SIMKA_SUBSAMPLING_MAX_READS = "-subsampling-space";
 const string STR_SIMKA_SUBSAMPLING_NB_PICKED_READS = "-subsampling-nb-reads";
+const string STR_SIMKA_SUBSAMPLING_REFERENCE_DATASET_ID = "-subsampling-ref-id";
+const string STR_SIMKA_SUBSAMPLING_KIND = "-subsampling-kind";
 
 enum SIMKA_SOLID_KIND{
 	RANGE,

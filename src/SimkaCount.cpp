@@ -93,6 +93,7 @@ public:
         getParser()->push_back (new OptionOneParam ("-nb-partitions",   "bank name", true));
         getParser()->push_back (new OptionOneParam (STR_SIMKA_SUBSAMPLING_MAX_READS,   "bank name", false));
         getParser()->push_back (new OptionOneParam (STR_SIMKA_SUBSAMPLING_NB_PICKED_READS,   "bank name", false));
+        getParser()->push_back (new OptionOneParam (STR_SIMKA_SUBSAMPLING_KIND,   "bank name", false));
         //getParser()->push_back (new OptionOneParam ("-nb-cores",   "bank name", true));
         //getParser()->push_back (new OptionOneParam ("-max-memory",   "bank name", true));
 
@@ -119,16 +120,19 @@ public:
     	CountNumber abundanceMin =   getInput()->getInt(STR_KMER_ABUNDANCE_MIN);
     	CountNumber abundanceMax =   getInput()->getInt(STR_KMER_ABUNDANCE_MAX);
 
+
     	bool isSubsampling = false;
     	u_int64_t _maxPickableKmers = 0;
     	u_int64_t _nbPickedReads = 0;
+    	size_t subsamplingKind = 0;
 		if(getInput()->get(STR_SIMKA_SUBSAMPLING_MAX_READS)){
 			isSubsampling = true;
 			_maxPickableKmers = getInput()->getInt(STR_SIMKA_SUBSAMPLING_MAX_READS);
 			_nbPickedReads = getInput()->getInt(STR_SIMKA_SUBSAMPLING_NB_PICKED_READS);
+			subsamplingKind = getInput()->getInt(STR_SIMKA_SUBSAMPLING_KIND);
 		}
 
-    	Parameter params(*this, kmerSize, outputDir, bankName, minReadSize, minReadShannonIndex, maxReads, nbDatasets, nbPartitions, abundanceMin, abundanceMax, bankIndex, isSubsampling, _maxPickableKmers, _nbPickedReads);
+    	Parameter params(*this, kmerSize, outputDir, bankName, minReadSize, minReadShannonIndex, maxReads, nbDatasets, nbPartitions, abundanceMin, abundanceMax, bankIndex, isSubsampling, _maxPickableKmers, _nbPickedReads, subsamplingKind);
 
         Integer::apply<Functor,Parameter> (kmerSize, params);
 
@@ -166,8 +170,8 @@ public:
 
     struct Parameter
     {
-        Parameter (SimkaCount& tool, size_t kmerSize, string outputDir, string bankName, size_t minReadSize, double minReadShannonIndex, u_int64_t maxReads, size_t nbDatasets, size_t nbPartitions, CountNumber abundanceMin, CountNumber abundanceMax, size_t bankIndex, bool isSubsampling, u_int64_t maxPickableKmers, u_int64_t nbPickedReads) :
-        	tool(tool), kmerSize(kmerSize), outputDir(outputDir), bankName(bankName), minReadSize(minReadSize), minReadShannonIndex(minReadShannonIndex), maxReads(maxReads), nbDatasets(nbDatasets), nbPartitions(nbPartitions), abundanceMin(abundanceMin), abundanceMax(abundanceMax), bankIndex(bankIndex), isSubsampling(isSubsampling), maxPickableKmers(maxPickableKmers), nbPickedReads(nbPickedReads)  {}
+        Parameter (SimkaCount& tool, size_t kmerSize, string outputDir, string bankName, size_t minReadSize, double minReadShannonIndex, u_int64_t maxReads, size_t nbDatasets, size_t nbPartitions, CountNumber abundanceMin, CountNumber abundanceMax, size_t bankIndex, bool isSubsampling, u_int64_t maxPickableKmers, u_int64_t nbPickedReads, size_t subsamplingKind) :
+        	tool(tool), kmerSize(kmerSize), outputDir(outputDir), bankName(bankName), minReadSize(minReadSize), minReadShannonIndex(minReadShannonIndex), maxReads(maxReads), nbDatasets(nbDatasets), nbPartitions(nbPartitions), abundanceMin(abundanceMin), abundanceMax(abundanceMax), bankIndex(bankIndex), isSubsampling(isSubsampling), maxPickableKmers(maxPickableKmers), nbPickedReads(nbPickedReads), subsamplingKind(subsamplingKind)  {}
         SimkaCount& tool;
         //size_t datasetId;
         size_t kmerSize;
@@ -184,6 +188,7 @@ public:
         bool isSubsampling;
         u_int64_t maxPickableKmers;
         u_int64_t nbPickedReads;
+        size_t subsamplingKind;
     };
 
     template<size_t span> struct Functor  {
@@ -283,7 +288,8 @@ public:
 
 				if(p.isSubsampling){
 					SimkaSubsampling simkaSubsampler(p.outputDir, p.kmerSize);
-					simkaSubsampler.sampleWithReplacement(p.bankName, p.nbPickedReads, p.maxPickableKmers, subsampleReads);
+					simkaSubsampler.start(false, 0, p.nbPickedReads, p.maxPickableKmers, p.subsamplingKind);
+					simkaSubsampler.sample(p.bankName, p.nbPickedReads, p.maxPickableKmers, subsampleReads, p.subsamplingKind);
 
 					p.maxReads = 0;
 					for(size_t i=0; i<subsampleReads.size(); i++){

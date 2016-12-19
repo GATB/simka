@@ -249,6 +249,8 @@ public:
 	bool _isSubsampling;
 	u_int64_t _maxPickableKmers;
 	u_int64_t _nbPickedReads;
+	size_t _subsamplingKind;
+	//u_int64_t _nbKmersToPick;
 
 	void execute(){
 
@@ -267,11 +269,25 @@ public:
 			exit(0);
 		}
 
+
+		//if(this->_options->getInt(STR_SIMKA_SUBSAMPLING_NB_PICKED_KMERS) == 0){
+		//	SimkaSubsampling simkaSubsampling(this->_outputDirTemp, this->_nbBanks, this->_bankNames, this->_kmerSize);
+		//	simkaSubsampling.start( this->_options->getInt(STR_SIMKA_SUBSAMPLING_NB_PICKED_READS), this->_options->getInt(STR_SIMKA_SUBSAMPLING_MAX_READS));
+		//	exit(0);
+		//}
+
 		if(this->_options->get(STR_SIMKA_SUBSAMPLING_MAX_READS)){
 			_isSubsampling = true;
-			SimkaSubsampling simkaSubsampling(this->_outputDirTemp, this->_nbBanks, this->_bankNames, this->_kmerSize);
 			_maxPickableKmers = this->_options->getInt(STR_SIMKA_SUBSAMPLING_MAX_READS);
 			_nbPickedReads = this->_options->getInt(STR_SIMKA_SUBSAMPLING_NB_PICKED_READS);
+			u_int64_t referenceDatasetID = this->_options->getInt(STR_SIMKA_SUBSAMPLING_REFERENCE_DATASET_ID);
+			_subsamplingKind = this->_options->getInt(STR_SIMKA_SUBSAMPLING_KIND);
+
+			//SimkaSubsampling simkaSubsampling(this->_outputDirTemp, this->_nbBanks, this->_bankNames, this->_kmerSize);
+			SimkaSubsampling simkaSubsampling(this->_outputDirTemp, this->_nbBanks, this->_bankNames, this->_kmerSize);
+			simkaSubsampling.start(true, referenceDatasetID, _nbPickedReads, _maxPickableKmers, _subsamplingKind);
+
+			//_nbKmersToPick = this->_options->getInt(STR_SIMKA_SUBSAMPLING_NB_PICKED_KMERS);
 			//simkaSubsampling.setup();
 			//exit(0);
 			//cout << _maxPickableKmers << endl;
@@ -858,6 +874,8 @@ public:
 			if(_isSubsampling){
 				command += " " + string(STR_SIMKA_SUBSAMPLING_MAX_READS) + " " + SimkaAlgorithm<>::toString(_maxPickableKmers);
 				command += " " + string(STR_SIMKA_SUBSAMPLING_NB_PICKED_READS) + " " + SimkaAlgorithm<>::toString(_nbPickedReads);
+				command += " " + string(STR_SIMKA_SUBSAMPLING_KIND) + " " + SimkaAlgorithm<>::toString(_subsamplingKind);
+				//command += " " + string(STR_SIMKA_SUBSAMPLING_NB_PICKED_KMERS) + " " + SimkaAlgorithm<>::toString(_nbKmersToPick);
 			}
 			//command += " -verbose " + Stringify::format("%d", this->_options->getInt(STR_VERBOSE));
 			command += " >> " + logFilename + " 2>&1";

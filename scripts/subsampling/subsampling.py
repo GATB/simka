@@ -5,7 +5,7 @@ os.chdir(os.path.split(os.path.realpath(__file__))[0])
 input_filename = sys.argv[1]
 nb_boostraps = int(sys.argv[2])
 output_dir_temp = os.path.join(sys.argv[3], "__temp__")
-PERCENTS = [1, 2, 3, 4, 5, 10, 20, 30]
+NB_READS_TO_PICK = [1000, 5000, 10000, 50000, 100000]
 
 
 
@@ -52,20 +52,25 @@ class ComputeBootstraps():
         filename = os.path.join(output_dir_temp, "simka_subsampling_setup.txt")
         command = "../../build/bin/simka -in " + input_filename + " -out-tmp " + output_dir_temp + " -subsampling-setup"
         command += " > " + filename
+        #print command
+        #exit(1)
         os.system(command)
 
         for line in open(filename, "r"):
-            if "Subsampling max:" in line:
-                self.subsampling_kmer_space = int(line.strip().replace("Subsampling max: ", ""))
-                break
+            if "Reference dataset ID" in line:
+                self.subsampling_reference_dataset_ID = int(line.strip().replace(" ", "").replace("ReferencedatasetID:", ""))
+            if "Subsampling space" in line:
+                self.subsampling_max_reads = int(line.strip().replace(" ", "").replace("Subsamplingspace(reads):", ""))
+                #break
 
-        print("Subsampling space: " + str(self.subsampling_kmer_space))
+        print("Reference dataset ID: " + str(self.subsampling_reference_dataset_ID))
+        print("Subsampling space: " + str(self.subsampling_max_reads))
 
     def compute_truth(self):
 
         command = simka_command
-        command += " -subsampling-space " + str(self.subsampling_kmer_space)
-        command += " -subsampling-nb-reads " + str(self.subsampling_kmer_space)
+        #command += " -subsampling-space " + str(self.subsampling_kmer_space)
+        command += " -max-reads " + str(self.subsampling_max_reads)
 
         output_dir = os.path.join(output_dir_temp, "truth_results")
 
@@ -74,16 +79,17 @@ class ComputeBootstraps():
 
     def subsample(self):
 
-        for percent in PERCENTS:
+        for nb_reads_to_pick in NB_READS_TO_PICK:
 
-            nb_kmers_picked = int((self.subsampling_kmer_space * percent) / float(100))
+            #nb_reads_to_pick = int((self.subsampling_kmer_space * percent) / float(100))
 
             command = simka_command
-            command += " -subsampling-space " + str(self.subsampling_kmer_space)
-            command += " -subsampling-nb-reads " + str(nb_kmers_picked)
+            command += " -subsampling-space " + str(self.subsampling_max_reads)
+            command += " -subsampling-ref-id " + str(self.subsampling_reference_dataset_ID)
+            command += " -subsampling-nb-reads " + str(nb_reads_to_pick)
 
             for i in range(0, nb_boostraps):
-                boostrap_out_dir = os.path.join(boostrap_results_dir, "pass_" + str(percent) + "_" + str(i))
+                boostrap_out_dir = os.path.join(boostrap_results_dir, "pass_" + str(nb_reads_to_pick) + "_" + str(i))
 
                 self.run_simka(command, boostrap_out_dir)
                 #os.system(command + " > " + os.path.join(boostrap_out_dir, "log.txt"))
@@ -169,8 +175,8 @@ class ComputeBootstrapsStats():
 
             os.system("Rscript subsampling_stats.r " + distance_name + " " + input_filename_R + " " + output_dir_temp)
 
-#s = ComputeBootstraps()
-#s.execute()
+s = ComputeBootstraps()
+s.execute()
 
 s = ComputeBootstrapsStats()
 s.execute()
