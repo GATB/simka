@@ -37,19 +37,28 @@ args <- commandArgs(trailingOnly = TRUE)
 #png(file=args[3],width=800,height=800,res=65)
 
 
+width = as.numeric(args[4])
+height = as.numeric(args[5])
+format = args[6]
 
-pdf(file=args[3])
+if(format == "png"){
+	png(file=paste0(args[3], ".png"), width=width, height=height, units="in",res=72)
+} else{
+	pdf(file=paste0(args[3], ".pdf"), width=width, height=height)
+}
+
 cr3 = as.matrix(read.table(file=args[1], sep=";", header=TRUE, row.names=1))  # can be symetric matrix
 cr3_norm = as.matrix(read.table(file=args[2], sep=";", header=TRUE, row.names=1))  # must be a symetric matrix
 
 
 
+
 use_metadata = F
-if(length(args) == 5){
+if(length(args) == 8){
 	
 	use_metadata = T
-	metadata_table = as.matrix(read.table(file=args[4], sep=";", header=TRUE, row.names=1))
-	metadata_variable = args[5]
+	metadata_table = as.matrix(read.table(file=args[7], sep=";", header=TRUE, row.names=1))
+	metadata_variable = args[8]
 	#print(metadata_table)
 	variables = metadata_table[,metadata_variable]
 	#print(variables)

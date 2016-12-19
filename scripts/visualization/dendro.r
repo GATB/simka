@@ -8,16 +8,24 @@ distanceMatrixFilename = args[1]
 
 distanceMatrix = as.matrix(read.table(file=distanceMatrixFilename, sep=";", header=TRUE, row.names=1))
 
-pdf(file=args[2])
+width = as.numeric(args[3])
+height = as.numeric(args[4])
+format = args[5]
+
+if(format == "png"){
+	png(file=paste0(args[2], ".png"), width=width, height=height, units="in",res=72)
+} else{
+	pdf(file=paste0(args[2], ".pdf"), width=width, height=height)
+}
 
 
 use_metadata = F
-if(length(args) == 4){
+if(length(args) == 7){
 	suppressPackageStartupMessages(library(dendextend))
 	
 	use_metadata = T
-	metadata_table = as.matrix(read.table(file=args[3], sep=";", header=TRUE, row.names=1))
-	metadata_variable = args[4]
+	metadata_table = as.matrix(read.table(file=args[6], sep=";", header=TRUE, row.names=1))
+	metadata_variable = args[7]
 	#print(metadata_table)
 	variables = metadata_table[,metadata_variable]
 	#print(variables)

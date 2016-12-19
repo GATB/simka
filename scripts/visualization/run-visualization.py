@@ -9,16 +9,24 @@ import sys, argparse
 parser = argparse.ArgumentParser()
 
 
+parserFile = parser.add_argument_group("in/out options")
+parserMetadata = parser.add_argument_group("metadata options")
+parserVisualization = parser.add_argument_group("visualization options")
 
-parser.add_argument('-in', action="store", dest="input_dir", help="simka result directory containing distance matrices", required=True)
-parser.add_argument('-out', action="store", dest="output_dir", help="output directory for figures", required=True)
-parser.add_argument('-metadata-in', action="store", dest="metadata_filename", help="filename containing metadata of datasets in csv format (separator=;)")
-parser.add_argument('-metadata-variable', action="store", dest="metadata_variable", help="the name of the variable you want to use in metadata table (column name)")
-parser.add_argument('-heatmap', action="store_true", dest="want_heatmap", help="compute and output heatmap")
-parser.add_argument('-tree', action="store_true", dest="want_tree", help="compute and output hierachical clustering as a dendrogram")
-parser.add_argument('-pca', action="store_true", dest="want_pca", help="compute and output pca (more precisely mds/PCoA)")
-parser.add_argument('-pca-axis-1', action="store", dest="pca_axis_1", help="the number of the first axis of the PCA (only used if -pca)", default="1")
-parser.add_argument('-pca-axis-2', action="store", dest="pca_axis_2", help="the number of the second axis of the PCA (only used if -pca)", default="2")
+parserFile.add_argument('-in', action="store", dest="input_dir", help="simka result directory containing distance matrices", required=True)
+parserFile.add_argument('-out', action="store", dest="output_dir", help="output directory for figures", required=True)
+parserFile.add_argument('-width', action="store", dest="width", help="width of figures in inches", default="7")
+parserFile.add_argument('-height', action="store", dest="height", help="height of figures in inches", default="7")
+parserFile.add_argument('-format', action="store", dest="format", help="output format (pdf or png)", default="png")
+
+parserMetadata.add_argument('-metadata-in', action="store", dest="metadata_filename", help="filename containing metadata of datasets in csv format (separator=;)")
+parserMetadata.add_argument('-metadata-variable', action="store", dest="metadata_variable", help="the name of the variable you want to use in metadata table (column name)")
+
+parserVisualization.add_argument('-heatmap', action="store_true", dest="want_heatmap", help="compute and output heatmap")
+parserVisualization.add_argument('-tree', action="store_true", dest="want_tree", help="compute and output hierachical clustering as a dendrogram")
+parserVisualization.add_argument('-pca', action="store_true", dest="want_pca", help="compute and output pca (more precisely mds/PCoA)")
+parserVisualization.add_argument('-pca-axis-1', action="store", dest="pca_axis_1", help="the number of the first axis of the PCA (only used if -pca)", default="1")
+parserVisualization.add_argument('-pca-axis-2', action="store", dest="pca_axis_2", help="the number of the second axis of the PCA (only used if -pca)", default="2")
 
 args =  parser.parse_args()
 
@@ -33,6 +41,10 @@ matrix = {}
 #}
 
 def add_metadata_args(command):
+
+	command += " " + args.width
+	command += " " + args.height
+	command += " " + args.format
 
 	if args.metadata_filename != None:
 		if args.metadata_variable == None:
@@ -67,7 +79,7 @@ def outputHclust(outputFilename, matrixNormFilename):
 
 	print("\t"+command)
 	#print command
-	os.system(command + " > /dev/null 2>&1  ")
+	os.system(command)# + " > /dev/null 2>&1  ")
 
 def outputPca(outputFilename, matrixNormFilename):
 	if not args.want_pca: return
@@ -116,9 +128,9 @@ def execute():
 		#one version of the similairty function (sym)
 		if len(matrix_filenames) == 1:
 			#print("lala")
-			outputHeatmap("heatmap_" + method_name + ".pdf", matrix_filenames[0], matrix_filenames[0])
-			outputHclust("hclust_" + method_name + ".pdf", matrix_filenames[0])
-			outputPca("pca_" + method_name + ".pdf", matrix_filenames[0])
+			outputHeatmap("heatmap_" + method_name, matrix_filenames[0], matrix_filenames[0])
+			outputHclust("hclust_" + method_name, matrix_filenames[0])
+			outputPca("pca_" + method_name, matrix_filenames[0])
 		#two version of the similarity function (sym and asym)
 		else:
 			sym = ""
@@ -128,9 +140,9 @@ def execute():
 					asym = filename
 				else:
 					sym = filename
-			outputHeatmap("heatmap_" + method_name + ".pdf", asym, sym)
-			outputHclust("hclust_" + method_name + ".pdf", sym)
-			outputPca("pca_" + method_name + ".pdf", sym)
+			outputHeatmap("heatmap_" + method_name, asym, sym)
+			outputHclust("hclust_" + method_name, sym)
+			outputPca("pca_" + method_name, sym)
 
 
 

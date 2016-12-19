@@ -4,19 +4,30 @@
 args <- commandArgs(trailingOnly = TRUE)
 dir = dirname(sub(".*=", "", commandArgs()[4]))
 distanceMatrixFilename = args[1]
-outputFilename = args[2]
+#outputFilename = args[2]
 pca_axis1 = as.numeric(args[3])
 pca_axis2 = as.numeric(args[4])
+
+width = as.numeric(args[5])
+height = as.numeric(args[6])
+format = args[7]
+
+if(format == "png"){
+	png(file=paste0(args[2], ".png"), width=width, height=height, units="in",res=72)
+} else{
+	pdf(file=paste0(args[2], ".pdf"), width=width, height=height)
+}
+
 
 distanceMatrix = as.matrix(read.table(file=distanceMatrixFilename, sep=";", header=TRUE, row.names=1))
 
 use_metadata = F
-if(length(args) == 6){
+if(length(args) == 9){
 	suppressPackageStartupMessages(library(dendextend))
 	
 	use_metadata = T
-	metadata_table = as.matrix(read.table(file=args[5], sep=";", header=TRUE, row.names=1))
-	metadata_variable = args[6]
+	metadata_table = as.matrix(read.table(file=args[8], sep=";", header=TRUE, row.names=1))
+	metadata_variable = args[9]
 	#print(metadata_table)
 	variables = metadata_table[,metadata_variable]
 	#print(variables)
@@ -71,8 +82,9 @@ distData <- format_distance(distanceMatrix, max(pca_axis1, pca_axis2))
 x = distData$data[,paste0("Dim", pca_axis1)]
 y = distData$data[,paste0("Dim", pca_axis2)]
 
-pdf(file=outputFilename)
+#pdf(file=outputFilename)
 
+par(mar=c(5.1, 4.1, 4.1, 8.1), xpd=TRUE)
 plot(x, y, type='n',
 xlab=paste0("PC", pca_axis1, " (", round(distData$eig[pca_axis1], 2), "%)"),
 ylab=paste0("PC", pca_axis2, " (", round(distData$eig[pca_axis2], 2), "%)")
@@ -80,7 +92,7 @@ ylab=paste0("PC", pca_axis2, " (", round(distData$eig[pca_axis2], 2), "%)")
 
 if(use_metadata){
 	text(x, y, labels=rownames(distData$data), col=colors_numeric, font=2)
-	legend("right", title=metadata_variable, legend=unique(colors), col=unique(colors_numeric), pch=16)
+	legend("right", title=metadata_variable, legend=unique(colors), col=unique(colors_numeric), pch=16, inset=c(-0.3, 0))
 } else{
 	text(x, y, labels=rownames(distData$data), font=2)
 }
