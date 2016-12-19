@@ -155,7 +155,7 @@ class Simka_ComputeDistance():
 			" -kmer-size " + str(self.database._kmerSize) + \
 			" -nb-partitions " + str(self.database._nbPartitions) + \
 			" -max-datasets " + str(self.nbFileProcessed+self.maximumProcessedDatasets)
-		print "simka2-distance (computeDistanceFinal):    besoin de pouvoir submit ce job en HPC mode ?"
+		#print "simka2-distance (computeDistanceFinal):    besoin de pouvoir submit ce job en HPC mode ?"
 		#command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
 		ret = os.system(command)
 		if ret != 0: exit(1)

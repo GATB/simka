@@ -130,13 +130,15 @@ Simka is implemented with the GATB library (http://gatb.inria.fr/).
 	
 The input file (-in) lists the datasets. These datasets can be in fasta, fastq and in gzip compressed format (.gz).
 
-One sample per line with the following syntax (you can put any number of spaces between syntax):
+One dataset per line with the following syntax (you can put any number of spaces and/or tabs between syntax):
 
     ID1: filename.fasta
     ID2: filename.fasta
     ID3: filename.fasta
 
 The dataset ID in the name that will appear in the headers of the distance matrices.
+
+You can find a simka input file in example directory: ./example/data/simka_input.txt
 
 If a given datset has been splitted in several parts, Simka can automatically concatenate them.
 

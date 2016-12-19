@@ -37,6 +37,7 @@ SCRIPT_DIR = os.path.split(os.path.realpath(__file__))[0]
 class ComputeKmerSpectrumAll():
 
 	def __init__(self):
+		self.checkInput()
 		self.database = SimkaDatabase(args._databaseDir)
 		self.nbDatasetToProcess = 0
 		self.processed_ids = []
@@ -64,12 +65,13 @@ class ComputeKmerSpectrumAll():
 
 	def computeKmerSpectrums(self):
 
-		inputFile = open(args._inputFilename, "r")
-		for line in inputFile:
+		maininputFile = open(args._inputFilename, "r")
+		for line in maininputFile:
 			line = line.strip()
 			if line == "": continue
 
-			id, filenames = line.replace(" ", "").split(":")
+			line = line.replace(" ", "").replace("\t", "")
+			id, filenames = line.split(":")
 
 			#-- checkpoint
 			isDatasetProcessed = self.database.contains_entry(id)
@@ -110,7 +112,7 @@ class ComputeKmerSpectrumAll():
 			inputFile.close()
 
 			self.computeKmerSpectrum(id, inputFilename, outputDirTemp, nbPairedDatasets)
-
+		maininputFile.close()
 
 
 	def computeKmerSpectrum(self, id, inputFilename, outputDirTemp, nbPairedDatasets):
@@ -199,7 +201,8 @@ class ComputeKmerSpectrumAll():
 			line = line.strip()
 			if line == "": continue
 
-			id, filenames = line.replace(" ", "").split(":")
+			line = line.replace(" ", "").replace("\t", "")
+			id, filenames = line.split(":")
 
 			#-- checkpoint
 			isDatasetProcessed = self.database.contains_entry(id)
@@ -216,7 +219,45 @@ class ComputeKmerSpectrumAll():
 	def getOutputDirTemp(self, id):
 		return os.path.join(args._outputDirTemp, id + "_temp")
 
+	def checkInput(self):
+		inputFile = open(args._inputFilename, "r")
+		for line in inputFile:
+			line = line.strip()
+			if line == "": continue
+
+			line = line.replace(" ", "").replace("\t", "")
+			if not ":" in line:
+				print("Syntax error in simka input file, missing \":\" between dataset ID and filenames")
+				exit(1)
+
+			id, filenames = line.split(":")
+
+			#abs_filenames = ""
+			filenames_paireds = filenames.split(";")
+			nbPairedDatasets = len(filenames_paireds)
+			for filenames_paired in filenames_paireds:
+				filenames_paireds_concats = filenames_paired.split(",")
+				for filenames_paireds_concat in filenames_paireds_concats:
+					if filenames_paireds_concat[0] == "/":
+						self.checkInputFilename(filenames_paireds_concat)
+						#abs_filenames +=  filenames_paireds_concat
+					else:
+						dir = os.path.dirname(os.path.realpath(args._inputFilename))
+						self.checkInputFilename(dir + "/" + filenames_paireds_concat)
+						#abs_filenames +=  dir + "/" + filenames_paireds_concat
+					#abs_filenames += "\n"
+				#abs_filenames = abs_filenames[:-1]
+				#abs_filenames += "\n"
+			#abs_filenames = abs_filenames[:-1]
+
+		inputFile.close()
+
+	def checkInputFilename(self, filename):
+		if not os.path.exists(filename):
+			print "Error in simka input: file not found (" + filename + ")"
+			exit(1)
 
 
+print("lala")
 c = ComputeKmerSpectrumAll()
 c.execute()
