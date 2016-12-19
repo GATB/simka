@@ -33,7 +33,6 @@ const string STR_SIMKA2_DISTANCE_MAX_PROCESSABLE_DATASETS = "-max-datasets";
 
 
 
-
 void simka2_loadStatInfos(const string& databaseDir, const set<string>& uniqDirs, const vector<string>& ids, vector<string>& kmerSpectrumDirs, SimkaStatistics* stats, map<string, string>& datasetFilenames){
 	map<string, vector<u_int64_t> > datasetInfos;
 	map<string, string> test;

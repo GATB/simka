@@ -94,6 +94,7 @@ public:
 		_cachedBag->flush();
     	delete _cachedBag;
 
+    	checkGzFile(_outputFilename);
     	/*
 		for(size_t i=0; i<this->_datasetToMergeDirs.size(); i++){
 			//cout << _datasetIds[i] << endl;
@@ -116,6 +117,22 @@ public:
     	//saveMergeInfos();
     }
 
+	//There is a bug in simka, sometimes a gz file is erroneous at the end
+	//It's really rare and I can't find it
+	//My bad solution is to read the whole gz file as soon as it is close and a segfault will occur if it has a bad format
+	//Of course it's a bad solution because it has a impact on simka performances...
+	void checkGzFile(const string& filename){
+		IterableGzFile<Kmer_BankId_Count>* gzFile = new IterableGzFile<Kmer_BankId_Count>(filename, 10000);
+		Iterator<Kmer_BankId_Count>* it = gzFile->iterator();
+
+		it->first();
+		while(!it->isDone()){
+			it->next();
+		}
+
+		delete it;
+		delete gzFile;
+	}
 
 
 
