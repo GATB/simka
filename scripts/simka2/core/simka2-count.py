@@ -84,7 +84,7 @@ class ComputeKmerSpectrumAll():
 			#-- create dir for temporary files
 			outputDirTemp = self.getOutputDirTemp(id)
 			if os.path.exists(outputDirTemp):
-				shutil.rmtree(outputDirTemp)
+				shutil.rmtree(outputDirTemp, ignore_errors=True)
 
 			os.makedirs(outputDirTemp)
 
@@ -123,7 +123,7 @@ class ComputeKmerSpectrumAll():
 		#kmerSpectrumDir = os.path.join(self.database.dirname, args._relativeKmerSpectrumDir)
 
 		if os.path.exists(kmerSpectrumOutputDir):
-			shutil.rmtree(kmerSpectrumOutputDir)
+			shutil.rmtree(kmerSpectrumOutputDir, ignore_errors=True)
 
 		os.makedirs(kmerSpectrumOutputDir)
 
@@ -188,7 +188,7 @@ class ComputeKmerSpectrumAll():
 
 		self.database.add_entry(id, kmerSpectrumOutputDir)
 
-		shutil.rmtree(outputDirTemp)
+		shutil.rmtree(outputDirTemp, ignore_errors=True)
 
 		kmerSpectrumOutputDirAbs = os.path.join(self.database.dirname, kmerSpectrumOutputDir)
 		SimkaSettings.saveDirSize(kmerSpectrumOutputDirAbs)
@@ -256,6 +256,11 @@ class ComputeKmerSpectrumAll():
 		if not os.path.exists(filename):
 			print "Error in simka input: file not found (" + filename + ")"
 			exit(1)
+		print os.path.getsize(filename)
+		if os.path.getsize(filename) == 0:
+			print "Error in simka input: file is empty (" + filename + ")"
+			exit(1)
+
 
 
 print("lala")

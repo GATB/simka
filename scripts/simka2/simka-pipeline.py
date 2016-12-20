@@ -114,7 +114,7 @@ if ret != 0: exit(1)
 matrixBinaryFilename = os.path.join(databaseDir, "distance", "matrix_binary")
 matrixBinaryFilenameDest = os.path.join(args.output_dir, "matrix_binary")
 if os.path.exists(matrixBinaryFilenameDest):
-    shutil.rmtree(matrixBinaryFilenameDest)
+    shutil.rmtree(matrixBinaryFilenameDest, ignore_errors=True)
 shutil.copytree(matrixBinaryFilename, matrixBinaryFilenameDest)
 matrixBinaryFilename = matrixBinaryFilenameDest
 
@@ -137,8 +137,8 @@ if ret != 0: exit(1)
 # is set.
 #-----------------------------------------------------------------------------
 if not args.keep_tmp:
-    shutil.rmtree(databaseDir)
-shutil.rmtree(tmpComputationDir)
+    shutil.rmtree(databaseDir, ignore_errors=True)
+shutil.rmtree(tmpComputationDir, ignore_errors=True)
 
 
 print("\n\n")

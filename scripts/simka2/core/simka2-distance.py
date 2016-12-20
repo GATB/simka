@@ -48,7 +48,7 @@ class Simka_ComputeDistance():
 	def clearTempDir(self):
 		self.tempDir = os.path.join(self.database.dirname, "distance", "temp_parts")
 		if os.path.exists(self.tempDir):
-			shutil.rmtree(self.tempDir)
+			shutil.rmtree(self.tempDir, ignore_errors=True)
 		os.makedirs(self.tempDir)
 
 	def execute(self):

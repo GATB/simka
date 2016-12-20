@@ -33,7 +33,7 @@ class SimkaKmerSpectrumMerger():
 	def clearTempDir(self):
 		self.tempDir = os.path.join(self.database.dirname, "merge")
 		if os.path.exists(self.tempDir):
-			shutil.rmtree(self.tempDir)
+			shutil.rmtree(self.tempDir, ignore_errors=True)
 		os.makedirs(self.tempDir)
 
 		print "faire une routine qui check si il y a des merge dir inutile (recup merge id dans database 2) verifier s'il y a des dir non referencer)"
@@ -405,7 +405,7 @@ class SimkaKmerSpectrumMerger():
 
 
 		for dir in dirs_to_delete:
-			shutil.rmtree(dir)
+			shutil.rmtree(dir, ignore_errors=True)
 
 		SimkaSettings.saveDirSize(os.path.join(self.database.dirname, mergeOutputRelativeDir))
 

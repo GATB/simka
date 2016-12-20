@@ -68,7 +68,7 @@ def main():
         exit(0)
     else:
         if(os.path.exists(args._databaseDir)):
-            shutil.rmtree(args._databaseDir)
+            shutil.rmtree(args._databaseDir, ignore_errors=True)
         os.makedirs(args._databaseDir)
 
     init_settings()
