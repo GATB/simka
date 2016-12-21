@@ -256,7 +256,7 @@ class ComputeKmerSpectrumAll():
 		if not os.path.exists(filename):
 			print "Error in simka input: file not found (" + filename + ")"
 			exit(1)
-		print os.path.getsize(filename)
+		#print os.path.getsize(filename)
 		if os.path.getsize(filename) == 0:
 			print "Error in simka input: file is empty (" + filename + ")"
 			exit(1)
