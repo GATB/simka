@@ -113,7 +113,24 @@ public:
 
     typedef typename Kmer<span>::Type                                       Type;
     typedef typename Kmer<span>::Count                                      Count;
-    typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
+    //typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
+    struct Kmer_BankId_Count{
+    	Type _type;
+    	u_int64_t _bankId;
+    	u_int64_t _count;
+
+    	Kmer_BankId_Count(){
+
+    	}
+
+    	Kmer_BankId_Count(Type type, u_int64_t bankId, u_int64_t count){
+    		_type = type;
+    		_bankId = bankId;
+    		_count = count;
+    	}
+    };
+
+
     u_int64_t _bankIdOffset;
     //typedef typename Kmer<span>::ModelCanonical                             ModelCanonical;
     //typedef typename ModelCanonical::Kmer                                   KmerType;
@@ -157,16 +174,16 @@ public:
 	}
 
 	Type& value(){
-		return get<0>(_it->item());
+		return _it->item()._type;
 	}
 
 	u_int64_t getBankId(){
 		//cout << "lol  " << get<1>(_it->item()) << "   " << _bankIdOffset << endl;
-		return (((u_int64_t)(get<1>(_it->item()))) + _bankIdOffset);
+		return (((u_int64_t)(_it->item()._bankId)) + _bankIdOffset);
 	}
 
 	u_int64_t& abundance(){
-		return get<2>(_it->item());
+		return _it->item()._count;
 	}
 
 
@@ -194,9 +211,31 @@ public:
 
 	typedef typename Kmer<span>::Type                                       Type;
 	typedef typename Kmer<span>::Count                                      Count;
-    typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
-    typedef tuple<Type, u_int64_t, u_int64_t, StorageIt<span>*> kxp;
-	struct kxpcomp { bool operator() (kxp l,kxp r) { return (get<0>(r) < get<0>(l)); } } ;
+    //typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
+    //typedef tuple<Type, u_int64_t, u_int64_t, StorageIt<span>*> kxp;
+
+    struct kxp{
+    	Type _type;
+    	u_int64_t _bankId;
+    	u_int64_t _count;
+    	StorageIt<span>* _it;
+
+    	kxp(){
+
+    	}
+
+    	kxp(Type type, u_int64_t bankId, u_int64_t count, StorageIt<span>* it){
+    		_type = type;
+    		_bankId = bankId;
+    		_count = count;
+    		_it = it;
+    	}
+    };
+
+
+	struct kxpcomp { bool operator() (kxp& l,kxp& r) { return (r._type < l._type); } } ;
+
+	typedef typename StorageIt<span>::Kmer_BankId_Count Kmer_BankId_Count;
 
 
 
@@ -227,7 +266,7 @@ public:
     void execute(){
 
     	//cout << endl << "start merging" << endl;
-		vector<IterableGzFile<Kmer_BankId_Count>* > partitions;
+		vector<IterableGzFile< Kmer_BankId_Count >* > partitions;
 		vector<StorageIt<span>*> its;
 
 		u_int64_t bankIdOffset = 0;
@@ -360,7 +399,7 @@ public:
 		if (pq.size() != 0) // everything empty, no kmer at all
 		{
 			//get first pointer
-			bestIt = get<3>(pq.top()); pq.pop();
+			bestIt = pq.top()._it; pq.pop();
 	    	process(bestIt->value(), _indexReordering[bestIt->getBankId()], bestIt->abundance());
 
 	    	//previous_kmer = bestIt->value();
@@ -380,7 +419,7 @@ public:
 
 					//otherwise get new best
 					//best_p = get<1>(pq.top()) ; pq.pop();
-					bestIt = get<3>(pq.top()); pq.pop();
+					bestIt = pq.top()._it; pq.pop();
 				}
 
 				//cout << "lol" << endl << endl;
@@ -393,7 +432,7 @@ public:
 				//else{
 					pq.push(kxp(bestIt->value(), _indexReordering[bestIt->getBankId()], bestIt->abundance(), bestIt)); //push new val of this pointer in pq, will be counted later
 
-			    	bestIt = get<3>(pq.top()); pq.pop();
+			    	bestIt = pq.top()._it; pq.pop();
 			    	//previous_kmer = bestIt->value();
 
 			    	//cout << bestIt << " " << bestIt->_bankIdOffset << " " << bestIt->getBankId() << endl; !!

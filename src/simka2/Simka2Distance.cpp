@@ -29,9 +29,43 @@ public:
 
 	typedef typename Kmer<span>::Type                                       Type;
 	typedef typename Kmer<span>::Count                                      Count;
-    typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
-    typedef tuple<Type, u_int64_t, u_int64_t, StorageIt<span>*> kxp;
+    //typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
+    //typedef tuple<Type, u_int64_t, u_int64_t, StorageIt<span>*> kxp;
+	/*
+    struct kxp{
+		Type _type;
+    	StorageItKmerCount<span>* _it;
+
+    	KmerCount_It(){
+
+    	}
+
+    	KmerCount_It(Count& count, StorageItKmerCount<span>* it){
+    		_count = count;
+    		_it = it;
+    	}
+    };
+
+
+
 	struct kxpcomp { bool operator() (kxp l,kxp r) { return (get<0>(r) < get<0>(l)); } } ;
+	 */
+
+    struct Kmer_BankId_Count{
+    	Type _type;
+    	u_int64_t _bankId;
+    	u_int64_t _count;
+
+    	Kmer_BankId_Count(){
+
+    	}
+
+    	Kmer_BankId_Count(Type type, u_int64_t bankId, u_int64_t count){
+    		_type = type;
+    		_bankId = bankId;
+    		_count = count;
+    	}
+    };
 
 	size_t _nbBanks;
 	//string _outputDir;

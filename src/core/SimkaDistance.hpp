@@ -836,10 +836,10 @@ public:
 private:
 
 
-	void get_abc(size_t bank1, size_t bank2, size_t i2, size_t j2, vector<vector<u_int64_t>>& crossedData, u_int64_t& a, u_int64_t& b, u_int64_t& c);
+	void get_abc(size_t bank1, size_t bank2, size_t i2, size_t j2, vector<vector<u_int64_t> >& crossedData, u_int64_t& a, u_int64_t& b, u_int64_t& c);
 
 
-    double distance_abundance_brayCurtis(size_t i, size_t j, size_t i2, size_t j2, vector<vector<u_int64_t>>& crossedData){
+    double distance_abundance_brayCurtis(size_t i, size_t j, size_t i2, size_t j2, vector<vector<u_int64_t> >& crossedData){
 
     	//double intersection = _stats._abundance_jaccard_intersection[i][j];
     	double union_ = _stats._nbSolidKmersPerBank[i] + _stats._nbSolidKmersPerBank[j];

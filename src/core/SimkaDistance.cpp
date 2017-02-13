@@ -883,7 +883,7 @@ SimkaDistance::SimkaDistance(SimkaStatistics& stats) : _stats(stats){
 
 
 
-void SimkaDistance::get_abc(size_t i, size_t j, size_t i2, size_t j2, vector<vector<u_int64_t>>& crossedData, u_int64_t& a, u_int64_t& b, u_int64_t& c){
+void SimkaDistance::get_abc(size_t i, size_t j, size_t i2, size_t j2, vector<vector<u_int64_t> >& crossedData, u_int64_t& a, u_int64_t& b, u_int64_t& c){
 
 	a = crossedData[i2][j2];
 	b = (_stats._nbSolidDistinctKmersPerBank[i] - a);

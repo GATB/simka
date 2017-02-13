@@ -20,7 +20,22 @@ public:
 
     typedef typename Kmer<span>::Type  Type;
     typedef typename Kmer<span>::Count Count;
-    typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
+    //typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
+    struct Kmer_BankId_Count{
+    	Type _type;
+    	u_int64_t _bankId;
+    	u_int64_t _count;
+
+    	Kmer_BankId_Count(){
+
+    	}
+
+    	Kmer_BankId_Count(Type type, u_int64_t bankId, u_int64_t count){
+    		_type = type;
+    		_bankId = bankId;
+    		_count = count;
+    	}
+    };
 
     //SimkaCompressedProcessor(vector<BagGzFile<Count>* >& bags, vector<vector<Count> >& caches, vector<size_t>& cacheIndexes, CountNumber abundanceMin, CountNumber abundanceMax) : _bags(bags), _caches(caches), _cacheIndexes(cacheIndexes)
     SimkaCompressedProcessor(vector<Bag<Kmer_BankId_Count>* >& bags, vector<u_int64_t>& nbKmerPerParts, vector<u_int64_t>& nbDistinctKmerPerParts, vector<u_int64_t>& chordPerParts, CountNumber abundanceMin, CountNumber abundanceMax, size_t bankIndex) :
@@ -94,7 +109,22 @@ public:
 
     typedef typename Kmer<span>::Type  Type;
     typedef typename Kmer<span>::Count Count;
-    typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
+    //typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
+    struct Kmer_BankId_Count{
+    	Type _type;
+    	u_int64_t _bankId;
+    	u_int64_t _count;
+
+    	Kmer_BankId_Count(){
+
+    	}
+
+    	Kmer_BankId_Count(Type type, u_int64_t bankId, u_int64_t count){
+    		_type = type;
+    		_bankId = bankId;
+    		_count = count;
+    	}
+    };
 
     //SimkaCompressedProcessor(vector<BagGzFile<Count>* >& bags, vector<vector<Count> >& caches, vector<size_t>& cacheIndexes, CountNumber abundanceMin, CountNumber abundanceMax) : _bags(bags), _caches(caches), _cacheIndexes(cacheIndexes)
     SimkaAbundanceProcessor(CountNumber abundanceMin, CountNumber abundanceMax)
@@ -147,7 +177,21 @@ public:
     typedef typename Kmer<span>::Type  Type;
     typedef typename Kmer<span>::Count Count;
     //typedef tuple<Count, StorageItKmerCount<span>*> KmerCount_It;
-    typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
+    struct Kmer_BankId_Count{
+    	Type _type;
+    	u_int64_t _bankId;
+    	u_int64_t _count;
+
+    	Kmer_BankId_Count(){
+
+    	}
+
+    	Kmer_BankId_Count(Type type, u_int64_t bankId, u_int64_t count){
+    		_type = type;
+    		_bankId = bankId;
+    		_count = count;
+    	}
+    };
 
 
 	string _outputDir;

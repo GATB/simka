@@ -119,9 +119,39 @@ public:
 
     typedef typename Kmer<span>::Type  Type;
     typedef typename Kmer<span>::Count Count;
-    typedef tuple<Count, StorageItKmerCount<span>*> KmerCount_It;
-    typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
-	struct kxpcomp { bool operator() (KmerCount_It& l,KmerCount_It& r) { return (get<0>(r).value < get<0>(l).value); } } ;
+    //typedef tuple<Count, StorageItKmerCount<span>*> KmerCount_It;
+    //typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
+    struct KmerCount_It{
+    	Count _count;
+    	StorageItKmerCount<span>* _it;
+
+    	KmerCount_It(){
+
+    	}
+
+    	KmerCount_It(Count& count, StorageItKmerCount<span>* it){
+    		_count = count;
+    		_it = it;
+    	}
+    };
+
+    struct Kmer_BankId_Count{
+    	Type _type;
+    	u_int64_t _bankId;
+    	u_int64_t _count;
+
+    	Kmer_BankId_Count(){
+
+    	}
+
+    	Kmer_BankId_Count(Type type, u_int64_t bankId, u_int64_t count){
+    		_type = type;
+    		_bankId = bankId;
+    		_count = count;
+    	}
+    };
+
+	struct kxpcomp { bool operator() (KmerCount_It& l,KmerCount_It& r) { return (r._count.value < l._count.value); } } ;
 
 	u_int64_t _nbReads;
 
@@ -491,9 +521,9 @@ public:
 			//bestPart =
 			//bestIt = get<3>(pq.top()); pq.pop();
 			KmerCount_It kmerCountIt = pq.top(); pq.pop();
-			_partitionWriter->insert(get<0>(kmerCountIt).value, _datasetIDbin, get<0>(kmerCountIt).abundance);
+			_partitionWriter->insert(kmerCountIt._count.value, _datasetIDbin, kmerCountIt._count.abundance);
 
-			bestIt = get<1>(kmerCountIt);
+			bestIt = kmerCountIt._it;
 
 
 			while(1){
@@ -507,13 +537,13 @@ public:
 
 					//otherwise get new best
 					//best_p = get<1>(pq.top()) ; pq.pop();
-					bestIt = get<1>(pq.top()); pq.pop();
+					bestIt = pq.top()._it; pq.pop();
 				}
 
 				pq.push(KmerCount_It(bestIt->item(), bestIt));
 				//pq.push(kxp(bestIt->value(), bestIt->getBankId(), bestIt->abundance(), bestIt)); //push new val of this pointer in pq, will be counted later
 
-				bestIt = get<1>(pq.top()); pq.pop();
+				bestIt = pq.top()._it; pq.pop();
 
 				_partitionWriter->insert(bestIt->item().value, _datasetIDbin, bestIt->item().abundance);
 				/*
@@ -550,7 +580,7 @@ public:
 			chord_N2 += _partitionWriter->_chordNiPerParts[i];
 		}
 
-        ofstream outputInfoFile(_outputDir + "/merge_info.bin", std::ios::binary);
+        ofstream outputInfoFile((_outputDir + "/merge_info.bin").c_str(), std::ios::binary);
 
         u_int64_t nbDatasets = 1;
         u_int64_t datasetIdSize = _datasetID.size();
