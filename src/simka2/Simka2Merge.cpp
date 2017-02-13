@@ -178,7 +178,7 @@ public:
 
     typedef typename Kmer<span>::Type                                       Type;
     typedef typename Kmer<span>::Count                                      Count;
-    typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
+    //typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
 
 	string _inputFilename;
 	string _outputDir;

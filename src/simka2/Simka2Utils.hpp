@@ -289,7 +289,7 @@ public:
 				ifstream mergedLinkFile(mergeInfoFilename.c_str(), std::ios::binary);
 				mergedLinkFile.read((char*)(&nbMergedBanks), sizeof(nbMergedBanks));
 				//cout << nbMergedBanks << endl;
-				for(size_t i=0; i<nbMergedBanks; i++){
+				for(size_t j=0; j<nbMergedBanks; j++){
 
 					string datasetID;
 					u_int64_t nbReads;
@@ -304,7 +304,7 @@ public:
 					}
 					else{
 						//cout << datasetID << "    " << i + bankIdOffset << endl;
-						_indexReordering.push_back(i + bankIdOffset);
+						_indexReordering.push_back(j + bankIdOffset);
 					}
 					//string datasetId = _allDatasetIds[_datasetIds[i]];
 					//u_int64_t size = datasetId.size();
@@ -341,7 +341,7 @@ public:
 			IterableGzFile<Kmer_BankId_Count>* partition = new IterableGzFile<Kmer_BankId_Count>(filename, 10000);
 			partitions.push_back(partition);
 			//cout << "\tbank offset: " << bankIdOffset << endl;
-			its.push_back(new StorageIt<span>(partition->iterator(), i, _partitionId, bankIdOffset));
+			its.push_back(new StorageIt<span>(partition->iterator(), j, _partitionId, bankIdOffset));
 			bankIdOffset += nbMergedBanks;
 			//nbKmers += partition->estimateNbItems();
 
