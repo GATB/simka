@@ -341,7 +341,7 @@ public:
 			IterableGzFile<Kmer_BankId_Count>* partition = new IterableGzFile<Kmer_BankId_Count>(filename, 10000);
 			partitions.push_back(partition);
 			//cout << "\tbank offset: " << bankIdOffset << endl;
-			its.push_back(new StorageIt<span>(partition->iterator(), j, _partitionId, bankIdOffset));
+			its.push_back(new StorageIt<span>(partition->iterator(), i, _partitionId, bankIdOffset));
 			bankIdOffset += nbMergedBanks;
 			//nbKmers += partition->estimateNbItems();
 
