@@ -627,31 +627,33 @@ public:
 			}
 		}*/
 
-		for(size_t ii=0; ii<_sharedNewBanks.size(); ii++){
+		if(_stats->_brayCurtisNumerator._matrix_squaredHalf.size() > 0){
+			for(size_t ii=0; ii<_sharedNewBanks.size(); ii++){
 
-			u_int64_t i = _sharedNewBanks[ii];
-			u_int64_t abundanceI = counts[i];
-			u_int64_t jOffset = _stats->_brayCurtisNumerator._matrix_squaredHalf.size() - _stats->_brayCurtisNumerator._matrix_squaredHalf[i-_bankOffset].size();// + 1;
+				u_int64_t i = _sharedNewBanks[ii];
+				u_int64_t abundanceI = counts[i];
+				u_int64_t jOffset = _stats->_brayCurtisNumerator._matrix_squaredHalf.size() - _stats->_brayCurtisNumerator._matrix_squaredHalf[i-_bankOffset].size();// + 1;
 
-			for(size_t jj=ii+1; jj<_sharedNewBanks.size(); jj++){
+				for(size_t jj=ii+1; jj<_sharedNewBanks.size(); jj++){
 
-				u_int64_t j = _sharedNewBanks[jj];
-				//size_t symetricIndex = j + ((_nbBanks-1)*i) - (i*(i-1)/2);
+					u_int64_t j = _sharedNewBanks[jj];
+					//size_t symetricIndex = j + ((_nbBanks-1)*i) - (i*(i-1)/2);
 
-				u_int64_t abundanceJ = counts[j];
+					u_int64_t abundanceJ = counts[j];
 
-				//_stats->_matrixNbSharedKmers[i][j] += counts[i];
-				//_stats->_matrixNbSharedKmers[j][i] += counts[j];
-				//_stats->_matrixNbDistinctSharedKmers[i][j] += 1;
+					//_stats->_matrixNbSharedKmers[i][j] += counts[i];
+					//_stats->_matrixNbSharedKmers[j][i] += counts[j];
+					//_stats->_matrixNbDistinctSharedKmers[i][j] += 1;
 
 
-				//cout << "\t    " << _stats->_brayCurtisNumerator._matrix_squaredHalf.size() << " " << i-_bankOffset << endl;
-				//cout << "\t        " << _stats->_brayCurtisNumerator._matrix_squaredHalf[i-_bankOffset].size() << " " << (j-_bankOffset-jOffset-1) << endl;
-				//cout << i << " " << j << "     " << _stats->_brayCurtisNumerator._matrix_squaredHalf.size() << " " << _stats->_brayCurtisNumerator._matrix_squaredHalf[i].size() << endl;
-				//cout << i-jOffset << " " << j-jOffset-1 << endl;
-				//cout << jOffset << endl;
-				_stats->_brayCurtisNumerator._matrix_squaredHalf[i-_bankOffset][j-_bankOffset-jOffset-1] += min(abundanceI, abundanceJ);
-				_stats->_matrixNbDistinctSharedKmers._matrix_squaredHalf[i-_bankOffset][j-_bankOffset-jOffset-1] += 1;
+					//cout << "\t    " << _stats->_brayCurtisNumerator._matrix_squaredHalf.size() << " " << i-_bankOffset << endl;
+					//cout << "\t        " << _stats->_brayCurtisNumerator._matrix_squaredHalf[i-_bankOffset].size() << " " << (j-_bankOffset-jOffset-1) << endl;
+					//cout << i << " " << j << "     " << _stats->_brayCurtisNumerator._matrix_squaredHalf.size() << " " << _stats->_brayCurtisNumerator._matrix_squaredHalf[i].size() << endl;
+					//cout << i-jOffset << " " << j-jOffset-1 << endl;
+					//cout << jOffset << endl;
+					_stats->_brayCurtisNumerator._matrix_squaredHalf[i-_bankOffset][j-_bankOffset-jOffset-1] += min(abundanceI, abundanceJ);
+					_stats->_matrixNbDistinctSharedKmers._matrix_squaredHalf[i-_bankOffset][j-_bankOffset-jOffset-1] += 1;
+				}
 			}
 		}
 
