@@ -1,3 +1,6 @@
 [submodule "thirdparty/gatb-core"]
 	path = thirdparty/gatb-core
 	url = https://github.com/GATB/gatb-core.git
+[submodule "thirdparty/KMC"]
+	path = thirdparty/KMC
+	url = https://github.com/refresh-bio/KMC
