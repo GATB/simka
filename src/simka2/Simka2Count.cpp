@@ -8,13 +8,14 @@
 #include <gatb/gatb_core.hpp>
 #include "../core/SimkaUtils.hpp"
 #include "Simka2Utils.hpp"
-#include "../minikc/MiniKC.hpp"
+//#include "../minikc/MiniKC.hpp"
 #include <gatb/kmer/impl/RepartitionAlgorithm.hpp>
 #include <gatb/kmer/impl/ConfigurationAlgorithm.hpp>
 #include "../utils/SimkaIoUtils.hpp"
 //#include "SimkaAlgorithm.hpp"
 //#include "SimkaAlgorithm.hpp"
 
+#include "../../thirdparty/KMC/kmc_api/kmc_file.h"
 
 
 
@@ -105,6 +106,137 @@ private:
 
 
 
+template<size_t span=KMER_DEFAULT_SPAN>
+class SimkaPartitionWriter
+{
+public:
+
+
+    typedef typename Kmer<span>::Type  Type;
+    typedef typename Kmer<span>::Count Count;
+    //typedef tuple<Count, StorageItKmerCount<span>*> KmerCount_It;
+    struct Kmer_BankId_Count{
+
+    	Type _type;
+    	u_int32_t _bankId;
+    	u_int16_t _count;
+
+    	Kmer_BankId_Count(){
+
+    	}
+
+    	Kmer_BankId_Count(Type type, u_int64_t bankId, u_int64_t count){
+    		_type = type;
+    		_bankId = bankId;
+    		_count = count;
+    	}
+    };
+
+
+	string _outputDir;
+	size_t _nbPartitions;
+
+	vector<u_int64_t> _nbKmerPerParts;
+	vector<u_int64_t> _nbDistinctKmerPerParts;
+	vector<u_int64_t> _chordNiPerParts;
+	vector<Bag<Kmer_BankId_Count>* > _bags;
+	vector<Bag<Kmer_BankId_Count>* > _cachedBags;
+
+	vector<uint64_t> kmer_bin;
+
+	SimkaPartitionWriter(const string& oututDir, size_t nbPartitions){
+		_outputDir = oututDir;
+		_nbPartitions = nbPartitions;
+
+		_nbKmerPerParts = vector<u_int64_t>(_nbPartitions, 0);
+		_nbDistinctKmerPerParts =  vector<u_int64_t>(_nbPartitions, 0);
+		_chordNiPerParts = vector<u_int64_t>(_nbPartitions, 0);
+
+
+		//vector<Bag<Kmer_BankId_Count>* > bags;
+		//vector<Bag<Kmer_BankId_Count>* > cachedBags;
+		for(size_t i=0; i<_nbPartitions; i++){
+			//string outputFilename = _outputDir + "/" + _datasetID + "_" + Stringify::format("%i", i) + ".gz";
+			string outputFilename = _outputDir + "/" + Stringify::format("%i", i) + ".gz";
+			Bag<Kmer_BankId_Count>* bag = new BagGzFile<Kmer_BankId_Count>(outputFilename);
+			Bag<Kmer_BankId_Count>* cachedBag = new BagCache<Kmer_BankId_Count>(bag, 10000);
+			_cachedBags.push_back(cachedBag);
+			//BagCache bagCache(*bag, 10000);
+			_bags.push_back(bag);
+		}
+	}
+
+	void insert(CKmerAPI& kmer, u_int64_t bankId, u_int64_t abundance){
+
+
+		kmer.to_long(kmer_bin);
+		size_t part = hash_kmer(kmer_bin) % _nbPartitions;
+
+		Type type; //(kmer_bin[0]);
+		type.setVal(kmer_bin[0]);
+		//size_t part = oahash(kmer) % _nbPartitions;
+		_cachedBags[part]->insert(Kmer_BankId_Count(type, bankId, abundance));
+		_nbDistinctKmerPerParts[part] += 1;
+		_nbKmerPerParts[part] += abundance;
+		_chordNiPerParts[part] += pow(abundance, 2);
+
+	}
+
+	void end(){
+		for(size_t i=0; i<_nbPartitions; i++){
+			//bags[i]->flush();
+			//cachedBags[i]->flush();
+			delete _cachedBags[i];
+			//delete bags[i];
+		}
+
+
+		for(size_t i=0; i<_nbPartitions; i++){
+			string outputFilename = _outputDir + "/" + Stringify::format("%i", i) + ".gz";
+			checkGzFile(outputFilename);
+		}
+	}
+
+	//There is a bug in simka, sometimes a gz file is erroneous at the end
+	//It's really rare and I can't find it
+	//My bad solution is to read the whole gz file as soon as it is close and a segfault will occur if it has a bad format
+	//Of course it's a bad solution because it has a impact on simka performances...
+	void checkGzFile(const string& filename){
+		IterableGzFile<Kmer_BankId_Count>* gzFile = new IterableGzFile<Kmer_BankId_Count>(filename, 10000);
+		Iterator<Kmer_BankId_Count>* it = gzFile->iterator();
+
+		it->first();
+		while(!it->isDone()){
+			it->next();
+		}
+
+		delete it;
+		delete gzFile;
+	}
+
+
+	inline uint64_t hash_kmer(const vector<uint64_t>& kmer_bin){
+	    uint64_t result = 0;
+
+	    //LargeInt<precision> intermediate = elem;
+	    for (size_t i=0;i<kmer_bin.size();i++)
+	    {
+	        //chunk = (intermediate & mask).value[0];
+	        //intermediate = intermediate >> 64;
+	        result ^= korenXor(kmer_bin[i]);
+	    }
+	    return result;
+	}
+
+	inline uint64_t korenXor(uint64_t x)const{
+	        x ^= (x << 21);
+	        x ^= (x >> 35);
+	        x ^= (x << 4);
+	        return x;
+	}
+};
+
+
 
 
 
@@ -137,8 +269,8 @@ public:
 
     struct Kmer_BankId_Count{
     	Type _type;
-    	u_int64_t _bankId;
-    	u_int64_t _count;
+    	u_int32_t _bankId;
+    	u_int16_t _count;
 
     	Kmer_BankId_Count(){
 
@@ -155,7 +287,7 @@ public:
 
 	u_int64_t _nbReads;
 
-
+	string _binDir;
 	size_t _nbPartitions;
 	u_int64_t _maxMemory;
 	size_t _nbCores;
@@ -200,12 +332,14 @@ public:
 	bool _computeComplexDistances;
 	bool _keepTmpFiles;
 
+	string _kmerDatataseFilename;
+
 	SimkaPartitionWriter<span>* _partitionWriter;
 
-	Simka2ComputeKmerSpectrumAlgorithm(IProperties* options):
+	Simka2ComputeKmerSpectrumAlgorithm(IProperties* options, const string& execFilename):
 		Algorithm("simka", -1, options)
 	{
-
+		_binDir = System::file().getDirectory(execFilename);
 	}
 
 	void execute(){
@@ -294,6 +428,8 @@ public:
 		//_options->setStr(STR_URI_OUTPUT_TMP, _outputDirTemp);
 		//System::file().mkdir(_outputDirTemp + "/input/", -1);
 
+		_maxMemory = _maxMemory / 1000;
+		_maxMemory = max(_maxMemory, (u_int64_t) 1);
 	}
 
 
@@ -381,10 +517,130 @@ public:
 
 	}*/
 
+
 	void count(){
 
 		_partitionWriter = new SimkaPartitionWriter<span>(_outputDir, _nbPartitions);
 
+
+		string dataType = "";
+
+		//Determine if input is in fasta or fastq
+		//We get the first line of simka2-count input filename (it's the filename of the first dataset)
+		//We check at the size of the quality string of the first read to determine if fasta or fastq
+		//We don't check the type of others filename (if there are) because anyway KMC can handle only one data type per input filename
+		{
+			ifstream infile(_inputFilename.c_str());
+			string sLine;
+
+			getline(infile, sLine);
+
+			infile.close();
+
+			IBank* bank = Bank::open(sLine);
+			LOCAL(bank);
+
+			Iterator<Sequence>* it = bank->iterator();
+			LOCAL(it);
+			it->first();
+
+			if(it->item().getQuality().size() == 0){
+				dataType = "-fm";
+			}
+			else{
+				dataType = "-fq";
+			}
+
+
+		}
+
+		//cout << Bank::getType(sLine) << endl;
+		/*
+		IBank* bank = Bank::open(_inputFilename);
+		LOCAL(bank);
+
+	    Iterator<Sequence>* itSeq = bank->iterator();
+	    LOCAL (itSeq);
+
+		cout << Bank::getType(_inputFilename) << endl;
+	    std::vector<Iterator<Sequence>*> itBanks =  itSeq->getComposition();
+
+	    for (size_t i=0; i<itBanks.size(); i++)
+	    {
+
+	    }
+
+		string commandDataType = "-fq";
+		if(_inputFilename.find(".fq") !=  string::npos || _inputFilename.find(".fastq") !=  string::npos){
+			commandDataType = "-fq";
+		}
+		else if (_inputFilename.find(".fa") != string::npos || _inputFilename.find(".fasta") != string::npos) {
+			commandDataType = "-fa";
+		}
+		 */
+
+
+		_kmerDatataseFilename = _outputDirTemp + "/kmer_counts";
+
+
+
+
+
+		string kmcCommand = _binDir + "/kmc ";
+		kmcCommand += " -k" + Stringify::format("%i", _kmerSize);
+		kmcCommand += " -n150 "; //number of partitions
+		kmcCommand += " -sm "; //strict max-memory mode
+		kmcCommand += " -ci" + Stringify::format("%i", _abundanceThreshold.first); //abundance min
+		kmcCommand += " -cx" + Stringify::format("%i", _abundanceThreshold.second); //abundance max
+		kmcCommand += " -cs65000"; //abundance max
+		kmcCommand += " -t" + Stringify::format("%i", _nbCores); //abundance max
+		kmcCommand += " -m" + Stringify::format("%i", _maxMemory); //abundance max
+		kmcCommand += " " + dataType + " ";
+		//---
+		kmcCommand += " @" + _inputFilename;
+		kmcCommand += " " + _kmerDatataseFilename;
+		kmcCommand += " " + _outputDirTemp;
+
+		cout << kmcCommand << endl;
+
+		int ret = system(kmcCommand.c_str());
+		if(ret != 0){
+			exit(ret);
+		}
+
+		/*
+		string kmcCommand = createKMCcommand("-fa");
+		int ret = system(kmcCommand.c_str());
+		if(ret != 0){
+			kmcCommand = createKMCcommand("-fq");
+			int ret = system(kmcCommand.c_str());
+			if(ret != 0){
+				kmcCommand = createKMCcommand("-fm");
+				int ret = system(kmcCommand.c_str());
+				if(ret != 0){
+					cout << "kmc failed to count dataset (" << _datasetID << ")" << endl;
+					exit(ret);
+				}
+			}
+		}*/
+
+
+		string kmcSortCommand = "../scripts/simka2/bin/kmc_tools transform ";
+		kmcSortCommand += " " + _kmerDatataseFilename;
+		kmcSortCommand += " sort ";
+		kmcSortCommand += " " + _outputDirTemp + "/kmer_counts_sorted";
+
+
+		ret = system(kmcSortCommand.c_str());
+		if(ret != 0){
+			exit(ret);
+		}
+
+		System::file().remove(_outputDirTemp + "/kmer_counts.kmc_pre");
+		System::file().remove(_outputDirTemp + "/kmer_counts.kmc_suf");
+		_kmerDatataseFilename = _outputDirTemp + "/kmer_counts_sorted";
+
+		/*
 		//vector<string> outInfo;
 
 		IBank* bank = Bank::open(_inputFilename);
@@ -468,16 +724,75 @@ public:
 				_localNbPartitions = algo.getConfig()._nb_partitions;
 			}
 
-			partitionKmerCounts();
+		}
+		 */
+
+		partitionKmerCounts();
+
+	}
+
+
+	void partitionKmerCounts(){
+
+		CKMCFile kmer_data_base;
+
+		if (!kmer_data_base.OpenForListing(_kmerDatataseFilename))
+		{
+			exit(1);
+			//print_info();
+			//return EXIT_FAILURE ;
+		}
+
+
+		uint32 _kmer_length;
+		uint32 _mode;
+		uint32 _counter_size;
+		uint32 _lut_prefix_length;
+		uint32 _signature_len;
+		uint32 _min_count;
+		uint64 _max_count;
+		uint64 _total_kmers;
+
+		kmer_data_base.Info(_kmer_length, _mode, _counter_size, _lut_prefix_length, _signature_len, _min_count, _max_count, _total_kmers);
+
+		char str[1024];
+		uint32 counter_len;
+
+		CKmerAPI kmer_object(_kmer_length);
+
+		//if(min_count_to_set)
+		//if (!(kmer_data_base.SetMinCount(min_count_to_set)))
+		//		return EXIT_FAILURE;
+		//if(max_count_to_set)
+		//if (!(kmer_data_base.SetMaxCount(max_count_to_set)))
+		//		return EXIT_FAILURE;
+
+		uint64 counter;
+		while (kmer_data_base.ReadNextKmer(kmer_object, counter))
+		{
+
+
+			_partitionWriter->insert(kmer_object, _datasetIDbin, counter);
+
+			//kmer_object.to_string(str);
+			//str[_kmer_length] = '\t';
+			//cout << str << " " << kmer_hash_value << endl;
+			//kmer_object.to_string(str);
+			//str[_kmer_length] = '\t';
+			//counter_len = CNumericConversions::Int2PChar(counter, (uchar*)str + _kmer_length + 1);
+			//str[_kmer_length + 1 + counter_len] = '\n';
+			//fwrite(str, 1, _kmer_length + counter_len + 2, out_file);
 		}
 
 
 
-	}
+		//fclose(out_file);
+		kmer_data_base.Close();
 
-	void partitionKmerCounts(){
 
+		_partitionWriter->end();
 
+		/*
 
 		Storage* solidStorage = 0;
 		//string solidsName = _outputDir + "/solid/" +  p.bankName + ".h5";
@@ -546,17 +861,6 @@ public:
 				bestIt = pq.top()._it; pq.pop();
 
 				_partitionWriter->insert(bestIt->item().value, _datasetIDbin, bestIt->item().abundance);
-				/*
-				//_cachedBag->insert(Kmer_BankId_Count(bestIt->value(), bestIt->getBankId(), bestIt->abundance()));
-				size_t part = oahash(bestIt->item().value) % _nbPartitions;
-				//cout << part << " " << p.nbPartitions << endl;
-				//cout << bestIt->item().value.toString(21) << " " << bestIt->item().abundance << endl;
-				cachedBags[part]->insert(Kmer_BankId_Count(bestIt->item().value, _datasetIDbin, bestIt->item().abundance));
-
-				//Kmer_BankId_Count item(kmer, _bankIndex, count[0]);
-				_nbDistinctKmerPerParts[part] += 1;
-				_nbKmerPerParts[part] += bestIt->item().abundance;
-				_chordNiPerParts[part] += pow(bestIt->item().abundance, 2);*/
 			}
 		}
 
@@ -565,6 +869,7 @@ public:
 		for(size_t i=0; i<its.size(); i++){
 			delete its[i];
 		}
+		*/
 		//System::file().remove();
 	}
 
@@ -749,7 +1054,7 @@ public:
 
     	void operator ()  (Parameter p){
 
-    		Simka2ComputeKmerSpectrumAlgorithm<span>* algo = new Simka2ComputeKmerSpectrumAlgorithm<span>(p._props);
+    		Simka2ComputeKmerSpectrumAlgorithm<span>* algo = new Simka2ComputeKmerSpectrumAlgorithm<span>(p._props, p._execFilename);
     		algo->execute();
     		delete algo;
     	}

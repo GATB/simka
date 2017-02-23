@@ -57,8 +57,8 @@ public:
 
     struct Kmer_BankId_Count{
     	Type _type;
-    	u_int64_t _bankId;
-    	u_int64_t _count;
+    	u_int32_t _bankId;
+    	u_int16_t _count;
 
     	Kmer_BankId_Count(){
 

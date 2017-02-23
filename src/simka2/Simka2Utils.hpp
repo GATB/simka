@@ -116,8 +116,8 @@ public:
     //typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
     struct Kmer_BankId_Count{
     	Type _type;
-    	u_int64_t _bankId;
-    	u_int64_t _count;
+    	u_int32_t _bankId;
+    	u_int16_t _count;
 
     	Kmer_BankId_Count(){
 
@@ -177,12 +177,12 @@ public:
 		return _it->item()._type;
 	}
 
-	u_int64_t getBankId(){
+	u_int32_t getBankId(){
 		//cout << "lol  " << get<1>(_it->item()) << "   " << _bankIdOffset << endl;
-		return (((u_int64_t)(_it->item()._bankId)) + _bankIdOffset);
+		return (((u_int32_t)(_it->item()._bankId)) + _bankIdOffset);
 	}
 
-	u_int64_t& abundance(){
+	u_int16_t abundance(){
 		return _it->item()._count;
 	}
 
