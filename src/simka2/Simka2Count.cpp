@@ -398,7 +398,7 @@ public:
 
 		if(!System::file().doesExist(_outputDir)){
 			std::cerr << "Error: can't create output directory (" << _outputDir << ")" << std::endl;
-			exit(1);
+			exit(EXIT_FAILURE);
 			/*
 			int ok = System::file().mkdir(_outputDir, -1);
 			if(ok != 0){
@@ -411,7 +411,7 @@ public:
 
 		if(!System::file().doesExist(_outputDirTemp)){
 			std::cerr << "Error: can't create output temp directory (" << _outputDirTemp << ")" << std::endl;
-			exit(1);
+			exit(EXIT_FAILURE);
 			/*
 			int ok = System::file().mkdir(_outputDirTemp, -1);
 			if(ok != 0){
@@ -605,7 +605,8 @@ public:
 
 		int ret = system(kmcCommand.c_str());
 		if(ret != 0){
-			exit(ret);
+			cout << "Error during KMC k-mer counting" << endl;
+			exit(EXIT_FAILURE);
 		}
 
 		/*
@@ -625,7 +626,7 @@ public:
 		}*/
 
 
-		string kmcSortCommand = "../scripts/simka2/bin/kmc_tools transform ";
+		string kmcSortCommand = _binDir + "/kmc_tools transform ";
 		kmcSortCommand += " " + _kmerDatataseFilename;
 		kmcSortCommand += " sort ";
 		kmcSortCommand += " " + _outputDirTemp + "/kmer_counts_sorted";
@@ -633,7 +634,8 @@ public:
 
 		ret = system(kmcSortCommand.c_str());
 		if(ret != 0){
-			exit(ret);
+			cout << "Error during KMC-TOOLS sort" << endl;
+			exit(EXIT_FAILURE);
 		}
 
 		System::file().remove(_outputDirTemp + "/kmer_counts.kmc_pre");
@@ -738,7 +740,8 @@ public:
 
 		if (!kmer_data_base.OpenForListing(_kmerDatataseFilename))
 		{
-			exit(1);
+			cout << "Can't open KMC k-mer database" << endl;
+			exit(EXIT_FAILURE);
 			//print_info();
 			//return EXIT_FAILURE ;
 		}
