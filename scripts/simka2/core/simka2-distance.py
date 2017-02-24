@@ -145,7 +145,7 @@ class Simka_ComputeDistance():
 		command += " -partition-id " + str(partitionId)
 		command += " -max-datasets " + str(self.nbFileProcessed+self.maximumProcessedDatasets)
 		command += "   > /dev/null 2>&1     &"
-		print command
+		#print command
 		self.jobCommandsFile.write(checkPointFilename + "|" + command + "\n")
 
 
@@ -187,7 +187,8 @@ database = SimkaDatabase(args._databaseDir)
 nbFileToProcess = len(database.entries)
 while(True):
 	nbFileProcessed = getNbFileProccessed()
-	print "lOL", nbFileProcessed
+	print nbFileProcessed, nbFileProcessed
+	#print "lOL", nbFileProcessed
 	if nbFileProcessed == nbFileToProcess: break
 
 	c = Simka_ComputeDistance()
