@@ -16,6 +16,7 @@
 //#include "SimkaAlgorithm.hpp"
 
 #include "../../thirdparty/KMC/kmc_api/kmc_file.h"
+#include "../../thirdparty/KMC/kmc_api/kmer_defs.h"
 
 
 
@@ -142,7 +143,7 @@ public:
 	vector<Bag<Kmer_BankId_Count>* > _bags;
 	vector<Bag<Kmer_BankId_Count>* > _cachedBags;
 
-	vector<u_int64_t> kmer_bin;
+	vector<uint64> kmer_bin;
 
 	SimkaPartitionWriter(const string& oututDir, size_t nbPartitions){
 		_outputDir = oututDir;
@@ -215,8 +216,8 @@ public:
 	}
 
 
-	inline u_int64_t hash_kmer(const vector<u_int64_t>& kmer_bin){
-		u_int64_t result = 0;
+	inline u_int64_t hash_kmer(const vector<uint64>& kmer_bin){
+		uint64 result = 0;
 
 	    //LargeInt<precision> intermediate = elem;
 	    for (size_t i=0;i<kmer_bin.size();i++)
@@ -228,7 +229,7 @@ public:
 	    return result;
 	}
 
-	inline u_int64_t korenXor(u_int64_t x)const{
+	inline uint64 korenXor(uint64 x)const{
 	        x ^= (x << 21);
 	        x ^= (x >> 35);
 	        x ^= (x << 4);
