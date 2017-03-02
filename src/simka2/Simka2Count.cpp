@@ -20,7 +20,6 @@
 
 
 #define MERGE_BUFFER_SIZE 10000
-#define _sketchSize 1000000
 
 
 class DistanceCommand : public gatb::core::tools::dp::ICommand, public gatb::core::system::SmartPointer

@@ -11,6 +11,7 @@
 #include <gatb/gatb_core.hpp>
 #include "SimkaDistance.hpp"
 
+#define _sketchSize 1000000
 
 const string STR_SIMKA_SOLIDITY_PER_DATASET = "-solidity-single";
 const string STR_SIMKA_MAX_READS = "-max-reads";
@@ -413,6 +414,9 @@ private:
     vector<u_int64_t> _sharedNewBanks;
     vector<u_int64_t> _sharedOldBanks;
 
+    vector<u_int64_t> _minHashUnion;
+    vector<vector<u_int64_t> > _minHashUnionCross;
+
 	typedef std::pair<double, CountVector> chi2val_Abundances;
 	struct _chi2ValueSorterFunction { bool operator() (chi2val_Abundances l,chi2val_Abundances r) { return r.first < l.first; } } ;
 	std::priority_queue< chi2val_Abundances, vector<chi2val_Abundances>, _chi2ValueSorterFunction> _chi2ValueSorter;
@@ -443,6 +447,12 @@ public:
     	//isAbundanceThreshold = _abundanceThreshold.first > 1 || _abundanceThreshold.second < 1000000;
 
     	_bankOffset = _nbBanks - _nbNewBanks;
+
+    	_minHashUnion.resize(_nbBanks, 0);
+    	_minHashUnionCross.resize(_nbBanks);
+    	for(size_t i=0; i<_minHashUnionCross.size(); i++){
+    		_minHashUnionCross[i].resize(_nbBanks, 0);
+    	}
     }
 
 
@@ -607,6 +617,22 @@ public:
 		//for(size_t i=0; i<counts.size(); i++)
 		//	if(counts[i]) _sharedBanks.push_back(i);
 
+		for(size_t ii=0; ii<_sharedNewBanks.size(); ii++){
+
+			u_int64_t i = _sharedNewBanks[ii];
+			u_int64_t abundanceI = counts[i];
+
+			_minHashUnion[i] += 1;
+
+			for(size_t jj=ii+1; jj<_sharedNewBanks.size(); jj++){
+
+				u_int64_t j = _sharedNewBanks[jj] - _bankOffset;
+				u_int64_t abundanceJ = counts[j];
+
+				_minHashUnionCross[i][j] += 1;
+			}
+		}
+
 		updateDistanceDefault(counts);
 
     	if(_stats->_computeSimpleDistances)
@@ -617,6 +643,7 @@ public:
     }
 
 	void updateDistanceDefault(const CountVector& counts){
+
 
 		/*
 		cout << _stats->_brayCurtisNumerator._matrix_squaredHalf.size() << endl;
@@ -637,6 +664,11 @@ public:
 				for(size_t jj=ii+1; jj<_sharedNewBanks.size(); jj++){
 
 					u_int64_t j = _sharedNewBanks[jj];
+
+					if(_minHashUnion[i] + _minHashUnion[j] - _minHashUnionCross[i][j] >= _sketchSize){
+						continue;
+					}
+
 					//size_t symetricIndex = j + ((_nbBanks-1)*i) - (i*(i-1)/2);
 
 					u_int64_t abundanceJ = counts[j];
@@ -653,6 +685,7 @@ public:
 					//cout << jOffset << endl;
 					_stats->_brayCurtisNumerator._matrix_squaredHalf[i-_bankOffset][j-_bankOffset-jOffset-1] += min(abundanceI, abundanceJ);
 					_stats->_matrixNbDistinctSharedKmers._matrix_squaredHalf[i-_bankOffset][j-_bankOffset-jOffset-1] += 1;
+
 				}
 			}
 		}
