@@ -781,7 +781,7 @@ public:
 
 		string kmcCommand = _binDir + "/kmc ";
 		kmcCommand += " -k" + Stringify::format("%i", _kmerSize);
-		kmcCommand += " -n150 "; //number of partitions
+		//kmcCommand += " -n150 "; //number of partitions
 		//kmcCommand += " -sm "; //strict max-memory mode
 		kmcCommand += " -ci" + Stringify::format("%i", _abundanceThreshold.first); //abundance min
 		kmcCommand += " -cx" + Stringify::format("%i", _abundanceThreshold.second); //abundance max
@@ -821,6 +821,7 @@ public:
 		}*/
 
 
+		/*
 		string kmcSortCommand = _binDir + "/kmc_tools transform ";
 		kmcSortCommand += " " + _kmerDatataseFilename;
 		kmcSortCommand += " sort ";
@@ -836,7 +837,7 @@ public:
 		System::file().remove(_outputDirTemp + "/kmer_counts.kmc_pre");
 		System::file().remove(_outputDirTemp + "/kmer_counts.kmc_suf");
 		_kmerDatataseFilename = _outputDirTemp + "/kmer_counts_sorted";
-
+		 */
 		/*
 		//vector<string> outInfo;
 
