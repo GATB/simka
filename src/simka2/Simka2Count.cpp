@@ -15,77 +15,197 @@
 //#include "SimkaAlgorithm.hpp"
 //#include "SimkaAlgorithm.hpp"
 
-#include "../../thirdparty/KMC/kmc_api/kmc_file.h"
-#include "../../thirdparty/KMC/kmc_api/kmer_defs.h"
+//#include "../../thirdparty/KMC/kmc_api/kmc_file.h"
+//#include "../../thirdparty/KMC/kmc_api/kmer_defs.h"
+#include <unordered_map>
+
+//#define MERGE_BUFFER_SIZE 10000
+
+/*
+struct KmerCount{
+	u_int64_t _kmer;
+	u_int32_t _count;
+
+	KmerCount(u_int64_t kmer, u_int32_t count){
+		_kmer = kmer;
+		_count = count;
+	}
+};*/
 
 
-#define MERGE_BUFFER_SIZE 10000
 
 
-class DistanceCommand : public gatb::core::tools::dp::ICommand, public gatb::core::system::SmartPointer
+
+
+
+template<size_t span=KMER_DEFAULT_SPAN>
+class DistanceCommand
 {
 public:
 
 
-    size_t _bufferIndex;
+    typedef typename Kmer<span>::Type  KmerType;
+	typedef typename Kmer<span>::ModelCanonical ModelCanonical;
+	typedef typename Kmer<span>::ModelCanonical::Iterator ModelCanonicalIterator;
+
+	size_t _kmerSize;
+	size_t _sketchSize;
+	//vector<u_int64_t> _minHashValues;
+	//vector<u_int64_t> _minHashKmers;
+	ModelCanonical _model;
+	ModelCanonicalIterator _itKmer;
+	pthread_mutex_t* _mutex;
+
+	bool _isMaster;
+    //size_t _bufferIndex;
 	//size_t _partitionId;
 
-	vector<u_int64_t> _bufferKmers;
-	vector<u_int32_t> _bufferCounts;
+	//vector<u_int64_t> _bufferKmers;
+	//vector<u_int32_t> _bufferCounts;
 
-	vector<u_int64_t> _minHashValues;
-	vector<u_int64_t> _minHashKmers;
-	vector<u_int32_t> _minHashKmersCounts;
+	//vector<u_int64_t> _minHashValues;
+	//vector<u_int64_t>& _minHashValuesSynchronized;
+	//vector<u_int64_t> _minHashKmers;
+	//vector<u_int32_t> _minHashKmersCounts;
+
+	struct KmerCountSorter{
+		bool operator() (u_int64_t l, u_int64_t r) { return r > l; }
+	};
+	//typedef typename KmerCountSorter KmerSorter;
+
+	std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter> _kmerCountSorter;
+	unordered_map<u_int64_t, u_int32_t> _kmerCounts;
+
+	std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter>& _kmerCountSorterSynch;
+	unordered_map<u_int64_t, u_int32_t>& _kmerCountsSynch;
 
 
-    DistanceCommand (
-    )
+
+	DistanceCommand(size_t kmerSize, size_t sketchSize, pthread_mutex_t* mutex, std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter>& kmerCountSorterSynch, unordered_map<u_int64_t, u_int32_t>& kmerCountsSynch)
+	: _model(kmerSize), _itKmer(_model), _mutex(mutex), _kmerCountSorterSynch(kmerCountSorterSynch), _kmerCountsSynch(kmerCountsSynch)
 	{
-		_bufferKmers.resize(MERGE_BUFFER_SIZE);
-		_bufferCounts.resize(MERGE_BUFFER_SIZE);
+		_kmerSize = kmerSize;
+		_sketchSize = sketchSize;
+		_isMaster = true;
+	}
 
-		_bufferIndex = 0;
-		_minHashValues = vector<u_int64_t>(_sketchSize, -1);
-		_minHashKmers = vector<u_int64_t>(_sketchSize, 0);
-		_minHashKmersCounts = vector<u_int32_t>(_sketchSize, 0);
-    }
+	DistanceCommand(const DistanceCommand& copy)
+	: _model(copy._kmerSize), _itKmer(_model), _mutex(copy._mutex), _kmerCountSorterSynch(copy._kmerCountSorterSynch), _kmerCountsSynch(copy._kmerCountsSynch)
+	{
+		_kmerSize = copy._kmerSize;
+		_sketchSize = copy._sketchSize;
+		_isMaster = false;
+	}
 
 
-    void setup(size_t bufferIndex, vector<u_int64_t>& bufferKmers, vector<u_int32_t>& bufferCounts){
+	~DistanceCommand(){
 
-    	//cout << "hey  " << bufferIndex << endl;
-    	_bufferIndex = bufferIndex;
+		if(_isMaster) return;
+		//cout << "deleteeeeee" << endl;
+		/*
+		//cout << "deleteeeeee" << endl;
+		pthread_mutex_lock(_mutex);
 
-    	for(size_t i=0; i<_bufferIndex; i++){
-    		_bufferKmers[i] = bufferKmers[i];
-    		_bufferCounts[i] = bufferCounts[i];
-    	}
-    }
-
-    void execute (){
-    	for(size_t i=0; i<_bufferIndex; i++){
-
-    		u_int64_t kmer = _bufferKmers[i];
-    		//cout << _bufferKmers[i] << " " <<  _bufferCounts[i] << endl;
-
-			if(kmer < 100) continue;
-
-			u_int64_t lastHashValue = korenXor(kmer);
-
-			for(size_t j=0; j<_sketchSize; j++){
-
-				if(lastHashValue < _minHashValues[j]){
-					_minHashValues[j] = lastHashValue;
-					_minHashKmers[j] = kmer;
-					_minHashKmersCounts[j] = _bufferCounts[j];
-				}
-				lastHashValue = oahash64(lastHashValue);
+		for(size_t i=0; i<_sketchSize; i++){
+			if(_minHashValues[i] < _minHashValuesSynchronized[i]){
+				_minHashValuesSynchronized[i] = _minHashValues[i];
+				_minHashKmersSynchronized[i] = _minHashKmers[i];
+				//cout << _minHashKmers[i] << endl;
 			}
+		}
 
-    	}
-    }
+		pthread_mutex_unlock(_mutex);*/
 
 
+
+		pthread_mutex_lock(_mutex);
+
+
+		//cout << "deleteeeeee" << endl;
+		//cout << this << endl;
+
+		_kmerCountSorter.pop(); //Discard greater element because queue size is always equal to (_sketchSize + 1) because of an optimization
+
+		for(size_t i=0; i<_sketchSize; i++){
+			u_int64_t kmer = _kmerCountSorter.top();
+			_kmerCountSorter.pop();
+			mergeSynch(kmer, _kmerCounts[kmer]);
+			//KmerCount kmerCount = _kmerCountSorter.top();
+			//cout << kmerCount._kmer << "  " << kmerCount._count << endl;
+			//_partitionWriter->insert(kmerCount._kmer, _datasetIDbin, kmerCount._count);
+			//_kmerCountSorter.pop();
+			//_partitionWriter->insert(_minHashKmers[i], _datasetIDbin, _minHashKmersCounts[i] );
+			//cout << _minHashKmers[i] << " " << _minHashKmersCounts[i] << endl;
+		}
+
+		//cout << "deleteeeeee1" << endl;
+
+		pthread_mutex_unlock(_mutex);
+	}
+
+	void mergeSynch(u_int64_t kmer, u_int32_t count){
+		if(_kmerCountsSynch.find(kmer) == _kmerCountsSynch.end()){
+			if(_kmerCountSorterSynch.size() > _sketchSize){
+				if(kmer < _kmerCountSorterSynch.top() ){
+					//cout << kmer << "     " << _kmerCounts.size() << endl;
+					u_int64_t greaterValue = _kmerCountSorterSynch.top();
+					_kmerCountsSynch.erase(greaterValue);
+					_kmerCountSorterSynch.pop();
+					_kmerCountSorterSynch.push(kmer);
+					_kmerCountsSynch[kmer] = count;
+				}
+				//else{
+				//	cout << "\t\tnonon" << endl;
+				//}
+			}
+			else{ //Filling the queue with first elements
+				_kmerCountSorterSynch.push(kmer);
+				_kmerCountsSynch[kmer] = count;
+			}
+		}
+		else{
+			_kmerCountsSynch[kmer] += count;
+		}
+	}
+
+	void operator()(Sequence& sequence){
+		//cout << sequence.getIndex() << endl;
+		//cout << sequence.toString() << endl;
+
+		_itKmer.setData(sequence.getData());
+
+		for(_itKmer.first(); !_itKmer.isDone(); _itKmer.next()){
+			//cout << _itKmer->value().toString(_kmerSize) << endl;
+
+			u_int64_t kmer = oahash64(_itKmer->value().getVal());
+
+			//if(kmer < 100) continue;
+
+	    	if(_kmerCounts.find(kmer) == _kmerCounts.end()){
+				if(_kmerCountSorter.size() > _sketchSize){
+					if(kmer < _kmerCountSorter.top() ){
+						//cout << kmer << "     " << _kmerCounts.size() << endl;
+						u_int64_t greaterValue = _kmerCountSorter.top();
+						_kmerCounts.erase(greaterValue);
+						_kmerCountSorter.pop();
+						_kmerCountSorter.push(kmer);
+						_kmerCounts[kmer] = 1;
+					}
+					//else{
+					//	cout << "\t\tnonon" << endl;
+					//}
+				}
+				else{ //Filling the queue with first elements
+					_kmerCountSorter.push(kmer);
+					_kmerCounts[kmer] = 1;
+				}
+	    	}
+	    	else{
+	    		_kmerCounts[kmer] += 1;
+	    	}
+
+		}
+	}
 
 	inline u_int64_t korenXor(u_int64_t x)const{
 		x ^= (x << 21);
@@ -105,25 +225,6 @@ public:
 		code = code + (code << 6);
 		code = code ^ (code >> 22);
 		return code;
-	}
-
-	//end is synchronized
-	void end(vector<u_int64_t>& minHashValuesSynchronized, vector<u_int64_t>& minHashKmersSynchronized, vector<u_int32_t>& minHashKmersCountsSynchronized){
-
-
-		//cout << "deleteeeeee" << endl;
-		//pthread_mutex_lock(_mutex);
-
-		for(size_t i=0; i<_sketchSize; i++){
-			if(_minHashValues[i] < minHashValuesSynchronized[i]){
-				minHashValuesSynchronized[i] = _minHashValues[i];
-				minHashKmersSynchronized[i] = _minHashKmers[i];
-				minHashKmersCountsSynchronized[i] = _minHashKmersCounts[i];
-				//cout << _minHashKmers[i] << endl;
-			}
-		}
-
-		//pthread_mutex_unlock(_mutex);
 	}
 
 };
@@ -308,7 +409,6 @@ public:
 	vector<Bag<Kmer_BankId_Count>* > _bags;
 	vector<Bag<Kmer_BankId_Count>* > _cachedBags;
 
-	vector<uint64> kmer_bin;
 
 	SimkaPartitionWriter(const string& oututDir, size_t nbPartitions){
 		_outputDir = oututDir;
@@ -381,7 +481,7 @@ public:
 		delete gzFile;
 	}
 
-
+	/*
 	inline u_int64_t hash_kmer(const vector<uint64>& kmer_bin){
 		uint64 result = 0;
 
@@ -393,9 +493,9 @@ public:
 	        result ^= korenXor(kmer_bin[i]);
 	    }
 	    return result;
-	}
+	}*/
 
-	inline uint64 korenXor(uint64 x)const{
+	inline u_int64_t korenXor(u_int64_t x)const{
 	        x ^= (x << 21);
 	        x ^= (x >> 35);
 	        x ^= (x << 4);
@@ -450,7 +550,7 @@ public:
     	}
     };
 
-	struct kxpcomp { bool operator() (KmerCount_It& l,KmerCount_It& r) { return (r._count.value < l._count.value); } } ;
+	//struct kxpcomp { bool operator() (KmerCount_It& l,KmerCount_It& r) { return (r._count.value < l._count.value); } } ;
 
 	u_int64_t _nbReads;
 
@@ -513,22 +613,13 @@ public:
 	vector<u_int64_t> _minHashKmers;
 	vector<u_int32_t> _minHashKmersCounts;
 
+	size_t _sketchSize;
+	pthread_mutex_t _mutex;
 
-	struct KmerCount{
-		u_int64_t _kmer;
-		u_int32_t _count;
+	typedef typename DistanceCommand<span>::KmerCountSorter KmerCountSorter;
+	std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter> _kmerCountSorter;
+	unordered_map<u_int64_t, u_int32_t> _kmerCounts;
 
-		KmerCount(u_int64_t kmer, u_int32_t count){
-			_kmer = kmer;
-			_count = count;
-		}
-	};
-	//typedef std::pair<double, CountVector> chi2val_Abundances;
-	struct KmerCountSorter{
-		bool operator() (KmerCount& l,KmerCount& r) { return r._kmer < l._kmer; }
-	};
-	std::priority_queue< KmerCount, vector<KmerCount>, KmerCountSorter> _kmerCountSorter;
-	size_t _maxChi2Values;
 
 	Simka2ComputeKmerSpectrumAlgorithm(IProperties* options, const string& execFilename):
 		Algorithm("simka", -1, options)
@@ -538,6 +629,7 @@ public:
 
 	void execute(){
 		_datasetIDbin = 0;
+		pthread_mutex_init(&_mutex, NULL);
 
 		parseArgs();
 		//layoutInputFilename();
@@ -552,6 +644,8 @@ public:
 	void parseArgs(){
 
 		_options = getInput();
+
+		_sketchSize = 10000;
 
 		_computeSimpleDistances = _options->get(STR_SIMKA_COMPUTE_ALL_SIMPLE_DISTANCES);
 		_computeComplexDistances = _options->get(STR_SIMKA_COMPUTE_ALL_COMPLEX_DISTANCES);
@@ -626,575 +720,51 @@ public:
 		_maxMemory = max(_maxMemory, (u_int64_t) 1);
 	}
 
-
-	/*
-	void layoutInputFilename(){
-
-		//string inputDir = _outputDirTemp;
-		//ifstream inputFile(_inputFilename.c_str());
-
-		//string bankId = Stringify::format("%i", _datasetID);
-		//_banksInputFilename =  inputDir + "__input_simka__"; //_inputFilename + "_dsk_dataset_temp__";
-		//IFile* bankFile = System::file().newFile(_banksInputFilename, "wb");
-		_banksInputFilename = _outputDirTemp + "/" + _datasetID + "_input";
-		//cout << subBankFilename << endl;
-		IFile* subBankFile = System::file().newFile(_banksInputFilename, "wb");
-
-		string linePairedDatasets = _inputFilename;
-		//cout << linePairedDatasets << endl;
-		string linePart;
-		vector<string> lineIdDatasets;
-		vector<string> linepartPairedDatasets;
-		vector<string> linepartDatasets;
-
-		string bankFileContents = "";
-
-		u_int64_t lineIndex = 0;
-
-		stringstream linePairedDatasetsStream(linePairedDatasets);
-		while(getline(linePairedDatasetsStream, linePart, ';')){
-			linepartPairedDatasets.push_back(linePart);
-		}
-
-
-		//cout << subBankFile->getPath() << endl;
-		string subBankContents = "";
-		//_nbBankPerDataset.push_back(linepartPairedDatasets.size());
-		_nbBankPerDataset = linepartPairedDatasets.size();
-
-		for(size_t i=0; i<linepartPairedDatasets.size(); i++){
-			string lineDatasets = linepartPairedDatasets[i];
-
-			linepartDatasets.clear();
-
-			stringstream lineDatasetsStream(lineDatasets);
-			while(getline(lineDatasetsStream, linePart, ',')){
-				//cout << linePart << endl;
-				linepartDatasets.push_back(linePart);
-				//cout << "\t" << linePart << endl;
-			}
-
-			//bankFileContents += linepartDatasets[0] + "\n";
-
-
-			for(size_t i=0; i<linepartDatasets.size(); i++){
-				string filename = linepartDatasets[i];
-				//cout << "lol" << endl;
-				//cout << filename << endl;
-				//cout << filename.size() << endl;
-				//cout << filename << endl;
-				subBankContents +=  filename + "\n";
-			}
-
-		}
-
-		subBankContents.erase(subBankContents.size()-1);
-		subBankFile->fwrite(subBankContents.c_str(), subBankContents.size(), 1);
-		subBankFile->flush();
-		delete subBankFile;
-
-			//bankFileContents += inputDir + "/" + bankId + "\n";
-			//lineIndex += 1;
-
-			//_bankNames.push_back(bankId);
-
-
-		//}
-
-
-		//inputFile.close();
-
-		//bankFileContents.erase(bankFileContents.size()-1);
-		//bankFile->fwrite(bankFileContents.c_str(), bankFileContents.size(), 1);
-		//bankFile->flush();
-		//delete bankFile;
-
-	}*/
-
-
 	void count(){
-
-
-
-		string dataType = "";
-
-		//Determine if input is in fasta or fastq
-		//We get the first line of simka2-count input filename (it's the filename of the first dataset)
-		//We check at the size of the quality string of the first read to determine if fasta or fastq
-		//We don't check the type of others filename (if there are) because anyway KMC can handle only one data type per input filename
 		{
-			ifstream infile(_inputFilename.c_str());
-			string sLine;
 
-			getline(infile, sLine);
-
-			infile.close();
-
-			IBank* bank = Bank::open(sLine);
+			IBank* bank = Bank::open(_inputFilename);
 			LOCAL(bank);
 
-			Iterator<Sequence>* it = bank->iterator();
-			LOCAL(it);
-			it->first();
+			Iterator<Sequence>* itSeq = createIterator<Sequence> (
+					bank->iterator(),
+					bank->estimateNbItems(),
+					"Computing minhash"
+			);
+			LOCAL(itSeq);
 
-			if(it->item().getQuality().size() == 0){
-				dataType = "-fm";
-			}
-			else{
-				dataType = "-fq";
-			}
-
-
+			getDispatcher()->iterate (itSeq, DistanceCommand<span>(_kmerSize, _sketchSize, &_mutex, _kmerCountSorter, _kmerCounts), 1000);
 		}
-
-		//cout << Bank::getType(sLine) << endl;
-		/*
-		IBank* bank = Bank::open(_inputFilename);
-		LOCAL(bank);
-
-	    Iterator<Sequence>* itSeq = bank->iterator();
-	    LOCAL (itSeq);
-
-		cout << Bank::getType(_inputFilename) << endl;
-	    std::vector<Iterator<Sequence>*> itBanks =  itSeq->getComposition();
-
-	    for (size_t i=0; i<itBanks.size(); i++)
-	    {
-
-	    }
-
-		string commandDataType = "-fq";
-		if(_inputFilename.find(".fq") !=  string::npos || _inputFilename.find(".fastq") !=  string::npos){
-			commandDataType = "-fq";
-		}
-		else if (_inputFilename.find(".fa") != string::npos || _inputFilename.find(".fasta") != string::npos) {
-			commandDataType = "-fa";
-		}
-		 */
-
-
-		_kmerDatataseFilename = _outputDirTemp + "/kmer_counts";
-
-
-
-
-
-		string kmcCommand = _binDir + "/kmc ";
-		kmcCommand += " -k" + Stringify::format("%i", _kmerSize);
-		//kmcCommand += " -n150 "; //number of partitions
-		//kmcCommand += " -sm "; //strict max-memory mode
-		kmcCommand += " -ci" + Stringify::format("%i", _abundanceThreshold.first); //abundance min
-		kmcCommand += " -cx" + Stringify::format("%i", _abundanceThreshold.second); //abundance max
-		kmcCommand += " -cs65000"; //abundance max
-		kmcCommand += " -t" + Stringify::format("%i", _nbCores); //abundance max
-		kmcCommand += " -m" + Stringify::format("%i", _maxMemory); //abundance max
-		kmcCommand += " " + dataType + " ";
-		//---
-		kmcCommand += " @" + _inputFilename;
-		kmcCommand += " " + _kmerDatataseFilename;
-		kmcCommand += " " + _outputDirTemp;
-
-		cout << kmcCommand << endl;
-
-		int ret = 0;
-
-		ret = system(kmcCommand.c_str());
-		if(ret != 0){
-			cout << "Error during KMC k-mer counting" << endl;
-			exit(EXIT_FAILURE);
-		}
-
-		/*
-		string kmcCommand = createKMCcommand("-fa");
-		int ret = system(kmcCommand.c_str());
-		if(ret != 0){
-			kmcCommand = createKMCcommand("-fq");
-			int ret = system(kmcCommand.c_str());
-			if(ret != 0){
-				kmcCommand = createKMCcommand("-fm");
-				int ret = system(kmcCommand.c_str());
-				if(ret != 0){
-					cout << "kmc failed to count dataset (" << _datasetID << ")" << endl;
-					exit(ret);
-				}
-			}
-		}*/
-
-
-		/*
-		string kmcSortCommand = _binDir + "/kmc_tools transform ";
-		kmcSortCommand += " " + _kmerDatataseFilename;
-		kmcSortCommand += " sort ";
-		kmcSortCommand += " " + _outputDirTemp + "/kmer_counts_sorted";
-
-
-		ret = system(kmcSortCommand.c_str());
-		if(ret != 0){
-			cout << "Error during KMC-TOOLS sort" << endl;
-			exit(EXIT_FAILURE);
-		}
-
-		System::file().remove(_outputDirTemp + "/kmer_counts.kmc_pre");
-		System::file().remove(_outputDirTemp + "/kmer_counts.kmc_suf");
-		_kmerDatataseFilename = _outputDirTemp + "/kmer_counts_sorted";
-		 */
-		/*
-		//vector<string> outInfo;
-
-		IBank* bank = Bank::open(_inputFilename);
-		LOCAL(bank);
-
-
-
-		u_int64_t nbReads = 0;
-		//string tempDir = _outputDirTemp;
-		//System::file().mkdir(tempDir, -1);
-
-
-		//cout << i << endl;
-		//string outputDir = p.outputDir + "/comp_part" + to_string(p.datasetId) + "/";
-
-		//cout << "\tinput: " << p.outputDir + "/input/" + p.bankName << endl;
-
-		SimkaSequenceFilter sequenceFilter(_minReadSize, _minReadShannonIndex);
-
-		IBank* filteredBank = new SimkaPotaraBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, _maxNbReads, _nbBankPerDataset);
-		// = new SimkaPotaraBankFiltered(bank)
-		LOCAL(filteredBank);
-		//LOCAL(bank);
-
-
-
-		if(_kmerSize <= 15){
-			//cerr << "Mini Kc a remettre" << endl;
-			//exit(1);
-			SimkaMiniKmerCounter<span> miniKc(_options, _kmerSize, filteredBank, _outputDir, _nbPartitions, _abundanceThreshold.first, _abundanceThreshold.second, _partitionWriter);
-			miniKc.execute();
-
-			_nbReads = miniKc._nbReads;
-		}
-		else{
-
-			{
-
-				_h5Filename = _outputDirTemp + "/" +  _datasetID + ".h5";
-				Storage* solidStorage = StorageFactory(STORAGE_HDF5).create (_h5Filename, true, false);
-				LOCAL(solidStorage);
-
-				ConfigurationAlgorithm<span> configAlgo(filteredBank, _options);
-				configAlgo.execute();
-				RepartitorAlgorithm<span> repart (filteredBank, solidStorage->getGroup(""), configAlgo.getConfiguration());
-				repart.execute ();
-				Repartitor* repartitor = new Repartitor();
-				LOCAL(repartitor);
-				repartitor->load(solidStorage->getGroup(""));
-
-
-				SimkaAbundanceProcessor<span>* proc = new SimkaAbundanceProcessor<span>(_abundanceThreshold.first, _abundanceThreshold.second);
-				CountProcessorDump<span>* procDump = new CountProcessorDump     <span> (solidStorage->getGroup("dsk"), _kmerSize);
-
-				//SimkaCompressedProcessor<span>* proc = new SimkaCompressedProcessor<span>(bags, caches, cacheIndexes, p.abundanceMin, p.abundanceMax);
-				std::vector<ICountProcessor<span>* > procs;
-				//procs.push_back(proc);
-				ICountProcessor<span>* result = 0;
-
-				result = new CountProcessorChain<span> (
-						proc,
-						procDump,
-						NULL
-				);
-
-
-				result->setName ("dsk");
-
-
-				//SortingCountAlgorithm<span> algo (filteredBank, _options);
-				SortingCountAlgorithm<span> algo (filteredBank, configAlgo.getConfiguration(), repartitor,
-						procs,
-						_options);
-				algo.addProcessor(result);
-				algo.execute();
-
-				//delete proc;
-				//delete procDump;
-				//delete result;
-				_nbReads = algo.getInfo()->getInt("seq_number");
-				_localNbPartitions = algo.getConfig()._nb_partitions;
-			}
-
-		}
-		 */
 
 		partitionKmerCounts();
-
 	}
 
-
-	void resetCommands(){
-		for (size_t i=0; i<_nbCores; i++){
-			DistanceCommand* cmd = dynamic_cast<DistanceCommand*>(_cmds[i]);
-			cmd->_bufferIndex = 0;
-		}
-
-		for(size_t i=0; i<_bufferIndex.size(); i++){
-			_bufferIndex[i] = 0;
-		}
-	}
-
-	void dispatchCommands(){
-
-		for (size_t i=0; i<_nbCores; i++){
-			//cout << mergeCommand->_bufferKmers.size() << endl;
-			//cout << i << endl;
-			DistanceCommand* cmd = dynamic_cast<DistanceCommand*>(_cmds[i]);
-			cmd->setup(_bufferIndex[i], _bufferKmers[i], _bufferCounts[i]);
-		}
-
-
-		//MergeCommand<span>* mergeCommand = dynamic_cast<MergeCommand<span>*>(_mergeCommand);
-		//mergeCommand->reset();
-
-		//cout << "start dispatch" << endl;
-	    getDispatcher()->dispatchCommands(_cmds, 0);
-
-		for (size_t i=0; i<_nbCores; i++){
-			//cout << mergeCommand->_bufferKmers.size() << endl;
-			//cout << i << endl;
-			DistanceCommand* cmd = dynamic_cast<DistanceCommand*>(_cmds[i]);
-			cmd->end(_minHashValues, _minHashKmers, _minHashKmersCounts);
-		}
-
-		//cout << "end dispatch" << endl;
-	    resetCommands();
-
-
-	}
 
 	void partitionKmerCounts(){
 
-		/*
-		_minHashValues = vector<u_int64_t>(_sketchSize, -1);
-		_minHashKmers = vector<u_int64_t>(_sketchSize, 0);
-		_minHashKmersCounts = vector<u_int32_t>(_sketchSize, 0);
-
-		for (size_t i=0; i<_nbCores; i++)
-		{
-			ICommand* cmd = 0;
-			cmd = new DistanceCommand();
-			cmd->use();
-			_cmds.push_back (cmd);
-
-			vector<u_int64_t> vec = vector<u_int64_t>(MERGE_BUFFER_SIZE);
-			_bufferKmers.push_back(vec);
-			vector<u_int32_t> vec2 = vector<u_int32_t>(MERGE_BUFFER_SIZE);
-			_bufferCounts.push_back(vec2);
-			_bufferIndex.push_back(0);
-		}*/
-		//resetCommands();
-
-		CKMCFile kmer_data_base;
-
-		if (!kmer_data_base.OpenForListing(_kmerDatataseFilename))
-		{
-			cout << "Can't open KMC k-mer database" << endl;
-			exit(EXIT_FAILURE);
-			//print_info();
-			//return EXIT_FAILURE ;
-		}
-
-
-		uint32 _kmer_length;
-		uint32 _mode;
-		uint32 _counter_size;
-		uint32 _lut_prefix_length;
-		uint32 _signature_len;
-		uint32 _min_count;
-		uint64 _max_count;
-		uint64 _total_kmers;
-
-		kmer_data_base.Info(_kmer_length, _mode, _counter_size, _lut_prefix_length, _signature_len, _min_count, _max_count, _total_kmers);
-
-		//char str[1024];
-		uint32 counter_len;
-
-		CKmerAPI kmer_object(_kmer_length);
-
-		vector<uint64> kmer_bin;
-		//if(min_count_to_set)
-		//if (!(kmer_data_base.SetMinCount(min_count_to_set)))
-		//		return EXIT_FAILURE;
-		//if(max_count_to_set)
-		//if (!(kmer_data_base.SetMaxCount(max_count_to_set)))
-		//		return EXIT_FAILURE;
-
-		//size_t bufferIndex = 0;
-		//size_t currentBuffer = 0;
-		//resetCommands();
-
-		uint64 counter;
-		while (kmer_data_base.ReadNextKmer(kmer_object, counter))
-		{
-
-
-			kmer_object.to_long(kmer_bin);
-			u_int64_t kmer = oahash64(kmer_bin[0]);
-
-			if(_kmerCountSorter.size() > _sketchSize){
-
-				//u_int64_t lala = _kmerCountSorter.top()._kmer;
-
-				_kmerCountSorter.push(KmerCount(kmer, counter));
-				//if(kmer < _kmerCountSorter.top()._kmer){
-					//cout << kmer << "   " << lala << endl;
-					//cout << "" << endl;
-					//_kmerCountSorter.push(KmerCount(kmer, counter));
-					//_kmerCountSorter.pop();
-				//}
-
-			}
-			else{
-				_kmerCountSorter.push(KmerCount(kmer, counter));
-				//cout << "init: " << kmer << endl;
-				//cout << _kmerCountSorter.top()._kmer << endl;
-
-			}
-			//bufferIndex += 1;
-
-			/*
-			_bufferKmers[currentBuffer][_bufferIndex[currentBuffer]] = kmer_bin[0];
-			_bufferCounts[currentBuffer][_bufferIndex[currentBuffer]] = counter;
-
-			_bufferIndex[currentBuffer] += 1;
-			if(_bufferIndex[currentBuffer] >= MERGE_BUFFER_SIZE){
-				//DistanceCommand* cmd = dynamic_cast<DistanceCommand*>(_cmds[_currentBuffer]);
-				//cmd->setup(_bufferKmers[_currentBuffer], _bufferCounts[_currentBuffer]);
-
-				currentBuffer += 1;
-				if(currentBuffer >= _nbCores){
-					dispatchCommands();
-					currentBuffer = 0;
-				}
-				//else{
-					//_bufferIndex = 0;
-				//}
-			}*/
-
-			//_partitionWriter->insert(kmer_object, _datasetIDbin, counter);
-
-			//kmer_object.to_string(str);
-			//str[_kmer_length] = '\t';
-			//cout << str << " " << kmer_hash_value << endl;
-			//kmer_object.to_string(str);
-			//str[_kmer_length] = '\t';
-			//counter_len = CNumericConversions::Int2PChar(counter, (uchar*)str + _kmer_length + 1);
-			//str[_kmer_length + 1 + counter_len] = '\n';
-			//fwrite(str, 1, _kmer_length + counter_len + 2, out_file);
-		}
-
-
-		//dispatchCommands();
-
-		//fclose(out_file);
-		kmer_data_base.Close();
-
-
-
-
-
-
 		_partitionWriter = new SimkaPartitionWriter<span>(_outputDir, _nbPartitions);
 
+		vector<u_int64_t> _reverseQueue(_sketchSize);
 		for(size_t i=0; i<_sketchSize; i++){
-			KmerCount kmerCount = _kmerCountSorter.top();
-			//cout << kmerCount._kmer << "  " << kmerCount._count << endl;
-			_partitionWriter->insert(kmerCount._kmer, _datasetIDbin, kmerCount._count);
+			u_int64_t kmer = _kmerCountSorter.top();
+			_reverseQueue[_sketchSize-i-1] = kmer;
 			_kmerCountSorter.pop();
-			//_partitionWriter->insert(_minHashKmers[i], _datasetIDbin, _minHashKmersCounts[i] );
+		}
+
+
+		for(size_t i=0; i<_sketchSize; i++){
+			u_int64_t kmer = _reverseQueue[i];
+			u_int32_t count = _kmerCounts[kmer];
+			//cout << kmer << " " << count << endl;
+			//cout << kmerCount._kmer << "  " << kmerCount._count << endl;
+			//_partitionWriter->insert(kmerCount._kmer, _datasetIDbin, kmerCount._count);
+			_partitionWriter->insert(kmer, _datasetIDbin, count);
 			//cout << _minHashKmers[i] << " " << _minHashKmersCounts[i] << endl;
 		}
 
 
 		_partitionWriter->end();
 
-		/*
-
-		Storage* solidStorage = 0;
-		//string solidsName = _outputDir + "/solid/" +  p.bankName + ".h5";
-		//cout << solidsName << endl;
-		//bool autoDelete = false; // (solidsName == "none") || (solidsName == "null");
-		solidStorage = StorageFactory(STORAGE_HDF5).load(_h5Filename);
-		LOCAL(solidStorage);
-
-		vector<StorageItKmerCount<span>*> its;
-		Partition<Count>& solidKmers = solidStorage->getGroup("dsk").getPartition<Count>("solid");
-		for(size_t i=0; i<_localNbPartitions; i++){
-			//cout << "lala" << endl;
-			//cout << solidKmers[i].iterable()->getNbItems () << endl;
-			its.push_back(new StorageItKmerCount<span>(solidKmers[i].iterable()->iterator()));
-		}
-
-		std::priority_queue< KmerCount_It, vector<KmerCount_It>,kxpcomp > pq;
-		//StorageItKmerCount<span>* bestIt;
-		size_t bestPart;
-
-		for(size_t i=0; i<its.size(); i++){
-			its[i]->_it->first();
-			//StorageItKmerCount<span>* it = its[i];
-			//it->_it->first();
-		}
-
-		//fill the  priority queue with the first elems
-		for (size_t ii=0; ii<its.size(); ii++)
-		{
-			//pq.push(Kmer_BankId_Count(ii,its[ii]->value()));
-			if (!its[ii]->_it->isDone()){
-				pq.push(KmerCount_It(its[ii]->item(), its[ii]));
-			}
-		}
-
-		StorageItKmerCount<span>* bestIt;
-
-		if (pq.size() != 0) // everything empty, no kmer at all
-		{
-			//get first pointer
-			//bestPart =
-			//bestIt = get<3>(pq.top()); pq.pop();
-			KmerCount_It kmerCountIt = pq.top(); pq.pop();
-			_partitionWriter->insert(kmerCountIt._count.value, _datasetIDbin, kmerCountIt._count.abundance);
-
-			bestIt = kmerCountIt._it;
-
-
-			while(1){
-
-				if (! bestIt->next())
-				{
-					//reaches end of one array
-					if(pq.size() == 0){
-						break;
-					}
-
-					//otherwise get new best
-					//best_p = get<1>(pq.top()) ; pq.pop();
-					bestIt = pq.top()._it; pq.pop();
-				}
-
-				pq.push(KmerCount_It(bestIt->item(), bestIt));
-				//pq.push(kxp(bestIt->value(), bestIt->getBankId(), bestIt->abundance(), bestIt)); //push new val of this pointer in pq, will be counted later
-
-				bestIt = pq.top()._it; pq.pop();
-
-				_partitionWriter->insert(bestIt->item().value, _datasetIDbin, bestIt->item().abundance);
-			}
-		}
-
-		_partitionWriter->end();
-
-		for(size_t i=0; i<its.size(); i++){
-			delete its[i];
-		}
-		*/
-		//System::file().remove();
 	}
 
 
@@ -1238,18 +808,6 @@ public:
 		delete file;
 	}
 
-	inline static u_int64_t oahash64 (u_int64_t elem)
-	{
-		u_int64_t code = elem;
-		code = code ^ (code >> 14); //supp
-		code = (~code) + (code << 18);
-		code = code ^ (code >> 31);
-		code = code * 21;
-		code = code ^ (code >> 11);
-		code = code + (code << 6);
-		code = code ^ (code >> 22);
-		return code;
-	}
 
 };
 

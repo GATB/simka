@@ -135,10 +135,19 @@ public:
 			cout << counts[i] << " ";
 		}
 		cout << endl;
-		cout << "-----" << endl;*/
+		cout << "-----" << endl;
+*/
 
 		_stats->_nbDistinctKmers += 1;
 
+		if(_nbBankThatHaveKmer > 1){
+			_stats->_nbSharedKmers += 1;
+		}
+
+		_processor->process(this->_partitionId, kmer, counts);
+
+
+		/*
 		if(_stats->_computeComplexDistances || _nbBankThatHaveKmer > 1){
 
 			if(_nbBankThatHaveKmer > 1){
@@ -147,7 +156,7 @@ public:
 
 			_processor->process(this->_partitionId, kmer, counts);
 
-		}
+		}*/
 	}
 
 

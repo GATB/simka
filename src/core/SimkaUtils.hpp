@@ -11,7 +11,7 @@
 #include <gatb/gatb_core.hpp>
 #include "SimkaDistance.hpp"
 
-#define _sketchSize 1000000
+//#define _sketchSize 1000000
 
 const string STR_SIMKA_SOLIDITY_PER_DATASET = "-solidity-single";
 const string STR_SIMKA_MAX_READS = "-max-reads";
@@ -644,7 +644,6 @@ public:
 
 	void updateDistanceDefault(const CountVector& counts){
 
-
 		/*
 		cout << _stats->_brayCurtisNumerator._matrix_squaredHalf.size() << endl;
 		for(size_t i=0; i<_stats->_brayCurtisNumerator._matrix_squaredHalf.size(); i++){
@@ -665,9 +664,11 @@ public:
 
 					u_int64_t j = _sharedNewBanks[jj];
 
-					if(_minHashUnion[i] + _minHashUnion[j] - _minHashUnionCross[i][j] >= _sketchSize){
+					//cout << _stats->_nbSolidDistinctKmersPerBank[i] << endl;
+					if(_minHashUnion[i] + _minHashUnion[j] - _minHashUnionCross[i][j] >= _stats->_nbSolidDistinctKmersPerBank[i]){ //_minHashUnion[i] is _skecthSize
 						continue;
 					}
+					//cout << _minHashUnion[i] << " " <<  _minHashUnion[j] << " " << _minHashUnionCross[i][j] << "    " << (_minHashUnion[i] + _minHashUnion[j] - _minHashUnionCross[i][j]) << "  " << _stats->_nbSolidDistinctKmersPerBank[i] << endl;
 
 					//size_t symetricIndex = j + ((_nbBanks-1)*i) - (i*(i-1)/2);
 
