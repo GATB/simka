@@ -91,7 +91,7 @@ class Simka2ResourceAllocator():
 
     def execute_count_singleNode(self, nbSamplesToProcess, kmerSize):
 
-        maxjob_byCore = self.nbCores/2
+        maxjob_byCore = self.nbCores
         maxjob_byCore = max(maxjob_byCore, 1)
         #maxjob_byCore = max(maxjob_byCore, 1)
 

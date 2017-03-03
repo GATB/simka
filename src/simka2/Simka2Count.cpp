@@ -645,7 +645,7 @@ public:
 
 		_options = getInput();
 
-		_sketchSize = 10000;
+		_sketchSize = 100000;
 
 		_computeSimpleDistances = _options->get(STR_SIMKA_COMPUTE_ALL_SIMPLE_DISTANCES);
 		_computeComplexDistances = _options->get(STR_SIMKA_COMPUTE_ALL_COMPLEX_DISTANCES);
