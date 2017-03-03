@@ -716,8 +716,8 @@ public:
 		//_options->setStr(STR_URI_OUTPUT_TMP, _outputDirTemp);
 		//System::file().mkdir(_outputDirTemp + "/input/", -1);
 
-		_maxMemory = _maxMemory / 1000;
-		_maxMemory = max(_maxMemory, (u_int64_t) 1);
+		//_maxMemory = _maxMemory / 1000;
+		//_maxMemory = max(_maxMemory, (u_int64_t) 1);
 	}
 
 	void count(){
@@ -726,10 +726,16 @@ public:
 			IBank* bank = Bank::open(_inputFilename);
 			LOCAL(bank);
 
+			SimkaSequenceFilter sequenceFilter(_minReadSize, _minReadShannonIndex);
+			IBank* filteredBank = new SimkaPotaraBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, _maxNbReads, _nbBankPerDataset);
+
+			LOCAL(filteredBank);
+
+
 			Iterator<Sequence>* itSeq = createIterator<Sequence> (
-					bank->iterator(),
-					bank->estimateNbItems(),
-					"Computing minhash"
+					filteredBank->iterator(),
+					filteredBank->estimateNbItems(),
+					"Computing minhash sketch"
 			);
 			LOCAL(itSeq);
 
