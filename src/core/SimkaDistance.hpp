@@ -849,10 +849,10 @@ private:
 
     	double intersection = 2 * crossedData[i2][j2];
 
-    	//double jaccard = 1 - intersection / union_;
-    	double jaccard = intersection / union_;
+    	double jaccard = 1 - intersection / union_;
+    	//double jaccard = intersection / union_;
 
-    	jaccard = (- 1 / (float)_stats._kmerSize) * log( ((float)(2*jaccard) / (float)(1+jaccard)));
+    	//jaccard = (- 1 / (float)_stats._kmerSize) * log( ((float)(2*jaccard) / (float)(1+jaccard)));
 
     	//cout << jaccard << "   " << _stats._nbSolidKmersPerBank[i] << " " <<  _stats._nbSolidKmersPerBank[j] << "  " << _stats._brayCurtisNumerator[i][j] << endl;
     	return jaccard;

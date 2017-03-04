@@ -1162,10 +1162,10 @@ double SimkaDistance::distance_presenceAbsence_jaccardCanberra(u_int64_t& ua, u_
 	if((a+b+c) == 0) return 1;
 
 	double dist = (b+c) / (a+b+c);
-	dist = 1 - dist;
+	//dist = 1 - dist;
 	//cout << _stats._kmerSize << endl;
 	//cout << (- 1 / (float)_stats._kmerSize) << "   " << ((float)(2*dist) / (float)(1+dist)) << "    " << log( ((float)(2*dist) / (float)(1+dist))) << endl;
-	dist = (- 1 / (float)_stats._kmerSize) * log( ((float)(2*dist) / (float)(1+dist)));
+	//dist = (- 1 / (float)_stats._kmerSize) * log( ((float)(2*dist) / (float)(1+dist)));
 	return dist ;
 }
 
