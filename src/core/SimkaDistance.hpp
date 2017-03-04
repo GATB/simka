@@ -161,7 +161,7 @@ class SimkaStatistics{
 
 public:
 
-	SimkaStatistics(size_t nbBanks, size_t nbNewBanks, bool computeSimpleDistances, bool computeComplexDistances);
+	SimkaStatistics(size_t nbBanks, size_t nbNewBanks, bool computeSimpleDistances, bool computeComplexDistances, size_t kmerSize);
 	SimkaStatistics& operator+=  (const SimkaStatistics& other);
 	void print();
 	void load(const string& filename);
@@ -214,6 +214,7 @@ public:
     size_t _symetricDistanceMatrixSize;
     bool _computeSimpleDistances;
     bool _computeComplexDistances;
+    size_t _kmerSize;
 
     double _totalReads;
 
@@ -848,7 +849,10 @@ private:
 
     	double intersection = 2 * crossedData[i2][j2];
 
-    	double jaccard = 1 - intersection / union_;
+    	//double jaccard = 1 - intersection / union_;
+    	double jaccard = intersection / union_;
+
+    	jaccard = (- 1 / (float)_stats._kmerSize) * log( ((float)(2*jaccard) / (float)(1+jaccard)));
 
     	//cout << jaccard << "   " << _stats._nbSolidKmersPerBank[i] << " " <<  _stats._nbSolidKmersPerBank[j] << "  " << _stats._brayCurtisNumerator[i][j] << endl;
     	return jaccard;

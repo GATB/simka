@@ -108,11 +108,11 @@ public:
 
 		//SimkaDistanceParam distanceParams(this->_options);
 		vector<string> kmerSpectrumDirs;
-		SimkaStatistics mainStats(this->_nbBanks, this->_nbNewBanks, this->_computeSimpleDistances, this->_computeComplexDistances);
+		SimkaStatistics mainStats(this->_nbBanks, this->_nbNewBanks, this->_computeSimpleDistances, this->_computeComplexDistances, this->_kmerSize);
 		simka2_loadStatInfos(_databaseDir, _database._uniqKmerSpectrumDirs, _database._entries, kmerSpectrumDirs, &mainStats, _database._entriesInfos);
 
 		{
-			SimkaStatistics stats(this->_nbBanks, this->_nbNewBanks, this->_computeSimpleDistances, this->_computeComplexDistances);
+			SimkaStatistics stats(this->_nbBanks, this->_nbNewBanks, this->_computeSimpleDistances, this->_computeComplexDistances, this->_kmerSize);
 			kmerSpectrumDirs.clear();
 			simka2_loadStatInfos(_databaseDir, _database._uniqKmerSpectrumDirs, _database._entries, kmerSpectrumDirs, &stats, _database._entriesInfos);
 

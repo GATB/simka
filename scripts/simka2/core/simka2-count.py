@@ -263,6 +263,5 @@ class ComputeKmerSpectrumAll():
 
 
 
-print("lala")
 c = ComputeKmerSpectrumAll()
 c.execute()

@@ -23,7 +23,7 @@
 
 
 
-SimkaStatistics::SimkaStatistics(size_t nbBanks, size_t nbNewBanks, bool computeSimpleDistances, bool computeComplexDistances)
+SimkaStatistics::SimkaStatistics(size_t nbBanks, size_t nbNewBanks, bool computeSimpleDistances, bool computeComplexDistances, size_t kmerSize)
 {
 
 	_nbBanks = nbBanks;
@@ -31,6 +31,7 @@ SimkaStatistics::SimkaStatistics(size_t nbBanks, size_t nbNewBanks, bool compute
 	//_symetricDistanceMatrixSize = (_nbBanks*(_nbBanks+1))/2;
 	_computeSimpleDistances = computeSimpleDistances;
 	_computeComplexDistances = computeComplexDistances;
+	_kmerSize = kmerSize;
 
 	//_nbBanks = 10000;
 
@@ -1159,7 +1160,13 @@ double SimkaDistance::distance_presenceAbsence_jaccardCanberra(u_int64_t& ua, u_
 	double c = (double) uc;
 
 	if((a+b+c) == 0) return 1;
-	return (b+c) / (a+b+c);
+
+	double dist = (b+c) / (a+b+c);
+	dist = 1 - dist;
+	//cout << _stats._kmerSize << endl;
+	//cout << (- 1 / (float)_stats._kmerSize) << "   " << ((float)(2*dist) / (float)(1+dist)) << "    " << log( ((float)(2*dist) / (float)(1+dist))) << endl;
+	dist = (- 1 / (float)_stats._kmerSize) * log( ((float)(2*dist) / (float)(1+dist)));
+	return dist ;
 }
 
 double SimkaDistance::distance_presenceAbsence_jaccard_simka(size_t i, size_t j, SIMKA_MATRIX_TYPE type){

@@ -280,7 +280,7 @@ public:
 
 	void initStatistics(){
 
-		_stats = new SimkaStatistics(_nbBanks, _nbNewBanks, _computeSimpleDistances, _computeComplexDistances);
+		_stats = new SimkaStatistics(_nbBanks, _nbNewBanks, _computeSimpleDistances, _computeComplexDistances, _kmerSize);
 		simka2_loadStatInfos(_databaseDir, _database._uniqKmerSpectrumDirs, _database._entries, _kmerSpectrumDirs, _stats, _database._entriesInfos);
 
 	}
