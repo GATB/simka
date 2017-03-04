@@ -71,7 +71,7 @@ include_directories (include ${gatb-core-includes} ${PROJECT_SOURCE_DIR}/src/cor
 #ENDFOREACH ()
 
 # we define the files to be compiled
-file (GLOB_RECURSE  ProjectFiles  src/core/Simka*) #  ${PROJECT_BINARY_DIR}/src/core/template/*.cpp)
+file (GLOB_RECURSE  ProjectFiles  src/core/Simka* src/utils/*.cpp src/utils/*.h) #  ${PROJECT_BINARY_DIR}/src/core/template/*.cpp)
 #file (GLOB_RECURSE  KMCApi  thirdparty/KMC/kmc_api/*.cpp thirdparty/KMC/kmc_api/*.h) 
 
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../scripts/simka2/bin)

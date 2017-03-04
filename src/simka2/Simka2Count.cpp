@@ -18,6 +18,7 @@
 //#include "../../thirdparty/KMC/kmc_api/kmc_file.h"
 //#include "../../thirdparty/KMC/kmc_api/kmer_defs.h"
 #include <unordered_map>
+#include "../utils/MurmurHash3.h"
 
 //#define MERGE_BUFFER_SIZE 10000
 
@@ -177,8 +178,17 @@ public:
 		for(_itKmer.first(); !_itKmer.isDone(); _itKmer.next()){
 			//cout << _itKmer->value().toString(_kmerSize) << endl;
 
-			u_int64_t kmer = oahash64(_itKmer->value().getVal());
+			u_int64_t kmerLala = _itKmer->value().getVal();
+			u_int64_t kmer;
+			//u_int64_t hash_otpt[2];
+			//uint32_t hash_otpt[4];
 
+			//cout << kmerLala << endl;
+			MurmurHash3_x64_128 ( (const char*)&kmerLala, sizeof(kmerLala), 100, &kmer);
+			//u_int64_t kmer = hash_otpt[0];
+			//cout << kmer << endl;
+	
+	
 			//if(kmer < 100) continue;
 
 	    	if(_kmerCounts.find(kmer) == _kmerCounts.end()){
@@ -645,7 +655,7 @@ public:
 
 		_options = getInput();
 
-		_sketchSize = 100000;
+		_sketchSize = 10000;
 
 		_computeSimpleDistances = _options->get(STR_SIMKA_COMPUTE_ALL_SIMPLE_DISTANCES);
 		_computeComplexDistances = _options->get(STR_SIMKA_COMPUTE_ALL_COMPLEX_DISTANCES);
