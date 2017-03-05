@@ -483,7 +483,7 @@ public:
 
 				int iMax = i-_bankOffset-1;
 				if(iMax >= 0){
-					for(int i2=0; i2<=iMax; i2++){
+					for(size_t i2=0; i2<=(size_t)iMax; i2++){
 
 						if(_stats->_nbDistinctKmersPerDataset[i] + _stats->_nbDistinctKmersPerDataset[_bankOffset+i2] - _stats->_matrixNbDistinctSharedKmers._matrix_squaredHalf[i2][iMax-i2] >= _stats->_sketchSize){ //_minHashUnion[i] is _skecthSize
 							continue;
@@ -494,9 +494,9 @@ public:
 					}
 				}
 
-				int iLocal = i-_bankOffset;
+				size_t iLocal = i-_bankOffset;
 				if(iLocal < _stats->_nbKmersPerDatasetPairs._matrix_squaredHalf.size()){
-					for(int j=0; j<_stats->_nbKmersPerDatasetPairs._matrix_squaredHalf[iLocal].size(); j++){
+					for(size_t j=0; j<_stats->_nbKmersPerDatasetPairs._matrix_squaredHalf[iLocal].size(); j++){
 
 						size_t jGlobal = iLocal+j+1+_bankOffset;
 

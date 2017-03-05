@@ -112,60 +112,60 @@ os.system(command + suffix)
 test_dists("results_k21_t0")
 
 #test k=12 t=0
-clear()
-print("TESTING k=12 t=0")
-command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_k12_t0 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 12 -abundance-min 0"
-print(command)
-os.system(command + suffix)
-command = "../scripts/simka2/bin/simka2-export -out __results__/results_k12_t0/ -in-ids ids_order.txt -in __results__/results_k12_t0/matrix_binary/"
-os.system(command + suffix)
-test_dists("results_k12_t0")
+#clear()
+#print("TESTING k=12 t=0")
+#command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_k12_t0 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 12 -abundance-min 0"
+#print(command)
+#os.system(command + suffix)
+#command = "../scripts/simka2/bin/simka2-export -out __results__/results_k12_t0/ -in-ids ids_order.txt -in __results__/results_k12_t0/matrix_binary/"
+#os.system(command + suffix)
+#test_dists("results_k12_t0")
 
 #test k=31 t=2
-clear()
-print("TESTING k=31 t=2")
-command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_k31_t2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 31 -abundance-min 2"
-print(command)
-os.system(command + suffix)
-command = "../scripts/simka2/bin/simka2-export -out __results__/results_k31_t2/ -in-ids ids_order.txt -in __results__/results_k31_t2/matrix_binary/"
-os.system(command + suffix)
-test_dists("results_k31_t2")
+#clear()
+#print("TESTING k=31 t=2")
+#command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_k31_t2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 31 -abundance-min 2"
+#print(command)
+#os.system(command + suffix)
+#command = "../scripts/simka2/bin/simka2-export -out __results__/results_k31_t2/ -in-ids ids_order.txt -in __results__/results_k31_t2/matrix_binary/"
+#os.system(command + suffix)
+#test_dists("results_k31_t2")
 
 #test k=21 t=2
-clear()
-print("TESTING k=21 t=2")
-command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_k21_t2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 2"
-print(command)
-os.system(command + suffix)
-command = "../scripts/simka2/bin/simka2-export -out __results__/results_k21_t2/ -in-ids ids_order.txt -in __results__/results_k21_t2/matrix_binary/"
-os.system(command + suffix)
-test_dists("results_k21_t2")
+#clear()
+#print("TESTING k=21 t=2")
+#command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_k21_t2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 2"
+#print(command)
+#os.system(command + suffix)
+#command = "../scripts/simka2/bin/simka2-export -out __results__/results_k21_t2/ -in-ids ids_order.txt -in __results__/results_k21_t2/matrix_binary/"
+#os.system(command + suffix)
+#test_dists("results_k21_t2")
 
 #test k=12 t=2
 clear()
-print("TESTING k=12 t=2")
-command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_k12_t2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 12 -abundance-min 2"
-print(command)
-os.system(command + suffix)
-command = "../scripts/simka2/bin/simka2-export -out __results__/results_k12_t2/ -in-ids ids_order.txt -in __results__/results_k12_t2/matrix_binary/"
-os.system(command + suffix)
-test_dists("results_k12_t2")
+#print("TESTING k=12 t=2")
+#command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_k12_t2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 12 -abundance-min 2"
+#print(command)
+#os.system(command + suffix)
+#command = "../scripts/simka2/bin/simka2-export -out __results__/results_k12_t2/ -in-ids ids_order.txt -in __results__/results_k12_t2/matrix_binary/"
+#os.system(command + suffix)
+#test_dists("results_k12_t2")
 
 
 #test resources 1
-clear()
-print("TESTING parallelization")
-command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_resources1 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 0 -nb-cores 20 -max-memory 4000 "
-print(command)
-os.system(command + suffix)
-command = "../scripts/simka2/bin/simka2-export -out __results__/results_resources1/ -in-ids ids_order.txt -in __results__/results_resources1/matrix_binary/"
-os.system(command + suffix)
-command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_resources2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 0 -nb-cores 2 -max-memory 2000 "
-print(command)
-os.system(command + suffix)
-command = "../scripts/simka2/bin/simka2-export -out __results__/results_resources2/ -in-ids ids_order.txt -in __results__/results_resources2/matrix_binary/"
-os.system(command + suffix)
-test_parallelization()
+#clear()
+#print("TESTING parallelization")
+#command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_resources1 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 0 -nb-cores 20 -max-memory 4000 "
+#print(command)
+#os.system(command + suffix)
+#command = "../scripts/simka2/bin/simka2-export -out __results__/results_resources1/ -in-ids ids_order.txt -in __results__/results_resources1/matrix_binary/"
+#os.system(command + suffix)
+#command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_resources2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 0 -nb-cores 2 -max-memory 2000 "
+#print(command)
+#os.system(command + suffix)
+#command = "../scripts/simka2/bin/simka2-export -out __results__/results_resources2/ -in-ids ids_order.txt -in __results__/results_resources2/matrix_binary/"
+#os.system(command + suffix)
+#test_parallelization()
 
 
 
