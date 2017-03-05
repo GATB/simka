@@ -472,6 +472,7 @@ public:
 
 
 
+
 		if(_stats->_nbKmersPerDatasetPairs._matrix_squaredHalf.size() > 0){
 			for(size_t ii=0; ii<_sharedNewBanks.size(); ii++){
 
@@ -483,13 +484,13 @@ public:
 				int iMax = i-_bankOffset-1;
 				if(iMax >= 0){
 					for(int i2=0; i2<=iMax; i2++){
-						u_int64_t abundanceJ = counts[_bankOffset+i2];
 
 						if(_stats->_nbDistinctKmersPerDataset[i] + _stats->_nbDistinctKmersPerDataset[_bankOffset+i2] - _stats->_matrixNbDistinctSharedKmers._matrix_squaredHalf[i2][iMax-i2] >= _stats->_sketchSize){ //_minHashUnion[i] is _skecthSize
 							continue;
 						}
 
-						_stats->_nbKmersPerDatasetPairs._matrix_squaredHalf[i2][iMax-i2] += abundanceI + abundanceJ;
+						//u_int64_t abundanceJ = counts[_bankOffset+i2];
+						_stats->_nbKmersPerDatasetPairs._matrix_squaredHalf[i2][iMax-i2] += abundanceI;
 					}
 				}
 
@@ -503,8 +504,8 @@ public:
 							continue;
 						}
 
-						u_int64_t abundanceJ = counts[jGlobal];
-						_stats->_nbKmersPerDatasetPairs._matrix_squaredHalf[iLocal][j] += abundanceI + abundanceJ;
+						//u_int64_t abundanceJ = counts[jGlobal];
+						_stats->_nbKmersPerDatasetPairs._matrix_squaredHalf[iLocal][j] += abundanceI;
 					}
 				}
 
@@ -516,37 +517,38 @@ public:
 			u_int64_t i = _sharedNewBanks[ii];
 			u_int64_t abundanceI = counts[i];
 
-			for(size_t jj=0; jj<_bankOffset; jj++){
+			for(size_t j=0; j<_bankOffset; j++){
 
-				u_int64_t j = _sharedOldBanks[jj];
-				u_int64_t abundanceJ = counts[j];
+				//u_int64_t j = _sharedOldBanks[jj];
 
-				if(_stats->_nbDistinctKmersPerDataset[i] + _stats->_nbDistinctKmersPerDataset[j] - _stats->_matrixNbDistinctSharedKmers._matrix_squaredHalf[i-_bankOffset][j] >= _stats->_sketchSize){ //_minHashUnion[i] is _skecthSize
+				if(_stats->_nbDistinctKmersPerDataset[i] + _stats->_nbDistinctKmersPerDataset[j] - _stats->_matrixNbDistinctSharedKmers._matrix_rectangular[i-_bankOffset][j] >= _stats->_sketchSize){ //_minHashUnion[i] is _skecthSize
 					continue;
 				}
 
-				_stats->_nbKmersPerDatasetPairs._matrix_squaredHalf[i-_bankOffset][j] += abundanceI + abundanceJ;
+				//u_int64_t abundanceJ = counts[j];
+				_stats->_nbKmersPerDatasetPairs._matrix_rectangular[i-_bankOffset][j] += abundanceI;// + abundanceJ;
+
+			}
+		}
+		for(size_t ii=0; ii<_sharedOldBanks.size(); ii++){
+
+			u_int64_t i = _sharedOldBanks[ii];
+			u_int64_t abundanceI = counts[i];
+
+			for(size_t j=0; j<_nbNewBanks; j++){
+
+				//u_int64_t j = _sharedOldBanks[jj];
+
+				if(_stats->_nbDistinctKmersPerDataset[i] + _stats->_nbDistinctKmersPerDataset[j+_bankOffset] - _stats->_matrixNbDistinctSharedKmers._matrix_rectangular[j][i] >= _stats->_sketchSize){ //_minHashUnion[i] is _skecthSize
+					continue;
+				}
+
+				//u_int64_t abundanceJ = counts[j];
+				_stats->_nbKmersPerDatasetPairs._matrix_rectangular[j][i] += abundanceI;
 
 			}
 		}
 
-
-		/*
-		for(size_t ii=0; ii<_sharedNewBanks.size(); ii++){
-
-			u_int64_t i = _sharedNewBanks[ii];
-			u_int64_t abundanceI = counts[i];
-
-			_minHashUnion[i] += 1;
-
-			for(size_t jj=ii+1; jj<_sharedNewBanks.size(); jj++){
-
-				u_int64_t j = _sharedNewBanks[jj] - _bankOffset;
-				u_int64_t abundanceJ = counts[j];
-
-				_minHashUnionCross[i][j] += 1;
-			}
-		}*/
 
 		updateDistanceDefault(counts);
     }
@@ -627,7 +629,7 @@ public:
 
 				u_int64_t j = _sharedOldBanks[jj];
 
-				if(_stats->_nbDistinctKmersPerDataset[i] + _stats->_nbDistinctKmersPerDataset[j] - _stats->_matrixNbDistinctSharedKmers._matrix_squaredHalf[i-_bankOffset][j] >= _stats->_sketchSize){
+				if(_stats->_nbDistinctKmersPerDataset[i] + _stats->_nbDistinctKmersPerDataset[j] - _stats->_matrixNbDistinctSharedKmers._matrix_rectangular[i-_bankOffset][j] >= _stats->_sketchSize){
 					continue;
 				}
 

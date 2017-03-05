@@ -228,10 +228,10 @@ private:
 
 
     double distance_abundance_brayCurtis(size_t i, size_t j, size_t i2, size_t j2, vector<vector<u_int64_t> >& crossedData, vector<vector<u_int64_t> >& marginalData){
-    	if( i== 0 && j==1){
-    		cout << crossedData[i2][j2] << endl;
-    		cout << marginalData[i2][j2] << endl;
-    	}
+    	//if( i== 0 && j==1){
+    	//	cout << crossedData[i2][j2] << endl;
+    	//	cout << marginalData[i2][j2] << endl;
+    	//}
 
     	double union_ = marginalData[i2][j2];
     	if(union_ == 0) return 1;

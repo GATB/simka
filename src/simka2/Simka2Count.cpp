@@ -102,6 +102,7 @@ public:
 	~DistanceCommand(){
 
 		if(_isMaster) return;
+		if(_kmerCountSorter.size() == 0) return;
 		//cout << "deleteeeeee" << endl;
 		/*
 		//cout << "deleteeeeee" << endl;
@@ -127,7 +128,8 @@ public:
 
 		_kmerCountSorter.pop(); //Discard greater element because queue size is always equal to (_sketchSize + 1) because of an optimization
 
-		for(size_t i=0; i<_sketchSize; i++){
+		size_t sketchSize = _kmerCountSorter.size();
+		for(size_t i=0; i<sketchSize; i++){
 			u_int64_t kmer = _kmerCountSorter.top();
 			_kmerCountSorter.pop();
 			mergeSynch(kmer, _kmerCounts[kmer]);
@@ -215,26 +217,6 @@ public:
 	    	}
 
 		}
-	}
-
-	inline u_int64_t korenXor(u_int64_t x)const{
-		x ^= (x << 21);
-		x ^= (x >> 35);
-		x ^= (x << 4);
-		return x;
-	}
-
-	inline static u_int64_t oahash64 (u_int64_t elem)
-	{
-		u_int64_t code = elem;
-		code = code ^ (code >> 14); //supp
-		code = (~code) + (code << 18);
-		code = code ^ (code >> 31);
-		code = code * 21;
-		code = code ^ (code >> 11);
-		code = code + (code << 6);
-		code = code ^ (code >> 22);
-		return code;
 	}
 
 };
@@ -760,15 +742,17 @@ public:
 
 		_partitionWriter = new SimkaPartitionWriter<span>(_outputDir, _nbPartitions);
 
-		vector<u_int64_t> _reverseQueue(_sketchSize);
-		for(size_t i=0; i<_sketchSize; i++){
+		size_t sketchSize = _kmerCountSorter.size();
+
+		vector<u_int64_t> _reverseQueue(sketchSize);
+		for(size_t i=0; i<sketchSize; i++){
 			u_int64_t kmer = _kmerCountSorter.top();
-			_reverseQueue[_sketchSize-i-1] = kmer;
+			_reverseQueue[sketchSize-i-1] = kmer;
 			_kmerCountSorter.pop();
 		}
 
 
-		for(size_t i=0; i<_sketchSize; i++){
+		for(size_t i=0; i<sketchSize; i++){
 			u_int64_t kmer = _reverseQueue[i];
 			u_int32_t count = _kmerCounts[kmer];
 			//cout << kmer << " " << count << endl;
