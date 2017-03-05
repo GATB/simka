@@ -34,6 +34,8 @@ const string STR_SIMKA2_DISTANCE_MAX_PROCESSABLE_DATASETS = "-max-datasets";
 
 
 void simka2_loadStatInfos(const string& databaseDir, const set<string>& uniqDirs, const vector<string>& ids, vector<string>& kmerSpectrumDirs, SimkaStatistics* stats, map<string, string>& datasetFilenames){
+
+	/*
 	map<string, vector<u_int64_t> > datasetInfos;
 	map<string, string> test;
 
@@ -52,39 +54,39 @@ void simka2_loadStatInfos(const string& databaseDir, const set<string>& uniqDirs
 		for(size_t i=0; i<nbMergedBanks; i++){
 
 			string datasetID;
-			u_int64_t nbReads;
-			u_int64_t nbDistinctKmers;
-			u_int64_t nbKmers;
-			u_int64_t chord_N2;
+			//u_int64_t nbReads;
+			//u_int64_t nbDistinctKmers;
+			//u_int64_t nbKmers;
+			//u_int64_t chord_N2;
 			SimkaIoUtils::simka2_readDatasetInfo(mergedLinkFile, datasetID, nbReads, nbDistinctKmers, nbKmers, chord_N2);
 
-			vector<u_int64_t> infos;
-			infos.push_back(nbReads);
-			infos.push_back(nbDistinctKmers);
-			infos.push_back(nbKmers);
-			infos.push_back(chord_N2);
+			//vector<u_int64_t> infos;
+			//infos.push_back(nbReads);
+			//infos.push_back(nbDistinctKmers);
+			//infos.push_back(nbKmers);
+			//infos.push_back(chord_N2);
 
-			datasetInfos[datasetID] = infos;
+			//datasetInfos[datasetID] = infos;
 		}
 		mergedLinkFile.close();
 
 		//cout << nbMergedBanks << endl;
-	}
+	}*/
 
 	set<string> dirPresent;
 
 	for(size_t i=0; i<ids.size(); i++){
 		string id = ids[i];
-		vector<u_int64_t> infos = datasetInfos[id];
+		//vector<u_int64_t> infos = datasetInfos[id];
 
-		stats->_datasetNbReads[i] = infos[0];
-		stats->_nbSolidDistinctKmersPerBank[i] = infos[1];
-		stats->_nbSolidKmersPerBank[i] = infos[2];
+		//stats->_datasetNbReads[i] = infos[0];
+		//stats->_nbSolidDistinctKmersPerBank[i] = infos[1];
+		//stats->_nbSolidKmersPerBank[i] = infos[2];
 
 
-		if(stats->_computeSimpleDistances){
-			stats->_chord_sqrt_N2[i] = sqrt(infos[3]);
-		}
+		//if(stats->_computeSimpleDistances){
+		//	stats->_chord_sqrt_N2[i] = sqrt(infos[3]);
+		//}
 
 		string dir = databaseDir + "/" + datasetFilenames[id];
 		if(dirPresent.find(dir) != dirPresent.end()) continue;

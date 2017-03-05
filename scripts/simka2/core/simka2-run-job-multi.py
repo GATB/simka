@@ -30,6 +30,7 @@ jobScheduler.start()
 for command in commands:
     checkPointFilename, run_command =  command.split("|")
     #print checkPointFilename, "  -------------  ",run_command
+    #print run_command
     os.system(run_command)
     jobScheduler.submitJob((checkPointFilename, jobEnd, ()))
 

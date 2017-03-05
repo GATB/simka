@@ -17,7 +17,7 @@ for i in range(2, len(sys.argv)):
 
 #while(ret == core_dump_error or ret == core_dump_error2 or ret == seg_fault_error):
 ret = os.system(command)
-#print ret
+#print command
 
 #print ret
 #Success

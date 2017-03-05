@@ -36,6 +36,7 @@ public:
 	bool _computeSimpleDistances;
 	bool _computeComplexDistances;
 	size_t _kmerSize;
+	size_t _sketchSize;
 
 	Simka2Database _database;
 	size_t _nbPartitions;
@@ -83,6 +84,7 @@ public:
     	_databaseDir =  getInput()->getStr(STR_SIMKA2_DATABASE_DIR);
     	_nbPartitions =  getInput()->getInt(STR_SIMKA2_NB_PARTITION);
     	_maxDatasets = getInput()->getInt(STR_SIMKA2_DISTANCE_MAX_PROCESSABLE_DATASETS);
+    	_sketchSize = 10000; //TODO
 
 
     	_dirMatrixParts = _databaseDir + "/distance/temp_parts";
@@ -108,11 +110,11 @@ public:
 
 		//SimkaDistanceParam distanceParams(this->_options);
 		vector<string> kmerSpectrumDirs;
-		SimkaStatistics mainStats(this->_nbBanks, this->_nbNewBanks, this->_computeSimpleDistances, this->_computeComplexDistances, this->_kmerSize);
+		SimkaStatistics mainStats(this->_nbBanks, this->_nbNewBanks, this->_computeSimpleDistances, this->_computeComplexDistances, this->_kmerSize, _sketchSize);
 		simka2_loadStatInfos(_databaseDir, _database._uniqKmerSpectrumDirs, _database._entries, kmerSpectrumDirs, &mainStats, _database._entriesInfos);
 
 		{
-			SimkaStatistics stats(this->_nbBanks, this->_nbNewBanks, this->_computeSimpleDistances, this->_computeComplexDistances, this->_kmerSize);
+			SimkaStatistics stats(this->_nbBanks, this->_nbNewBanks, this->_computeSimpleDistances, this->_computeComplexDistances, this->_kmerSize, _sketchSize);
 			kmerSpectrumDirs.clear();
 			simka2_loadStatInfos(_databaseDir, _database._uniqKmerSpectrumDirs, _database._entries, kmerSpectrumDirs, &stats, _database._entriesInfos);
 
@@ -141,9 +143,10 @@ public:
 		//for(size_t i=0; i<this->_nbBanks; i++){
 		//	cout << mainStats._nbSolidDistinctKmersPerBank[i] << endl;
 		//}
-		mainStats.outputMatrix(_dirMatrixMatrixBinaryTmp, _database._entries, _database._nbProcessedDataset, _nbNewBanks);
+		SimkaDistance simkaDistance(mainStats);
+		simkaDistance.outputMatrix(_dirMatrixMatrixBinaryTmp, _database._entries, _database._nbProcessedDataset, _nbNewBanks);
 
-		mainStats.print();
+		//mainStats.print();
 
 	}
 

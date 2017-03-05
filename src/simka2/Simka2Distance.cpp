@@ -138,11 +138,11 @@ public:
 		cout << "-----" << endl;
 */
 
-		_stats->_nbDistinctKmers += 1;
+		//_stats->_nbDistinctKmers += 1;
 
-		if(_nbBankThatHaveKmer > 1){
-			_stats->_nbSharedKmers += 1;
-		}
+		//if(_nbBankThatHaveKmer > 1){
+		//	_stats->_nbSharedKmers += 1;
+		//}
 
 		_processor->process(this->_partitionId, kmer, counts);
 
@@ -196,6 +196,7 @@ public:
 	size_t _kmerSize;
 	size_t _partitionId;
 	size_t _maxDatasets;
+	size_t _sketchSize;
 
 	Simka2Database _database;
 	vector<string> _allIds;
@@ -247,6 +248,7 @@ public:
     	_dirMatrixParts = _databaseDir + "/distance/temp_parts";
     	//_dirMatrixMatrixBinary = _databaseDir + "/distance/matrix_binary";
 
+    	_sketchSize = 10000; //TODO
 	}
 
 	void createDatabases(){
@@ -280,7 +282,7 @@ public:
 
 	void initStatistics(){
 
-		_stats = new SimkaStatistics(_nbBanks, _nbNewBanks, _computeSimpleDistances, _computeComplexDistances, _kmerSize);
+		_stats = new SimkaStatistics(_nbBanks, _nbNewBanks, _computeSimpleDistances, _computeComplexDistances, _kmerSize, _sketchSize);
 		simka2_loadStatInfos(_databaseDir, _database._uniqKmerSpectrumDirs, _database._entries, _kmerSpectrumDirs, _stats, _database._entriesInfos);
 
 	}

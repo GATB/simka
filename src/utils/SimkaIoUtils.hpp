@@ -55,38 +55,38 @@ public:
 
 	static void simka2_writeDatasetInfo(ofstream& file, const string& datasetID, u_int64_t nbReads, u_int64_t nbDistinctKmers, u_int64_t nbKmers, u_int64_t chord_N2){
 	    simka2_writeString(datasetID, file);
-	    file.write((char const*)(&nbReads), sizeof(nbReads));
-	    file.write((char const*)(&nbDistinctKmers), sizeof(nbDistinctKmers));
-	    file.write((char const*)(&nbKmers), sizeof(nbKmers));
-	    file.write((char const*)(&chord_N2), sizeof(chord_N2));
+	    //file.write((char const*)(&nbReads), sizeof(nbReads));
+	    //file.write((char const*)(&nbDistinctKmers), sizeof(nbDistinctKmers));
+	    //file.write((char const*)(&nbKmers), sizeof(nbKmers));
+	    //file.write((char const*)(&chord_N2), sizeof(chord_N2));
 	}
 
 	static void simka2_readDatasetInfo(ifstream& file, string& datasetID, u_int64_t& nbReads, u_int64_t& nbDistinctKmers, u_int64_t& nbKmers, u_int64_t& chord_N2){
 		simka2_readString(datasetID, file);
-		file.read((char *)(&nbReads), sizeof(nbReads));
-		file.read((char *)(&nbDistinctKmers), sizeof(nbDistinctKmers));
-		file.read((char *)(&nbKmers), sizeof(nbKmers));
-		file.read((char *)(&chord_N2), sizeof(chord_N2));
+		//file.read((char *)(&nbReads), sizeof(nbReads));
+		//file.read((char *)(&nbDistinctKmers), sizeof(nbDistinctKmers));
+		//file.read((char *)(&nbKmers), sizeof(nbKmers));
+		//file.read((char *)(&chord_N2), sizeof(chord_N2));
 	}
 
 	static void simka2_transferDatasetInfo(ifstream& source, ofstream& dest){
 		string datasetID;
-		u_int64_t nbReads;
-		u_int64_t nbDistinctKmers;
-		u_int64_t nbKmers;
-		u_int64_t chord_N2;
+		//u_int64_t nbReads;
+		//u_int64_t nbDistinctKmers;
+		//u_int64_t nbKmers;
+		//u_int64_t chord_N2;
 
 		simka2_readString(datasetID, source);
-		source.read((char *)(&nbReads), sizeof(nbReads));
-		source.read((char *)(&nbDistinctKmers), sizeof(nbDistinctKmers));
-		source.read((char *)(&nbKmers), sizeof(nbKmers));
-		source.read((char *)(&chord_N2), sizeof(chord_N2));
+		//source.read((char *)(&nbReads), sizeof(nbReads));
+		//source.read((char *)(&nbDistinctKmers), sizeof(nbDistinctKmers));
+		//source.read((char *)(&nbKmers), sizeof(nbKmers));
+		//source.read((char *)(&chord_N2), sizeof(chord_N2));
 
 	    simka2_writeString(datasetID, dest);
-	    dest.write((char const*)(&nbReads), sizeof(nbReads));
-	    dest.write((char const*)(&nbDistinctKmers), sizeof(nbDistinctKmers));
-	    dest.write((char const*)(&nbKmers), sizeof(nbKmers));
-	    dest.write((char const*)(&chord_N2), sizeof(chord_N2));
+	    //dest.write((char const*)(&nbReads), sizeof(nbReads));
+	    //dest.write((char const*)(&nbDistinctKmers), sizeof(nbDistinctKmers));
+	    //dest.write((char const*)(&nbKmers), sizeof(nbKmers));
+	    //dest.write((char const*)(&chord_N2), sizeof(chord_N2));
 	}
 
 };
