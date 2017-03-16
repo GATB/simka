@@ -290,6 +290,7 @@ public:
 
 	string _binDir;
 	size_t _nbPartitions;
+	size_t _maxOpenFiles;
 	u_int64_t _maxMemory;
 	size_t _nbCores;
 	string _outputDir;
@@ -374,6 +375,7 @@ public:
 		_abundanceThreshold.second = min((u_int64_t)_options->getInt(STR_KMER_ABUNDANCE_MAX), (u_int64_t)(999999999));
 
 		_nbPartitions = _options->getInt(STR_SIMKA2_NB_PARTITION);
+		_maxOpenFiles = _options->getInt(STR_SIMKA2_MAX_OPEN_FILE);
 		//cout << _options->getInt(STR_KMER_ABUNDANCE_MAX) << endl;
 		//cout << _abundanceThreshold.second << endl;
 		//_soliditySingle = _options->get(STR_SIMKA_SOLIDITY_PER_DATASET);
@@ -429,6 +431,7 @@ public:
 		//_options->setStr(STR_URI_OUTPUT_TMP, _outputDirTemp);
 		//System::file().mkdir(_outputDirTemp + "/input/", -1);
 
+		//KMC need max memory in GB instead of MB
 		_maxMemory = _maxMemory / 1000;
 		_maxMemory = max(_maxMemory, (u_int64_t) 1);
 	}
@@ -521,7 +524,6 @@ public:
 
 	void count(){
 
-		_partitionWriter = new SimkaPartitionWriter<span>(_outputDir, _nbPartitions);
 
 
 		string dataType = "";
@@ -589,8 +591,11 @@ public:
 
 		string kmcCommand = _binDir + "/kmc ";
 		kmcCommand += " -k" + Stringify::format("%i", _kmerSize);
-		kmcCommand += " -n150 "; //number of partitions
-		kmcCommand += " -sm "; //strict max-memory mode
+		if(_maxOpenFiles != 0){
+			kmcCommand += " -n" + Stringify::format("%i", _maxOpenFiles); //maximum number of opened files
+		}
+		//kmcCommand += " -n150 "; //number of partitions
+		//kmcCommand += " -sm "; //strict max-memory mode
 		kmcCommand += " -ci" + Stringify::format("%i", _abundanceThreshold.first); //abundance min
 		kmcCommand += " -cx" + Stringify::format("%i", _abundanceThreshold.second); //abundance max
 		kmcCommand += " -cs65000"; //abundance max
@@ -627,7 +632,9 @@ public:
 		}*/
 
 
-		string kmcSortCommand = _binDir + "/kmc_tools transform ";
+		string kmcSortCommand = _binDir + "/kmc_tools ";
+		kmcSortCommand += " -t" + Stringify::format("%i", _nbCores);
+		kmcSortCommand += " transform ";
 		kmcSortCommand += " " + _kmerDatataseFilename;
 		kmcSortCommand += " sort ";
 		kmcSortCommand += " " + _outputDirTemp + "/kmer_counts_sorted";
@@ -736,6 +743,8 @@ public:
 
 
 	void partitionKmerCounts(){
+
+		_partitionWriter = new SimkaPartitionWriter<span>(_outputDir, _nbPartitions);
 
 		CKMCFile kmer_data_base;
 
@@ -1006,6 +1015,7 @@ public:
 	    coreParser->push_back(new OptionOneParam(STR_NB_CORES, "number of cores", false, "0"));
 	    coreParser->push_back (new OptionOneParam (STR_MAX_MEMORY, "max memory (MB)", false, "8000"));
 	    coreParser->push_back (new OptionOneParam (STR_SIMKA2_NB_PARTITION, "nb partitions", true));
+	    coreParser->push_back (new OptionOneParam (STR_SIMKA2_MAX_OPEN_FILE, "maximum number of opened files", false, "0"));
 
 
 	    //coreParser->push_back(dskParser->getParser ());

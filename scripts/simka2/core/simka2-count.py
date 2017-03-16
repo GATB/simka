@@ -19,6 +19,7 @@ parser.add_argument('-hpc', action="store_true", dest="_isHPC", help="compute wi
 #parser.add_argument('-max-jobs', action="store", dest="max_jobs", help="maximum number of jobs that can be submitted simultaneously")
 parser.add_argument('-submit-command', action="store", dest="submit_command", help="command used to submit job")
 parser.add_argument('-submit-file', action="store", dest="submit_file", help="filename to a job file template, for HPC system that required a job file")
+parser.add_argument('-max-open-file', action="store", dest="max_open_file", help="maximum number of opened files", default="0")
 
 #print parser.parse_args(['-in', '-bval', '-c', '3'])
 args =  parser.parse_args()
@@ -168,16 +169,13 @@ class ComputeKmerSpectrumAll():
 			" -abundance-max " + str(self.database._abundanceMax) + \
 			" -nb-partitions " + str(self.database._nbPartitions) + \
 			" -max-memory " + str(self.jobMemory) + \
-			" -nb-cores " + str(self.jobCores)
-		command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
+			" -nb-cores " + str(self.jobCores)+ \
+			" -max-open-file " + str(args.max_open_file)
+		command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command, os.path.join(kmerSpectrumOutputDir, "log.txt"))
+		#print command
 		#print("compute_kmer_spectrums_all.py: Add log file system")
-
-		logFilename = os.path.join(kmerSpectrumOutputDir, "log.txt")
-		logFile = open(logFilename, "w")
-		logFile.write(command + "\n\n")
-		logFile.close()
-
-		os.system(command + " >> " + logFilename + " 2>&1   &")
+		#print("verifier si count job sont bien lance en parallele")
+		os.system(command)
 
 		self.jobScheduler.submitJob((checkPointFilename, self.jobEnd, (id, self.database.get_default_kmer_spectrum_dir_of_id(id, False), outputDirTemp)))
 
@@ -215,6 +213,13 @@ class ComputeKmerSpectrumAll():
 			self.nbDatasetToProcess += 1
 
 		inputFile.close()
+
+		nbProcessedDatasets = len(self.database.entries)
+		nbDatasets = nbProcessedDatasets + self.nbDatasetToProcess
+		#print nbProcessedDatasets, self.nbDatasetToProcess
+		if nbDatasets < 2:
+			print("Error: input must contains at least two datasets")
+			exit(1)
 
 	def getOutputDirTemp(self, id):
 		return os.path.join(args._outputDirTemp, id + "_temp")
@@ -263,6 +268,5 @@ class ComputeKmerSpectrumAll():
 
 
 
-print("lala")
 c = ComputeKmerSpectrumAll()
 c.execute()

@@ -120,11 +120,10 @@ class Simka_ComputeDistance():
 			command += checkPointFilename + " "
 			command += " python " + os.path.join(SCRIPT_DIR, "simka2-run-job-multi.py") + " "
 			command += " " + os.path.join(self.tempDir, "commands_input_" + str(i))
-			command += "   > /dev/null 2>&1     &"
+			#command += "   > /dev/null 2>&1     &"
 			#scommand += " & "
-			command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
+			command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command, checkPointFilename+"log.txt")
 			os.system(command)
-			#print command
 
 			self.jobScheduler.submitJob((checkPointFilename, self.jobEnd, ()))
 			#print("lala")
@@ -144,8 +143,10 @@ class Simka_ComputeDistance():
 		command += " -kmer-size " + str(self.database._kmerSize)
 		command += " -partition-id " + str(partitionId)
 		command += " -max-datasets " + str(self.nbFileProcessed+self.maximumProcessedDatasets)
-		command += "   > /dev/null 2>&1     &"
+		#command += " & "
+		#command += "   > /dev/null 2>&1     &"
 		#print command
+		command = SimkaCommand.addLogFilename(command,checkPointFilename+"log.txt")
 		self.jobCommandsFile.write(checkPointFilename + "|" + command + "\n")
 
 

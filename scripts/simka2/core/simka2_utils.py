@@ -2,6 +2,8 @@
 import os, time, sys, multiprocessing, argparse, math, struct
 
 import datetime
+from os import stat
+
 
 class SimkaSettings():
 
@@ -39,11 +41,15 @@ class SimkaCommand():
         pass
 
     @staticmethod
-    def createHPCcommand(command, isHPC, submitCommand):
+    def createHPCcommand(command, isHPC, submitCommand, logFilename):
         if isHPC:
-            return submitCommand + " " + command
+            command = submitCommand + " " + command
         else:
-            return command
+            command = command
+
+        command = SimkaCommand.addLogFilename(command, logFilename)
+
+        return command
 
     @staticmethod
     def addHPCargs(command, args):
@@ -53,6 +59,15 @@ class SimkaCommand():
             command += " -submit-command " + "\"" + args.submit_command + "\""
             if args.submit_file != None:
                 command += " -submit-file " + args.submit_file
+
+        return command
+
+    @staticmethod
+    def addLogFilename(command, logFilename):
+        command = command + " >> " + logFilename + " 2>&1 &"
+        logFile = open(logFilename, "w")
+        logFile.write(command + "\n\n")
+        logFile.close()
         return command
 
 class Simka2ResourceAllocator():

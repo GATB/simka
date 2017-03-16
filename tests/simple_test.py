@@ -1,6 +1,7 @@
 
 import sys, os, shutil, gzip, glob
 
+print os.path.split(os.path.realpath(__file__))[0]
 os.chdir(os.path.split(os.path.realpath(__file__))[0])
 
 
@@ -94,7 +95,7 @@ def test_parallelization():
 #test k=31 t=0
 clear()
 print("TESTING k=31 t=0")
-command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_k31_t0 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 31 -abundance-min 0"
+command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_k31_t0 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 31 -abundance-min 0 -max-open-file 100"
 print(command)
 os.system(command + suffix)
 command = "../scripts/simka2/bin/simka2-export -out __results__/results_k31_t0/ -in-ids ids_order.txt -in __results__/results_k31_t0/matrix_binary/"
@@ -104,7 +105,7 @@ test_dists("results_k31_t0")
 #test k=21 t=0
 clear()
 print("TESTING k=21 t=0")
-command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_k21_t0 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 0"
+command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_k21_t0 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 0 -max-open-file 100"
 print(command)
 os.system(command + suffix)
 command = "../scripts/simka2/bin/simka2-export -out __results__/results_k21_t0/ -in-ids ids_order.txt -in __results__/results_k21_t0/matrix_binary/"
@@ -114,7 +115,7 @@ test_dists("results_k21_t0")
 #test k=12 t=0
 clear()
 print("TESTING k=12 t=0")
-command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_k12_t0 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 12 -abundance-min 0"
+command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_k12_t0 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 12 -abundance-min 0 -max-open-file 100"
 print(command)
 os.system(command + suffix)
 command = "../scripts/simka2/bin/simka2-export -out __results__/results_k12_t0/ -in-ids ids_order.txt -in __results__/results_k12_t0/matrix_binary/"
@@ -124,7 +125,7 @@ test_dists("results_k12_t0")
 #test k=31 t=2
 clear()
 print("TESTING k=31 t=2")
-command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_k31_t2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 31 -abundance-min 2"
+command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_k31_t2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 31 -abundance-min 2 -max-open-file 100"
 print(command)
 os.system(command + suffix)
 command = "../scripts/simka2/bin/simka2-export -out __results__/results_k31_t2/ -in-ids ids_order.txt -in __results__/results_k31_t2/matrix_binary/"
@@ -134,7 +135,7 @@ test_dists("results_k31_t2")
 #test k=21 t=2
 clear()
 print("TESTING k=21 t=2")
-command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_k21_t2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 2"
+command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_k21_t2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 2 -max-open-file 100"
 print(command)
 os.system(command + suffix)
 command = "../scripts/simka2/bin/simka2-export -out __results__/results_k21_t2/ -in-ids ids_order.txt -in __results__/results_k21_t2/matrix_binary/"
@@ -144,7 +145,7 @@ test_dists("results_k21_t2")
 #test k=12 t=2
 clear()
 print("TESTING k=12 t=2")
-command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_k12_t2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 12 -abundance-min 2"
+command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_k12_t2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 12 -abundance-min 2 -max-open-file 100"
 print(command)
 os.system(command + suffix)
 command = "../scripts/simka2/bin/simka2-export -out __results__/results_k12_t2/ -in-ids ids_order.txt -in __results__/results_k12_t2/matrix_binary/"
@@ -155,12 +156,12 @@ test_dists("results_k12_t2")
 #test resources 1
 clear()
 print("TESTING parallelization")
-command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_resources1 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 0 -nb-cores 20 -max-memory 4000 "
+command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_resources1 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 0 -nb-cores 20 -max-memory 4000  -max-open-file 100"
 print(command)
 os.system(command + suffix)
 command = "../scripts/simka2/bin/simka2-export -out __results__/results_resources1/ -in-ids ids_order.txt -in __results__/results_resources1/matrix_binary/"
 os.system(command + suffix)
-command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_resources2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 0 -nb-cores 2 -max-memory 2000 "
+command = "python ../scripts/simka2/simka.py -in ../example/data/simka_input.txt -out ./__results__/results_resources2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 0 -nb-cores 2 -max-memory 2000  -max-open-file 100"
 print(command)
 os.system(command + suffix)
 command = "../scripts/simka2/bin/simka2-export -out __results__/results_resources2/ -in-ids ids_order.txt -in __results__/results_resources2/matrix_binary/"
@@ -173,10 +174,10 @@ test_parallelization()
 #Building distance matrices line by line ABC -> DE
 clear()
 print("TESTING k=31 t=0 (building distance matrices line by line ABC -> DE)")
-command = "python ../scripts/simka2/simka.py -in ./simka_input_ABC.txt -out ./__results__/results_k31_t0 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 31 -abundance-min 0 -keep-tmp"
+command = "python ../scripts/simka2/simka.py -in ./simka_input_ABC.txt -out ./__results__/results_k31_t0 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 31 -abundance-min 0 -keep-tmp -max-open-file 100"
 print command
 os.system(command + suffix)
-command = "python ../scripts/simka2/simka.py -in ./simka_input_DE.txt -out ./__results__/results_k31_t0 -out-tmp ./temp_output"
+command = "python ../scripts/simka2/simka.py -in ./simka_input_DE.txt -out ./__results__/results_k31_t0 -out-tmp ./temp_output -max-open-file 100"
 print command
 os.system(command + suffix)
 command = "../scripts/simka2/bin/simka2-export -out __results__/results_k31_t0/ -in-ids ids_order.txt -in __results__/results_k31_t0/matrix_binary/"
@@ -186,13 +187,13 @@ test_dists("results_k31_t0")
 #Building distance matrices line by line ABC -> D -> E
 clear()
 print("TESTING k=31 t=0 (building distance matrices line by line ABC -> D -> E)")
-command = "python ../scripts/simka2/simka.py -in ./simka_input_ABC.txt -out ./__results__/results_k31_t0 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 31 -abundance-min 0 -keep-tmp"
+command = "python ../scripts/simka2/simka.py -in ./simka_input_ABC.txt -out ./__results__/results_k31_t0 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 31 -abundance-min 0 -keep-tmp -max-open-file 100"
 print command
 os.system(command + suffix)
-command = "python ../scripts/simka2/simka.py -in ./simka_input_D.txt -out ./__results__/results_k31_t0 -out-tmp ./temp_output -keep-tmp"
+command = "python ../scripts/simka2/simka.py -in ./simka_input_D.txt -out ./__results__/results_k31_t0 -out-tmp ./temp_output -keep-tmp -max-open-file 100"
 print command
 os.system(command + suffix)
-command = "python ../scripts/simka2/simka.py -in ./simka_input_E.txt -out ./__results__/results_k31_t0 -out-tmp ./temp_output"
+command = "python ../scripts/simka2/simka.py -in ./simka_input_E.txt -out ./__results__/results_k31_t0 -out-tmp ./temp_output -max-open-file 100"
 print command
 os.system(command + suffix)
 command = "../scripts/simka2/bin/simka2-export -out __results__/results_k31_t0/ -in-ids ids_order.txt -in __results__/results_k31_t0/matrix_binary/"
@@ -202,10 +203,10 @@ test_dists("results_k31_t0")
 #Building distance matrices line by line AB -> CDE
 clear()
 print("TESTING k=31 t=0 (building distance matrices line by line AB -> CDE)")
-command = "python ../scripts/simka2/simka.py -in ./simka_input_AB.txt -out ./__results__/results_k31_t0 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 31 -abundance-min 0 -keep-tmp"
+command = "python ../scripts/simka2/simka.py -in ./simka_input_AB.txt -out ./__results__/results_k31_t0 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 31 -abundance-min 0 -keep-tmp -max-open-file 100"
 print command
 os.system(command + suffix)
-command = "python ../scripts/simka2/simka.py -in ./simka_input_CDE.txt -out ./__results__/results_k31_t0 -out-tmp ./temp_output"
+command = "python ../scripts/simka2/simka.py -in ./simka_input_CDE.txt -out ./__results__/results_k31_t0 -out-tmp ./temp_output -max-open-file 100"
 print command
 os.system(command + suffix)
 command = "../scripts/simka2/bin/simka2-export -out __results__/results_k31_t0/ -in-ids ids_order.txt -in __results__/results_k31_t0/matrix_binary/"

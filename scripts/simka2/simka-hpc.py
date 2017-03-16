@@ -37,6 +37,7 @@ parserCore.add_argument('-max-memory', action="store", dest="max_memory", help="
 parserCore.add_argument('-max-jobs', action="store", dest="_maxJobs", help="maximum number of jobs that can be submitted simultaneously", required=True)
 parserCore.add_argument('-submit-command', action="store", dest="submit_command", help="command used to submit job", required=True)
 parserCore.add_argument('-submit-file', action="store", dest="submit_file", help="filename to a job file template, for HPC system that required a job file")
+parserCore.add_argument('-max-open-file', action="store", dest="max_open_file", help="maximum number of opened files", default="0")
 
 parserDev.add_argument('-nb-partitions', action="store", dest="nb_partitions", help="number of partition files per k-mer spectrums", default="0")
 

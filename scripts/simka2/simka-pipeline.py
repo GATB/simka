@@ -39,6 +39,7 @@ parserCore.add_argument('-hpc', action="store_true", dest="_isHPC", help="comput
 parserCore.add_argument('-max-jobs', action="store", dest="_maxJobs", help="maximum number of jobs that can be submitted simultaneously", default="0")
 parserCore.add_argument('-submit-command', action="store", dest="submit_command", help="command used to submit job")
 parserCore.add_argument('-submit-file', action="store", dest="submit_file", help="filename to a job file template, for HPC system that required a job file")
+parserCore.add_argument('-max-open-file', action="store", dest="max_open_file", help="maximum number of opened files", default="0")
 
 parserDev.add_argument('-nb-partitions', action="store", dest="nb_partitions", help="number of partition files per k-mer spectrums", default="0")
 
@@ -91,6 +92,7 @@ command += " -in " + args.input_filename
 #command += " -simka-bin " + args.simka_bin_dir + \
 command += " -nb-cores " + args.nb_cores
 command += " -max-memory " + args.max_memory
+command += " -max-open-file " + args.max_open_file
 command = SimkaCommand.addHPCargs(command, args)
 ret = os.system(command)
 if ret != 0: exit(1)

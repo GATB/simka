@@ -18,6 +18,7 @@ const string STR_SIMKA2_NB_PARTITION = "-nb-partitions";
 const string STR_SIMKA2_PARTITION_ID = "-partition-id";
 const string STR_SIMKA2_INPUT_IDS = "-in-ids";
 const string STR_SIMKA2_DISTANCE_MAX_PROCESSABLE_DATASETS = "-max-datasets";
+const string STR_SIMKA2_MAX_OPEN_FILE = "-max-open-file";
 
 //const string STR_SIMKA2_DISTANCE_INPUT_1 = "-in-already-computed";
 //const string STR_SIMKA2_DISTANCE_INPUT_2 = "-in-to-compute";
