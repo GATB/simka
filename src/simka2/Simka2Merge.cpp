@@ -93,7 +93,7 @@ public:
 		_outputFilename = outputDir + "/" + Stringify::format("%i", this->_partitionId) + ".gz";
     	//_outputFilename = _outputDir + "/solid/part_" + Stringify::format("%i", partitionId) + "/__p__" + Stringify::format("%i", mergeId) + ".gz.temp";
 
-    	_outputGzFile = new BagGzFile<Kmer_BankId_Count>(_outputFilename);
+    	_outputGzFile = new BagGzFileSimka<Kmer_BankId_Count>(_outputFilename);
     	_cachedBag = new BagCache<Kmer_BankId_Count>(_outputGzFile, 10000);
 
     	//_nbBanks = 0;
@@ -111,7 +111,7 @@ public:
 		_cachedBag->flush();
     	delete _cachedBag;
 
-    	checkGzFile(_outputFilename);
+    	//checkGzFile(_outputFilename);
     	/*
 		for(size_t i=0; i<this->_datasetToMergeDirs.size(); i++){
 			//cout << _datasetIds[i] << endl;
@@ -134,6 +134,7 @@ public:
     	//saveMergeInfos();
     }
 
+	/*
 	//There is a bug in simka, sometimes a gz file is erroneous at the end
 	//It's really rare and I can't find it
 	//My bad solution is to read the whole gz file as soon as it is close and a segfault will occur if it has a bad format
@@ -149,7 +150,7 @@ public:
 
 		delete it;
 		delete gzFile;
-	}
+	}*/
 
 
 

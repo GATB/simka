@@ -159,7 +159,7 @@ public:
 		for(size_t i=0; i<_nbPartitions; i++){
 			//string outputFilename = _outputDir + "/" + _datasetID + "_" + Stringify::format("%i", i) + ".gz";
 			string outputFilename = _outputDir + "/" + Stringify::format("%i", i) + ".gz";
-			Bag<Kmer_BankId_Count>* bag = new BagGzFile<Kmer_BankId_Count>(outputFilename);
+			Bag<Kmer_BankId_Count>* bag = new BagGzFileSimka<Kmer_BankId_Count>(outputFilename);
 			Bag<Kmer_BankId_Count>* cachedBag = new BagCache<Kmer_BankId_Count>(bag, 10000);
 			_cachedBags.push_back(cachedBag);
 			//BagCache bagCache(*bag, 10000);
@@ -192,12 +192,13 @@ public:
 		}
 
 
-		for(size_t i=0; i<_nbPartitions; i++){
-			string outputFilename = _outputDir + "/" + Stringify::format("%i", i) + ".gz";
-			checkGzFile(outputFilename);
-		}
+		//for(size_t i=0; i<_nbPartitions; i++){
+		//	string outputFilename = _outputDir + "/" + Stringify::format("%i", i) + ".gz";
+		//	checkGzFile(outputFilename);
+		//}
 	}
 
+	/*
 	//There is a bug in simka, sometimes a gz file is erroneous at the end
 	//It's really rare and I can't find it
 	//My bad solution is to read the whole gz file as soon as it is close and a segfault will occur if it has a bad format
@@ -213,7 +214,7 @@ public:
 
 		delete it;
 		delete gzFile;
-	}
+	}*/
 
 
 	inline u_int64_t hash_kmer(const vector<uint64>& kmer_bin){
