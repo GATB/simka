@@ -72,7 +72,6 @@ include_directories (include ${gatb-core-includes} ${PROJECT_SOURCE_DIR}/src/cor
 
 # we define the files to be compiled
 file (GLOB_RECURSE  ProjectFiles  src/core/Simka*) #  ${PROJECT_BINARY_DIR}/src/core/template/*.cpp)
-file (GLOB_RECURSE  KMCApi  thirdparty/KMC/kmc_api/*.cpp thirdparty/KMC/kmc_api/*.h) 
 
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../scripts/simka2/bin)
 set(PROJECT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/../scripts/simka2/bin)
@@ -86,8 +85,8 @@ set(PROJECT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/../scripts/simka2/bin)
 add_executable        (simka2-export  src/export/SimkaDistanceExporter.cpp ${ProjectFiles})
 target_link_libraries (simka2-export  ${gatb-core-libraries})
 
-add_executable        (simka2-count  src/simka2/Simka2Count.cpp ${ProjectFiles} ${KMCApi})
-target_link_libraries (simka2-count  ${gatb-core-libraries} )
+add_executable        (simka2-count  src/simka2/Simka2Count.cpp ${ProjectFiles})
+target_link_libraries (simka2-count  ${gatb-core-libraries})
 
 add_executable        (simka2-merge  src/simka2/Simka2Merge.cpp ${ProjectFiles})
 target_link_libraries (simka2-merge  ${gatb-core-libraries})

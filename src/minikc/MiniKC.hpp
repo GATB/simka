@@ -168,7 +168,106 @@ public:
 };
 
 
+template<size_t span=KMER_DEFAULT_SPAN>
+class SimkaPartitionWriter
+{
+public:
 
+
+    typedef typename Kmer<span>::Type  Type;
+    typedef typename Kmer<span>::Count Count;
+    //typedef tuple<Count, StorageItKmerCount<span>*> KmerCount_It;
+    struct Kmer_BankId_Count{
+    	Type _type;
+    	u_int64_t _bankId;
+    	u_int64_t _count;
+
+    	Kmer_BankId_Count(){
+
+    	}
+
+    	Kmer_BankId_Count(Type type, u_int64_t bankId, u_int64_t count){
+    		_type = type;
+    		_bankId = bankId;
+    		_count = count;
+    	}
+    };
+
+
+	string _outputDir;
+	size_t _nbPartitions;
+
+	vector<u_int64_t> _nbKmerPerParts;
+	vector<u_int64_t> _nbDistinctKmerPerParts;
+	vector<u_int64_t> _chordNiPerParts;
+	vector<Bag<Kmer_BankId_Count>* > _bags;
+	vector<Bag<Kmer_BankId_Count>* > _cachedBags;
+
+	SimkaPartitionWriter(const string& oututDir, size_t nbPartitions){
+		_outputDir = oututDir;
+		_nbPartitions = nbPartitions;
+
+		_nbKmerPerParts = vector<u_int64_t>(_nbPartitions, 0);
+		_nbDistinctKmerPerParts =  vector<u_int64_t>(_nbPartitions, 0);
+		_chordNiPerParts = vector<u_int64_t>(_nbPartitions, 0);
+
+
+		//vector<Bag<Kmer_BankId_Count>* > bags;
+		//vector<Bag<Kmer_BankId_Count>* > cachedBags;
+		for(size_t i=0; i<_nbPartitions; i++){
+			//string outputFilename = _outputDir + "/" + _datasetID + "_" + Stringify::format("%i", i) + ".gz";
+			string outputFilename = _outputDir + "/" + Stringify::format("%i", i) + ".gz";
+			Bag<Kmer_BankId_Count>* bag = new BagGzFile<Kmer_BankId_Count>(outputFilename);
+			Bag<Kmer_BankId_Count>* cachedBag = new BagCache<Kmer_BankId_Count>(bag, 10000);
+			_cachedBags.push_back(cachedBag);
+			//BagCache bagCache(*bag, 10000);
+			_bags.push_back(bag);
+		}
+	}
+
+	void insert(Type& kmer, u_int64_t bankId, u_int64_t abundance){
+
+		size_t part = oahash(kmer) % _nbPartitions;
+		_cachedBags[part]->insert(Kmer_BankId_Count(kmer, bankId, abundance));
+		_nbDistinctKmerPerParts[part] += 1;
+		_nbKmerPerParts[part] += abundance;
+		_chordNiPerParts[part] += pow(abundance, 2);
+
+	}
+
+	void end(){
+		for(size_t i=0; i<_nbPartitions; i++){
+			//bags[i]->flush();
+			//cachedBags[i]->flush();
+			delete _cachedBags[i];
+			//delete bags[i];
+		}
+
+
+		for(size_t i=0; i<_nbPartitions; i++){
+			string outputFilename = _outputDir + "/" + Stringify::format("%i", i) + ".gz";
+			checkGzFile(outputFilename);
+		}
+	}
+
+	//There is a bug in simka, sometimes a gz file is erroneous at the end
+	//It's really rare and I can't find it
+	//My bad solution is to read the whole gz file as soon as it is close and a segfault will occur if it has a bad format
+	//Of course it's a bad solution because it has a impact on simka performances...
+	void checkGzFile(const string& filename){
+		IterableGzFile<Kmer_BankId_Count>* gzFile = new IterableGzFile<Kmer_BankId_Count>(filename, 10000);
+		Iterator<Kmer_BankId_Count>* it = gzFile->iterator();
+
+		it->first();
+		while(!it->isDone()){
+			it->next();
+		}
+
+		delete it;
+		delete gzFile;
+	}
+
+};
 /*
 
 class SimkaCompressedProcessor_Mini{
@@ -217,7 +316,7 @@ public:
 
 
 
-/*
+
 template<size_t span>
 class SimkaMiniKmerCounter : public Algorithm{
 
@@ -236,6 +335,11 @@ public:
 
     //typedef typename Kmer<span>::ModelCanonical                             ModelCanonical;
     //typedef typename ModelCanonical::Kmer                                   KmerType;
+    /*
+    typedef Kmer<span>::Count           Count;
+    typedef Kmer<span>::Type            Type;
+    typedef Kmer<span>::ModelCanonical              ModelCanon;
+    typedef Kmer<span>::ModelMinimizer<ModelCanon>  Model;*/
 
 	IBank* _bank;
 	size_t _kmerSize;
@@ -345,7 +449,7 @@ public:
 	}
 
 
-};*/
+};
 
 
 

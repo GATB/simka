@@ -35,7 +35,6 @@ parserRead.add_argument('-min-shannon-index', action="store", dest="min_read_sha
 
 parserCore.add_argument('-nb-cores', action="store", dest="nb_cores", help="number of cores", default="0")
 parserCore.add_argument('-max-memory', action="store", dest="max_memory", help="max memory (MB)", default="8000")
-parserCore.add_argument('-max-open-file', action="store", dest="max_open_file", help="maximum number of opened files", default="0")
 
 parserDev.add_argument('-nb-partitions', action="store", dest="nb_partitions", help="number of partition files per k-mer spectrums", default="0")
 

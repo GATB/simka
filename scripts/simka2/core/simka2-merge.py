@@ -261,9 +261,9 @@ class SimkaKmerSpectrumMerger():
 			command += checkPointFilename + " "
 			command += " python " + os.path.join(SCRIPT_DIR, "simka2-run-job-multi.py") + " "
 			command += " " + os.path.join(self.tempDir, "commands_input_" + str(i))
-			#command += "   > /dev/null 2>&1     &"
+			command += "   > /dev/null 2>&1     &"
 			#command += " & "
-			command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command, checkPointFilename+"log.txt")
+			command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
 			os.system(command)
 			#print command
 
@@ -304,10 +304,8 @@ class SimkaKmerSpectrumMerger():
 			" -database-dir " + args._databaseDir + \
 			" -kmer-size " + str(self.database._kmerSize) + \
 			" -partition-id " + str(partitionId) + \
-			" -out " + os.path.join(self.database.dirname, mergeOutputRelativeDir)
-			#" & "
-			#"   > /dev/null 2>&1     &"
-		command = SimkaCommand.addLogFilename(command,checkPointFilename+"log.txt")
+			" -out " + os.path.join(self.database.dirname, mergeOutputRelativeDir) + \
+			"   > /dev/null 2>&1     &"
 
 		self.jobCommandsFile.write(checkPointFilename + "|" + command + "\n")
 

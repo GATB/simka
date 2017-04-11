@@ -20,7 +20,3 @@ cmake ..
 # Run the newly created makefile:
 make -j8
 
-#Install KMC (k-mer counting tool)
-cd ..
-python scripts/dependencies/KMC/install_KMC.py
-
