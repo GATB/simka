@@ -21,7 +21,7 @@ public:
 	string _outputDir;
 	vector<string> _bankNames;
 	size_t _kmerSize;
-	u_int32_t _nbKmersToPick;
+	u_int64_t _nbKmersToPick;
 
 
 
