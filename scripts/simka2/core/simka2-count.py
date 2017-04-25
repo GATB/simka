@@ -189,10 +189,10 @@ class ComputeKmerSpectrumAll():
 
 		kmerSpectrumOutputDirAbs = os.path.join(self.database.dirname, kmerSpectrumOutputDir)
 		SimkaSettings.saveDirSize(kmerSpectrumOutputDirAbs)
+		self.database.add_entry(id, kmerSpectrumOutputDir)
 
 		shutil.rmtree(outputDirTemp, ignore_errors=True)
 
-		self.database.add_entry(id, kmerSpectrumOutputDir)
 
 	def countNbDatasetToProcess(self):
 

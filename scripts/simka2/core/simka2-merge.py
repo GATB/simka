@@ -389,17 +389,6 @@ class SimkaKmerSpectrumMerger():
 		ret = os.system(command)
 		if ret != 0: exit(1)
 
-
-		dirs_to_delete = []
-		for relDir in mergedDirs:
-			dir_that_have_been_merged = os.path.join(self.database.dirname, relDir)
-			dirs_to_delete.append(dir_that_have_been_merged)
-
-		#dataset_to_merge_ids.remove(merge_dest_id)
-
-
-		for dir in dirs_to_delete:
-			shutil.rmtree(dir, ignore_errors=True)
 		SimkaSettings.saveDirSize(os.path.join(self.database.dirname, mergeOutputRelativeDir))
 
 		dataset_to_merge_ids_index = set()
@@ -407,6 +396,18 @@ class SimkaKmerSpectrumMerger():
 			dataset_to_merge_ids_index.add(relDir)
 		self.database.change_entries(dataset_to_merge_ids_index, mergeOutputRelativeDir)
 		self.database.save()
+		#dataset_to_merge_ids.remove(merge_dest_id)
+
+
+		dirs_to_delete = []
+		for relDir in mergedDirs:
+			dir_that_have_been_merged = os.path.join(self.database.dirname, relDir)
+			dirs_to_delete.append(dir_that_have_been_merged)
+
+		for dir in dirs_to_delete:
+			shutil.rmtree(dir, ignore_errors=True)
+
+
 
 
 
