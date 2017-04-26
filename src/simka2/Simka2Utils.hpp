@@ -430,6 +430,9 @@ public:
 				//	process(bestIt->value(), bestIt->getBankId(), bestIt->abundance());
 				//}
 				//else{
+
+					if(bestIt->getBankId() >= _indexReordering.size()) break;
+
 					pq.push(kxp(bestIt->value(), _indexReordering[bestIt->getBankId()], bestIt->abundance(), bestIt)); //push new val of this pointer in pq, will be counted later
 
 			    	bestIt = pq.top()._it; pq.pop();

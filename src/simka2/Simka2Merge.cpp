@@ -111,7 +111,7 @@ public:
 		_cachedBag->flush();
     	delete _cachedBag;
 
-    	checkGzFile(_outputFilename);
+    	//checkGzFile(_outputFilename);
     	/*
 		for(size_t i=0; i<this->_datasetToMergeDirs.size(); i++){
 			//cout << _datasetIds[i] << endl;

@@ -246,7 +246,7 @@ public:
 
 		for(size_t i=0; i<_nbPartitions; i++){
 			string outputFilename = _outputDir + "/" + Stringify::format("%i", i) + ".gz";
-			checkGzFile(outputFilename);
+			//checkGzFile(outputFilename);
 		}
 	}
 
