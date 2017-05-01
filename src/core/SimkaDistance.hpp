@@ -166,7 +166,7 @@ public:
 		return matrix;
     }
 
-    vector<vector<float> > _matrixBrayCurtis(){
+    vector<vector<float> > compute_matrix_abundance_braycurtis(){
     	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
 
     	for(size_t i=0; i<_nbBanks; i++){
@@ -412,7 +412,7 @@ public:
 		return matrix;
     }
 
-    vector<vector<float> > _matrix_presenceAbsence_jaccardCanberra(){
+    vector<vector<float> > compute_matrix_presenceAbsence_jaccard(){
     	vector<vector<float> > matrix = createSquaredMatrix(_nbBanks);
     	u_int64_t a, b, c;
 
