@@ -804,10 +804,10 @@ public:
 	}
 
 	void nextBank(){
-		cout << "next bank" << endl;
+
 		//cout << "next bank "<< endl;
 		_currentInternalBank += 1;
-		if(_nbReadProcessed >= _maxReads || _currentInternalBank == _nbBanks){
+		if((_maxReads && _nbReadProcessed >= _maxReads) || _currentInternalBank == _nbBanks){
 			nextDataset();
 		}
 		else{
@@ -821,39 +821,19 @@ public:
     void first()
     {
 
-    	cout << "first" << endl;
         _ref->first();
-        next();
-        /*
-        while (!_ref->isDone() && _filter(_ref->item())==false){
-            _ref->next();
-        	_globalSequenceIndex += 1;
+
+        if(_subsampleReads.size() > 0){
+            next();
         }
+        else{
+            while (!_ref->isDone() && _filter(_ref->item())==false)
+                    _ref->next();
 
-        //while(!_ref->isDone() && _globalSequenceIndex < _subsampleReadssize() && _subsampleReads[_globalSequenceIndex] == 0){
-        while(!_ref->isDone() && _subsampleReads[_globalSequenceIndex] == 0){
-            _ref->next();
-        	_globalSequenceIndex += 1;
+            _isDone = _ref->isDone();
+
+            if(!_isDone) *(this->_item) = _ref->item();
         }
-
-        //cout << _globalSequenceIndex << endl;
-        _subsampleReads[_globalSequenceIndex] -= 1;
-
-        _isDone = _ref->isDone();
-
-    	//cout << "\tfirst isdone?: " << _isDone << endl;
-        if(!_isDone){
-        	_nbReadProcessed += 1;
-        	*(this->_item) = _ref->item();
-        }
-		*/
-    }
-
-    //void isValid(){
-    //	return _filter(_ref->item()) &&
-    //}
-
-    void canSubsample(){
 
     }
 
