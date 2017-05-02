@@ -1148,6 +1148,8 @@ struct SimkaSequenceFilter
 
 	SimkaSequenceFilter(size_t minReadSize, double minShannonIndex)
 	{
+		srand (time(NULL));
+
 		//_maxNbReads = 0;
 		//_nbReadProcessed = 0;
 		_minReadSize = minReadSize;
@@ -1177,6 +1179,7 @@ struct SimkaSequenceFilter
 
 	bool operator() (Sequence& seq){
 
+		float _errorRate = 0;
 		//cout << seq.toString() << endl;
 		//cout << _nbReadProcessed << endl;
 		//if(_maxNbReads != 0){
@@ -1201,6 +1204,53 @@ struct SimkaSequenceFilter
 		if(!isShannonIndexValid(seq))
 			return false;
 
+		if(_errorRate > 0){
+
+			char* readSeq = seq.getDataBuffer();
+			//::string seq =
+
+			for(int i=0; i<seq.getDataSize(); i++){
+
+				char nt = readSeq[i];
+
+				//generate random float number between 0 and 1
+				float rf = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+
+				if(rf < _errorRate){
+
+					if(nt == 'N') continue;
+
+					int r = rand() % 3;
+					char errorNt = 'A';
+
+					if(nt == 'A'){
+						errorNt = "CGT"[r];
+					}
+					else if(nt == 'C'){
+						errorNt = "AGT"[r];
+					}
+					else if(nt == 'G'){
+						errorNt = "ACT"[r];
+					}
+					else if(nt == 'T'){
+						errorNt = "ACG"[r];
+					}
+
+					readSeq[i] = errorNt;
+					//cout << "Nt: " << nt << endl;
+					//cout << "Error Nt: " << errorNt << endl;
+
+					//if(nt == errorNt) cout << "lala" << endl;
+					//if(_useErrorTab){
+						//_outputErrorTabFile->print("%i\t%i\t%c\t%c\n", readIndex, i, nt, errorNt);
+					//}
+
+					//_totalError += 1;
+				}
+			}
+		}
+
+		//cout << seq.toString() << endl;
 		//if(_subsampleReads.size() > 0){
 
 			//cout << seq.getIndex() << " " << _subsampleReads[seq.getIndex()] << " " << _subsampleReads.size() << endl;

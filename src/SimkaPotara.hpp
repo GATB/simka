@@ -254,6 +254,7 @@ public:
 
 	void execute(){
 
+
 		_isSubsampling = false;
 
 		parseArgs();
