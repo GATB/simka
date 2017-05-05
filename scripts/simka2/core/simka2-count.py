@@ -153,7 +153,7 @@ class ComputeKmerSpectrumAll():
 		#command = os.path.join(args._simkaBinDir, "simkaCountProcess") + " " + \
 
 		command = "python " + os.path.join(SCRIPT_DIR, "simka2-run-job.py") + " " + \
-			checkPointFilename + " " + \
+			checkPointFilename + " " + "count" + " " + \
 			os.path.join(SCRIPT_DIR, "..", "bin", "simka2-count") + \
 			" -id " + id + \
 			" -in " + inputFilename + \

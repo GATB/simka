@@ -117,7 +117,7 @@ class Simka_ComputeDistance():
 			if os.path.exists(unsuccessCheckPointFilename): os.remove(unsuccessCheckPointFilename)
 
 			command = " python " + os.path.join(SCRIPT_DIR, "simka2-run-job.py") + " "
-			command += checkPointFilename + " "
+			command += checkPointFilename + " " + "dist" + " "
 			command += " python " + os.path.join(SCRIPT_DIR, "simka2-run-job-multi.py") + " "
 			command += " " + os.path.join(self.tempDir, "commands_input_" + str(i))
 			command += "   > /dev/null 2>&1     &"
@@ -138,14 +138,14 @@ class Simka_ComputeDistance():
 		if os.path.exists(unsuccessCheckPointFilename): os.remove(unsuccessCheckPointFilename)
 
 		command = "python " + os.path.join(SCRIPT_DIR, "simka2-run-job.py") + " "
-		command += checkPointFilename + " "
+		command += checkPointFilename + " " + "dist-final" + " "
 		command += os.path.join(SCRIPT_DIR, "..", "bin", "simka2-distance")
 		command += " -database-dir " + args._databaseDir
 		command += " -kmer-size " + str(self.database._kmerSize)
 		command += " -partition-id " + str(partitionId)
 		command += " -max-datasets " + str(self.nbFileProcessed+self.maximumProcessedDatasets)
 		command += "   > /dev/null 2>&1     &"
-		print command
+		#print command
 		self.jobCommandsFile.write(checkPointFilename + "|" + command + "\n")
 
 

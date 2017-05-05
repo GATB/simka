@@ -258,7 +258,7 @@ class SimkaKmerSpectrumMerger():
 			if os.path.exists(unsuccessCheckPointFilename): os.remove(unsuccessCheckPointFilename)
 
 			command = " python " + os.path.join(SCRIPT_DIR, "simka2-run-job.py") + " "
-			command += checkPointFilename + " "
+			command += checkPointFilename + " " + "merge" + " "
 			command += " python " + os.path.join(SCRIPT_DIR, "simka2-run-job-multi.py") + " "
 			command += " " + os.path.join(self.tempDir, "commands_input_" + str(i))
 			command += "   > /dev/null 2>&1     &"
@@ -298,7 +298,7 @@ class SimkaKmerSpectrumMerger():
 		if os.path.exists(unsuccessCheckPointFilename): os.remove(unsuccessCheckPointFilename)
 
 		command = "python " + os.path.join(SCRIPT_DIR, "simka2-run-job.py") + " " + \
-			checkPointFilename + " " + \
+			checkPointFilename + " " + "merge" + " "+ \
 			os.path.join(SCRIPT_DIR, "..", "bin", "simka2-merge") + \
 			" -in " + merge_input_filename + \
 			" -database-dir " + args._databaseDir + \
