@@ -614,25 +614,25 @@ void SimkaStatistics::outputMatrix(const string& outputDir, const vector<string>
 	//strKmerSize += string(buffer);
 	//_outputFilenameSuffix += strKmerSize;
 
-	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_chord", _simkaDistance._matrix_presenceAbsence_chordHellinger());
-	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_whittaker", _simkaDistance._matrix_presenceAbsence_Whittaker());
-	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_kulczynski", _simkaDistance._matrix_presenceAbsence_kulczynski());
-	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_braycurtis", _simkaDistance._matrix_presenceAbsence_sorensenBrayCurtis());
+	//dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_chord", _simkaDistance._matrix_presenceAbsence_chordHellinger());
+	//dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_whittaker", _simkaDistance._matrix_presenceAbsence_Whittaker());
+	//dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_kulczynski", _simkaDistance._matrix_presenceAbsence_kulczynski());
+	//dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_braycurtis", _simkaDistance._matrix_presenceAbsence_sorensenBrayCurtis());
 	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_jaccard", _simkaDistance.compute_matrix_presenceAbsence_jaccard());
-	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_simka-jaccard", _simkaDistance._matrix_presenceAbsence_jaccard_simka());
-	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_simka-jaccard_asym", _simkaDistance._matrix_presenceAbsence_jaccard_simka_asym());
-	dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_ochiai", _simkaDistance._matrix_presenceAbsence_ochiai());
+	//dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_simka-jaccard", _simkaDistance._matrix_presenceAbsence_jaccard_simka());
+	//dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_simka-jaccard_asym", _simkaDistance._matrix_presenceAbsence_jaccard_simka_asym());
+	//dumpMatrix(outputDir, bankNames, "mat_presenceAbsence_ochiai", _simkaDistance._matrix_presenceAbsence_ochiai());
 
 
-	dumpMatrix(outputDir, bankNames, "mat_abundance_simka-jaccard", _simkaDistance._matrixSymJaccardAbundance());
-	dumpMatrix(outputDir, bankNames, "mat_abundance_simka-jaccard_asym", _simkaDistance._matrixAsymJaccardAbundance());
-	dumpMatrix(outputDir, bankNames, "mat_abundance_ab-ochiai", _simkaDistance._matrixOchiai());
-	dumpMatrix(outputDir, bankNames, "mat_abundance_ab-sorensen", _simkaDistance._matrixSorensen());
-	dumpMatrix(outputDir, bankNames, "mat_abundance_ab-jaccard", _simkaDistance._matrixJaccardAbundance());
+	//dumpMatrix(outputDir, bankNames, "mat_abundance_simka-jaccard", _simkaDistance._matrixSymJaccardAbundance());
+	//dumpMatrix(outputDir, bankNames, "mat_abundance_simka-jaccard_asym", _simkaDistance._matrixAsymJaccardAbundance());
+	//dumpMatrix(outputDir, bankNames, "mat_abundance_ab-ochiai", _simkaDistance._matrixOchiai());
+	//dumpMatrix(outputDir, bankNames, "mat_abundance_ab-sorensen", _simkaDistance._matrixSorensen());
+	//dumpMatrix(outputDir, bankNames, "mat_abundance_ab-jaccard", _simkaDistance._matrixJaccardAbundance());
 
 	const vector<vector<float> >& matrix = _simkaDistance.compute_matrix_abundance_braycurtis();
 	dumpMatrix(outputDir, bankNames, "mat_abundance_braycurtis", matrix);
-	dumpMatrix(outputDir, bankNames, "mat_abundance_jaccard", _simkaDistance.computeJaccardDistanceFromBrayCurtis(matrix));
+	//dumpMatrix(outputDir, bankNames, "mat_abundance_jaccard", _simkaDistance.computeJaccardDistanceFromBrayCurtis(matrix));
 
 	if(_computeSimpleDistances){
 		//dumpMatrix(outputDir, bankNames, "mat_abundance_braycurtis-simple", _simkaDistance._matrixJaccardIntersection);
