@@ -1199,7 +1199,7 @@ public:
 		mainStats.outputMatrix(this->_outputDir, this->_bankNames);
 
 #//ifdef PRINT_STATS
-		if(this->_options->getInt(STR_VERBOSE) != 0) mainStats.print();
+		if(this->_options->getInt(STR_VERBOSE) != 0) mainStats.print(this->_bankNames);
 #//endif
 	}
 

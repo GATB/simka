@@ -71,7 +71,7 @@ public:
 
 	SimkaStatistics(size_t nbBanks, bool computeSimpleDistances, bool computeComplexDistances, const string& tmpDir, const vector<string>& datasetIds);
 	SimkaStatistics& operator+=  (const SimkaStatistics& other);
-	void print();
+	void print(const vector<string>& datasetIds);
 	void load(const string& filename);
 	void save(const string& filename);
 	void outputMatrix(const string& outputDir, const vector<string>& _bankNames);
@@ -96,6 +96,8 @@ public:
 	//vector<vector<u_int64_t> > _brayCurtisNumerator;
 	//vector<vector<double> > _kullbackLeibler;
 
+
+	vector<long double> _diversityIndices;
 
     //Abundance Chord
 	vector<vector<long double> > _chord_NiNj;

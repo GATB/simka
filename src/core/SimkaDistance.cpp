@@ -56,6 +56,8 @@ SimkaStatistics::SimkaStatistics(size_t nbBanks, bool computeSimpleDistances, bo
 	_matrixNbSharedKmers.resize(_nbBanks);
 	_brayCurtisNumerator.resize(_symetricDistanceMatrixSize);
 
+	_diversityIndices.resize(_nbBanks, 0);
+
 	for(size_t i=0; i<_nbBanks; i++){
 		//_matrixNbDistinctSharedKmers[i].resize(nbBanks, 0);
 		_matrixNbSharedKmers[i].resize(nbBanks, 0);
@@ -166,6 +168,7 @@ SimkaStatistics& SimkaStatistics::operator+=  (const SimkaStatistics& other){
 
 	for(size_t i=0; i<_nbBanks; i++){
 		_nbKmersPerBank[i] += other._nbKmersPerBank[i];
+		_diversityIndices[i] += other._diversityIndices[i];
 		//_nbSolidDistinctKmersPerBank[i] += other._nbSolidDistinctKmersPerBank[i];
 		//_nbSolidKmersPerBank[i] += other._nbSolidKmersPerBank[i];
 		//_nbDistinctKmersSharedByBanksThreshold[i] += other._nbDistinctKmersSharedByBanksThreshold[i];
@@ -212,7 +215,7 @@ SimkaStatistics& SimkaStatistics::operator+=  (const SimkaStatistics& other){
 	return *this;
 }
 
-void SimkaStatistics::print(){
+void SimkaStatistics::print(const vector<string>& datasetIds){
 
 	u_int64_t nbKmers = 0;
 	u_int64_t nbDistinctKmersAfterMerging = _nbDistinctKmers;
@@ -256,6 +259,23 @@ void SimkaStatistics::print(){
 
 	}
 	u_int64_t meanReads = totalReads / _nbBanks;
+
+	cout << endl << endl;
+	cout << "Alpha-Diversity indices (xi2):" << endl;
+	for (size_t i=0; i<_nbBanks; i++){
+		cout << datasetIds[i] << "; " << _diversityIndices[i] << endl;
+	}
+	cout << endl << endl;
+
+	cout << endl << endl;
+	cout << "K-mer coverage:" << endl;
+	for (size_t i=0; i<_nbBanks; i++){
+		nbKmers += _nbSolidKmersPerBank[i];
+		nbDistinctKmers += _nbSolidDistinctKmersPerBank[i];
+		float coverage = (double)_nbSolidKmersPerBank[i] / (double)_nbSolidDistinctKmersPerBank[i];
+		cout << datasetIds[i] << "; " << coverage << endl;
+	}
+	cout << endl << endl;
 
 	cout << endl << "Stats" << endl;
 	cout << "\tReads" << endl;
@@ -361,6 +381,7 @@ void SimkaStatistics::load(const string& filename){
 
     for(size_t i=0; i<_nbBanks; i++){ _nbSolidDistinctKmersPerBank[i] = it->item(); it->next();}
     for(size_t i=0; i<_nbBanks; i++){ _nbKmersPerBank[i] = it->item(); it->next();}
+    for(size_t i=0; i<_nbBanks; i++){ _diversityIndices[i] = it->item(); it->next();}
     for(size_t i=0; i<_nbBanks; i++){ _nbSolidKmersPerBank[i] = it->item(); it->next();}
     //for(size_t i=0; i<_nbBanks; i++){ _nbDistinctKmersSharedByBanksThreshold[i] = it->item(); it->next();}
     //for(size_t i=0; i<_nbBanks; i++){ _nbKmersSharedByBanksThreshold[i] = it->item(); it->next();}
@@ -469,6 +490,7 @@ void SimkaStatistics::save (const string& filename){
 
     for(size_t i=0; i<_nbBanks; i++){ file->insert((long double)_nbSolidDistinctKmersPerBank[i]);}
     for(size_t i=0; i<_nbBanks; i++){ file->insert((long double)_nbKmersPerBank[i]);}
+    for(size_t i=0; i<_nbBanks; i++){ file->insert((long double)_diversityIndices[i]);}
     for(size_t i=0; i<_nbBanks; i++){ file->insert((long double)_nbSolidKmersPerBank[i]);}
     //for(size_t i=0; i<_nbBanks; i++){ file->insert((long double)_nbDistinctKmersSharedByBanksThreshold[i]);}
     //for(size_t i=0; i<_nbBanks; i++){ file->insert((long double)_nbKmersSharedByBanksThreshold[i]);}

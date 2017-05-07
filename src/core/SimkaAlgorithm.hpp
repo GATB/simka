@@ -357,7 +357,10 @@ public:
 		_sharedBanks.clear();
 
 		for(size_t i=0; i<counts.size(); i++)
-			if(counts[i]) _sharedBanks.push_back(i);
+			if(counts[i]){
+				_sharedBanks.push_back(i);
+				_stats->_diversityIndices[i] += (pow(counts[i] / (long double) _stats->_nbSolidKmersPerBank[i], 2));
+			}
 
 		updateDistanceDefault(counts);
 
