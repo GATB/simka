@@ -261,21 +261,22 @@ void SimkaStatistics::print(const vector<string>& datasetIds){
 	u_int64_t meanReads = totalReads / _nbBanks;
 
 	cout << endl << endl;
-	cout << "Alpha-Diversity indices (xi2):" << endl;
+	cout << "ID;NB_READS;NB_KMERS;NB_DISTINCT_KMERS;ALPHA_DIV_XI2;KMER_COVERAGE" << endl;
 	for (size_t i=0; i<_nbBanks; i++){
-		cout << datasetIds[i] << "; " << _diversityIndices[i] << endl;
+		float kmerCoverage = (double)_nbSolidKmersPerBank[i] / (double)_nbSolidDistinctKmersPerBank[i];
+		cout << datasetIds[i] << ";" << _datasetNbReads[i] << ";" << _nbSolidKmersPerBank[i] << ";" << _nbSolidDistinctKmersPerBank[i] << ";" << _diversityIndices[i] << ";" << kmerCoverage <<  endl;
 	}
 	cout << endl << endl;
 
-	cout << endl << endl;
-	cout << "K-mer coverage:" << endl;
-	for (size_t i=0; i<_nbBanks; i++){
-		nbKmers += _nbSolidKmersPerBank[i];
-		nbDistinctKmers += _nbSolidDistinctKmersPerBank[i];
-		float coverage = (double)_nbSolidKmersPerBank[i] / (double)_nbSolidDistinctKmersPerBank[i];
-		cout << datasetIds[i] << "; " << coverage << endl;
-	}
-	cout << endl << endl;
+	//cout << endl << endl;
+	//cout << "K-mer coverage:" << endl;
+	//for (size_t i=0; i<_nbBanks; i++){
+	//	nbKmers += _nbSolidKmersPerBank[i];
+	//	nbDistinctKmers += _nbSolidDistinctKmersPerBank[i];
+	//	float coverage = (double)_nbSolidKmersPerBank[i] / (double)_nbSolidDistinctKmersPerBank[i];
+	//	cout << datasetIds[i] << "; " << coverage << endl;
+	//}
+	//cout << endl << endl;
 
 	cout << endl << "Stats" << endl;
 	cout << "\tReads" << endl;
