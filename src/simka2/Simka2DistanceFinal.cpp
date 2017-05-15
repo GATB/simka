@@ -72,7 +72,7 @@ public:
 		cout << _oldIds.size() << " " << _newIds.size() << endl;
 		_oldIds.insert( _oldIds.end(), _newIds.begin(), _newIds.end() ); //concat two vectors
 		cout << _oldIds.size() << " " << _newIds.size() << endl;
-		SimkaDistanceMatrixBinary::saveMatrixIds(_dirMatrixMatrixBinary, _oldIds, 0, _oldIds.size());
+		SimkaDistanceMatrixBinary::saveMatrixIds(_dirMatrixMatrixBinaryTmp, _oldIds, 0, _oldIds.size());
 	}
 
 	void parseArgs(){

@@ -31,6 +31,8 @@ const string STR_SIMKA_DISTANCE_CANBERRA = "-canberra";
 const string STR_SIMKA_DISTANCE_KULCZYNSKI = "-kulczynski";
 
 
+#define MULTISCALE_BOOSTRAP_NB_BOOSTRAPS 2
+
 typedef vector<u_int16_t> SpeciesAbundanceVectorType;
 
 enum SIMKA_MATRIX_TYPE{
@@ -48,6 +50,7 @@ public:
 
 	vector<vector<u_int64_t> > _matrix_rectangular;
 	vector<vector<u_int64_t> > _matrix_squaredHalf;
+	vector<u_int64_t> _marginalValues;
 
 	DistanceMatrixData(){};
 
@@ -78,9 +81,16 @@ public:
 			_matrix_squaredHalf[i].resize(size);
 			size -= 1;
 		}
+
+		_marginalValues.resize(nbNewBanks, 0);
 	}
 
 	DistanceMatrixData& operator+=  (const DistanceMatrixData& other){
+
+		for(size_t i=0; i < _marginalValues.size(); i++){
+			_marginalValues[i] += other._marginalValues[i];
+		}
+
 		for(size_t i=0; i<_matrix_rectangular.size(); i++){
 			for(size_t j=0; j<_matrix_rectangular[i].size(); j++){
 				_matrix_rectangular[i][j] += other._matrix_rectangular[i][j];
@@ -97,6 +107,12 @@ public:
 	}
 
 	void load(Iterator<long double>* gzIt){
+
+		for(size_t i=0; i < _marginalValues.size(); i++){
+			_marginalValues[i] = gzIt->item();
+			gzIt->next();
+		}
+
 		for(size_t i=0; i<_matrix_rectangular.size(); i++){
 			for(size_t j=0; j<_matrix_rectangular[i].size(); j++){
 				_matrix_rectangular[i][j] = gzIt->item();
@@ -113,6 +129,10 @@ public:
 	}
 
 	void save (Bag<long double>* bag){
+
+		for(size_t i=0; i < _marginalValues.size(); i++){
+			bag->insert((long double)_marginalValues[i]);
+		}
 
 		for(size_t i=0; i<_matrix_rectangular.size(); i++){
 			for(size_t j=0; j<_matrix_rectangular[i].size(); j++){
@@ -228,6 +248,9 @@ public:
 
 	DistanceMatrixData _brayCurtisNumerator;
 	DistanceMatrixData _matrixNbDistinctSharedKmers;
+
+
+	vector<vector<DistanceMatrixData> > _multiscaleBoostrap_distanceData_braycurtis;
 	//vector<vector<u_int64_t> > _brayCurtisNumerator;
 	//vector<vector<double> > _kullbackLeibler;
 
@@ -309,7 +332,7 @@ public:
 
     }
 
-    void _matrixBrayCurtis(){
+    void _matrixBrayCurtis(size_t ii, size_t jj){
 
     	clearMatrix();
 
@@ -321,21 +344,21 @@ public:
 		//cout << _stats._brayCurtisNumerator._matrix_squaredHalf.size() << endl;
 		//cout << _stats._brayCurtisNumerator._matrix_squaredHalf[0].size() << endl;
 
-		for(size_t i=0; i<_stats._brayCurtisNumerator._matrix_rectangular.size(); i++){
-			for(size_t j=0; j<_stats._brayCurtisNumerator._matrix_rectangular[i].size(); j++){
+		for(size_t i=0; i<_stats._multiscaleBoostrap_distanceData_braycurtis[ii][jj]._matrix_rectangular.size(); i++){
+			for(size_t j=0; j<_stats._multiscaleBoostrap_distanceData_braycurtis[ii][jj]._matrix_rectangular[i].size(); j++){
 
-				double dist = distance_abundance_brayCurtis(i+nbOldBanks, j, i, j, _stats._brayCurtisNumerator._matrix_rectangular);
+				double dist = distance_abundance_brayCurtis(i+nbOldBanks, j, i, j, _stats._multiscaleBoostrap_distanceData_braycurtis[ii][jj]._matrix_rectangular, _stats._multiscaleBoostrap_distanceData_braycurtis[ii][jj]._marginalValues);
 				_matrix_rectangular[i][j] = dist;
 			}
 		}
 
-		for(size_t i=0; i<_stats._brayCurtisNumerator._matrix_squaredHalf.size(); i++){
+		for(size_t i=0; i<_stats._multiscaleBoostrap_distanceData_braycurtis[ii][jj]._matrix_squaredHalf.size(); i++){
 
-			u_int64_t jOffset = _stats._brayCurtisNumerator._matrix_squaredHalf.size() - _stats._brayCurtisNumerator._matrix_squaredHalf[i].size();
+			u_int64_t jOffset = _stats._multiscaleBoostrap_distanceData_braycurtis[ii][jj]._matrix_squaredHalf.size() - _stats._multiscaleBoostrap_distanceData_braycurtis[ii][jj]._matrix_squaredHalf[i].size();
 
-			for(size_t j=0; j<_stats._brayCurtisNumerator._matrix_squaredHalf[i].size(); j++){
+			for(size_t j=0; j<_stats._multiscaleBoostrap_distanceData_braycurtis[ii][jj]._matrix_squaredHalf[i].size(); j++){
 
-				double dist = distance_abundance_brayCurtis(i+nbOldBanks, j+nbOldBanks+1+jOffset, i, j, _stats._brayCurtisNumerator._matrix_squaredHalf);
+				double dist = distance_abundance_brayCurtis(i+nbOldBanks, j+nbOldBanks+1+jOffset, i, j, _stats._multiscaleBoostrap_distanceData_braycurtis[ii][jj]._matrix_squaredHalf, _stats._multiscaleBoostrap_distanceData_braycurtis[ii][jj]._marginalValues);
 				_matrix_squaredHalf[i][j] = dist;
 			}
 		}
@@ -839,10 +862,10 @@ private:
 	void get_abc(size_t bank1, size_t bank2, size_t i2, size_t j2, vector<vector<u_int64_t> >& crossedData, u_int64_t& a, u_int64_t& b, u_int64_t& c);
 
 
-    double distance_abundance_brayCurtis(size_t i, size_t j, size_t i2, size_t j2, vector<vector<u_int64_t> >& crossedData){
+    double distance_abundance_brayCurtis(size_t i, size_t j, size_t i2, size_t j2, vector<vector<u_int64_t> >& crossedData, vector<u_int64_t> marginalData){
 
     	//double intersection = _stats._abundance_jaccard_intersection[i][j];
-    	double union_ = _stats._nbSolidKmersPerBank[i] + _stats._nbSolidKmersPerBank[j];
+    	double union_ = marginalData[i] + marginalData[j];
 
     	if(union_ == 0) return 1;
 

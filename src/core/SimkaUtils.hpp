@@ -11,6 +11,9 @@
 #include <gatb/gatb_core.hpp>
 #include "SimkaDistance.hpp"
 
+#include <boost/random/binomial_distribution.hpp>
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/variate_generator.hpp>
 
 const string STR_SIMKA_SOLIDITY_PER_DATASET = "-solidity-single";
 const string STR_SIMKA_MAX_READS = "-max-reads";
@@ -23,7 +26,7 @@ const string STR_SIMKA_COMPUTE_ALL_COMPLEX_DISTANCES = "-complex-dist";
 const string STR_SIMKA_KEEP_TMP_FILES = "-keep-tmp";
 const string STR_SIMKA_COMPUTE_DATA_INFO = "-data-info";
 
-#define SIMKA2_LZ4_CACHE_NB_ITEMS 1000
+#define SIMKA2_LZ4_CACHE_NB_ITEMS 10
 
 enum SIMKA_SOLID_KIND{
 	RANGE,
@@ -37,9 +40,12 @@ typedef u_int16_t bankIdType;
 
 
 class SimkaUtils {
-public:
-	SimkaUtils(){
 
+public:
+	static const size_t NB_SUBSAMPLING_RATES; //Implemented in SimkaDistance.cpp
+	static const float SUBSAMPLING_RATES[]; //Implemented in SimkaDistance.cpp
+
+	SimkaUtils(){
 	}
 
 	~SimkaUtils(){
@@ -47,6 +53,198 @@ public:
 	}
 };
 
+class SimkaOntheflySubsampler
+{
+public:
+
+	typedef boost::random::binomial_distribution<> binomial_distrib;
+	typedef boost::random::variate_generator<boost::random::mt19937&, binomial_distrib> binomial_distrib_gen;
+
+    std::mt19937 _generator;
+	//default_random_engine _generator;
+	//vector<vector<default_random_engine> > _distribsRE;
+	//vector< > _distribs;
+    vector<binomial_distrib_gen> _distribs;
+
+	inline int getNumber(size_t sampleRateIndex, size_t bootn){
+		return _distribs[sampleRateIndex]();
+		//cout << sampleRateIndex << endl;
+		//int lol = _distribs[sampleRateIndex]();
+		//cout << "lol: " << lol << endl;
+		//return lol;
+		//cout << _distribsRE[sampleRateIndex][bootn]() << endl;
+		//return _distribs[sampleRateIndex][bootn](_generator);
+	}
+
+	boost::random::mt19937 _rng;                 // produces randomness out of thin air
+	void init(long double nbPickableKmers){
+
+		srand (time(NULL));
+		_rng = boost::random::mt19937(rand());
+
+		//cout << "LOOOO" << endl;
+		//nbPickableKmers = 100000000000ULL;
+		//cout << nbPickableKmers << endl;
+
+		std::random_device rd;
+		_generator = mt19937(rd());
+
+		for(size_t i=0; i<SimkaUtils::NB_SUBSAMPLING_RATES; i++){
+			float pickProb = SimkaUtils::SUBSAMPLING_RATES[i];
+
+			long double nbPickedKmers = nbPickableKmers * pickProb;
+
+			//vector<default_random_engine> lol1;
+			vector<binomial_distrib > lol2;
+
+			//for(size_t j=0; j<MULTISCALE_BOOSTRAP_NB_BOOSTRAPS; j++){
+
+				cout << "ALLO: " << nbPickableKmers << "  " << nbPickedKmers << "  " << pickProb << endl;
+				//cout << "ALLO " << (nbPickedKmers/nbPickableKmers/nbPickableKmers) << endl;
+				//cout << nbPickableKmers << " " << nbPickedKmers << endl;
+				//default_random_engine generator(rd());
+				//cout << generator.min() << " " << generator.max() << endl;
+				//linear_congruential_engine<uint_fast32_t, 48271, 0, 2147483647>
+			    // perform 4 trials, each succeeds 1 in 2 times
+			    //std::binomial_distribution<> d(4, 0.5);
+
+				binomial_distrib my_binomial(nbPickableKmers, nbPickedKmers/nbPickableKmers/nbPickableKmers);      // binomial distribution with n=20, p=0.5
+				//binomial_distrib my_binomial(20, 0.5);      // binomial distribution with n=20, p=0.5
+
+				binomial_distrib_gen next_value(_rng, my_binomial);
+
+				_distribs.push_back(next_value);
+				// see random number distributions
+				//boost::random::variate_generator<boost::random::mt19937&, boost::random::binomial_distribution<> >
+				//         next_value(rng, my_binomial);     // glues randomness with mapping
+				//int x = next_value();
+				//cout << "lol: " << x << endl;
+
+				//binomial_distribution<> distribution(nbPickableKmers, nbPickedKmers/nbPickableKmers/nbPickableKmers);
+
+				//lol1.push_back(generator);
+				//lol2.push_back(distribution);
+			//}
+
+			//_distribs.push_back(lol2);
+			//_distribsRE.push_back(lol1);
+		}
+
+		/*
+		nbPickableKmers = (u_int64_t)(500000000000ULL);
+		cout << "LAL " << nbPickableKmers << endl;
+		for(size_t i=0; i<SimkaUtils::NB_SUBSAMPLING_RATES; i++){
+
+			vector<float> probOfPickingNKmers;
+
+			float pickProb = SimkaUtils::SUBSAMPLING_RATES[i];
+			long double nbPickedKmers = nbPickableKmers * pickProb;
+			cout << pickProb << " " << nbPickedKmers << " " << nbPickableKmers << endl;
+
+			//x: picking x element
+			//p: prob of picking x element
+			float cumul = 0;
+			float x = 0; //try to replace all float by double (x and p), and use double rand()
+			while(1){
+				if(x > nbPickedKmers) break;
+				try{
+					float p = pow((1.0/nbPickableKmers), x) * pow(((nbPickableKmers-1.0)/nbPickableKmers), nbPickedKmers-x) * combination_nk(nbPickedKmers, x);
+
+									cout << x << " " << p << " " << pow((1.0/nbPickableKmers), x) << " " << pow(((nbPickableKmers-1.0)/nbPickableKmers), nbPickedKmers-x) << " " << combination_nk(nbPickedKmers, x) << endl;
+
+									if(p <= 0) break;
+									cumul += p;
+									probOfPickingNKmers.push_back(cumul);
+									x += 1;
+				}
+				catch (const std::exception&){
+					break;
+				}
+
+			}
+
+			_probOfPickingNKmers.push_back(probOfPickingNKmers);
+		}
+
+		for(size_t i=0; i<_probOfPickingNKmers.size(); i++){
+			cout <<  "Subsampling rate: " << SimkaUtils::SUBSAMPLING_RATES[i] << endl;
+			for(size_t j=0; j<_probOfPickingNKmers[i].size(); j++){
+				cout << "\t" << j << ": " << _probOfPickingNKmers[i][j] << endl;
+			}
+		}*/
+	}
+	/*
+
+	double combination_nk(float n, float k){
+		double fact_n = factorial(n);
+		double fact_k = factorial(k);
+		double fact_nk = factorial(n - k);
+		cout << fact_n << " " << fact_k << " " << fact_nk << endl;
+		return fact_n / (fact_k*fact_nk);
+	}
+
+
+	inline u_int64_t factorial(u_int64_t n){
+	    int i, x = 1;
+	    for (i = 1; i <= n; i++){
+	        x *= i;
+	    }
+	    return x;
+	}*/
+
+
+	u_int64_t combination_nk(u_int64_t n, u_int64_t k)
+	{
+	    //if (k > n)
+	    //    return 0;
+		if (k > n) return 0;
+		    if (k * 2 > n) k = n-k;
+		    if (k == 0) return 1;
+
+	    u_int64_t result = n;
+	        for( u_int64_t i = 2; i <= k; ++i ) {
+	            result *= (n-i+1);
+	            result /= i;
+	        }
+	        return result;
+	    /*
+	    u_int64_t r = 1;
+	        for (u_int64_t d = 1; d <= k; ++d) {
+	            r *= n--;
+	            r /= d;
+	        }
+	        return r;*/
+	}
+
+	/*
+	u_int64_t	gcd(u_int64_t x, u_int64_t y)
+	{
+	    while (y != 0)
+	    {
+	    	u_int64_t t = x % y;
+	        x = y;
+	        y = t;
+	    }
+	    return x;
+	}
+
+	u_int64_t	combination_nk(u_int64_t n, u_int64_t k)
+	{
+	    if (k > n)
+	        throw std::invalid_argument("invalid argument in choose");
+	    u_int64_t r = 1;
+	    for (u_int64_t d = 1; d <= k; ++d, --n)
+	    {
+	    	u_int64_t g = gcd(r, d);
+	        r /= g;
+	        u_int64_t t = n / (d / g);
+	        if (r > std::numeric_limits<u_int64_t>::max() / t)
+	           throw std::overflow_error("overflow in choose");
+	        r *= t;
+	    }
+	    return r;
+	}*/
+};
 
 
 /********************************************************************************/
@@ -410,8 +608,8 @@ private:
 
     //vector<size_t> _banksOks;
 
-    vector<u_int64_t> _sharedNewBanks;
-    vector<u_int64_t> _sharedOldBanks;
+    //vector<u_int64_t> _sharedNewBanks;
+    //vector<u_int64_t> _sharedOldBanks;
 
 	typedef std::pair<double, CountVector> chi2val_Abundances;
 	struct _chi2ValueSorterFunction { bool operator() (chi2val_Abundances l,chi2val_Abundances r) { return r.first < l.first; } } ;
@@ -468,8 +666,15 @@ public:
 		#endif
     }
 
-    void process (size_t partId, const typename Kmer<span>::Type& kmer, const CountVector& counts){
+    size_t _multidimBoostrap_index;
+    size_t _multidimBoostrap_subsamplingRate;
+    int _multidimBoostrap_nbRepeats;
 
+    void process (size_t partId, const typename Kmer<span>::Type& kmer, const CountVector& counts, size_t multidimBoostrap_subsamplingRate, size_t multidimBoostrap_index, int multidimBoostrap_nbRepeats, const vector<u_int64_t>& sharedBanks){
+
+    	_multidimBoostrap_index = multidimBoostrap_index;
+    	_multidimBoostrap_subsamplingRate = multidimBoostrap_subsamplingRate;
+    	_multidimBoostrap_nbRepeats = multidimBoostrap_nbRepeats;
     	//cout << kmer.toString(_kmerSize) << endl;
     	//for(size_t i=0; i<counts.size(); i++){
     	//	cout << counts[i] << " ";
@@ -584,7 +789,7 @@ public:
     	//}
     	//else{
 
-    	updateDistance(counts);
+    	updateDistanceDefault(counts, sharedBanks);
 
     	//else
     	//	computeStats(counts);
@@ -593,30 +798,25 @@ public:
     	//_stats->_nbSolidKmers += 1;
     }
 
-    void updateDistance(const CountVector& counts){
-    	_sharedNewBanks.clear();
-    	_sharedOldBanks.clear();
+    //void updateDistance(const CountVector& counts, const vector<u_int64_t>& sharedBanks){
+    	//_sharedNewBanks.clear();
+    	//_sharedOldBanks.clear();
 
 
-		for(size_t i=0; i<_bankOffset; i++){
-			if(counts[i]) _sharedOldBanks.push_back(i);
-		}
-		for(size_t i=_bankOffset; i<counts.size(); i++){
-			if(counts[i]) _sharedNewBanks.push_back(i);
-		}
+
 		//for(size_t i=0; i<counts.size(); i++)
 		//	if(counts[i]) _sharedBanks.push_back(i);
 
-		updateDistanceDefault(counts);
+	//	updateDistanceDefault(counts, shared);
 
-    	if(_stats->_computeSimpleDistances)
-    		updateDistanceSimple(counts);
+    	//if(_stats->_computeSimpleDistances)
+		//	updateDistanceSimple(counts);
 
-    	if(_stats->_computeComplexDistances)
-    		updateDistanceComplex(counts);
-    }
+		//if(_stats->_computeComplexDistances)
+		//	updateDistanceComplex(counts);
+    //}
 
-	void updateDistanceDefault(const CountVector& counts){
+	void updateDistanceDefault(const CountVector& counts, const vector<u_int64_t>& sharedBanks){
 
 		/*
 		cout << _stats->_brayCurtisNumerator._matrix_squaredHalf.size() << endl;
@@ -627,35 +827,37 @@ public:
 			}
 		}*/
 
-		if(_stats->_brayCurtisNumerator._matrix_squaredHalf.size() > 0){
-			for(size_t ii=0; ii<_sharedNewBanks.size(); ii++){
+		//if(_stats->_brayCurtisNumerator._matrix_squaredHalf.size() > 0){
+		for(size_t ii=0; ii<sharedBanks.size(); ii++){
 
-				u_int64_t i = _sharedNewBanks[ii];
-				u_int64_t abundanceI = counts[i];
-				u_int64_t jOffset = _stats->_brayCurtisNumerator._matrix_squaredHalf.size() - _stats->_brayCurtisNumerator._matrix_squaredHalf[i-_bankOffset].size();// + 1;
+			u_int64_t i = sharedBanks[ii];
+			u_int64_t abundanceI = counts[i];
+			u_int64_t jOffset = _stats->_brayCurtisNumerator._matrix_squaredHalf.size() - _stats->_brayCurtisNumerator._matrix_squaredHalf[i-_bankOffset].size();// + 1;
 
-				for(size_t jj=ii+1; jj<_sharedNewBanks.size(); jj++){
+			_stats->_multiscaleBoostrap_distanceData_braycurtis[_multidimBoostrap_subsamplingRate][_multidimBoostrap_index]._marginalValues[i] += abundanceI * _multidimBoostrap_nbRepeats;
 
-					u_int64_t j = _sharedNewBanks[jj];
-					//size_t symetricIndex = j + ((_nbBanks-1)*i) - (i*(i-1)/2);
+			for(size_t jj=ii+1; jj<sharedBanks.size(); jj++){
 
-					u_int64_t abundanceJ = counts[j];
+				u_int64_t j = sharedBanks[jj];
+				//size_t symetricIndex = j + ((_nbBanks-1)*i) - (i*(i-1)/2);
 
-					//_stats->_matrixNbSharedKmers[i][j] += counts[i];
-					//_stats->_matrixNbSharedKmers[j][i] += counts[j];
-					//_stats->_matrixNbDistinctSharedKmers[i][j] += 1;
+				u_int64_t abundanceJ = counts[j];
 
+				//_stats->_matrixNbSharedKmers[i][j] += counts[i];
+				//_stats->_matrixNbSharedKmers[j][i] += counts[j];
+				//_stats->_matrixNbDistinctSharedKmers[i][j] += 1;
 
-					//cout << "\t    " << _stats->_brayCurtisNumerator._matrix_squaredHalf.size() << " " << i-_bankOffset << endl;
-					//cout << "\t        " << _stats->_brayCurtisNumerator._matrix_squaredHalf[i-_bankOffset].size() << " " << (j-_bankOffset-jOffset-1) << endl;
-					//cout << i << " " << j << "     " << _stats->_brayCurtisNumerator._matrix_squaredHalf.size() << " " << _stats->_brayCurtisNumerator._matrix_squaredHalf[i].size() << endl;
-					//cout << i-jOffset << " " << j-jOffset-1 << endl;
-					//cout << jOffset << endl;
-					_stats->_brayCurtisNumerator._matrix_squaredHalf[i-_bankOffset][j-_bankOffset-jOffset-1] += min(abundanceI, abundanceJ);
-					_stats->_matrixNbDistinctSharedKmers._matrix_squaredHalf[i-_bankOffset][j-_bankOffset-jOffset-1] += 1;
-				}
+				_stats->_multiscaleBoostrap_distanceData_braycurtis[_multidimBoostrap_subsamplingRate][_multidimBoostrap_index]._matrix_squaredHalf[i-_bankOffset][j-_bankOffset-jOffset-1] += min(abundanceI, abundanceJ) * _multidimBoostrap_nbRepeats;
+				//cout << "\t    " << _stats->_brayCurtisNumerator._matrix_squaredHalf.size() << " " << i-_bankOffset << endl;
+				//cout << "\t        " << _stats->_brayCurtisNumerator._matrix_squaredHalf[i-_bankOffset].size() << " " << (j-_bankOffset-jOffset-1) << endl;
+				//cout << i << " " << j << "     " << _stats->_brayCurtisNumerator._matrix_squaredHalf.size() << " " << _stats->_brayCurtisNumerator._matrix_squaredHalf[i].size() << endl;
+				//cout << i-jOffset << " " << j-jOffset-1 << endl;
+				//cout << jOffset << endl;
+				//_stats->_brayCurtisNumerator._matrix_squaredHalf[i-_bankOffset][j-_bankOffset-jOffset-1] += min(abundanceI, abundanceJ);
+				//_stats->_matrixNbDistinctSharedKmers._matrix_squaredHalf[i-_bankOffset][j-_bankOffset-jOffset-1] += 1;
 			}
 		}
+		//}
 
 		/*
 		cout << "---" << endl;
@@ -673,6 +875,7 @@ public:
 
 		//cout << "---" << endl;
 
+		/*
 		for(size_t ii=0; ii<_sharedNewBanks.size(); ii++){
 
 			u_int64_t i = _sharedNewBanks[ii];
@@ -695,18 +898,20 @@ public:
 				//cout << _stats->_brayCurtisNumerator._matrix_rectangular.size() << "      " << i << " " << j << endl;
 				//cout << "\t" << _stats->_brayCurtisNumerator._matrix_rectangular.size() << " " << i-_bankOffset << endl;
 				//cout << "\t" << _stats->_brayCurtisNumerator._matrix_rectangular[i-_bankOffset].size() << " " << j << endl;
-				_stats->_brayCurtisNumerator._matrix_rectangular[i-_bankOffset][j] += min(abundanceI, abundanceJ);
-				_stats->_matrixNbDistinctSharedKmers._matrix_rectangular[i-_bankOffset][j] += 1;
+				//_stats->_brayCurtisNumerator._matrix_rectangular[i-_bankOffset][j] += min(abundanceI, abundanceJ);
+				//_stats->_matrixNbDistinctSharedKmers._matrix_rectangular[i-_bankOffset][j] += 1;
 
 				//(counts.size()-1) - (j - _bankOffset) - _bankOffset
 				//cout << _stats->_brayCurtisNumerator.size() << " " << _stats->_brayCurtisNumerator[0].size() << "     " << i << " " << j << endl;
 				//cout << i << " " << j << endl;
+
+				_stats->_multiscaleBoostrap_distanceData_braycurtis[_multidimBoostrap_subsamplingRate][_multidimBoostrap_index]._matrix_rectangular[i-_bankOffset][j] += min(abundanceI, abundanceJ) * _multidimBoostrap_nbRepeats;
 			}
-		}
+		}*/
 
 	}
 
-
+	/*
 	void updateDistanceSimple(const CountVector& counts){
 
 
@@ -800,26 +1005,7 @@ public:
 						d1 = xi * log((2*xY) / (xY + yX));
 					}
 
-					/*
-					if(abundanceI){
-						double yX = abundanceJ * _stats->_nbSolidKmersPerBank[i];
-						double xY = abundanceI * _stats->_nbSolidKmersPerBank[j];
-						xi = (double)abundanceI / _stats->_nbSolidKmersPerBank[i];
-						d1 = xi * log((2*xY) / (xY + yX));
-					}
-					else{
-						d1 = 0;
-					}
 
-					if(abundanceJ){
-						double xY = abundanceI * _stats->_nbSolidKmersPerBank[j];
-						double yX = abundanceJ * _stats->_nbSolidKmersPerBank[i];
-						xj = (double)abundanceJ / _stats->_nbSolidKmersPerBank[j];
-						d2 = xj * log((2*yX) / (xY + yX));
-					}
-					else{
-						d2 = 0;
-					}*/
 
 					_stats->_kullbackLeibler[i][j] += d1 + d2;
 
@@ -863,7 +1049,7 @@ public:
 		}
 
 
-	}
+	}*/
 
 	//inline bool isSolidVector(const CountVector& counts);
 	double getShannonIndex(const Type&  kmer){

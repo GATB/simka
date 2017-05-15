@@ -111,7 +111,7 @@ if ret != 0: exit(1)
 #-----------------------------------------------------------------------------
 # Copy distance matrix binaries in result dir
 #-----------------------------------------------------------------------------
-matrixBinaryFilename = os.path.join(databaseDir, "distance", "matrix_binary")
+matrixBinaryFilename = os.path.join(databaseDir, "distance", "matrix_binary_temp")
 matrixBinaryFilenameDest = os.path.join(args.output_dir, "matrix_binary")
 if os.path.exists(matrixBinaryFilenameDest):
     shutil.rmtree(matrixBinaryFilenameDest, ignore_errors=True)
@@ -129,7 +129,7 @@ command = os.path.join(SCRIPT_DIR, "bin", "simka2-export") + \
     " -in " + matrixBinaryFilename
 ret = os.system(command)
 if ret != 0: exit(1)
-
+print command
 
 #-----------------------------------------------------------------------------
 # Remove tmp dir (k-mer spectrums, dist...)

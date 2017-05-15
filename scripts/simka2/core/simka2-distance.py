@@ -67,6 +67,24 @@ class Simka_ComputeDistance():
 		print "maximum number of processed files:",  self.maximumProcessedDatasets, maxJobs, self.jobCores
 		self.jobScheduler = JobScheduler(maxJobs, ProgressBar("Computing distances", self.resourceAllocator.getNbDistanceJobToSubmit(self.database._nbPartitions, self.jobCores)))
 
+
+		self.nbDistinctMergedKmers = 0
+
+		self.jobScheduler.start()
+		self.computeNbDistinctMergedKmers()
+		self.jobScheduler.join()
+
+		for i in range(0, self.database._nbPartitions):
+			filename = os.path.join(self.tempDir, str(i) + "-nbDistinctMergedKmers.bin")
+			f = open(filename, mode='rb')
+			size = struct.unpack("Q", f.read(8))[0]
+			f.close()
+			self.nbDistinctMergedKmers += size
+			#os.remove(filename)
+		print("Nb distinct Merged Kmers: " + str(self.nbDistinctMergedKmers))
+		self.clearTempDir()
+
+
 		self.jobScheduler.start()
 		self.computeDistanceParts()
 		self.jobScheduler.join()
@@ -86,25 +104,15 @@ class Simka_ComputeDistance():
 		if ret != 0: exit(1)
 
 
-	def computeDistanceParts(self):
+	def computeNbDistinctMergedKmers(self):
 
-		#uniqKmerSpectrumDirs = set()
-
-		#for id, kmerSpectrumDir in DATABASE.entries_infos.items():
-		#	uniqKmerSpectrumDirs.add(kmerSpectrumDir)
-
-		#distanceInputFilename = os.path.join(DATABASE.dirname, "distance", "_input.txt")
-		#distanceInputFile = open(distanceInputFilename, "w")
-		#for dir in uniqKmerSpectrumDirs:
-		#	distanceInputFile.write(dir + "\n")
-		#distanceInputFile.close()
 		jobCommandsId = 0
 
 		i = 0
 		while(i < self.database._nbPartitions):
 			self.jobCommandsFile = open(os.path.join(self.tempDir, "commands_input_" + str(jobCommandsId)), "w")
 			for j in range(0, self.jobCores):
-				self.constructJobCommand(i)
+				self.constructJobCommand(i, 0)
 				i += 1
 				if i == self.database._nbPartitions:
 					break
@@ -131,7 +139,53 @@ class Simka_ComputeDistance():
 			#break
 
 
-	def constructJobCommand(self, partitionId):
+
+	def computeDistanceParts(self):
+
+		#uniqKmerSpectrumDirs = set()
+
+		#for id, kmerSpectrumDir in DATABASE.entries_infos.items():
+		#	uniqKmerSpectrumDirs.add(kmerSpectrumDir)
+
+		#distanceInputFilename = os.path.join(DATABASE.dirname, "distance", "_input.txt")
+		#distanceInputFile = open(distanceInputFilename, "w")
+		#for dir in uniqKmerSpectrumDirs:
+		#	distanceInputFile.write(dir + "\n")
+		#distanceInputFile.close()
+		jobCommandsId = 0
+
+		i = 0
+		while(i < self.database._nbPartitions):
+			self.jobCommandsFile = open(os.path.join(self.tempDir, "commands_input_" + str(jobCommandsId)), "w")
+			for j in range(0, self.jobCores):
+				self.constructJobCommand(i, 1)
+				i += 1
+				if i == self.database._nbPartitions:
+					break
+			jobCommandsId += 1
+			self.jobCommandsFile.close()
+
+		for i in range(0, jobCommandsId):
+			checkPointFilename = os.path.join(self.tempDir, "commands_" + str(i) + "-")
+			unsuccessCheckPointFilename = checkPointFilename + "unsuccess"
+			if os.path.exists(unsuccessCheckPointFilename): os.remove(unsuccessCheckPointFilename)
+
+			command = " python " + os.path.join(SCRIPT_DIR, "simka2-run-job.py") + " "
+			command += checkPointFilename + " " + "dist" + " "
+			command += " python " + os.path.join(SCRIPT_DIR, "simka2-run-job-multi.py") + " "
+			command += " " + os.path.join(self.tempDir, "commands_input_" + str(i))
+			command += "   > /dev/null 2>&1     &"
+			#scommand += " & "
+			command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
+			os.system(command)
+			#print command
+
+			self.jobScheduler.submitJob((checkPointFilename, self.jobEnd, ()))
+			#print("lala")
+			#break
+
+
+	def constructJobCommand(self, partitionId, distanceType):
 
 		checkPointFilename = os.path.join(self.tempDir, str(partitionId) + "-")
 		unsuccessCheckPointFilename = checkPointFilename + "unsuccess"
@@ -143,8 +197,11 @@ class Simka_ComputeDistance():
 		command += " -database-dir " + args._databaseDir
 		command += " -kmer-size " + str(self.database._kmerSize)
 		command += " -partition-id " + str(partitionId)
+		command += " -distance-type " + str(distanceType)
+		command += " -nb-distinct-merged-kmers " + str(self.nbDistinctMergedKmers)
 		command += " -max-datasets " + str(self.nbFileProcessed+self.maximumProcessedDatasets)
-		command += "   > /dev/null 2>&1     &"
+		command += " >> " + os.path.join(self.database.dirname, "distance", "countMerge.txt") + " 2>&1   &"
+		#command += "   > /dev/null 2>&1     &"
 		#print command
 		self.jobCommandsFile.write(checkPointFilename + "|" + command + "\n")
 

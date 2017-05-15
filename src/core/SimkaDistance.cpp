@@ -19,8 +19,12 @@
  *****************************************************************************/
 
 #include "SimkaDistance.hpp"
+#include "SimkaUtils.hpp"
 
 
+const size_t SimkaUtils::NB_SUBSAMPLING_RATES = 19;
+const float SimkaUtils::SUBSAMPLING_RATES[SimkaUtils::NB_SUBSAMPLING_RATES]  = {0.001, 0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 2, 3, 4};
+//const float SimkaUtils::SUBSAMPLING_RATES[SimkaUtils::NB_SUBSAMPLING_RATES]  = {0.01, 0.1, 0.2};
 
 
 SimkaStatistics::SimkaStatistics(size_t nbBanks, size_t nbNewBanks, bool computeSimpleDistances, bool computeComplexDistances)
@@ -52,8 +56,19 @@ SimkaStatistics::SimkaStatistics(size_t nbBanks, size_t nbNewBanks, bool compute
 	//_nbDistinctKmersSharedByBanksThreshold.resize(_nbBanks, 0);
 	//_nbKmersSharedByBanksThreshold.resize(_nbBanks, 0);
 
+
+
 	_brayCurtisNumerator.resize(_nbBanks, _nbNewBanks);
 	_matrixNbDistinctSharedKmers.resize(_nbBanks, _nbNewBanks);
+
+	_multiscaleBoostrap_distanceData_braycurtis.resize(SimkaUtils::NB_SUBSAMPLING_RATES);
+	for(size_t i=0; i<_multiscaleBoostrap_distanceData_braycurtis.size(); i++){
+		_multiscaleBoostrap_distanceData_braycurtis[i].resize(MULTISCALE_BOOSTRAP_NB_BOOSTRAPS);
+		for(size_t j=0; j<_multiscaleBoostrap_distanceData_braycurtis[i].size(); j++){
+			_multiscaleBoostrap_distanceData_braycurtis[i][j].resize(_nbBanks, _nbNewBanks);
+		}
+	}
+
 	//_matrixNbDistinctSharedKmers.resize(_nbBanks);
 	//_brayCurtisNumerator.resize(_nbBanks);
 
@@ -144,6 +159,12 @@ SimkaStatistics& SimkaStatistics::operator+=  (const SimkaStatistics& other){
 
 	_brayCurtisNumerator += other._brayCurtisNumerator;
 	_matrixNbDistinctSharedKmers += other._matrixNbDistinctSharedKmers;
+
+	for(size_t i=0; i<_multiscaleBoostrap_distanceData_braycurtis.size(); i++){
+		for(size_t j=0; j<_multiscaleBoostrap_distanceData_braycurtis[i].size(); j++){
+			_multiscaleBoostrap_distanceData_braycurtis[i][j] += other._multiscaleBoostrap_distanceData_braycurtis[i][j];
+		}
+	}
 
 	//for(size_t i=0; i<_nbBanks; i++){
 	//	for(size_t j=0; j<_nbNewBanks; j++){
@@ -335,6 +356,12 @@ void SimkaStatistics::load(const string& filename){
     _brayCurtisNumerator.load(it);
     _matrixNbDistinctSharedKmers.load(it);
 
+	for(size_t i=0; i<_multiscaleBoostrap_distanceData_braycurtis.size(); i++){
+		for(size_t j=0; j<_multiscaleBoostrap_distanceData_braycurtis[i].size(); j++){
+			_multiscaleBoostrap_distanceData_braycurtis[i][j].load(it);
+		}
+	}
+
     //for(size_t i=0; i<_nbBanks; i++){
     	//cout << i << endl;
     	//cout << _nbBanks << endl;
@@ -446,6 +473,12 @@ void SimkaStatistics::save (const string& filename){
 
     _brayCurtisNumerator.save(file);
     _matrixNbDistinctSharedKmers.save(file);
+
+	for(size_t i=0; i<_multiscaleBoostrap_distanceData_braycurtis.size(); i++){
+		for(size_t j=0; j<_multiscaleBoostrap_distanceData_braycurtis[i].size(); j++){
+			_multiscaleBoostrap_distanceData_braycurtis[i][j].save(file);
+		}
+	}
 
     //for(size_t i=0; i<_nbBanks; i++){
     	//cout << i << endl;
@@ -604,11 +637,22 @@ void SimkaStatistics::outputMatrix(const string& outputDirTemp, const vector<str
 	}
 	cout << "---" << endl;*/
 
-	_simkaDistance._matrixBrayCurtis();
-	SimkaDistanceMatrixBinary::writeMatrixBinaryFromSplits(outputDirTemp, "mat_abundance_braycurtis", _simkaDistance._matrix_rectangular, _simkaDistance._matrix_squaredHalf);
 
-	_simkaDistance._matrix_presenceAbsence_jaccardCanberra();
-	SimkaDistanceMatrixBinary::writeMatrixBinaryFromSplits(outputDirTemp, "mat_presenceAbsence_jaccard", _simkaDistance._matrix_rectangular, _simkaDistance._matrix_squaredHalf);
+	for(size_t i=0; i<_multiscaleBoostrap_distanceData_braycurtis.size(); i++){
+		string dir = outputDirTemp + "/" + Stringify::format("%f", SimkaUtils::SUBSAMPLING_RATES[i]) ;
+		System::file().mkdir(dir, -1);
+		for(size_t j=0; j<_multiscaleBoostrap_distanceData_braycurtis[i].size(); j++){
+			_simkaDistance._matrixBrayCurtis(i, j);
+			SimkaDistanceMatrixBinary::writeMatrixBinaryFromSplits(dir, "mat_abundance_braycurtis-" + Stringify::format("%i", j), _simkaDistance._matrix_rectangular, _simkaDistance._matrix_squaredHalf);
+
+		}
+	}
+
+	//_simkaDistance._matrixBrayCurtis();
+	//SimkaDistanceMatrixBinary::writeMatrixBinaryFromSplits(outputDirTemp, "mat_abundance_braycurtis", _simkaDistance._matrix_rectangular, _simkaDistance._matrix_squaredHalf);
+
+	//_simkaDistance._matrix_presenceAbsence_jaccardCanberra();
+	//SimkaDistanceMatrixBinary::writeMatrixBinaryFromSplits(outputDirTemp, "mat_presenceAbsence_jaccard", _simkaDistance._matrix_rectangular, _simkaDistance._matrix_squaredHalf);
 
 
 	//_simkaDistance._matrix_presenceAbsence_jaccardCanberra();
