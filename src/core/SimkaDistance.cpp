@@ -53,6 +53,7 @@ SimkaStatistics::SimkaStatistics(size_t nbBanks, size_t nbNewBanks, bool compute
 	_nbSolidKmersPerBank.resize(_nbBanks, 0);
 	_nbKmersPerBank.resize(_nbBanks, 0);
 
+
 	//_nbDistinctKmersSharedByBanksThreshold.resize(_nbBanks, 0);
 	//_nbKmersSharedByBanksThreshold.resize(_nbBanks, 0);
 

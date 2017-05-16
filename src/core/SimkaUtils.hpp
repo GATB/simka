@@ -57,7 +57,7 @@ class SimkaOntheflySubsampler
 {
 public:
 
-	typedef boost::random::binomial_distribution<> binomial_distrib;
+	typedef boost::random::binomial_distribution<u_int64_t, long double> binomial_distrib;
 	typedef boost::random::variate_generator<boost::random::mt19937&, binomial_distrib> binomial_distrib_gen;
 
     std::mt19937 _generator;
@@ -108,7 +108,8 @@ public:
 			    // perform 4 trials, each succeeds 1 in 2 times
 			    //std::binomial_distribution<> d(4, 0.5);
 
-				binomial_distrib my_binomial(nbPickableKmers, nbPickedKmers/nbPickableKmers/nbPickableKmers);      // binomial distribution with n=20, p=0.5
+				long double p = (long double) nbPickedKmers/ (long double) nbPickableKmers/ (long double)nbPickableKmers;
+				binomial_distrib my_binomial(nbPickableKmers, p);      // binomial distribution with n=20, p=0.5
 				//binomial_distrib my_binomial(20, 0.5);      // binomial distribution with n=20, p=0.5
 
 				binomial_distrib_gen next_value(_rng, my_binomial);
