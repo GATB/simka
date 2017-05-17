@@ -19,7 +19,7 @@ Benoit G, Peterlongo P, Mariadassou M, Drezen E, Schbath S, Lavenier D, Lemaitre
 
 Benoit G, Peterlongo P, Lavenier D, Lemaitre C. (2015) [Simka: fast kmer-based method for estimating the similarity between numerous metagenomic datasets](https://hal.inria.fr/hal-01180603). Hal-Inria
 
-#Install a binary release of simka
+# Install a binary release of simka
 
 Retrieve the binary archive file from one of the official simka releases (see "Releases" tab on the Github web page of the simka project); file name is "simka-xyz-bin-Darwin.tar.gz" or "simka-xyz-bin-Linux.tar.gz" (where xyz is a release version).
 
@@ -39,7 +39,7 @@ In case the software does not run appropriately on your system, you should consi
 
 For further instructions on using simka, see User Manual, below.
 
-#Install simka from source code: git clone
+# Install simka from source code: git clone
 
 Requirements: cmake 2.6+ and gcc 4.5+ (Linux) or clang 4.1+ (Mac OSX).
 
@@ -57,7 +57,7 @@ Then, you can try the software on your computer, as follows:
 
 For further instructions on using simka, see User Manual, below.
 
-#Install simka from source code: using a source release archive
+# Install simka from source code: using a source release archive
 
 Requirements: cmake 2.6+ and gcc 4.5+ (Linux) or clang 4.1+ (Mac OSX).
 
@@ -77,7 +77,7 @@ Then, you can try the software on your computer, as follows:
 For further instructions on using simka, see User Manual, below.
 
 
-#Changelog
+# Changelog
 
 * version 2.0.0 Nov 28, 2016:
 	- simka code has been refactored for robustness and flexibility
@@ -104,11 +104,11 @@ For further instructions on using simka, see User Manual, below.
 
 # User manual
 
-##Description
+## Description
 Simka computes several ecology distances between N (metagenomic) read sets at the k-mer level.
 Simka is implemented with the GATB library (http://gatb.inria.fr/).
 
-##Simka overall organisation
+## Simka overall organisation
 * example
 	- 1-basic_usage (learn how to use simka by running simple examples)
 	- 2-hpc_usage (learn how to run simka on cloud or grid systems)
@@ -126,7 +126,7 @@ Simka is implemented with the GATB library (http://gatb.inria.fr/).
 * tests
 	- validation tests of Simka
 
-##Input
+## Input
 	
 The input file (-in) lists the datasets. These datasets can be in fasta, fastq and in gzip compressed format (.gz).
 
@@ -158,9 +158,9 @@ Example:
 
 If -max-reads is set to 100, then Simka will considered the 100 first reads of the first paired files and the 100 first reads of the second paired files…
 
-##Output
+## Output
 
-###Temporary output
+### Temporary output
 
 The option -out-tmp controls where the temporary files of Simka will be stored.
 
@@ -171,7 +171,7 @@ This option must target a directory on your faster disk with some free space.
 One may want to add new datasets to existing Simka results without recomputing everything again (for instance, if your metagenomic project is incomplete).
 This can only be achieved by keeping those temporary files on the disk using the option -keep-tmp of Simka.
 
-###Result output
+### Result output
 
 Simka results are distance matrices. A distance matrix is a squared matrix of size N (where N is the number of input datasets). Each value in the matrix give you the distance between a pair of datasets. These values are usually in the range [0, 1]. A distance value of 0 means that the pair of dataset is perfectly similar. The higher the distance value is, the more dissimilar is the pair of datasets.
 
@@ -192,7 +192,7 @@ These distances have the advantage of having a symmetrical and asymmetrical vers
 
 The result directory also contains a directory named "matrix_binary" that can be used by the simka distance exporter to create quickly new distance matrices from supplied list of dataset ID (see "example" section).
 
-##Visualize simka results
+## Visualize simka results
 
 Simka results can be visualized through heatmaps, hierarchical clustering and PCA (MDS or PCoA to be exact).
 	
@@ -209,13 +209,13 @@ where simka_results_dir is the folder containing the distances matrices of Simka
 To learn advanced usage, run example: ./example/1-basic_usage/2-visualization.py.
 For instance, you can add annotations to figures (colors) by provding a metadata table in a specific format.
 
-##Usage for simka
+## Usage for simka
 
 To see simka in-line help:
 
     python ./scripts/simka2/simka.py
 
-##Simka command examples
+## Simka command examples
 
 Commands listed below are simple and basic usage of Simka.
 To learn quickly and easily how to use simka and discover advanced usage, run python scripts in "example" directory.
@@ -259,7 +259,7 @@ Run simka in HPC mode, with a maximum of 50 jobs simultaneously, 4 cores and 4 G
 
     python ./scripts/simka2/simka-hpc.py … -nb-cores 4 -max-memory 4000 -max-jobs 50 -submit-command "qsub -pe make 4 -M 4000"
     
-##Simka examples
+## Simka examples
 
 Simka examples are located in the "example" dir. This folder is organised as follow:
 * 1-basic_usage
