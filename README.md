@@ -105,7 +105,7 @@ For further instructions on using simka, see User Manual, below.
 # User manual
 
 ## Description
-Simka computes several ecology distances between N (metagenomic) read sets at the k-mer level.
+Simka computes several classical ecological distances between N (metagenomic) read sets based on k-mer counts.
 Simka is implemented with the GATB library (http://gatb.inria.fr/).
 
 ## Simka overall organisation
