@@ -13,7 +13,7 @@ Developper: Gaëtan Benoit.
 
 Contact: gaetan.benoit@inria.fr
 
-#Reference
+# Reference
 	
 Benoit G, Peterlongo P, Mariadassou M, Drezen E, Schbath S, Lavenier D, Lemaitre C. (2016) [Multiple comparative metagenomics using multiset k-mer counting](https://doi.org/10.7717/peerj-cs.94). PeerJ Computer Science 2:e94 
 
