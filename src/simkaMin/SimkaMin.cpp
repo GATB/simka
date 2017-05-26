@@ -339,9 +339,11 @@ public:
 
 
 	ProbabilisticDict* _selectedKmersIndex;
-	Bloom<Type>*  _bloomFilter;
+	//Bloom<Type>*  _bloomFilter;
 	SimkaMinDistance<KmerCountType> _distanceManager;
 
+	Bloom<Type>*  _bloomFilter;
+	Bloom<Type>*  _bloomFilter2;
 
     SimkaMinAlgorithm(IProperties* args):
 		Algorithm("simkaMin", -1, args)
@@ -370,7 +372,7 @@ public:
 
 	void parseArgs(){
 		//_keepTmpFiles = _options->get(STR_SIMKA_KEEP_TMP_FILES);
-		_nbBitPerKmers = 12;
+		_nbBitPerKmers = 16;
 		_maxMemory = _args->getInt(STR_MAX_MEMORY);
 		_nbCores = _args->getInt(STR_NB_CORES);
 		_inputFilename = _args->getStr(STR_URI_INPUT);
@@ -566,7 +568,7 @@ public:
 
 	void computeNbUsedKmers(){
 		cout << endl << endl;
-		u_int64_t bloomFilterMaxMemoryByte = _maxMemory*GBYTE;
+		u_int64_t bloomFilterMaxMemoryByte = _maxMemory*GBYTE* (2.0/3.0);
 		u_int64_t bloomFilterMaxMemoryBits = bloomFilterMaxMemoryByte*8;
 		//float bytePerKmers = (float)nbBitPerKmers/8.0;
 		u_int64_t maxUsableKmers = (((long double)bloomFilterMaxMemoryBits)/_nbBitPerKmers);
@@ -591,7 +593,10 @@ public:
 
 		string filename = _outputDirTemp + "/selectedKmers.bin";
 		ofstream selectKmersFile(filename.c_str(), ios::binary);
-		_bloomFilter = new BloomCacheCoherent<Type> (_bloomFilterMaxMemoryBits, 7);
+
+		u_int64_t mainBloomFilterMemoryBits = _maxMemory*GBYTE*0.5*8;
+		_bloomFilter = new BloomCacheCoherent<Type> (mainBloomFilterMemoryBits, 7);
+		u_int64_t subBloomFilterMemoryBits = _maxMemory*GBYTE*0.5*8;
 
 		IBank* bank = Bank::open(_banksInputFilename);
 		LOCAL(bank);
@@ -619,6 +624,8 @@ public:
 	    for (size_t i=0; i<itBanks.size(); i++)
 	    {
 
+			_bloomFilter2 = new BloomCacheCoherent<Type> (subBloomFilterMemoryBits, 7);
+
 	    	Iterator<Sequence>* itSeq = itBanks[i];
 	    	u_int64_t nbKmerInserted = 0;
 	    	bool isDone = false;
@@ -636,7 +643,7 @@ public:
 					if(_bloomFilter->contains(kmer)){
 
 					}
-					else{
+					else if(_bloomFilter2->contains(kmer)){
 						u_int64_t kmerValue = kmer.getVal();
 						selectKmersFile.write((const char*)&kmerValue, sizeof(kmerValue));
 						_bloomFilter->insert(kmer);
@@ -647,6 +654,9 @@ public:
 							break;
 						}
 					}
+					else{
+						_bloomFilter2->insert(kmer);
+					}
 				}
 
 				if(isDone){
@@ -656,6 +666,7 @@ public:
 
 			}
 
+			delete _bloomFilter2; //todo could be better if we could clear the bit buffer
 			itBanks[i]->finalize();
 	    }
 
