@@ -3,6 +3,7 @@
 #include <gatb/gatb_core.hpp>
 #include "ProbabilisticDictionary.hpp"
 #include "SimkaMinUtils.hpp"
+#include "SimkaMinDistance.hpp"
 
 //SimkaMin n'effectue pas assez de calcul par rapport au temps de decompression des fichiers .gz qui est faites ens érie actuellement dans GATB
 //La parallelisation de Simka est donc faites au niveau des jeux de données
@@ -320,6 +321,8 @@ public:
 	IProperties* _args;
 
 	vector<string> _bankNames;
+	vector<size_t> _reorderedBankIds;
+	ofstream _outputKmerCountFile;
 	//vector<u_int64_t> _nbReadsPerDataset;
 
 	//string _outputFilenameSuffix;
@@ -337,6 +340,7 @@ public:
 
 	ProbabilisticDict* _selectedKmersIndex;
 	Bloom<Type>*  _bloomFilter;
+	SimkaMinDistance<KmerCountType> _distanceManager;
 
 
     SimkaMinAlgorithm(IProperties* args):
@@ -361,6 +365,7 @@ public:
 		_selectedKmersIndex = new ProbabilisticDict(_nbUsedKmers, keyFile, _nbCores);
 
 		countKmers();
+		computeDistance();
 	}
 
 	void parseArgs(){
@@ -680,6 +685,8 @@ public:
 	void countKmers(){
 
 
+		string filename = _outputDirTemp + "/kmerCounts.bin";
+		_outputKmerCountFile = ofstream(filename.c_str(), ios::binary);
 
 		//IBank* bank = Bank::open(_banksInputFilename);
 		//LOCAL(bank);
@@ -723,6 +730,8 @@ public:
 
 		countKmersJoinThreads();
 
+		_outputKmerCountFile.close();
+		delete _selectedKmersIndex;
 		/*
 		cout << endl << endl;
 		cout << "Start counting selected kmers" << endl;
@@ -765,12 +774,19 @@ public:
 		dispatcher->iterate(itSeqSimka, command, 1000);
 
 		countKmersMutex.lock();
+		//_reorderedBankIds.push_back(datasetId);
+
 		u_int64_t nbKmersWithCounts = 0;
 		vector<KmerCountType>* counts = command._master_kmerCounts;
 		for(size_t i=0; i<counts->size(); i++){
-			if(counts->at(i) > 0){
+
+			KmerCountType kmerCount = counts->at(i);
+
+			if(kmerCount > 0){
 				nbKmersWithCounts += 1;
 			}
+			_outputKmerCountFile.seekp(i*_nbBanks*sizeof(KmerCountType) + sizeof(KmerCountType)*datasetId);
+			_outputKmerCountFile.write((const char*)&kmerCount, sizeof(kmerCount));
 		}
 		cout << "Fill rate of kmer counts: " << ((double)nbKmersWithCounts / (double)counts->size()) << endl;
 		//cout << "\t thread " <<  threadId << " End" << endl;
@@ -827,6 +843,42 @@ public:
         while(_nbRunningThreads > 0)
         	countKmersWait();
 	}
+
+	void computeDistance(){
+
+		cout << endl << endl;
+		cout << "Computing distances" << endl;
+
+		_distanceManager = SimkaMinDistance<KmerCountType>(_nbBanks);
+
+		vector<KmerCountType> counts(_nbBanks, 0);
+		KmerCountType count;
+		string filename = _outputDirTemp + "/kmerCounts.bin";
+		ifstream kmerCountFile(filename.c_str(), ios::binary);
+		size_t datasetId = 0;
+
+		while(!kmerCountFile.eof()){
+			kmerCountFile.read((char*)&count, sizeof(count));
+			counts[datasetId] = count;
+
+			datasetId += 1;
+			if(datasetId >= _nbBanks){
+				_distanceManager.processAbundanceVector(counts);
+				std::fill(counts.begin(), counts.end(), 0);
+				datasetId = 0;
+			}
+
+		}
+
+		//cout << endl << endl;
+		//cout << "Outputting distances" << endl;
+		_distanceManager.computeDistanceMatrix(_outputDirTemp, "mat_abundance_braycurtis");
+		_distanceManager.writeMatrixASCII(_outputDir, _outputDirTemp, "mat_abundance_braycurtis", _bankNames);
+
+		cout << endl << endl;
+		cout << "Result dir: " << _outputDir << endl;
+	}
+
 
 };
 
