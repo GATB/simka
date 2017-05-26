@@ -686,7 +686,7 @@ public:
 
 
 		string filename = _outputDirTemp + "/kmerCounts.bin";
-		_outputKmerCountFile = ofstream(filename.c_str(), ios::binary);
+		_outputKmerCountFile.open(filename.c_str(), ios::binary);
 
 		//IBank* bank = Bank::open(_banksInputFilename);
 		//LOCAL(bank);
