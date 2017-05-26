@@ -4,6 +4,8 @@
 #include "ProbabilisticDictionary.hpp"
 #include "SimkaMinUtils.hpp"
 
+#define CORE_PER_THREAD 2 //Core for counting k-mer in a given dataset, do not put to high value because decompressing gz is so slow compared to computation
+
 const string STR_SIMKA_SOLIDITY_PER_DATASET = "-solidity-single";
 const string STR_SIMKA_MAX_READS = "-max-reads";
 const string STR_SIMKA_MIN_READ_SIZE = "-min-read-size";
@@ -250,6 +252,7 @@ public:
     u_int64_t _nbUsedKmers;
     u_int64_t _nbUsedKmersPerDataset;
 
+    size_t _nbCoresPerThread;
 	//size_t _minReadSize;
 	//double _minReadShannonIndex;
 	//double _minKmerShannonIndex;
@@ -342,6 +345,9 @@ public:
 			cerr << "ERROR: Input filename does not exist" << endl;
 			exit(1);
 		}
+
+
+		_nbCoresPerThread = min((u_int64_t)_nbCores, (u_int64_t)CORE_PER_THREAD);
 
 	}
 
@@ -623,26 +629,28 @@ public:
 
 
 
-		IBank* bank = Bank::open(_banksInputFilename);
-		LOCAL(bank);
-		Iterator<Sequence>* it = bank->iterator();
-		std::vector<Iterator<Sequence>*> itBanks =  it->getComposition();
+		//IBank* bank = Bank::open(_banksInputFilename);
+		//LOCAL(bank);
+		//Iterator<Sequence>* it = bank->iterator();
+		//std::vector<Iterator<Sequence>*> itBanks =  it->getComposition();
+
+		//cout << _nbCores << endl;
+		_maxRunningThreads = _nbCores / _nbCoresPerThread;
+		//cout << _maxRunningThreads << endl;
 
 		size_t threadId = 0;
-		_maxRunningThreads = _nbCores;
 		//vector<thread> threads; //(_nbCores);
 		//_isThreadRunning = vector<bool>(_nbCores);
 		_nbRunningThreads = 0;
 
-		for (size_t i=0; i<itBanks.size(); i++){
+		for (size_t i=0; i<_nbBanks; i++){
 			//cout << "processing bank: " << i << endl;
 
-			Iterator<Sequence>* itSeqSimka = new SimkaInputIterator<Sequence> (itBanks[i], _nbBankPerDataset[i], _maxNbReads);
 			//LOCAL(itSeqSimka);
 
 			//size_t threadId = obtainThreadId();
 
-			thread* t = new thread(&SimkaMinAlgorithm::countKmersOfDataset, this,  itSeqSimka, threadId);
+			thread* t = new thread(&SimkaMinAlgorithm::countKmersOfDataset, this,  i, threadId);
 			_threads.push_back(t);
 			_runningThreadIds.push_back(threadId);
 			threadId += 1;
@@ -686,18 +694,24 @@ public:
 
 	}
 
-	void countKmersOfDataset(Iterator<Sequence>* itSeqSimka, size_t threadId){
+	void countKmersOfDataset(size_t datasetId, size_t threadId){
 
 		countKmersMutex.lock();
-		cout << "starting thread: " << threadId << endl;
-		size_t nbCores = 1;
-		IDispatcher* dispatcher = new Dispatcher (nbCores);
+		//cout << "starting thread: " << threadId << endl;
+		IBank* bank = Bank::open(_outputDirTemp + "/input/" + _bankNames[datasetId]);
+		LOCAL(bank);
+		Iterator<Sequence>* itSeq = bank->iterator();
+		LOCAL(itSeq);
+		Iterator<Sequence>* itSeqSimka = new SimkaInputIterator<Sequence> (itSeq, _nbBankPerDataset[datasetId], _maxNbReads);
+		LOCAL(itSeqSimka);
+
+		IDispatcher* dispatcher = new Dispatcher (_nbCoresPerThread);
 		countKmersMutex.unlock();
 
 		dispatcher->iterate(itSeqSimka, CountKmerCommand<span>(_kmerSize, _selectedKmersIndex), 1000);
 
 		countKmersMutex.lock();
-		cout << "\t thread " <<  threadId << " End" << endl;
+		//cout << "\t thread " <<  threadId << " End" << endl;
 		_finishedThreads.push_back(threadId);
 		countKmersMutex.unlock();
 	}
@@ -706,10 +720,10 @@ public:
         while(1){
 
 
-			countKmersMutex.lock();
 
 			bool isThreadAvailbale = false;
 
+			countKmersMutex.lock();
 
 			for(size_t i=0; i<_finishedThreads.size(); i++){
 				size_t threadId = _finishedThreads[i];
@@ -718,7 +732,7 @@ public:
 				auto it = find(_runningThreadIds.begin(), _runningThreadIds.end(), threadId);
 				int pos = distance(_runningThreadIds.begin(), it);
 
-				cout << "\t removing thread " <<  threadId << " (pos: "  << pos << ")" << endl;
+				//cout << "\t removing thread " <<  threadId << " (pos: "  << pos << ")" << endl;
 
 				_runningThreadIds.erase(_runningThreadIds.begin()+pos);
 				_threads[pos]->join();
@@ -730,15 +744,16 @@ public:
 
 			}
 
+			_finishedThreads.clear();
+
+			countKmersMutex.unlock();
 
 			if(isThreadAvailbale){
-				_finishedThreads.clear();
-				cout << _runningThreadIds.size() << " " << _threads.size() << endl;
-				countKmersMutex.unlock();
+				//cout << _runningThreadIds.size() << " " << _threads.size() << endl;
+				//countKmersMutex.unlock();
 				break;
 			}
 
-			countKmersMutex.unlock();
 
 			sleep(1);
 
