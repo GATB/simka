@@ -300,6 +300,7 @@ public:
 		computeNbUsedKmers();
 		selectKmers();
 
+		//reprise: la stratégie actuelle est trop lente car pas assez e calcul par rapport au decompression gz. abandonner l'idée du dispatcher et paralleliser au niveau des jeux de données
 		string filename = _outputDirTemp + "/selectedKmers.bin";
 		file_binary<u_int64_t> keyFile(filename.c_str());
 		_selectedKmersIndex = new ProbabilisticDict(_nbUsedKmers, keyFile, _nbCores);
@@ -601,19 +602,73 @@ public:
 	    delete _bloomFilter;
 	}
 
+	vector<thread*> _threads;
+	size_t _maxRunningThreads;
+	vector<size_t> _runningThreadIds;
+	size_t _nbRunningThreads;
+	vector<size_t> _finishedThreads;
+	mutex countKmersMutex;
+
+	/*
+	void obtainThreadId(){
+		for(size_t i=0; i<_isThreadRunning.size(); i++){
+			if(!_isThreadRunning[i]){
+				_isThreadRunning[i] = true;
+				return i;
+			}
+		}
+	}*/
+
 	void countKmers(){
 
-		cout << endl << endl;
-		cout << "Start counting selected kmers" << endl;
 
 
 		IBank* bank = Bank::open(_banksInputFilename);
 		LOCAL(bank);
-
-
 		Iterator<Sequence>* it = bank->iterator();
-
 		std::vector<Iterator<Sequence>*> itBanks =  it->getComposition();
+
+		size_t threadId = 0;
+		_maxRunningThreads = _nbCores;
+		//vector<thread> threads; //(_nbCores);
+		//_isThreadRunning = vector<bool>(_nbCores);
+		_nbRunningThreads = 0;
+
+		for (size_t i=0; i<itBanks.size(); i++){
+			//cout << "processing bank: " << i << endl;
+
+			Iterator<Sequence>* itSeqSimka = new SimkaInputIterator<Sequence> (itBanks[i], _nbBankPerDataset[i], _maxNbReads);
+			//LOCAL(itSeqSimka);
+
+			//size_t threadId = obtainThreadId();
+
+			thread* t = new thread(&SimkaMinAlgorithm::countKmersOfDataset, this,  itSeqSimka, threadId);
+			_threads.push_back(t);
+			_runningThreadIds.push_back(threadId);
+			threadId += 1;
+			_nbRunningThreads += 1;
+			//_isThreadRunning[threadId] = true;
+			//_nbRunningThreads[i] += 1;
+
+			if(_nbRunningThreads >= _maxRunningThreads){
+				countKmersWait();
+			}
+
+
+
+			//---------------------------
+			//todo !!!!!!!!!!!!!!!!!!! delete itSeqSimka, thread, itBanks[i]->finalize();
+			//---------------------------
+		}
+
+		countKmersJoinThreads();
+
+		/*
+		cout << endl << endl;
+		cout << "Start counting selected kmers" << endl;
+
+
+
 
 		for (size_t i=0; i<itBanks.size(); i++)
 		{
@@ -627,9 +682,75 @@ public:
 
 
 			itBanks[i]->finalize();
-		}
+		}*/
 
 	}
+
+	void countKmersOfDataset(Iterator<Sequence>* itSeqSimka, size_t threadId){
+
+		countKmersMutex.lock();
+		cout << "starting thread: " << threadId << endl;
+		size_t nbCores = 1;
+		IDispatcher* dispatcher = new Dispatcher (nbCores);
+		countKmersMutex.unlock();
+
+		dispatcher->iterate(itSeqSimka, CountKmerCommand<span>(_kmerSize, _selectedKmersIndex), 1000);
+
+		countKmersMutex.lock();
+		cout << "\t thread " <<  threadId << " End" << endl;
+		_finishedThreads.push_back(threadId);
+		countKmersMutex.unlock();
+	}
+
+	void countKmersWait(){
+        while(1){
+
+
+			countKmersMutex.lock();
+
+			bool isThreadAvailbale = false;
+
+
+			for(size_t i=0; i<_finishedThreads.size(); i++){
+				size_t threadId = _finishedThreads[i];
+
+				//_runningThreadIds.erase(std::remove(_runningThreadIds.begin(), _runningThreadIds.end(), threadId), _runningThreadIds.end());
+				auto it = find(_runningThreadIds.begin(), _runningThreadIds.end(), threadId);
+				int pos = distance(_runningThreadIds.begin(), it);
+
+				cout << "\t removing thread " <<  threadId << " (pos: "  << pos << ")" << endl;
+
+				_runningThreadIds.erase(_runningThreadIds.begin()+pos);
+				_threads[pos]->join();
+				delete _threads[pos];
+				_threads.erase(_threads.begin()+pos);
+
+				_nbRunningThreads -= 1;
+				isThreadAvailbale = true;
+
+			}
+
+
+			if(isThreadAvailbale){
+				_finishedThreads.clear();
+				cout << _runningThreadIds.size() << " " << _threads.size() << endl;
+				countKmersMutex.unlock();
+				break;
+			}
+
+			countKmersMutex.unlock();
+
+			sleep(1);
+
+        }
+
+	}
+
+	void countKmersJoinThreads(){
+        while(_nbRunningThreads > 0)
+        	countKmersWait();
+	}
+
 };
 
 
