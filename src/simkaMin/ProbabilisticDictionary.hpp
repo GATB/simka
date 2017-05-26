@@ -311,7 +311,7 @@ private:
 
 
 
-template <class FingerprintType, class ValueType>
+template <class FingerprintType>
 class ProbabilisticDictionary
 {
 
@@ -321,10 +321,6 @@ private:
 	boophf_t * _bphf;
 	int _fingerprint_size;
 	uint64_t _fingerprint_range;
-	size_t _nbMutex;
-	vector<mutex> _mutex;
-	vector<ValueType>* _values;
-	ValueType _valuesMax;
 
 
 public:
@@ -337,14 +333,9 @@ public:
 		_fingerprint_range = (uint64_t)1<<_fingerprint_size;
 
 		_fingerprints = new vector<FingerprintType>(nbElements);
-		_values = new vector<ValueType>(nbElements, 0);
-		_valuesMax = -1; //store the maximum value of ValueType to prevent overflow
 
 		createMPHF(nbCores, itKeys);
 		createFingerprints(itKeys);
-
-		_nbMutex = 10000;
-		_mutex = vector<mutex>(_nbMutex);
 	}
 
 	//bool contains(u_int64_t key){
@@ -373,17 +364,7 @@ public:
 		//return this->_values.get_i(index);
 	}
 
-	void increment(u_int64_t index){
-		_mutex[index%_nbMutex].lock();
-		u_int64_t newValue = _values->at(index)+1;
-		//if(index%_nbMutex ==0) cout << _values->at(index) << endl;
-		if(newValue < _valuesMax){
-			_values->at(index) += 1;
-		}
-		//if(index%_nbMutex ==0)  cout << "\t" << _values->at(index) << endl;
-		//this->_values[index].push_back(value);
-		_mutex[index%_nbMutex].unlock();
-	}
+
 
 private:
 

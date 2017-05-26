@@ -4,7 +4,13 @@
 #include "ProbabilisticDictionary.hpp"
 #include "SimkaMinUtils.hpp"
 
-#define CORE_PER_THREAD 2 //Core for counting k-mer in a given dataset, do not put to high value because decompressing gz is so slow compared to computation
+//SimkaMin n'effectue pas assez de calcul par rapport au temps de decompression des fichiers .gz qui est faites ens érie actuellement dans GATB
+//La parallelisation de Simka est donc faites au niveau des jeux de données
+//Cependant, la parallelisation au niveau d'un seul jeu de données est implémenter grace a un dispatcher de reads de GATB
+//CORE_PER_THREAD indique combien de cores alloué à ce dispatcher
+//Le maximum de CPU obtenu par le dispatcher est d'environ 400% sur un jeu .gz, il ne faut donc pas monter cette valeur au dela de 4
+//Pas le mettre trop bas tout de même car cette parallelization interne est bonne car elle réduit le nombre de jeu lu en parallele
+#define CORE_PER_THREAD 4 //Core for counting k-mer in a given dataset, do not put to high value because decompressing gz is so slow compared to computation
 
 const string STR_SIMKA_SOLIDITY_PER_DATASET = "-solidity-single";
 const string STR_SIMKA_MAX_READS = "-max-reads";
@@ -25,7 +31,8 @@ const string STR_SIMKA_SUBSAMPLING_KIND = "-subsampling-kind";
 const string STR_SIMKA_NB_KMERS_USED = "-nb-kmers";
 
 
-typedef ProbabilisticDictionary<u_int16_t, u_int16_t> ProbabilisticDict;
+typedef ProbabilisticDictionary<u_int16_t> ProbabilisticDict;
+typedef u_int16_t KmerCountType;
 
 
 
@@ -113,23 +120,55 @@ public:
 	ModelCanonicalIterator _itKmer;
 	ProbabilisticDict* _selectedKmersIndex;
 
+	vector<mutex>* _master_mutex;
+	vector<KmerCountType>* _master_kmerCounts;
+
+	vector<mutex>* _mutex;
+	vector<KmerCountType>* _kmerCounts;
+
 	bool _isMaster;
 	bool _exists;
+	size_t _nbMutex;
+	//vector<mutex>& _synchMutex;
+	//vector<KmerCountType>* _values;
+	KmerCountType _valuesMax;
 
-	CountKmerCommand(size_t kmerSize, ProbabilisticDict* kmerIndex)
+
+	CountKmerCommand(size_t kmerSize, ProbabilisticDict* kmerIndex, size_t nbCores, u_int64_t nbElements)
 	: _model(kmerSize), _itKmer(_model)
 	{
 		_selectedKmersIndex = kmerIndex;
 		_kmerSize = kmerSize;
 		_isMaster = true;
+		//_master = this;
+
+		_nbMutex = nbCores*100;
+		_master_mutex = new vector<mutex>(_nbMutex);
+		_master_kmerCounts = new vector<KmerCountType>(nbElements, 0);
+		_valuesMax = -1; //store the maximum value of ValueType to prevent overflow
 	}
 
 	CountKmerCommand(const CountKmerCommand& copy)
 	: _model(copy._kmerSize), _itKmer(_model)
 	{
+
 		_kmerSize = copy._kmerSize;
 		_isMaster = false;
 		_selectedKmersIndex = copy._selectedKmersIndex;
+
+		_valuesMax = -1; //store the maximum value of ValueType to prevent overflow
+		_nbMutex = copy._nbMutex;
+
+		_mutex = copy._master_mutex;
+		_kmerCounts = copy._master_kmerCounts;
+
+	}
+
+	~CountKmerCommand(){
+		if(_isMaster){
+			delete _master_mutex;
+			delete _master_kmerCounts;
+		}
 	}
 
 
@@ -148,11 +187,24 @@ public:
 			//	cout << kmerValue << " " << index  << endl;
 			//}
 			if(_exists){
-				_selectedKmersIndex->increment(index);
+				incrementCount(index);
+				//_selectedKmersIndex->increment(index);
 				//cout << kmerValue << " " << index  << endl;
 			}
 
 		}
+	}
+
+	inline void incrementCount(u_int64_t index){
+		_mutex->at(index%_nbMutex).lock();
+		u_int64_t newValue = _kmerCounts->at(index)+1;
+		//if(index%_nbMutex ==0) cout << _values->at(index) << endl;
+		if(newValue < _valuesMax){
+			_kmerCounts->at(index) += 1;
+		}
+		//if(index%_nbMutex ==0)  cout << "\t" << _values->at(index) << endl;
+		//this->_values[index].push_back(value);
+		_mutex->at(index%_nbMutex).unlock();
 	}
 
 };
@@ -706,11 +758,21 @@ public:
 		LOCAL(itSeqSimka);
 
 		IDispatcher* dispatcher = new Dispatcher (_nbCoresPerThread);
+		CountKmerCommand<span> command(_kmerSize, _selectedKmersIndex, _nbCoresPerThread, _nbUsedKmers);
+
 		countKmersMutex.unlock();
 
-		dispatcher->iterate(itSeqSimka, CountKmerCommand<span>(_kmerSize, _selectedKmersIndex), 1000);
+		dispatcher->iterate(itSeqSimka, command, 1000);
 
 		countKmersMutex.lock();
+		u_int64_t nbKmersWithCounts = 0;
+		vector<KmerCountType>* counts = command._master_kmerCounts;
+		for(size_t i=0; i<counts->size(); i++){
+			if(counts->at(i) > 0){
+				nbKmersWithCounts += 1;
+			}
+		}
+		cout << "Fill rate of kmer counts: " << ((double)nbKmersWithCounts / (double)counts->size()) << endl;
 		//cout << "\t thread " <<  threadId << " End" << endl;
 		_finishedThreads.push_back(threadId);
 		countKmersMutex.unlock();
