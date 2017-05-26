@@ -594,6 +594,7 @@ public:
 		string filename = _outputDirTemp + "/selectedKmers.bin";
 		ofstream selectKmersFile(filename.c_str(), ios::binary);
 
+		//todo trouver la bonne taille de filtre de bloom en fonction des params
 		u_int64_t mainBloomFilterMemoryBits = _maxMemory*GBYTE*0.5*8;
 		_bloomFilter = new BloomCacheCoherent<Type> (mainBloomFilterMemoryBits, 7);
 		u_int64_t subBloomFilterMemoryBits = _maxMemory*GBYTE*0.5*8;
@@ -620,6 +621,7 @@ public:
 
 	    std::vector<Iterator<Sequence>*> itBanks =  it->getComposition();
 	    u_int64_t nbKmerInsertedTotal = 0;
+	    size_t skip = 0;
 
 	    for (size_t i=0; i<itBanks.size(); i++)
 	    {
@@ -637,11 +639,16 @@ public:
 
 				for(itKmer.first(); !itKmer.isDone(); itKmer.next()){
 
+					if(skip > 0){
+						skip -= 1;
+						continue;
+					}
+
 					Type kmer = itKmer->value();
 					if(kmer.getVal() == 0) continue; //todo can be optimized maybe ?
 
 					if(_bloomFilter->contains(kmer)){
-
+						skip = _kmerSize;
 					}
 					else if(_bloomFilter2->contains(kmer)){
 						u_int64_t kmerValue = kmer.getVal();
@@ -653,6 +660,7 @@ public:
 							isDone = true;
 							break;
 						}
+						skip = _kmerSize;
 					}
 					else{
 						_bloomFilter2->insert(kmer);
