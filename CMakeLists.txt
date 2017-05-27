@@ -97,7 +97,7 @@ target_link_libraries (simka2-distance  ${gatb-core-libraries})
 add_executable        (simka2-distanceFinal  src/simka2/Simka2DistanceFinal.cpp ${ProjectFiles})
 target_link_libraries (simka2-distanceFinal  ${gatb-core-libraries})
 
-add_executable        (simkaMin src/simkaMin/SimkaMin.cpp)
+add_executable        (simkaMin src/simkaMin/SimkaMin.cpp src/simkaMin/MurmurHash3.h src/simkaMin/MurmurHash3.cpp)
 target_link_libraries (simkaMin ${gatb-core-libraries})
 
 ################################################################################

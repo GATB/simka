@@ -60,7 +60,7 @@ public:
 		_sharedBanks.clear();
 
 		for(size_t i=0; i<counts.size(); i++){
-			if(counts[i] > 0){
+			if(counts[i] > 1){
 				//_stats->_nbDistinctKmersPerDataset[i] += 1;
 				_nbKmersPerDataset[i] += counts[i];
 				_sharedBanks.push_back(i);

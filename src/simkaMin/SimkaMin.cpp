@@ -4,6 +4,8 @@
 #include "ProbabilisticDictionary.hpp"
 #include "SimkaMinUtils.hpp"
 #include "SimkaMinDistance.hpp"
+#include "MurmurHash3.h"
+#include <unordered_set>
 
 //SimkaMin n'effectue pas assez de calcul par rapport au temps de decompression des fichiers .gz qui est faites ens érie actuellement dans GATB
 //La parallelisation de Simka est donc faites au niveau des jeux de données
@@ -32,7 +34,7 @@ const string STR_SIMKA_SUBSAMPLING_KIND = "-subsampling-kind";
 const string STR_SIMKA_NB_KMERS_USED = "-nb-kmers";
 
 
-typedef ProbabilisticDictionary<u_int16_t> ProbabilisticDict;
+typedef ProbabilisticDictionary<u_int32_t> ProbabilisticDict;
 typedef u_int16_t KmerCountType;
 
 
@@ -58,7 +60,225 @@ typedef u_int16_t KmerCountType;
 
 
 
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+template<size_t span=KMER_DEFAULT_SPAN>
+class SelectKmersCommand
+{
+public:
 
+
+    typedef typename Kmer<span>::Type  KmerType;
+	typedef typename Kmer<span>::ModelCanonical ModelCanonical;
+	typedef typename Kmer<span>::ModelCanonical::Iterator ModelCanonicalIterator;
+
+	size_t _kmerSize;
+	size_t _sketchSize;
+	//vector<u_int64_t> _minHashValues;
+	//vector<u_int64_t> _minHashKmers;
+	ModelCanonical _model;
+	ModelCanonicalIterator _itKmer;
+	mutex& _mutex;
+
+	bool _isMaster;
+    //size_t _bufferIndex;
+	//size_t _partitionId;
+
+	//vector<u_int64_t> _bufferKmers;
+	//vector<u_int32_t> _bufferCounts;
+
+	//vector<u_int64_t> _minHashValues;
+	//vector<u_int64_t>& _minHashValuesSynchronized;
+	//vector<u_int64_t> _minHashKmers;
+	//vector<u_int32_t> _minHashKmersCounts;
+
+	struct KmerCountSorter{
+		bool operator() (u_int64_t l, u_int64_t r) { return r > l; }
+	};
+	//typedef typename KmerCountSorter KmerSorter;
+
+	std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter> _kmerCountSorter;
+	unordered_map<u_int64_t, u_int32_t> _kmerCounts;
+
+	std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter>& _kmerCountSorterSynch;
+	unordered_map<u_int64_t, u_int32_t>& _kmerCountsSynch;
+
+
+
+	SelectKmersCommand(size_t kmerSize, size_t sketchSize, mutex& mutex, std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter>& kmerCountSorterSynch, unordered_map<u_int64_t, u_int32_t>& kmerCountsSynch)
+	: _model(kmerSize), _itKmer(_model), _mutex(mutex), _kmerCountSorterSynch(kmerCountSorterSynch), _kmerCountsSynch(kmerCountsSynch)
+	{
+		_kmerSize = kmerSize;
+		_sketchSize = sketchSize;
+		_isMaster = true;
+	}
+
+	SelectKmersCommand(const SelectKmersCommand& copy)
+	: _model(copy._kmerSize), _itKmer(_model), _mutex(copy._mutex), _kmerCountSorterSynch(copy._kmerCountSorterSynch), _kmerCountsSynch(copy._kmerCountsSynch)
+	{
+		_kmerSize = copy._kmerSize;
+		_sketchSize = copy._sketchSize;
+		_isMaster = false;
+	}
+
+
+	~SelectKmersCommand(){
+
+		if(_isMaster) return;
+		if(_kmerCountSorter.size() == 0) return;
+		//cout << "deleteeeeee" << endl;
+		/*
+		//cout << "deleteeeeee" << endl;
+		pthread_mutex_lock(_mutex);
+
+		for(size_t i=0; i<_sketchSize; i++){
+			if(_minHashValues[i] < _minHashValuesSynchronized[i]){
+				_minHashValuesSynchronized[i] = _minHashValues[i];
+				_minHashKmersSynchronized[i] = _minHashKmers[i];
+				//cout << _minHashKmers[i] << endl;
+			}
+		}
+
+		pthread_mutex_unlock(_mutex);*/
+
+
+
+		_mutex.lock();
+
+
+		//cout << "deleteeeeee" << endl;
+		//cout << this << endl;
+
+		_kmerCountSorter.pop(); //Discard greater element because queue size is always equal to (_sketchSize + 1) because of an optimization
+
+		size_t sketchSize = _kmerCountSorter.size();
+		for(size_t i=0; i<sketchSize; i++){
+			u_int64_t kmer = _kmerCountSorter.top();
+			_kmerCountSorter.pop();
+			mergeSynch(kmer, _kmerCounts[kmer]);
+			//KmerCount kmerCount = _kmerCountSorter.top();
+			//cout << kmerCount._kmer << "  " << kmerCount._count << endl;
+			//_partitionWriter->insert(kmerCount._kmer, _datasetIDbin, kmerCount._count);
+			//_kmerCountSorter.pop();
+			//_partitionWriter->insert(_minHashKmers[i], _datasetIDbin, _minHashKmersCounts[i] );
+			//cout << _minHashKmers[i] << " " << _minHashKmersCounts[i] << endl;
+		}
+
+		//cout << "deleteeeeee1" << endl;
+
+		_mutex.unlock();
+	}
+
+	void mergeSynch(u_int64_t kmer, u_int32_t count){
+		if(_kmerCountsSynch.find(kmer) == _kmerCountsSynch.end()){
+			if(_kmerCountSorterSynch.size() > _sketchSize){
+				if(kmer < _kmerCountSorterSynch.top() ){
+					//cout << kmer << "     " << _kmerCounts.size() << endl;
+					u_int64_t greaterValue = _kmerCountSorterSynch.top();
+					_kmerCountsSynch.erase(greaterValue);
+					_kmerCountSorterSynch.pop();
+					_kmerCountSorterSynch.push(kmer);
+					_kmerCountsSynch[kmer] = count;
+				}
+				//else{
+				//	cout << "\t\tnonon" << endl;
+				//}
+			}
+			else{ //Filling the queue with first elements
+				_kmerCountSorterSynch.push(kmer);
+				_kmerCountsSynch[kmer] = count;
+			}
+		}
+		else{
+			_kmerCountsSynch[kmer] += count;
+		}
+	}
+
+	void operator()(Sequence& sequence){
+		//cout << sequence.getIndex() << endl;
+		//cout << sequence.toString() << endl;
+
+		_itKmer.setData(sequence.getData());
+
+		for(_itKmer.first(); !_itKmer.isDone(); _itKmer.next()){
+			//cout << _itKmer->value().toString(_kmerSize) << endl;
+
+			u_int64_t kmerLala = _itKmer->value().getVal();
+			u_int64_t kmer;
+			//u_int64_t hash_otpt[2];
+			//uint32_t hash_otpt[4];
+
+			//cout << kmerLala << endl;
+			MurmurHash3_x64_128 ( (const char*)&kmerLala, sizeof(kmerLala), 100, &kmer);
+			//u_int64_t kmer = hash_otpt[0];
+			//cout << kmer << endl;
+
+
+			//if(kmer < 100) continue;
+
+	    	if(_kmerCounts.find(kmer) == _kmerCounts.end()){
+				if(_kmerCountSorter.size() > _sketchSize){
+					if(kmer < _kmerCountSorter.top() ){
+						//cout << kmer << "     " << _kmerCounts.size() << endl;
+						u_int64_t greaterValue = _kmerCountSorter.top();
+						_kmerCounts.erase(greaterValue);
+						_kmerCountSorter.pop();
+						_kmerCountSorter.push(kmer);
+						_kmerCounts[kmer] = 1;
+					}
+					//else{
+					//	cout << "\t\tnonon" << endl;
+					//}
+				}
+				else{ //Filling the queue with first elements
+					_kmerCountSorter.push(kmer);
+					_kmerCounts[kmer] = 1;
+				}
+	    	}
+	    	else{
+	    		_kmerCounts[kmer] += 1;
+	    	}
+
+		}
+	}
+
+};
 
 
 
@@ -182,8 +402,18 @@ public:
 		for(_itKmer.first(); !_itKmer.isDone(); _itKmer.next()){
 			//cout << _itKmer->value().toString(_kmerSize) << endl;
 
+			//cout << "1" << endl;
+			u_int64_t kmerValueHashed;
 			u_int64_t kmerValue = _itKmer->value().getVal();
-			u_int64_t index = _selectedKmersIndex->getIndex(kmerValue, _exists);
+			MurmurHash3_x64_128 ( (const char*)&kmerValue, sizeof(kmerValue), 100, &kmerValueHashed);
+
+			//cout << "2" << endl;
+			//_mutex->at(0).lock();
+			//cout << kmerValueHashed << endl;
+			//_mutex->at(0).unlock();
+
+			u_int64_t index = _selectedKmersIndex->getIndex(kmerValueHashed, _exists);
+			if(index >= _kmerCounts->size()) cout << "lol" << endl;
 			//if(index > 1000){
 			//	cout << kmerValue << " " << index  << endl;
 			//}
@@ -192,6 +422,7 @@ public:
 				//_selectedKmersIndex->increment(index);
 				//cout << kmerValue << " " << index  << endl;
 			}
+			//cout << "3" << endl;
 
 		}
 	}
@@ -292,6 +523,7 @@ public:
     typedef typename Kmer<span>::Type  KmerType;
 	typedef typename Kmer<span>::ModelCanonical ModelCanonical;
 	typedef typename Kmer<span>::ModelCanonical::Iterator ModelCanonicalIterator;
+	typedef typename SelectKmersCommand<span>::KmerCountSorter KmerCountSorter;
 
 
     u_int64_t _maxMemory;
@@ -345,6 +577,11 @@ public:
 	Bloom<Type>*  _bloomFilter;
 	Bloom<Type>*  _bloomFilter2;
 
+
+	std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter> _selectedKmerSorter;
+	unordered_set<u_int64_t> _selectedKmersSet;
+
+
     SimkaMinAlgorithm(IProperties* args):
 		Algorithm("simkaMin", -1, args)
 	{
@@ -358,7 +595,7 @@ public:
 		layoutInputFilename();
 		checkInputsValidity();
 
-		computeNbUsedKmers();
+		//computeNbUsedKmers();
 		selectKmers();
 
 		//reprise: la stratégie actuelle est trop lente car pas assez e calcul par rapport au decompression gz. abandonner l'idée du dispatcher et paralleliser au niveau des jeux de données
@@ -565,7 +802,7 @@ public:
 		if(error) exit(1);
 	}
 
-
+	/*
 	void computeNbUsedKmers(){
 		cout << endl << endl;
 		u_int64_t bloomFilterMaxMemoryByte = _maxMemory*GBYTE* (2.0/3.0);
@@ -684,7 +921,7 @@ public:
 	    cout << "Final number of selected kmers: " << _nbUsedKmers << endl;
 	    selectKmersFile.close();
 	    delete _bloomFilter;
-	}
+	}*/
 
 	vector<thread*> _threads;
 	size_t _maxRunningThreads;
@@ -703,11 +940,161 @@ public:
 		}
 	}*/
 
+	void selectKmers(){
+
+		cout << endl << endl;
+		cout << "Selecting kmers..." << endl;
+
+		_maxRunningThreads = _nbCores;
+		//cout << _maxRunningThreads << endl;
+
+		size_t threadId = 0;
+		//vector<thread> threads; //(_nbCores);
+		//_isThreadRunning = vector<bool>(_nbCores);
+		_nbRunningThreads = 0;
+
+		for (size_t i=0; i<_nbBanks; i++){
+			thread* t = new thread(&SimkaMinAlgorithm::selectKmersOfDataset, this,  i, threadId);
+			_threads.push_back(t);
+			_runningThreadIds.push_back(threadId);
+			threadId += 1;
+			_nbRunningThreads += 1;
+			//_isThreadRunning[threadId] = true;
+			//_nbRunningThreads[i] += 1;
+
+			if(_nbRunningThreads >= _maxRunningThreads){
+				waitThreads();
+			}
+
+
+		}
+
+		joinThreads();
+
+		string filename = _outputDirTemp + "/selectedKmers.bin";
+		ofstream selectKmersFile(filename.c_str(), ios::binary);
+
+		cout << _selectedKmerSorter.size() << " " << _nbUsedKmers << endl;
+		_selectedKmerSorter.pop(); //there is always one extra element because of a >= optimization...
+		cout << _selectedKmerSorter.size() << " " << _nbUsedKmers << endl;
+		u_int64_t size = _selectedKmerSorter.size();
+		for(size_t i=0; i<size; i++){
+			u_int64_t kmerValue = _selectedKmerSorter.top();
+			_selectedKmerSorter.pop();
+			selectKmersFile.write((const char*)&kmerValue, sizeof(kmerValue)); //todo mphf loading can be done in memory, not required to write all selected kmers on disk
+		}
+		cout << _selectedKmerSorter.size() << " " << _nbUsedKmers << endl;
+
+		selectKmersFile.close();
+	}
+
+
+	void selectKmersOfDataset(size_t datasetId, size_t threadId){
+
+		countKmersMutex.lock();
+		IBank* bank = Bank::open(_outputDirTemp + "/input/" + _bankNames[datasetId]);
+		LOCAL(bank);
+		Iterator<Sequence>* itSeq = bank->iterator();
+		LOCAL(itSeq);
+		Iterator<Sequence>* itSeqSimka = new SimkaInputIterator<Sequence> (itSeq, _nbBankPerDataset[datasetId], _maxNbReads);
+		LOCAL(itSeqSimka);
+
+		IDispatcher* dispatcher = new Dispatcher (_nbCoresPerThread);
+		mutex commandMutex;
+		std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter> kmerCountSorter;
+		unordered_map<u_int64_t, u_int32_t> kmerCounts;
+		SelectKmersCommand<span> command(_kmerSize, _nbUsedKmers, commandMutex, kmerCountSorter, kmerCounts);
+		//CountKmerCommand<span> command(_kmerSize, _selectedKmersIndex, _nbCoresPerThread, _nbUsedKmers);
+
+		countKmersMutex.unlock();
+
+		dispatcher->iterate(itSeqSimka, command, 1000);
+
+		countKmersMutex.lock();
+
+
+
+		//kmerCountSorter.pop(); //Discard greater element because queue size is always equal to (_sketchSize + 1) because of an optimization
+
+		u_int64_t size = kmerCountSorter.size();
+		for(size_t i=0; i<size; i++){
+			u_int64_t kmer = kmerCountSorter.top();
+			kmerCountSorter.pop();
+
+			if(_selectedKmersSet.find(kmer) == _selectedKmersSet.end()){
+				if(_selectedKmerSorter.size() > _nbUsedKmers){
+					if(kmer < _selectedKmerSorter.top() ){
+						//cout << kmer << "     " << _kmerCounts.size() << endl;
+						u_int64_t greaterValue = _selectedKmerSorter.top();
+						_selectedKmersSet.erase(greaterValue);
+						_selectedKmerSorter.pop();
+						_selectedKmerSorter.push(kmer);
+						_selectedKmersSet.insert(kmer);
+					}
+					//else{
+					//	cout << "\t\tnonon" << endl;
+					//}
+				}
+				else{ //Filling the queue with first elements
+					_selectedKmerSorter.push(kmer);
+					_selectedKmersSet.insert(kmer);
+				}
+			}
+			//else{
+			//	_kmerCountsSynch[kmer] += count;
+			//}
+			//mergeSynch(kmer, _kmerCounts[kmer]);
+			//KmerCount kmerCount = _kmerCountSorter.top();
+			//cout << kmerCount._kmer << "  " << kmerCount._count << endl;
+			//_partitionWriter->insert(kmerCount._kmer, _datasetIDbin, kmerCount._count);
+			//_kmerCountSorter.pop();
+			//_partitionWriter->insert(_minHashKmers[i], _datasetIDbin, _minHashKmersCounts[i] );
+			//cout << _minHashKmers[i] << " " << _minHashKmersCounts[i] << endl;
+		}
+
+
+
+		//cout << "done" << endl;
+		/*
+		//_reorderedBankIds.push_back(datasetId);
+
+		u_int64_t nbKmersWithCounts = 0;
+		vector<KmerCountType>* counts = command._master_kmerCounts;
+		for(size_t i=0; i<counts->size(); i++){
+
+			KmerCountType kmerCount = counts->at(i);
+
+			if(kmerCount > 0){
+				nbKmersWithCounts += 1;
+			}
+			_outputKmerCountFile.seekp(i*_nbBanks*sizeof(KmerCountType) + sizeof(KmerCountType)*datasetId);
+			_outputKmerCountFile.write((const char*)&kmerCount, sizeof(kmerCount));
+		}
+		cout << "Fill rate of kmer counts: " << ((double)nbKmersWithCounts / (double)counts->size()) << endl;
+		//cout << "\t thread " <<  threadId << " End" << endl;*/
+		_finishedThreads.push_back(threadId);
+		countKmersMutex.unlock();
+	}
+
+
+
+
+
 	void countKmers(){
+
+		cout << endl << endl;
+		cout << "Counting selected kmers..." << endl;
 
 
 		string filename = _outputDirTemp + "/kmerCounts.bin";
 		_outputKmerCountFile.open(filename.c_str(), ios::binary);
+
+		u_int64_t nbCounts = _nbUsedKmers*_nbBanks;
+		u_int16_t count0 = 0;
+		for(size_t i=0; i<nbCounts; i++){
+			_outputKmerCountFile.write((const char*)&count0, sizeof(count0));
+		}
+		_outputKmerCountFile.flush();
 
 		//IBank* bank = Bank::open(_banksInputFilename);
 		//LOCAL(bank);
@@ -716,6 +1103,7 @@ public:
 
 		//cout << _nbCores << endl;
 		_maxRunningThreads = _nbCores / _nbCoresPerThread;
+		//_maxRunningThreads = 1;
 		//cout << _maxRunningThreads << endl;
 
 		size_t threadId = 0;
@@ -739,7 +1127,7 @@ public:
 			//_nbRunningThreads[i] += 1;
 
 			if(_nbRunningThreads >= _maxRunningThreads){
-				countKmersWait();
+				waitThreads();
 			}
 
 
@@ -749,7 +1137,7 @@ public:
 			//---------------------------
 		}
 
-		countKmersJoinThreads();
+		joinThreads();
 
 		_outputKmerCountFile.close();
 		delete _selectedKmersIndex;
@@ -776,6 +1164,9 @@ public:
 
 	}
 
+
+
+
 	void countKmersOfDataset(size_t datasetId, size_t threadId){
 
 		countKmersMutex.lock();
@@ -787,14 +1178,17 @@ public:
 		Iterator<Sequence>* itSeqSimka = new SimkaInputIterator<Sequence> (itSeq, _nbBankPerDataset[datasetId], _maxNbReads);
 		LOCAL(itSeqSimka);
 
+		//_nbCoresPerThread = 1;
 		IDispatcher* dispatcher = new Dispatcher (_nbCoresPerThread);
 		CountKmerCommand<span> command(_kmerSize, _selectedKmersIndex, _nbCoresPerThread, _nbUsedKmers);
 
+		cout << "starting thread: " << threadId << endl;
 		countKmersMutex.unlock();
 
 		dispatcher->iterate(itSeqSimka, command, 1000);
 
 		countKmersMutex.lock();
+		cout << "done: " << threadId << endl;
 		//_reorderedBankIds.push_back(datasetId);
 
 		u_int64_t nbKmersWithCounts = 0;
@@ -805,9 +1199,9 @@ public:
 
 			if(kmerCount > 0){
 				nbKmersWithCounts += 1;
+				_outputKmerCountFile.seekp(i*_nbBanks*sizeof(KmerCountType) + sizeof(KmerCountType)*datasetId);
+				_outputKmerCountFile.write((const char*)&kmerCount, sizeof(kmerCount));
 			}
-			_outputKmerCountFile.seekp(i*_nbBanks*sizeof(KmerCountType) + sizeof(KmerCountType)*datasetId);
-			_outputKmerCountFile.write((const char*)&kmerCount, sizeof(kmerCount));
 		}
 		cout << "Fill rate of kmer counts: " << ((double)nbKmersWithCounts / (double)counts->size()) << endl;
 		//cout << "\t thread " <<  threadId << " End" << endl;
@@ -815,7 +1209,7 @@ public:
 		countKmersMutex.unlock();
 	}
 
-	void countKmersWait(){
+	void waitThreads(){
         while(1){
 
 
@@ -860,9 +1254,9 @@ public:
 
 	}
 
-	void countKmersJoinThreads(){
+	void joinThreads(){
         while(_nbRunningThreads > 0)
-        	countKmersWait();
+        	waitThreads();
 	}
 
 	void computeDistance(){
@@ -886,11 +1280,11 @@ public:
 			datasetId += 1;
 			if(datasetId >= _nbBanks){
 
-				//cout << nbDistinctKmers << ": ";
-				//for(size_t i=0; i<counts.size(); i++){
-				//	cout << counts[i] << " ";
-				//}
-				//cout << endl;
+				cout << nbDistinctKmers << ": ";
+				for(size_t i=0; i<counts.size(); i++){
+					cout << counts[i] << " ";
+				}
+				cout << endl;
 
 				_distanceManager.processAbundanceVector(counts);
 				std::fill(counts.begin(), counts.end(), 0);
