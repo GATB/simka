@@ -646,12 +646,14 @@ public:
 
 					Type kmer = itKmer->value();
 					if(kmer.getVal() == 0) continue; //todo can be optimized maybe ?
+					if(getShannonIndex(kmer) < 1.83) continue;
 
 					if(_bloomFilter->contains(kmer)){
 						skip = _kmerSize;
 					}
 					else if(_bloomFilter2->contains(kmer)){
 						u_int64_t kmerValue = kmer.getVal();
+						//cout << nbKmerInsertedTotal << ": " << kmer.toString(_kmerSize) << ": " << getShannonIndex(kmer) << endl;
 						selectKmersFile.write((const char*)&kmerValue, sizeof(kmerValue));
 						_bloomFilter->insert(kmer);
 						nbKmerInserted += 1;
@@ -869,6 +871,7 @@ public:
 		cout << "Computing distances" << endl;
 
 		_distanceManager = SimkaMinDistance<KmerCountType>(_nbBanks);
+		u_int64_t nbDistinctKmers = 0;
 
 		vector<KmerCountType> counts(_nbBanks, 0);
 		KmerCountType count;
@@ -882,9 +885,17 @@ public:
 
 			datasetId += 1;
 			if(datasetId >= _nbBanks){
+
+				//cout << nbDistinctKmers << ": ";
+				//for(size_t i=0; i<counts.size(); i++){
+				//	cout << counts[i] << " ";
+				//}
+				//cout << endl;
+
 				_distanceManager.processAbundanceVector(counts);
 				std::fill(counts.begin(), counts.end(), 0);
 				datasetId = 0;
+				nbDistinctKmers += 1;
 			}
 
 		}
@@ -898,7 +909,31 @@ public:
 		cout << "Result dir: " << _outputDir << endl;
 	}
 
+	double getShannonIndex(const Type&  kmer){
+		float index = 0;
+		//float freq [5];
 
+		vector<float> _freqs(4, 0);
+
+		//char* seqStr = seq.getDataBuffer();
+
+	    for (size_t i=0; i<_kmerSize; i++){
+	    	_freqs[kmer[i]] += 1.0;
+	    	//seq[sizeKmer-i-1] = bin2NT [(*this)[i]];
+	    }
+
+		// Frequency of each letter (A, C, G, T or N)
+		//for(size_t i=0; i < seq.size(); i++)
+		//	_freqs[nt2binTab[(unsigned char)seq[i]]] += 1.0;
+
+		// Shannon index calculation
+		for (size_t i=0; i<_freqs.size(); i++){
+			_freqs[i] /= (float) _kmerSize;
+			if (_freqs[i] != 0)
+				index += _freqs[i] * log (_freqs[i]) / log(2);
+		}
+		return abs(index);
+	}
 };
 
 

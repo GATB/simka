@@ -378,6 +378,7 @@ private:
 			u_int64_t key = *it;
 			u_int64_t index = this->_bphf->lookup(key);
 			FingerprintType fingerprint = korenXor(key)%_fingerprint_range;
+			//cout << index << ": " << key << endl;
 			_fingerprints->at(index) = fingerprint;
 			//if (this->_fingerprint_size>0){
 			//	this->_prob_set->add(index, std::get<0>(key_value));
