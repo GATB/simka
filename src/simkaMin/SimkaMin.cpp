@@ -35,7 +35,6 @@ const string STR_SIMKA_NB_KMERS_USED = "-nb-kmers";
 
 
 typedef ProbabilisticDictionary<u_int32_t> ProbabilisticDict;
-typedef u_int16_t KmerCountType;
 typedef unordered_map<u_int64_t, u_int32_t> SelectedKmerIndexType;
 
 /*
@@ -581,6 +580,8 @@ public:
 	int64_t _maxNbReads;
     u_int64_t _nbUsedKmers;
     u_int64_t _nbUsedKmersPerDataset;
+    KmerCountType _abundanceMin;
+    KmerCountType _abundanceMax;
 
     size_t _nbCoresPerThread;
 	//size_t _minReadSize;
@@ -653,6 +654,7 @@ public:
 	}
 
 	void parseArgs(){
+		KmerCountType maxAbundance = -1;
 		//_keepTmpFiles = _options->get(STR_SIMKA_KEEP_TMP_FILES);
 		_maxMemory = _args->getInt(STR_MAX_MEMORY);
 		_nbCores = _args->getInt(STR_NB_CORES);
@@ -661,8 +663,8 @@ public:
 		_outputDirTemp = _args->get(STR_URI_OUTPUT_TMP) ? _args->getStr(STR_URI_OUTPUT_TMP) : "./";
 		_kmerSize = _args->getInt(STR_KMER_SIZE);
 		_nbUsedKmers = _args->getInt(STR_SIMKA_NB_KMERS_USED);
-		//_abundanceThreshold.first = _options->getInt(STR_KMER_ABUNDANCE_MIN);
-		//_abundanceThreshold.second = min((u_int64_t)_options->getInt(STR_KMER_ABUNDANCE_MAX), (u_int64_t)(999999999));
+		_abundanceMin = _args->getInt(STR_KMER_ABUNDANCE_MIN);
+		_abundanceMax = min((u_int64_t)_args->getInt(STR_KMER_ABUNDANCE_MAX), (u_int64_t)maxAbundance);
 
 		//cout << _options->getInt(STR_KMER_ABUNDANCE_MAX) << endl;
 		//cout << _abundanceThreshold.second << endl;
@@ -1330,7 +1332,7 @@ public:
 		cout << endl << endl;
 		cout << "Computing distances" << endl;
 
-		_distanceManager = SimkaMinDistance<KmerCountType>(_nbBanks);
+		_distanceManager = SimkaMinDistance<KmerCountType>(_nbBanks, _abundanceMin, _abundanceMax);
 		u_int64_t nbDistinctKmers = 0;
 
 		vector<KmerCountType> counts(_nbBanks, 0);
@@ -1527,7 +1529,8 @@ public:
 	    //kmerParser->push_back(new OptionOneParam (STR_KMER_PER_READ.c_str(), "number of selected kmers per read", false, "0"));
 	    //kmerParser->push_back (new OptionOneParam (STR_KMER_ABUNDANCE_MIN, "min abundance a kmer need to be considered", false, "1"));
 	    kmerParser->push_back (new OptionOneParam (STR_KMER_ABUNDANCE_MIN, "min abundance a kmer need to be considered", false, "2"));
-	    kmerParser->push_back (new OptionOneParam (STR_KMER_ABUNDANCE_MAX, "max abundance a kmer can have to be considered", false, "999999999"));
+		KmerCountType maxAbundance = -1;
+	    kmerParser->push_back (new OptionOneParam (STR_KMER_ABUNDANCE_MAX, "max abundance a kmer can have to be considered", false, Stringify::format("%i", maxAbundance)));
 	    //kmerParser->push_back(dskParser->getParser (STR_KMER_ABUNDANCE_MIN));
 	    //if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_KMER_ABUNDANCE_MIN)))  {  p->setDefaultValue ("0"); }
 	    //if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_SOLIDITY_KIND)))  {  p->setDefaultValue ("all"); }

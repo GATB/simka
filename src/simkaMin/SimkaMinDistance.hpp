@@ -9,6 +9,11 @@
 #define SIMKA2_SRC_SIMKAMIN_SIMKAMINDISTANCE_HPP_
 
 
+typedef u_int16_t KmerCountType;
+
+
+
+
 template<class CountType>
 class SimkaMinDistance {
 
@@ -19,14 +24,18 @@ class SimkaMinDistance {
 	vector<u_int64_t> _nbKmersPerDataset;
 
 	vector<vector<float> > _distanceMatrix;
+	KmerCountType _abundanceMin;
+	KmerCountType _abundanceMax;
 
 public:
 
 	SimkaMinDistance(){
 	}
 
-	SimkaMinDistance(size_t nbBanks){
+	SimkaMinDistance(size_t nbBanks, KmerCountType abundanceMin, KmerCountType abundanceMax){
 		_nbBanks = nbBanks;
+		_abundanceMin = abundanceMin;
+		_abundanceMax = abundanceMax;
 
 		_nbKmersPerDataset.resize(_nbBanks);
 
@@ -60,7 +69,7 @@ public:
 		_sharedBanks.clear();
 
 		for(size_t i=0; i<counts.size(); i++){
-			if(counts[i] > 0){
+			if(counts[i] >= _abundanceMin){
 				//_stats->_nbDistinctKmersPerDataset[i] += 1;
 				_nbKmersPerDataset[i] += counts[i];
 				_sharedBanks.push_back(i);
