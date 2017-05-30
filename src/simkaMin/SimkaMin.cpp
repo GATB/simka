@@ -36,12 +36,24 @@ const string STR_SIMKA_NB_KMERS_USED = "-nb-kmers";
 
 typedef ProbabilisticDictionary<u_int32_t> ProbabilisticDict;
 typedef u_int16_t KmerCountType;
+typedef unordered_map<u_int64_t, u_int32_t> SelectedKmerIndexType;
+
+/*
+reprise:
+- selectionner les avec l'approche minhash, on se limite donc a un nombre de kmer selectionner faible, max 1M
+- selectionner les kmers solide avec un bloom filter (utiliser la meme approche que mash), il va donc probablement falloir paralleliser la selection au niveau des jeux de donnée par rapport à ce filtre
+- indexer et comtper les kmers selectionner avec une hasmap (unordered_map), vu qu'on est sur de petit ensemble de kmers
+- prendre en compte la mémoire des sketch minHash dans le maxmemory (actuellement tout est donner au bloom filter)
+- tester de selectionner les kmer (minhash) que sur une fraction du maxReads. peut etre que tout ce qui importe c'est la fonction de hachage murmurhash...
+
+
+			reprise: filtrer les kmers avec le _bloomFilter
+			virer le quasidict remplacer par une unordered_map
+*/
 
 
 
-
-
-
+//reprise: verifier que ça marche bien le serial dispatcher par rapport au destructeur du functor...
 
 
 
@@ -134,27 +146,30 @@ public:
 	//typedef typename KmerCountSorter KmerSorter;
 
 	std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter> _kmerCountSorter;
-	unordered_map<u_int64_t, u_int32_t> _kmerCounts;
+	unordered_set<u_int64_t> _kmerCounts;
 
 	std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter>& _kmerCountSorterSynch;
-	unordered_map<u_int64_t, u_int32_t>& _kmerCountsSynch;
+	unordered_set<u_int64_t>& _kmerCountsSynch;
 
+	Bloom<KmerType>* _bloomFilter;
+	u_int64_t _nbInsertedKmersInBloom;
 
-
-	SelectKmersCommand(size_t kmerSize, size_t sketchSize, mutex& mutex, std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter>& kmerCountSorterSynch, unordered_map<u_int64_t, u_int32_t>& kmerCountsSynch)
-	: _model(kmerSize), _itKmer(_model), _mutex(mutex), _kmerCountSorterSynch(kmerCountSorterSynch), _kmerCountsSynch(kmerCountsSynch)
+	SelectKmersCommand(size_t kmerSize, size_t sketchSize, mutex& mutex, std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter>& kmerCountSorterSynch, unordered_set<u_int64_t>& kmerCountsSynch, Bloom<KmerType>* bloomFilter)
+	: _model(kmerSize), _itKmer(_model), _mutex(mutex), _kmerCountSorterSynch(kmerCountSorterSynch), _kmerCountsSynch(kmerCountsSynch), _bloomFilter(bloomFilter)
 	{
 		_kmerSize = kmerSize;
 		_sketchSize = sketchSize;
 		_isMaster = true;
+		_nbInsertedKmersInBloom = 0;
 	}
 
 	SelectKmersCommand(const SelectKmersCommand& copy)
-	: _model(copy._kmerSize), _itKmer(_model), _mutex(copy._mutex), _kmerCountSorterSynch(copy._kmerCountSorterSynch), _kmerCountsSynch(copy._kmerCountsSynch)
+	: _model(copy._kmerSize), _itKmer(_model), _mutex(copy._mutex), _kmerCountSorterSynch(copy._kmerCountSorterSynch), _kmerCountsSynch(copy._kmerCountsSynch), _bloomFilter(copy._bloomFilter)
 	{
 		_kmerSize = copy._kmerSize;
 		_sketchSize = copy._sketchSize;
 		_isMaster = false;
+		_nbInsertedKmersInBloom = 0;
 	}
 
 
@@ -181,7 +196,7 @@ public:
 
 		_mutex.lock();
 
-
+		cout << "Inserted k-mers: " << _nbInsertedKmersInBloom << endl;
 		//cout << "deleteeeeee" << endl;
 		//cout << this << endl;
 
@@ -191,7 +206,7 @@ public:
 		for(size_t i=0; i<sketchSize; i++){
 			u_int64_t kmer = _kmerCountSorter.top();
 			_kmerCountSorter.pop();
-			mergeSynch(kmer, _kmerCounts[kmer]);
+			mergeSynch(kmer);
 			//KmerCount kmerCount = _kmerCountSorter.top();
 			//cout << kmerCount._kmer << "  " << kmerCount._count << endl;
 			//_partitionWriter->insert(kmerCount._kmer, _datasetIDbin, kmerCount._count);
@@ -205,7 +220,7 @@ public:
 		_mutex.unlock();
 	}
 
-	void mergeSynch(u_int64_t kmer, u_int32_t count){
+	inline void mergeSynch(u_int64_t kmer){
 		if(_kmerCountsSynch.find(kmer) == _kmerCountsSynch.end()){
 			if(_kmerCountSorterSynch.size() > _sketchSize){
 				if(kmer < _kmerCountSorterSynch.top() ){
@@ -214,7 +229,7 @@ public:
 					_kmerCountsSynch.erase(greaterValue);
 					_kmerCountSorterSynch.pop();
 					_kmerCountSorterSynch.push(kmer);
-					_kmerCountsSynch[kmer] = count;
+					_kmerCountsSynch.insert(kmer);
 				}
 				//else{
 				//	cout << "\t\tnonon" << endl;
@@ -222,58 +237,80 @@ public:
 			}
 			else{ //Filling the queue with first elements
 				_kmerCountSorterSynch.push(kmer);
-				_kmerCountsSynch[kmer] = count;
+				_kmerCountsSynch.insert(kmer);
 			}
 		}
-		else{
-			_kmerCountsSynch[kmer] += count;
-		}
+		//else{
+		//	_kmerCountsSynch[kmer] += count;
+		//}
 	}
 
 	void operator()(Sequence& sequence){
 		//cout << sequence.getIndex() << endl;
 		//cout << sequence.toString() << endl;
 
+		//cout << _isMaster << endl;
 		_itKmer.setData(sequence.getData());
 
 		for(_itKmer.first(); !_itKmer.isDone(); _itKmer.next()){
 			//cout << _itKmer->value().toString(_kmerSize) << endl;
 
-			u_int64_t kmerLala = _itKmer->value().getVal();
-			u_int64_t kmer;
-			//u_int64_t hash_otpt[2];
-			//uint32_t hash_otpt[4];
+			KmerType kmer = _itKmer->value();
 
-			//cout << kmerLala << endl;
-			MurmurHash3_x64_128 ( (const char*)&kmerLala, sizeof(kmerLala), 100, &kmer);
+
+
+			u_int64_t kmerValue = kmer.getVal();
+			u_int64_t kmerHashed;
+			MurmurHash3_x64_128 ( (const char*)&kmerValue, sizeof(kmerValue), 100, &kmerHashed);
+
+			if(_bloomFilter->contains(kmer)){
+				if(_kmerCountSorter.size() < _sketchSize){
+					//Filling the queue with first elements
+					if(_kmerCounts.find(kmerHashed) == _kmerCounts.end()){
+						_kmerCountSorter.push(kmerHashed);
+						_kmerCounts.insert(kmerHashed);
+						//cout << _kmerCountSorter.size() << endl;
+					}
+		    	}
+				else{
+					//cout << "test" << endl;
+					if(kmerHashed < _kmerCountSorter.top()){
+						if(_kmerCounts.find(kmerHashed) == _kmerCounts.end()){
+							//cout << kmer << "     " << _kmerCounts.size() << endl;
+							u_int64_t greaterValue = _kmerCountSorter.top();
+							_kmerCounts.erase(greaterValue);
+							_kmerCountSorter.pop();
+							_kmerCountSorter.push(kmerHashed);
+							_kmerCounts.insert(kmerHashed);
+						}
+					}
+				}
+			}
+			else{
+				if(_kmerCountSorter.size() < _sketchSize){
+					_bloomFilter->insert(kmer);
+					_nbInsertedKmersInBloom += 1;
+					//cout << "filling1" << endl;
+				}
+				else{
+					if(kmerHashed < _kmerCountSorter.top() ){
+						_bloomFilter->insert(kmer);
+						_nbInsertedKmersInBloom += 1;
+					}
+				}
+			}
+
+
 			//u_int64_t kmer = hash_otpt[0];
 			//cout << kmer << endl;
 
 
 			//if(kmer < 100) continue;
 
-	    	if(_kmerCounts.find(kmer) == _kmerCounts.end()){
-				if(_kmerCountSorter.size() > _sketchSize){
-					if(kmer < _kmerCountSorter.top() ){
-						//cout << kmer << "     " << _kmerCounts.size() << endl;
-						u_int64_t greaterValue = _kmerCountSorter.top();
-						_kmerCounts.erase(greaterValue);
-						_kmerCountSorter.pop();
-						_kmerCountSorter.push(kmer);
-						_kmerCounts[kmer] = 1;
-					}
-					//else{
-					//	cout << "\t\tnonon" << endl;
-					//}
-				}
-				else{ //Filling the queue with first elements
-					_kmerCountSorter.push(kmer);
-					_kmerCounts[kmer] = 1;
-				}
-	    	}
-	    	else{
-	    		_kmerCounts[kmer] += 1;
-	    	}
+
+	    	//else{
+	    	//	_kmerCounts[kmer] += 1;
+	    	//}
 
 		}
 	}
@@ -339,7 +376,8 @@ public:
 	size_t _kmerSize;
 	ModelCanonical _model;
 	ModelCanonicalIterator _itKmer;
-	ProbabilisticDict* _selectedKmersIndex;
+	//ProbabilisticDict* _selectedKmersIndex;
+	SelectedKmerIndexType& _selectedKmersIndex;
 
 	vector<mutex>* _master_mutex;
 	vector<KmerCountType>* _master_kmerCounts;
@@ -355,14 +393,14 @@ public:
 	KmerCountType _valuesMax;
 
 
-	CountKmerCommand(size_t kmerSize, ProbabilisticDict* kmerIndex, size_t nbCores, u_int64_t nbElements)
-	: _model(kmerSize), _itKmer(_model)
+	CountKmerCommand(size_t kmerSize, SelectedKmerIndexType& selectedKmersIndex, size_t nbCores, u_int64_t nbElements)
+	: _model(kmerSize), _itKmer(_model), _selectedKmersIndex(selectedKmersIndex)
 	{
-		_selectedKmersIndex = kmerIndex;
 		_kmerSize = kmerSize;
 		_isMaster = true;
 		//_master = this;
 
+		cout << nbElements << " " << selectedKmersIndex.size() << endl;
 		_nbMutex = nbCores*100;
 		_master_mutex = new vector<mutex>(_nbMutex);
 		_master_kmerCounts = new vector<KmerCountType>(nbElements, 0);
@@ -370,12 +408,10 @@ public:
 	}
 
 	CountKmerCommand(const CountKmerCommand& copy)
-	: _model(copy._kmerSize), _itKmer(_model)
+	: _model(copy._kmerSize), _itKmer(_model), _selectedKmersIndex(copy._selectedKmersIndex)
 	{
-
 		_kmerSize = copy._kmerSize;
 		_isMaster = false;
-		_selectedKmersIndex = copy._selectedKmersIndex;
 
 		_valuesMax = -1; //store the maximum value of ValueType to prevent overflow
 		_nbMutex = copy._nbMutex;
@@ -402,9 +438,13 @@ public:
 		for(_itKmer.first(); !_itKmer.isDone(); _itKmer.next()){
 			//cout << _itKmer->value().toString(_kmerSize) << endl;
 
+
+			KmerType kmer = _itKmer->value();
+			u_int64_t kmerValue = kmer.getVal();
+
 			//cout << "1" << endl;
 			u_int64_t kmerValueHashed;
-			u_int64_t kmerValue = _itKmer->value().getVal();
+			//u_int64_t kmerValue = _itKmer->value().getVal();
 			MurmurHash3_x64_128 ( (const char*)&kmerValue, sizeof(kmerValue), 100, &kmerValueHashed);
 
 			//cout << "2" << endl;
@@ -412,13 +452,17 @@ public:
 			//cout << kmerValueHashed << endl;
 			//_mutex->at(0).unlock();
 
-			u_int64_t index = _selectedKmersIndex->getIndex(kmerValueHashed, _exists);
-			if(index >= _kmerCounts->size()) cout << "lol" << endl;
+			//cout << "lol" << endl;
+			auto element = _selectedKmersIndex.find(kmerValueHashed);
+
+			//_exists = _selectedKmersIndex.find(kmerValueHashed) != _selectedKmersIndex.end();
+			//u_int64_t index = _selectedKmersIndex[kmerValueHashed];
+			//if(index >= _kmerCounts->size()) cout << "lol" << endl;
 			//if(index > 1000){
 			//	cout << kmerValue << " " << index  << endl;
 			//}
-			if(_exists){
-				incrementCount(index);
+			if(element != _selectedKmersIndex.end()){
+				incrementCount(element->second); //todo tester ça
 				//_selectedKmersIndex->increment(index);
 				//cout << kmerValue << " " << index  << endl;
 			}
@@ -428,6 +472,7 @@ public:
 	}
 
 	inline void incrementCount(u_int64_t index){
+		//cout << index << " " << _kmerCounts->size() << endl;
 		_mutex->at(index%_nbMutex).lock();
 		u_int64_t newValue = _kmerCounts->at(index)+1;
 		//if(index%_nbMutex ==0) cout << _values->at(index) << endl;
@@ -561,7 +606,6 @@ public:
 
 	//u_int64_t _totalKmers;
 	vector<size_t> _nbBankPerDataset;
-	u_int64_t _nbBitPerKmers;
 	u_int64_t _bloomFilterMaxMemoryBits;
 
 	//string _largerBankId;
@@ -570,12 +614,12 @@ public:
 	//bool _keepTmpFiles;
 
 
-	ProbabilisticDict* _selectedKmersIndex;
+	SelectedKmerIndexType _selectedKmersIndex;
 	//Bloom<Type>*  _bloomFilter;
 	SimkaMinDistance<KmerCountType> _distanceManager;
 
-	Bloom<Type>*  _bloomFilter;
-	Bloom<Type>*  _bloomFilter2;
+	//Bloom<Type>*  _bloomFilter;
+	//Bloom<Type>*  _bloomFilter2;
 
 
 	std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter> _selectedKmerSorter;
@@ -599,9 +643,10 @@ public:
 		selectKmers();
 
 		//reprise: la stratégie actuelle est trop lente car pas assez e calcul par rapport au decompression gz. abandonner l'idée du dispatcher et paralleliser au niveau des jeux de données
-		string filename = _outputDirTemp + "/selectedKmers.bin";
-		file_binary<u_int64_t> keyFile(filename.c_str());
-		_selectedKmersIndex = new ProbabilisticDict(_nbUsedKmers, keyFile, _nbCores);
+		//string filename = _outputDirTemp + "/selectedKmers.bin";
+		//file_binary<u_int64_t> keyFile(filename.c_str());
+		//todo load hash table
+		//_selectedKmersIndex = new ProbabilisticDict(_nbUsedKmers, keyFile, _nbCores);
 
 		countKmers();
 		computeDistance();
@@ -609,7 +654,6 @@ public:
 
 	void parseArgs(){
 		//_keepTmpFiles = _options->get(STR_SIMKA_KEEP_TMP_FILES);
-		_nbBitPerKmers = 16;
 		_maxMemory = _args->getInt(STR_MAX_MEMORY);
 		_nbCores = _args->getInt(STR_NB_CORES);
 		_inputFilename = _args->getStr(STR_URI_INPUT);
@@ -940,12 +984,23 @@ public:
 		}
 	}*/
 
+	u_int64_t _availableMemoryBitsPerThread;
+
 	void selectKmers(){
 
 		cout << endl << endl;
 		cout << "Selecting kmers..." << endl;
 
 		_maxRunningThreads = _nbCores;
+
+		u_int64_t nbBitPerKmers = 12;
+		u_int64_t availableMemoryBits = _maxMemory*MBYTE*(u_int64_t)8;
+		_availableMemoryBitsPerThread = availableMemoryBits / _maxRunningThreads;
+		cout << "Memory allowed to bloom filter (bits): " << _availableMemoryBitsPerThread << endl;
+		cout << "bits per k-mer: " << nbBitPerKmers << endl;
+		cout << "Max kmer inserted in bloom filter: " << (_availableMemoryBitsPerThread / nbBitPerKmers) << endl;
+
+
 		//cout << _maxRunningThreads << endl;
 
 		size_t threadId = 0;
@@ -971,8 +1026,8 @@ public:
 
 		joinThreads();
 
-		string filename = _outputDirTemp + "/selectedKmers.bin";
-		ofstream selectKmersFile(filename.c_str(), ios::binary);
+		//string filename = _outputDirTemp + "/selectedKmers.bin";
+		//ofstream selectKmersFile(filename.c_str(), ios::binary);
 
 		cout << _selectedKmerSorter.size() << " " << _nbUsedKmers << endl;
 		_selectedKmerSorter.pop(); //there is always one extra element because of a >= optimization...
@@ -981,11 +1036,13 @@ public:
 		for(size_t i=0; i<size; i++){
 			u_int64_t kmerValue = _selectedKmerSorter.top();
 			_selectedKmerSorter.pop();
-			selectKmersFile.write((const char*)&kmerValue, sizeof(kmerValue)); //todo mphf loading can be done in memory, not required to write all selected kmers on disk
+			_selectedKmersIndex[kmerValue] = i;
+			//selectKmersFile.write((const char*)&kmerValue, sizeof(kmerValue)); //todo mphf loading can be done in memory, not required to write all selected kmers on disk
 		}
+		_nbUsedKmers = _selectedKmersIndex.size() ;
 		cout << _selectedKmerSorter.size() << " " << _nbUsedKmers << endl;
 
-		selectKmersFile.close();
+		//selectKmersFile.close();
 	}
 
 
@@ -999,20 +1056,29 @@ public:
 		Iterator<Sequence>* itSeqSimka = new SimkaInputIterator<Sequence> (itSeq, _nbBankPerDataset[datasetId], _maxNbReads);
 		LOCAL(itSeqSimka);
 
-		IDispatcher* dispatcher = new Dispatcher (_nbCoresPerThread);
+		Bloom<Type>*  bloomFilter = new BloomCacheCoherent<Type> (_availableMemoryBitsPerThread, 7);
+
+		IDispatcher* dispatcher = new SerialDispatcher();
 		mutex commandMutex;
 		std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter> kmerCountSorter;
-		unordered_map<u_int64_t, u_int32_t> kmerCounts;
-		SelectKmersCommand<span> command(_kmerSize, _nbUsedKmers, commandMutex, kmerCountSorter, kmerCounts);
+		unordered_set<u_int64_t> kmerCounts;
+		SelectKmersCommand<span> command(_kmerSize, _nbUsedKmers, commandMutex, kmerCountSorter, kmerCounts, bloomFilter);
 		//CountKmerCommand<span> command(_kmerSize, _selectedKmersIndex, _nbCoresPerThread, _nbUsedKmers);
+
+
 
 		countKmersMutex.unlock();
 
+
+
+
 		dispatcher->iterate(itSeqSimka, command, 1000);
+
+
 
 		countKmersMutex.lock();
 
-
+		delete bloomFilter;
 
 		//kmerCountSorter.pop(); //Discard greater element because queue size is always equal to (_sketchSize + 1) because of an optimization
 
@@ -1140,7 +1206,7 @@ public:
 		joinThreads();
 
 		_outputKmerCountFile.close();
-		delete _selectedKmersIndex;
+		//delete _selectedKmersIndex;
 		/*
 		cout << endl << endl;
 		cout << "Start counting selected kmers" << endl;
@@ -1482,7 +1548,7 @@ public:
 	    //Core parser
 	    IOptionsParser* coreParser = new OptionsParser ("core");
 	    coreParser->push_back(new OptionOneParam(STR_NB_CORES, "number of cores", false, "0"));
-	    coreParser->push_back (new OptionOneParam (STR_MAX_MEMORY, "max memory (GB)", false, "8"));
+	    coreParser->push_back (new OptionOneParam (STR_MAX_MEMORY, "max memory (MB)", false, "8000"));
 	    //coreParser->push_back(dskParser->getParser ());
 	    //coreParser->push_back(dskParser->getParser (STR_MAX_DISK));
 
