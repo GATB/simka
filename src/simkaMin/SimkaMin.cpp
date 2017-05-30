@@ -13,7 +13,7 @@
 //CORE_PER_THREAD indique combien de cores alloué à ce dispatcher
 //Le maximum de CPU obtenu par le dispatcher est d'environ 400% sur un jeu .gz, il ne faut donc pas monter cette valeur au dela de 4
 //Pas le mettre trop bas tout de même car cette parallelization interne est bonne car elle réduit le nombre de jeu lu en parallele
-#define CORE_PER_THREAD 4 //Core for counting k-mer in a given dataset, do not put to high value because decompressing gz is so slow compared to computation
+#define CORE_PER_THREAD 1 //Core for counting k-mer in a given dataset, do not put to high value because decompressing gz is so slow compared to computation
 
 const string STR_SIMKA_SOLIDITY_PER_DATASET = "-solidity-single";
 const string STR_SIMKA_MAX_READS = "-max-reads";
@@ -262,8 +262,10 @@ public:
 			u_int64_t kmerHashed;
 			MurmurHash3_x64_128 ( (const char*)&kmerValue, sizeof(kmerValue), 100, &kmerHashed);
 
-			if(_bloomFilter->contains(kmer)){
-				if(_kmerCountSorter.size() < _sketchSize){
+			//todo: verifier dabord si le kmer peut etre insérer, plus rapide que els accès au table de hachage (bloom et selected)
+
+			if(_kmerCountSorter.size() < _sketchSize){
+				if(_bloomFilter->contains(kmer)){
 					//Filling the queue with first elements
 					if(_kmerCounts.find(kmerHashed) == _kmerCounts.end()){
 						_kmerCountSorter.push(kmerHashed);
@@ -272,8 +274,14 @@ public:
 					}
 		    	}
 				else{
-					//cout << "test" << endl;
-					if(kmerHashed < _kmerCountSorter.top()){
+					_bloomFilter->insert(kmer);
+					_nbInsertedKmersInBloom += 1;
+				}
+			}
+			else{
+				if(kmerHashed < _kmerCountSorter.top()){
+					if(_bloomFilter->contains(kmer)){
+
 						if(_kmerCounts.find(kmerHashed) == _kmerCounts.end()){
 							//cout << kmer << "     " << _kmerCounts.size() << endl;
 							u_int64_t greaterValue = _kmerCountSorter.top();
@@ -283,21 +291,32 @@ public:
 							_kmerCounts.insert(kmerHashed);
 						}
 					}
-				}
-			}
-			else{
-				if(_kmerCountSorter.size() < _sketchSize){
-					_bloomFilter->insert(kmer);
-					_nbInsertedKmersInBloom += 1;
-					//cout << "filling1" << endl;
-				}
-				else{
-					if(kmerHashed < _kmerCountSorter.top() ){
-						_bloomFilter->insert(kmer);
-						_nbInsertedKmersInBloom += 1;
+					else{
+						if(kmerHashed < _kmerCountSorter.top() ){
+							_bloomFilter->insert(kmer);
+							_nbInsertedKmersInBloom += 1;
+						}
 					}
 				}
+
+
+				//else{
+					//cout << "test" << endl;
+					//}
 			}
+			//else{
+				//if(_kmerCountSorter.size() < _sketchSize){
+				//	_bloomFilter->insert(kmer);
+				//	_nbInsertedKmersInBloom += 1;
+					//cout << "filling1" << endl;
+				//}
+				//else{
+				//	if(kmerHashed < _kmerCountSorter.top() ){
+				//		_bloomFilter->insert(kmer);
+				//		_nbInsertedKmersInBloom += 1;
+				//	}
+					//}
+			//}
 
 
 			//u_int64_t kmer = hash_otpt[0];
@@ -1170,7 +1189,7 @@ public:
 		//std::vector<Iterator<Sequence>*> itBanks =  it->getComposition();
 
 		//cout << _nbCores << endl;
-		_maxRunningThreads = _nbCores / _nbCoresPerThread;
+		_maxRunningThreads = _nbCores; // / _nbCoresPerThread;
 		//_maxRunningThreads = 1;
 		//cout << _maxRunningThreads << endl;
 
@@ -1247,7 +1266,8 @@ public:
 		LOCAL(itSeqSimka);
 
 		//_nbCoresPerThread = 1;
-		IDispatcher* dispatcher = new Dispatcher (_nbCoresPerThread);
+		IDispatcher* dispatcher = new SerialDispatcher();
+		//IDispatcher* dispatcher = new Dispatcher (_nbCoresPerThread);
 		CountKmerCommand<span> command(_kmerSize, _selectedKmersIndex, _nbCoresPerThread, _nbUsedKmers);
 
 		cout << "starting thread: " << threadId << endl;
