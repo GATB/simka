@@ -1270,6 +1270,7 @@ public:
 		//_nbCoresPerThread = 1;
 		IDispatcher* dispatcher = new SerialDispatcher();
 		//IDispatcher* dispatcher = new Dispatcher (_nbCoresPerThread);
+		_nbCoresPerThread = 1;
 		CountKmerCommand<span> command(_kmerSize, _selectedKmersIndex, _nbCoresPerThread, _nbUsedKmers);
 
 		cout << "starting thread: " << threadId << endl;
