@@ -1183,6 +1183,8 @@ public:
 		}
 		_outputKmerCountFile.flush();
 
+		_finishedThreads.clear();
+		_runningThreadIds.clear();
 		//IBank* bank = Bank::open(_banksInputFilename);
 		//LOCAL(bank);
 		//Iterator<Sequence>* it = bank->iterator();
