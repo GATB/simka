@@ -397,53 +397,53 @@ public:
 	//ProbabilisticDict* _selectedKmersIndex;
 	SelectedKmerIndexType& _selectedKmersIndex;
 
-	vector<mutex>* _master_mutex;
-	vector<KmerCountType>* _master_kmerCounts;
+	vector<mutex>& _master_mutex;
+	vector<KmerCountType>& _master_kmerCounts;
 
-	vector<mutex>* _mutex;
-	vector<KmerCountType>* _kmerCounts;
+	//vector<mutex> _mutex;
+	//vector<KmerCountType> _kmerCounts;
 
 	bool _isMaster;
-	bool _exists;
+	//bool _exists;
 	size_t _nbMutex;
 	//vector<mutex>& _synchMutex;
 	//vector<KmerCountType>* _values;
 	KmerCountType _valuesMax;
 
 
-	CountKmerCommand(size_t kmerSize, SelectedKmerIndexType& selectedKmersIndex, size_t nbCores, u_int64_t nbElements)
-	: _model(kmerSize), _itKmer(_model), _selectedKmersIndex(selectedKmersIndex)
+	CountKmerCommand(size_t kmerSize, SelectedKmerIndexType& selectedKmersIndex, size_t nbCores, u_int64_t nbElements, vector<mutex>& master_mutex, vector<KmerCountType>& master_kmerCounts)
+	: _model(kmerSize), _itKmer(_model), _selectedKmersIndex(selectedKmersIndex), _master_mutex(master_mutex), _master_kmerCounts(master_kmerCounts)
 	{
 		_kmerSize = kmerSize;
 		_isMaster = true;
+
+		_nbMutex = _master_mutex.size();
 		//_master = this;
 
-		cout << nbElements << " " << selectedKmersIndex.size() << endl;
-		_nbMutex = nbCores*100;
-		_master_mutex = new vector<mutex>(_nbMutex);
-		_master_kmerCounts = new vector<KmerCountType>(nbElements, 0);
+		//cout << nbElements << " " << selectedKmersIndex.size() << endl;
+
 		_valuesMax = -1; //store the maximum value of ValueType to prevent overflow
 	}
 
 	CountKmerCommand(const CountKmerCommand& copy)
-	: _model(copy._kmerSize), _itKmer(_model), _selectedKmersIndex(copy._selectedKmersIndex)
+	: _model(copy._kmerSize), _itKmer(_model), _selectedKmersIndex(copy._selectedKmersIndex), _master_mutex(copy._master_mutex), _master_kmerCounts(copy._master_kmerCounts)
 	{
 		_kmerSize = copy._kmerSize;
 		_isMaster = false;
 
-		_valuesMax = -1; //store the maximum value of ValueType to prevent overflow
+		_valuesMax = copy._valuesMax; //store the maximum value of ValueType to prevent overflow
 		_nbMutex = copy._nbMutex;
 
-		_mutex = copy._master_mutex;
-		_kmerCounts = copy._master_kmerCounts;
+		//_mutex = copy._master_mutex;
+		//_kmerCounts = copy._master_kmerCounts;
 
 	}
 
 	~CountKmerCommand(){
-		if(_isMaster){
-			delete _master_mutex;
-			delete _master_kmerCounts;
-		}
+		//if(_isMaster){
+		//	delete _master_mutex;
+		//	delete _master_kmerCounts;
+		//}
 	}
 
 
@@ -491,15 +491,15 @@ public:
 
 	inline void incrementCount(u_int64_t index){
 		//cout << index << " " << _kmerCounts->size() << endl;
-		_mutex->at(index%_nbMutex).lock();
-		u_int64_t newValue = _kmerCounts->at(index)+1;
+		_master_mutex[index%_nbMutex].lock();
+		u_int64_t newValue = _master_kmerCounts[index]+1;
 		//if(index%_nbMutex ==0) cout << _values->at(index) << endl;
 		if(newValue < _valuesMax){
-			_kmerCounts->at(index) += 1;
+			_master_kmerCounts[index] += 1;
 		}
 		//if(index%_nbMutex ==0)  cout << "\t" << _values->at(index) << endl;
 		//this->_values[index].push_back(value);
-		_mutex->at(index%_nbMutex).unlock();
+		_master_mutex[index%_nbMutex].unlock();
 	}
 
 };
@@ -1267,11 +1267,17 @@ public:
 		Iterator<Sequence>* itSeqSimka = new SimkaInputIterator<Sequence> (itSeq, _nbBankPerDataset[datasetId], _maxNbReads);
 		LOCAL(itSeqSimka);
 
+		_nbCoresPerThread = 1;
+
+
+		size_t nbMutex = _nbCoresPerThread*100;
+		vector<mutex> master_mutex(nbMutex);
+		vector<KmerCountType> counts(_nbUsedKmers, 0);
+
 		//_nbCoresPerThread = 1;
 		IDispatcher* dispatcher = new SerialDispatcher();
 		//IDispatcher* dispatcher = new Dispatcher (_nbCoresPerThread);
-		_nbCoresPerThread = 1;
-		CountKmerCommand<span> command(_kmerSize, _selectedKmersIndex, _nbCoresPerThread, _nbUsedKmers);
+		CountKmerCommand<span> command(_kmerSize, _selectedKmersIndex, _nbCoresPerThread, _nbUsedKmers, master_mutex, counts);
 
 		cout << "starting thread: " << threadId << endl;
 		countKmersMutex.unlock();
@@ -1283,10 +1289,10 @@ public:
 		//_reorderedBankIds.push_back(datasetId);
 
 		u_int64_t nbKmersWithCounts = 0;
-		vector<KmerCountType>* counts = command._master_kmerCounts;
-		for(size_t i=0; i<counts->size(); i++){
+		//vector<KmerCountType>* counts = command._master_kmerCounts;
+		for(size_t i=0; i<counts.size(); i++){
 
-			KmerCountType kmerCount = counts->at(i);
+			KmerCountType kmerCount = counts[i];
 
 			if(kmerCount > 0){
 				nbKmersWithCounts += 1;
@@ -1294,7 +1300,7 @@ public:
 				_outputKmerCountFile.write((const char*)&kmerCount, sizeof(kmerCount));
 			}
 		}
-		cout << "Fill rate of kmer counts: " << ((double)nbKmersWithCounts / (double)counts->size()) << endl;
+		cout << "Fill rate of kmer counts: " << ((double)nbKmersWithCounts / (double)counts.size()) << endl;
 		//cout << "\t thread " <<  threadId << " End" << endl;
 		_finishedThreads.push_back(threadId);
 		countKmersMutex.unlock();
