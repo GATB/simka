@@ -13,7 +13,7 @@
 //CORE_PER_THREAD indique combien de cores alloué à ce dispatcher
 //Le maximum de CPU obtenu par le dispatcher est d'environ 400% sur un jeu .gz, il ne faut donc pas monter cette valeur au dela de 4
 //Pas le mettre trop bas tout de même car cette parallelization interne est bonne car elle réduit le nombre de jeu lu en parallele
-#define CORE_PER_THREAD 1 //Core for counting k-mer in a given dataset, do not put to high value because decompressing gz is so slow compared to computation
+#define CORE_PER_THREAD 4 //Core for counting k-mer in a given dataset, do not put to high value because decompressing gz is so slow compared to computation
 
 const string STR_SIMKA_SOLIDITY_PER_DATASET = "-solidity-single";
 const string STR_SIMKA_MAX_READS = "-max-reads";
@@ -126,6 +126,8 @@ public:
 	ModelCanonical _model;
 	ModelCanonicalIterator _itKmer;
 	mutex& _mutex;
+
+	u_int64_t _hash_otpt[2];
 
 	bool _isMaster;
     //size_t _bufferIndex;
@@ -260,7 +262,8 @@ public:
 
 			u_int64_t kmerValue = kmer.getVal();
 			u_int64_t kmerHashed;
-			MurmurHash3_x64_128 ( (const char*)&kmerValue, sizeof(kmerValue), 100, &kmerHashed);
+			MurmurHash3_x64_128 ( (const char*)&kmerValue, sizeof(kmerValue), 100, &_hash_otpt);
+			kmerHashed = _hash_otpt[0];
 
 			//todo: verifier dabord si le kmer peut etre insérer, plus rapide que els accès au table de hachage (bloom et selected)
 
@@ -403,6 +406,8 @@ public:
 	//vector<mutex> _mutex;
 	//vector<KmerCountType> _kmerCounts;
 
+	u_int64_t _hash_otpt[2];
+
 	bool _isMaster;
 	//bool _exists;
 	size_t _nbMutex;
@@ -463,7 +468,8 @@ public:
 			//cout << "1" << endl;
 			u_int64_t kmerValueHashed;
 			//u_int64_t kmerValue = _itKmer->value().getVal();
-			MurmurHash3_x64_128 ( (const char*)&kmerValue, sizeof(kmerValue), 100, &kmerValueHashed);
+			MurmurHash3_x64_128 ( (const char*)&kmerValue, sizeof(kmerValue), 100, &_hash_otpt);
+			kmerValueHashed = _hash_otpt[0];
 
 			//cout << "2" << endl;
 			//_mutex->at(0).lock();
@@ -1191,7 +1197,7 @@ public:
 		//std::vector<Iterator<Sequence>*> itBanks =  it->getComposition();
 
 		//cout << _nbCores << endl;
-		_maxRunningThreads = _nbCores; // / _nbCoresPerThread;
+		_maxRunningThreads = _nbCores / _nbCoresPerThread;
 		//_maxRunningThreads = 1;
 		//cout << _maxRunningThreads << endl;
 
@@ -1267,7 +1273,7 @@ public:
 		Iterator<Sequence>* itSeqSimka = new SimkaInputIterator<Sequence> (itSeq, _nbBankPerDataset[datasetId], _maxNbReads);
 		LOCAL(itSeqSimka);
 
-		_nbCoresPerThread = 1;
+		//_nbCoresPerThread = 1;
 
 
 		size_t nbMutex = _nbCoresPerThread*100;
@@ -1275,8 +1281,8 @@ public:
 		vector<KmerCountType> counts(_nbUsedKmers, 0);
 
 		//_nbCoresPerThread = 1;
-		IDispatcher* dispatcher = new SerialDispatcher();
-		//IDispatcher* dispatcher = new Dispatcher (_nbCoresPerThread);
+		//IDispatcher* dispatcher = new SerialDispatcher();
+		IDispatcher* dispatcher = new Dispatcher (_nbCoresPerThread);
 		CountKmerCommand<span> command(_kmerSize, _selectedKmersIndex, _nbCoresPerThread, _nbUsedKmers, master_mutex, counts);
 
 		cout << "starting thread: " << threadId << endl;
