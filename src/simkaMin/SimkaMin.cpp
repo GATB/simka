@@ -148,15 +148,15 @@ public:
 	//typedef typename KmerCountSorter KmerSorter;
 
 	std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter> _kmerCountSorter;
-	unordered_set<u_int64_t> _kmerCounts;
+	unordered_map<u_int64_t, KmerCountType> _kmerCounts;
 
 	std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter>& _kmerCountSorterSynch;
-	unordered_set<u_int64_t>& _kmerCountsSynch;
+	unordered_map<u_int64_t, KmerCountType>& _kmerCountsSynch;
 
 	Bloom<KmerType>* _bloomFilter;
 	u_int64_t _nbInsertedKmersInBloom;
 
-	SelectKmersCommand(size_t kmerSize, size_t sketchSize, mutex& mutex, std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter>& kmerCountSorterSynch, unordered_set<u_int64_t>& kmerCountsSynch, Bloom<KmerType>* bloomFilter)
+	SelectKmersCommand(size_t kmerSize, size_t sketchSize, mutex& mutex, std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter>& kmerCountSorterSynch, unordered_map<u_int64_t, KmerCountType>& kmerCountsSynch, Bloom<KmerType>* bloomFilter)
 	: _model(kmerSize), _itKmer(_model), _mutex(mutex), _kmerCountSorterSynch(kmerCountSorterSynch), _kmerCountsSynch(kmerCountsSynch), _bloomFilter(bloomFilter)
 	{
 		_kmerSize = kmerSize;
@@ -208,7 +208,7 @@ public:
 		for(size_t i=0; i<sketchSize; i++){
 			u_int64_t kmer = _kmerCountSorter.top();
 			_kmerCountSorter.pop();
-			mergeSynch(kmer);
+			mergeSynch(kmer, _kmerCounts[kmer]);
 			//KmerCount kmerCount = _kmerCountSorter.top();
 			//cout << kmerCount._kmer << "  " << kmerCount._count << endl;
 			//_partitionWriter->insert(kmerCount._kmer, _datasetIDbin, kmerCount._count);
@@ -222,7 +222,7 @@ public:
 		_mutex.unlock();
 	}
 
-	inline void mergeSynch(u_int64_t kmer){
+	inline void mergeSynch(u_int64_t kmer, KmerCountType count){
 		if(_kmerCountsSynch.find(kmer) == _kmerCountsSynch.end()){
 			if(_kmerCountSorterSynch.size() > _sketchSize){
 				if(kmer < _kmerCountSorterSynch.top() ){
@@ -231,7 +231,7 @@ public:
 					_kmerCountsSynch.erase(greaterValue);
 					_kmerCountSorterSynch.pop();
 					_kmerCountSorterSynch.push(kmer);
-					_kmerCountsSynch.insert(kmer);
+					_kmerCountsSynch[kmer] = count;
 				}
 				//else{
 				//	cout << "\t\tnonon" << endl;
@@ -239,12 +239,12 @@ public:
 			}
 			else{ //Filling the queue with first elements
 				_kmerCountSorterSynch.push(kmer);
-				_kmerCountsSynch.insert(kmer);
+				_kmerCountsSynch[kmer] = count;
 			}
 		}
-		//else{
-		//	_kmerCountsSynch[kmer] += count;
-		//}
+		else{
+			_kmerCountsSynch[kmer] += count;
+		}
 	}
 
 	void operator()(Sequence& sequence){
@@ -273,8 +273,11 @@ public:
 					//Filling the queue with first elements
 					if(_kmerCounts.find(kmerHashed) == _kmerCounts.end()){
 						_kmerCountSorter.push(kmerHashed);
-						_kmerCounts.insert(kmerHashed);
+						_kmerCounts[kmerHashed] = 2;
 						//cout << _kmerCountSorter.size() << endl;
+					}
+					else{
+						_kmerCounts[kmerHashed] += 1;
 					}
 		    	}
 				else{
@@ -292,7 +295,10 @@ public:
 							_kmerCounts.erase(greaterValue);
 							_kmerCountSorter.pop();
 							_kmerCountSorter.push(kmerHashed);
-							_kmerCounts.insert(kmerHashed);
+							_kmerCounts[kmerHashed] = 2;
+						}
+						else{
+							_kmerCounts[kmerHashed] += 1;
 						}
 					}
 					else{
@@ -346,7 +352,7 @@ public:
 
 
 
-
+/*
 //-------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------
@@ -510,7 +516,7 @@ public:
 	}
 
 };
-
+*/
 
 
 
@@ -675,7 +681,7 @@ public:
 		//todo load hash table
 		//_selectedKmersIndex = new ProbabilisticDict(_nbUsedKmers, keyFile, _nbCores);
 
-		countKmers();
+		//countKmers();
 		computeDistance();
 	}
 
@@ -1019,6 +1025,7 @@ public:
 		cout << endl << endl;
 		cout << "Selecting kmers..." << endl;
 
+		_skecthCounts.resize(_nbBanks); //todo care about it
 		_maxRunningThreads = _nbCores;
 
 		u_int64_t nbBitPerKmers = 12;
@@ -1057,22 +1064,25 @@ public:
 		//string filename = _outputDirTemp + "/selectedKmers.bin";
 		//ofstream selectKmersFile(filename.c_str(), ios::binary);
 
-		cout << _selectedKmerSorter.size() << " " << _nbUsedKmers << endl;
-		_selectedKmerSorter.pop(); //there is always one extra element because of a >= optimization...
-		cout << _selectedKmerSorter.size() << " " << _nbUsedKmers << endl;
-		u_int64_t size = _selectedKmerSorter.size();
-		for(size_t i=0; i<size; i++){
-			u_int64_t kmerValue = _selectedKmerSorter.top();
-			_selectedKmerSorter.pop();
-			_selectedKmersIndex[kmerValue] = i;
-			//selectKmersFile.write((const char*)&kmerValue, sizeof(kmerValue)); //todo mphf loading can be done in memory, not required to write all selected kmers on disk
-		}
-		_nbUsedKmers = _selectedKmersIndex.size() ;
-		cout << _selectedKmerSorter.size() << " " << _nbUsedKmers << endl;
+		//cout << _selectedKmerSorter.size() << " " << _nbUsedKmers << endl;
+		//_selectedKmerSorter.pop(); //there is always one extra element because of a >= optimization...
+		//cout << _selectedKmerSorter.size() << " " << _nbUsedKmers << endl;
+		//u_int64_t size = _selectedKmerSorter.size();
+		//for(size_t i=0; i<size; i++){
+		//	u_int64_t kmerValue = _selectedKmerSorter.top();
+		//	_selectedKmerSorter.pop();
+		//	_selectedKmersIndex[kmerValue] = i;
+		//	//selectKmersFile.write((const char*)&kmerValue, sizeof(kmerValue)); //todo mphf loading can be done in memory, not required to write all selected kmers on disk
+		//}
+		//_nbUsedKmers = _selectedKmersIndex.size() ;
+		//cout << _selectedKmerSorter.size() << " " << _nbUsedKmers << endl;
 
 		//selectKmersFile.close();
 	}
 
+	vector<unordered_map<u_int64_t, KmerCountType> > _skecthCounts;
+
+	//unordered_map<u_int64_t, vector<KmerCountType> > _;
 
 	void selectKmersOfDataset(size_t datasetId, size_t threadId){
 
@@ -1089,7 +1099,7 @@ public:
 		IDispatcher* dispatcher = new SerialDispatcher();
 		mutex commandMutex;
 		std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter> kmerCountSorter;
-		unordered_set<u_int64_t> kmerCounts;
+		unordered_map<u_int64_t, KmerCountType> kmerCounts;
 		SelectKmersCommand<span> command(_kmerSize, _nbUsedKmers, commandMutex, kmerCountSorter, kmerCounts, bloomFilter);
 		//CountKmerCommand<span> command(_kmerSize, _selectedKmersIndex, _nbCoresPerThread, _nbUsedKmers);
 
@@ -1108,7 +1118,9 @@ public:
 
 		delete bloomFilter;
 
+		_skecthCounts[datasetId] = kmerCounts; //todo care about it (full copy)
 		//kmerCountSorter.pop(); //Discard greater element because queue size is always equal to (_sketchSize + 1) because of an optimization
+
 
 		u_int64_t size = kmerCountSorter.size();
 		for(size_t i=0; i<size; i++){
@@ -1147,7 +1159,6 @@ public:
 		}
 
 
-
 		//cout << "done" << endl;
 		/*
 		//_reorderedBankIds.push_back(datasetId);
@@ -1173,7 +1184,7 @@ public:
 
 
 
-
+	/*
 	void countKmers(){
 
 		cout << endl << endl;
@@ -1237,26 +1248,6 @@ public:
 
 		_outputKmerCountFile.close();
 		//delete _selectedKmersIndex;
-		/*
-		cout << endl << endl;
-		cout << "Start counting selected kmers" << endl;
-
-
-
-
-		for (size_t i=0; i<itBanks.size(); i++)
-		{
-
-			Iterator<Sequence>* itSeq = itBanks[i];
-			Iterator<Sequence>* itSeqSimka = new SimkaInputIterator<Sequence> (itSeq, _nbBankPerDataset[i], _maxNbReads);
-			LOCAL(itSeqSimka);
-			//IBank* filteredBank = new SimkaInputIterator<SimkaSequenceFilter>(bank, sequenceFilter, _maxNbReads, _nbBankPerDataset);
-
-			getDispatcher()->iterate(itSeqSimka, CountKmerCommand<span>(_kmerSize, _selectedKmersIndex), 1000);
-
-
-			itBanks[i]->finalize();
-		}*/
 
 	}
 
@@ -1312,6 +1303,7 @@ public:
 		_finishedThreads.push_back(threadId);
 		countKmersMutex.unlock();
 	}
+	*/
 
 	void waitThreads(){
         while(1){
@@ -1392,21 +1384,47 @@ public:
 		vector<KmerCountType> counts(_nbBanks, 0);
 		KmerCountType count;
 		string filename = _outputDirTemp + "/kmerCounts.bin";
-		ifstream kmerCountFile(filename.c_str(), ios::binary);
-		size_t datasetId = 0;
+		//ifstream kmerCountFile(filename.c_str(), ios::binary);
+		//size_t datasetId = 0;
 
 		//#ifdef OUTPUT_ABUNDANCE_TABLE
 		//	str = "";
 			//str += bankNames[i]+ ";";
 		//#endif
 
-		while(!kmerCountFile.eof()){
-			kmerCountFile.read((char*)&count, sizeof(count));
-			counts[datasetId] = count;
+		u_int64_t size = _selectedKmerSorter.size();
+		//	_selectedKmersIndex[kmerValue] = i;
+			//selectKmersFile.write((const char*)&kmerValue, sizeof(kmerValue)); //todo mphf loading can be done in memory, not required to write all selected kmers on disk
+		//}
+		//_nbUsedKmers = _selectedKmersIndex.size() ;
+		//cout << _selectedKmerSorter.size() << " " << _nbUsedKmers << endl;
 
 
-			datasetId += 1;
-			if(datasetId >= _nbBanks){
+		//cout << size << endl;
+		for(size_t i=0; i<size; i++){
+			//cout << i << endl;
+		//while(!kmerCountFile.eof()){
+			//kmerCountFile.read((char*)&count, sizeof(count));
+
+			u_int64_t kmerValue = _selectedKmerSorter.top();
+			_selectedKmerSorter.pop();
+
+			for(size_t datasetId=0; datasetId<_nbBanks; datasetId++){
+
+				unordered_map<u_int64_t, KmerCountType>& skecthCount = _skecthCounts[datasetId];
+				auto it = skecthCount.find(kmerValue);
+				if(it == skecthCount.end()){
+					counts[datasetId] = 0;
+				}
+				else{
+					counts[datasetId] = it->second;
+				}
+			}
+			//counts[datasetId] = count;
+
+
+			//datasetId += 1;
+			//if(datasetId >= _nbBanks){
 
 				#ifdef OUTPUT_ABUNDANCE_TABLE
 					str = "";
@@ -1420,17 +1438,17 @@ public:
 					gzwrite(abundanceTableFile, str.c_str(), str.size());
 				#endif
 
-				//cout << nbDistinctKmers << ": ";
-				//for(size_t i=0; i<counts.size(); i++){
-				//	cout << counts[i] << " ";
-				//}
-				//cout << endl;
+				cout << nbDistinctKmers << ": ";
+				for(size_t i=0; i<counts.size(); i++){
+					cout << counts[i] << " ";
+				}
+				cout << endl;
 
 				_distanceManager.processAbundanceVector(counts);
-				std::fill(counts.begin(), counts.end(), 0);
-				datasetId = 0;
+				//std::fill(counts.begin(), counts.end(), 0);
+				//datasetId = 0;
 				nbDistinctKmers += 1;
-			}
+			//}
 
 
 		}
