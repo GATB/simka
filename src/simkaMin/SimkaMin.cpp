@@ -14,6 +14,7 @@
 //Le maximum de CPU obtenu par le dispatcher est d'environ 400% sur un jeu .gz, il ne faut donc pas monter cette valeur au dela de 4
 //Pas le mettre trop bas tout de même car cette parallelization interne est bonne car elle réduit le nombre de jeu lu en parallele
 #define CORE_PER_THREAD 4 //Core for counting k-mer in a given dataset, do not put to high value because decompressing gz is so slow compared to computation
+//#define OUTPUT_ABUNDANCE_TABLE
 
 const string STR_SIMKA_SOLIDITY_PER_DATASET = "-solidity-single";
 const string STR_SIMKA_MAX_READS = "-max-reads";
@@ -1364,6 +1365,24 @@ public:
 
 	void computeDistance(){
 
+
+		#ifdef OUTPUT_ABUNDANCE_TABLE
+			string abundanceTableFilename = _outputDir + "/abundance_table.csv";
+			gzFile abundanceTableFile = gzopen((abundanceTableFilename + ".gz").c_str(),"wb");
+
+			string str = "";
+			for(size_t i=0; i<_nbBanks; i++){
+				//str += ";" + _bankNames[i];
+				str += _bankNames[i] + ";";
+			}
+			str.erase(str.size()-1);
+			str += '\n';
+			gzwrite(abundanceTableFile, str.c_str(), str.size());
+		#endif
+
+
+
+
 		cout << endl << endl;
 		cout << "Computing distances" << endl;
 
@@ -1376,12 +1395,30 @@ public:
 		ifstream kmerCountFile(filename.c_str(), ios::binary);
 		size_t datasetId = 0;
 
+		//#ifdef OUTPUT_ABUNDANCE_TABLE
+		//	str = "";
+			//str += bankNames[i]+ ";";
+		//#endif
+
 		while(!kmerCountFile.eof()){
 			kmerCountFile.read((char*)&count, sizeof(count));
 			counts[datasetId] = count;
 
+
 			datasetId += 1;
 			if(datasetId >= _nbBanks){
+
+				#ifdef OUTPUT_ABUNDANCE_TABLE
+					str = "";
+					for(size_t i=0; i<counts.size(); i++){
+						//cout << counts[i] << " ";
+						str += Stringify::format("%i", counts[i]) + ";";
+					}
+					str.erase(str.size()-1);
+					str += '\n';
+
+					gzwrite(abundanceTableFile, str.c_str(), str.size());
+				#endif
 
 				//cout << nbDistinctKmers << ": ";
 				//for(size_t i=0; i<counts.size(); i++){
@@ -1395,12 +1432,17 @@ public:
 				nbDistinctKmers += 1;
 			}
 
+
 		}
 
 		//cout << endl << endl;
 		//cout << "Outputting distances" << endl;
 		_distanceManager.computeDistanceMatrix(_outputDirTemp, "mat_abundance_braycurtis");
 		_distanceManager.writeMatrixASCII(_outputDir, _outputDirTemp, "mat_abundance_braycurtis", _bankNames);
+
+		#ifdef OUTPUT_ABUNDANCE_TABLE
+			gzclose(abundanceTableFile);
+		#endif
 
 		cout << endl << endl;
 		cout << "Result dir: " << _outputDir << endl;
