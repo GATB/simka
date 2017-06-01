@@ -1383,11 +1383,11 @@ public:
 			datasetId += 1;
 			if(datasetId >= _nbBanks){
 
-				cout << nbDistinctKmers << ": ";
-				for(size_t i=0; i<counts.size(); i++){
-					cout << counts[i] << " ";
-				}
-				cout << endl;
+				//cout << nbDistinctKmers << ": ";
+				//for(size_t i=0; i<counts.size(); i++){
+				//	cout << counts[i] << " ";
+				//}
+				//cout << endl;
 
 				_distanceManager.processAbundanceVector(counts);
 				std::fill(counts.begin(), counts.end(), 0);
