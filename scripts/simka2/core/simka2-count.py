@@ -188,10 +188,10 @@ class ComputeKmerSpectrumAll():
 		kmerSpectrumOutputDir = data[1]
 		outputDirTemp = data[2]
 
-		self.database.add_entry(id, kmerSpectrumOutputDir)
-
 		kmerSpectrumOutputDirAbs = os.path.join(self.database.dirname, kmerSpectrumOutputDir)
 		SimkaSettings.saveDirSize(kmerSpectrumOutputDirAbs)
+
+		self.database.add_entry(id, kmerSpectrumOutputDir)
 
 		shutil.rmtree(outputDirTemp, ignore_errors=True)
 
