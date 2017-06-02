@@ -22,6 +22,7 @@ parser.add_argument('-min-read-size', action="store", dest="min_read_size", defa
 parser.add_argument('-min-shannon-index', action="store", dest="min_read_shannon_index", default="0", help="minimal Shannon index a read should have to be kept. Float in [0,2]")
 parser.add_argument('-simple-dist', action="store_true", dest="simple_dist", help="compute all simple distances (Chord, Hellinger...)")
 parser.add_argument('-complex-dist', action="store_true", dest="complex_dist", help="compute all complex distances (Jensen-Shannon...)")
+parser.add_argument('-nb-kmers', action="store", dest="nb_kmers", help="number of kmers used to estimate distances", default="100000")
 
 args =  parser.parse_args()
 
@@ -47,6 +48,7 @@ def init_settings():
     settings_file.write("min-shannon-index: " + args.min_read_shannon_index  + "\n")
     settings_file.write("simple-dist: " + ("1" if args.simple_dist else "0")  + "\n")
     settings_file.write("complex-dist: " + ("1" if args.complex_dist else "0")  + "\n")
+    settings_file.write("nb-kmers: " + args.nb_kmers + "\n")
 
     settings_file.close()
 

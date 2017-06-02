@@ -25,6 +25,7 @@ parserDistance.add_argument('-simple-dist', action="store_true", dest="simple_di
 parserDistance.add_argument('-complex-dist', action="store_true", dest="complex_dist", help="compute all complex distances (Jensen-Shannon...)")
 
 parserKmer.add_argument('-kmer-size', action="store", dest="kmer_size", help="size of a kmer", default="21")
+parserKmer.add_argument('-nb-kmers', action="store", dest="nb_kmers", help="number of kmers used to estimate distances", default="100000")
 parserKmer.add_argument('-abundance-min', action="store", dest="abundance_min", help="min abundance a kmer need to be considered", default="2")
 parserKmer.add_argument('-abundance-max', action="store", dest="abundance_max", help="max abundance a kmer can have to be considered", default="0")
 #parser.add_argument('-kmer-shannon-index', action="store", dest="simple_dist")
@@ -65,6 +66,7 @@ command = "python "
 command += os.path.join(SCRIPT_DIR, "core", "simka2-init.py")
 command += " -database-dir " + databaseDir
 command += " -kmer-size " + args.kmer_size
+command += " -nb-kmers " + args.nb_kmers
 command += " -nb-cores " + args.nb_cores
 command += " -max-memory " + args.max_memory
 command += " -abundance-min " + args.abundance_min

@@ -57,7 +57,7 @@ class SimkaCommand():
 
 class Simka2ResourceAllocator():
 
-    MIN_MEMORY_PER_JOB = 500
+    MIN_MEMORY_PER_JOB = 100
 
     def __init__(self, isHPC, nbCores, maxMemory, maxJobs, submitCommand, submitFile):
         self.isHPC = isHPC
@@ -95,12 +95,14 @@ class Simka2ResourceAllocator():
         maxjob_byCore = max(maxjob_byCore, 1)
         #maxjob_byCore = max(maxjob_byCore, 1)
 
-        minMemory = 0
-        if kmerSize <= 15:
-            minMemory = int(float(math.pow(4, kmerSize)*8)/(1<<20))
-        else:
-            minMemory = Simka2ResourceAllocator.MIN_MEMORY_PER_JOB
-        minMemory = max(minMemory, 1)
+        #minMemory = 0
+        #if kmerSize <= 15:
+        #    minMemory = int(float(math.pow(4, kmerSize)*8)/(1<<20))
+        #else:
+        #    minMemory = Simka2ResourceAllocator.MIN_MEMORY_PER_JOB
+        #minMemory = max(minMemory, 1)
+        #minMemory = int(float(math.pow(4, kmerSize)*8)/(1<<20))
+        minMemory = Simka2ResourceAllocator.MIN_MEMORY_PER_JOB
 
         if self.maxMemory < minMemory:
             print("Not enough memory, you provide (" + str(self.maxMemory) + " MB), Simka need (" + str(minMemory) + "MB)")

@@ -84,7 +84,7 @@ public:
     	_databaseDir =  getInput()->getStr(STR_SIMKA2_DATABASE_DIR);
     	_nbPartitions =  getInput()->getInt(STR_SIMKA2_NB_PARTITION);
     	_maxDatasets = getInput()->getInt(STR_SIMKA2_DISTANCE_MAX_PROCESSABLE_DATASETS);
-    	_sketchSize = 10000; //TODO
+		_sketchSize = getInput()->getInt(STR_SIMKA_SKETCH_SIZE);
 
 
     	_dirMatrixParts = _databaseDir + "/distance/temp_parts";
@@ -319,6 +319,7 @@ public:
 
 	    IOptionsParser* kmerParser = new OptionsParser ("kmer");
 	    kmerParser->push_back (new OptionOneParam (STR_KMER_SIZE, "size of a kmer", true));
+	    kmerParser->push_back (new OptionOneParam (STR_SIMKA_SKETCH_SIZE, "number of kmers used to compute distances", true));
 
 	    //parser->getParser(STR_NB_CORES)->setVisible(false);
 		parser->push_back(kmerParser);

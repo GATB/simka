@@ -152,6 +152,7 @@ class ComputeKmerSpectrumAll():
 		#		  " -simka-bin " + args._simkaBinDir
 		#command = os.path.join(args._simkaBinDir, "simkaCountProcess") + " " + \
 
+		
 		command = "python " + os.path.join(SCRIPT_DIR, "simka2-run-job.py") + " " + \
 			checkPointFilename + " " + \
 			os.path.join(SCRIPT_DIR, "..", "bin", "simka2-count") + \
@@ -168,7 +169,8 @@ class ComputeKmerSpectrumAll():
 			" -abundance-max " + str(self.database._abundanceMax) + \
 			" -nb-partitions " + str(self.database._nbPartitions) + \
 			" -max-memory " + str(self.jobMemory) + \
-			" -nb-cores " + str(self.jobCores)
+			" -nb-cores " + str(self.jobCores) + \
+			" -nb-kmers " + str(self.database._nbKmers)
 		command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
 		#print("compute_kmer_spectrums_all.py: Add log file system")
 

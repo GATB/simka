@@ -18,12 +18,14 @@ const string STR_SIMKA2_NB_PARTITION = "-nb-partitions";
 const string STR_SIMKA2_PARTITION_ID = "-partition-id";
 const string STR_SIMKA2_INPUT_IDS = "-in-ids";
 const string STR_SIMKA2_DISTANCE_MAX_PROCESSABLE_DATASETS = "-max-datasets";
+const string STR_SIMKA_SKETCH_SIZE = "-nb-kmers";
 
 //const string STR_SIMKA2_DISTANCE_INPUT_1 = "-in-already-computed";
 //const string STR_SIMKA2_DISTANCE_INPUT_2 = "-in-to-compute";
 
 
-
+typedef u_int16_t KmerCountType;
+typedef unordered_map<u_int64_t, KmerCountType> KmerCountDictionaryType;
 
 
 

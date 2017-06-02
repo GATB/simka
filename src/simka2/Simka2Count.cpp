@@ -22,25 +22,46 @@
 
 //#define MERGE_BUFFER_SIZE 10000
 
-/*
-struct KmerCount{
-	u_int64_t _kmer;
-	u_int32_t _count;
-
-	KmerCount(u_int64_t kmer, u_int32_t count){
-		_kmer = kmer;
-		_count = count;
-	}
-};*/
-
-
-
-
-
-
-
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
 template<size_t span=KMER_DEFAULT_SPAN>
-class DistanceCommand
+class SelectKmersCommand
 {
 public:
 
@@ -55,7 +76,8 @@ public:
 	//vector<u_int64_t> _minHashKmers;
 	ModelCanonical _model;
 	ModelCanonicalIterator _itKmer;
-	pthread_mutex_t* _mutex;
+
+	u_int64_t _hash_otpt[2];
 
 	bool _isMaster;
     //size_t _bufferIndex;
@@ -75,31 +97,34 @@ public:
 	//typedef typename KmerCountSorter KmerSorter;
 
 	std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter> _kmerCountSorter;
-	unordered_map<u_int64_t, u_int32_t> _kmerCounts;
+	KmerCountDictionaryType _kmerCounts;
 
 	std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter>& _kmerCountSorterSynch;
-	unordered_map<u_int64_t, u_int32_t>& _kmerCountsSynch;
+	KmerCountDictionaryType& _kmerCountsSynch;
 
+	Bloom<KmerType>* _bloomFilter;
+	u_int64_t _nbInsertedKmersInBloom;
 
-
-	DistanceCommand(size_t kmerSize, size_t sketchSize, pthread_mutex_t* mutex, std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter>& kmerCountSorterSynch, unordered_map<u_int64_t, u_int32_t>& kmerCountsSynch)
-	: _model(kmerSize), _itKmer(_model), _mutex(mutex), _kmerCountSorterSynch(kmerCountSorterSynch), _kmerCountsSynch(kmerCountsSynch)
+	SelectKmersCommand(size_t kmerSize, size_t sketchSize, std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter>& kmerCountSorterSynch, KmerCountDictionaryType& kmerCountsSynch, Bloom<KmerType>* bloomFilter)
+	: _model(kmerSize), _itKmer(_model), _kmerCountSorterSynch(kmerCountSorterSynch), _kmerCountsSynch(kmerCountsSynch), _bloomFilter(bloomFilter)
 	{
 		_kmerSize = kmerSize;
 		_sketchSize = sketchSize;
 		_isMaster = true;
+		_nbInsertedKmersInBloom = 0;
 	}
 
-	DistanceCommand(const DistanceCommand& copy)
-	: _model(copy._kmerSize), _itKmer(_model), _mutex(copy._mutex), _kmerCountSorterSynch(copy._kmerCountSorterSynch), _kmerCountsSynch(copy._kmerCountsSynch)
+	SelectKmersCommand(const SelectKmersCommand& copy)
+	: _model(copy._kmerSize), _itKmer(_model), _kmerCountSorterSynch(copy._kmerCountSorterSynch), _kmerCountsSynch(copy._kmerCountsSynch), _bloomFilter(copy._bloomFilter)
 	{
 		_kmerSize = copy._kmerSize;
 		_sketchSize = copy._sketchSize;
 		_isMaster = false;
+		_nbInsertedKmersInBloom = 0;
 	}
 
 
-	~DistanceCommand(){
+	~SelectKmersCommand(){
 
 		if(_isMaster) return;
 		if(_kmerCountSorter.size() == 0) return;
@@ -120,9 +145,9 @@ public:
 
 
 
-		pthread_mutex_lock(_mutex);
+		//_mutex.lock();
 
-
+		//cout << "Inserted k-mers: " << _nbInsertedKmersInBloom << endl;
 		//cout << "deleteeeeee" << endl;
 		//cout << this << endl;
 
@@ -143,10 +168,10 @@ public:
 
 		//cout << "deleteeeeee1" << endl;
 
-		pthread_mutex_unlock(_mutex);
+		//_mutex.unlock();
 	}
 
-	void mergeSynch(u_int64_t kmer, u_int32_t count){
+	inline void mergeSynch(u_int64_t kmer, KmerCountType count){
 		if(_kmerCountsSynch.find(kmer) == _kmerCountsSynch.end()){
 			if(_kmerCountSorterSynch.size() > _sketchSize){
 				if(kmer < _kmerCountSorterSynch.top() ){
@@ -175,52 +200,99 @@ public:
 		//cout << sequence.getIndex() << endl;
 		//cout << sequence.toString() << endl;
 
+		//cout << _isMaster << endl;
 		_itKmer.setData(sequence.getData());
 
 		for(_itKmer.first(); !_itKmer.isDone(); _itKmer.next()){
 			//cout << _itKmer->value().toString(_kmerSize) << endl;
 
-			u_int64_t kmerLala = _itKmer->value().getVal();
-			u_int64_t kmer;
-			//u_int64_t hash_otpt[2];
-			//uint32_t hash_otpt[4];
+			KmerType kmer = _itKmer->value();
 
-			//cout << kmerLala << endl;
-			MurmurHash3_x64_128 ( (const char*)&kmerLala, sizeof(kmerLala), 100, &kmer);
+
+
+			u_int64_t kmerValue = kmer.getVal();
+			u_int64_t kmerHashed;
+			MurmurHash3_x64_128 ( (const char*)&kmerValue, sizeof(kmerValue), 100, &_hash_otpt);
+			kmerHashed = _hash_otpt[0];
+
+			//todo: verifier dabord si le kmer peut etre insérer, plus rapide que els accès au table de hachage (bloom et selected)
+
+			if(_kmerCountSorter.size() < _sketchSize){
+				if(_bloomFilter->contains(kmer)){
+					//Filling the queue with first elements
+					if(_kmerCounts.find(kmerHashed) == _kmerCounts.end()){
+						_kmerCountSorter.push(kmerHashed);
+						_kmerCounts[kmerHashed] = 2;
+						//cout << _kmerCountSorter.size() << endl;
+					}
+					else{
+						_kmerCounts[kmerHashed] += 1;
+					}
+		    	}
+				else{
+					_bloomFilter->insert(kmer);
+					_nbInsertedKmersInBloom += 1;
+				}
+			}
+			else{
+				if(kmerHashed < _kmerCountSorter.top()){
+					if(_bloomFilter->contains(kmer)){
+
+						if(_kmerCounts.find(kmerHashed) == _kmerCounts.end()){
+							//cout << kmer << "     " << _kmerCounts.size() << endl;
+							u_int64_t greaterValue = _kmerCountSorter.top();
+							_kmerCounts.erase(greaterValue);
+							_kmerCountSorter.pop();
+							_kmerCountSorter.push(kmerHashed);
+							_kmerCounts[kmerHashed] = 2;
+						}
+						else{
+							_kmerCounts[kmerHashed] += 1;
+						}
+					}
+					else{
+						if(kmerHashed < _kmerCountSorter.top() ){
+							_bloomFilter->insert(kmer);
+							_nbInsertedKmersInBloom += 1;
+						}
+					}
+				}
+
+
+				//else{
+					//cout << "test" << endl;
+					//}
+			}
+			//else{
+				//if(_kmerCountSorter.size() < _sketchSize){
+				//	_bloomFilter->insert(kmer);
+				//	_nbInsertedKmersInBloom += 1;
+					//cout << "filling1" << endl;
+				//}
+				//else{
+				//	if(kmerHashed < _kmerCountSorter.top() ){
+				//		_bloomFilter->insert(kmer);
+				//		_nbInsertedKmersInBloom += 1;
+				//	}
+					//}
+			//}
+
+
 			//u_int64_t kmer = hash_otpt[0];
 			//cout << kmer << endl;
-	
-	
+
+
 			//if(kmer < 100) continue;
 
-	    	if(_kmerCounts.find(kmer) == _kmerCounts.end()){
-				if(_kmerCountSorter.size() > _sketchSize){
-					if(kmer < _kmerCountSorter.top() ){
-						//cout << kmer << "     " << _kmerCounts.size() << endl;
-						u_int64_t greaterValue = _kmerCountSorter.top();
-						_kmerCounts.erase(greaterValue);
-						_kmerCountSorter.pop();
-						_kmerCountSorter.push(kmer);
-						_kmerCounts[kmer] = 1;
-					}
-					//else{
-					//	cout << "\t\tnonon" << endl;
-					//}
-				}
-				else{ //Filling the queue with first elements
-					_kmerCountSorter.push(kmer);
-					_kmerCounts[kmer] = 1;
-				}
-	    	}
-	    	else{
-	    		_kmerCounts[kmer] += 1;
-	    	}
+
+	    	//else{
+	    	//	_kmerCounts[kmer] += 1;
+	    	//}
 
 		}
 	}
 
 };
-
 
 /*
  	size_t _kmerSize;
@@ -608,9 +680,9 @@ public:
 	size_t _sketchSize;
 	pthread_mutex_t _mutex;
 
-	typedef typename DistanceCommand<span>::KmerCountSorter KmerCountSorter;
+	typedef typename SelectKmersCommand<span>::KmerCountSorter KmerCountSorter;
 	std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter> _kmerCountSorter;
-	unordered_map<u_int64_t, u_int32_t> _kmerCounts;
+	KmerCountDictionaryType _kmerCounts;
 
 
 	Simka2ComputeKmerSpectrumAlgorithm(IProperties* options, const string& execFilename):
@@ -626,18 +698,17 @@ public:
 		parseArgs();
 		//layoutInputFilename();
 		count();
+		partitionKmerCounts();
 		saveInfos();
 
-		delete _partitionWriter;
 
-		//writeFinishSignal();
 	}
 
 	void parseArgs(){
 
 		_options = getInput();
 
-		_sketchSize = 10000;
+		_sketchSize = _options->getInt(STR_SIMKA_SKETCH_SIZE);
 
 		_computeSimpleDistances = _options->get(STR_SIMKA_COMPUTE_ALL_SIMPLE_DISTANCES);
 		_computeComplexDistances = _options->get(STR_SIMKA_COMPUTE_ALL_COMPLEX_DISTANCES);
@@ -713,28 +784,37 @@ public:
 	}
 
 	void count(){
-		{
 
-			IBank* bank = Bank::open(_inputFilename);
-			LOCAL(bank);
+		IBank* bank = Bank::open(_inputFilename);
+		LOCAL(bank);
 
-			SimkaSequenceFilter sequenceFilter(_minReadSize, _minReadShannonIndex);
-			IBank* filteredBank = new SimkaPotaraBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, _maxNbReads, _nbBankPerDataset);
+		SimkaSequenceFilter sequenceFilter(_minReadSize, _minReadShannonIndex);
+		IBank* filteredBank = new SimkaPotaraBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, _maxNbReads, _nbBankPerDataset);
 
-			LOCAL(filteredBank);
+		LOCAL(filteredBank);
 
 
-			Iterator<Sequence>* itSeq = createIterator<Sequence> (
-					filteredBank->iterator(),
-					filteredBank->estimateNbItems(),
-					"Computing minhash sketch"
-			);
-			LOCAL(itSeq);
+		Iterator<Sequence>* itSeq = createIterator<Sequence> (
+				filteredBank->iterator(),
+				filteredBank->estimateNbItems(),
+				"Computing minhash sketch and counting"
+		);
+		LOCAL(itSeq);
 
-			getDispatcher()->iterate (itSeq, DistanceCommand<span>(_kmerSize, _sketchSize, &_mutex, _kmerCountSorter, _kmerCounts), 1000);
-		}
 
-		partitionKmerCounts();
+		IDispatcher* dispatcher = new SerialDispatcher();
+		u_int64_t bloomMemoryBits = _maxMemory * MBYTE * 8;
+		Bloom<Type>*  bloomFilter = new BloomCacheCoherent<Type>(bloomMemoryBits, 7);
+		//mutex commandMutex;
+		//std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter> kmerCountSorter;
+		//unordered_map<u_int64_t, KmerCountType> kmerCounts;
+		SelectKmersCommand<span> command(_kmerSize, _sketchSize, _kmerCountSorter, _kmerCounts, bloomFilter);
+
+		dispatcher->iterate (itSeq, command, 1000);
+
+		delete dispatcher;
+		delete bloomFilter;
+
 	}
 
 
@@ -765,6 +845,7 @@ public:
 
 		_partitionWriter->end();
 
+		delete _partitionWriter;
 	}
 
 
@@ -799,13 +880,6 @@ public:
         */
 
         outputInfoFile.close();
-	}
-
-	void writeFinishSignal(){
-
-		string finishFilename = _outputDir + "/success";
-		IFile* file = System::file().newFile(finishFilename, "w");
-		delete file;
 	}
 
 
@@ -867,11 +941,14 @@ public:
 		//Kmer parser
 	    IOptionsParser* kmerParser = new OptionsParser ("kmer");
 	    kmerParser->push_back (new OptionOneParam (STR_KMER_SIZE, "size of a kmer", false, "31"));
+	    kmerParser->push_back (new OptionOneParam (STR_SIMKA_SKETCH_SIZE, "number of kmers used to compute distances", true));
 	    //kmerParser->push_back(dskParser->getParser (STR_KMER_SIZE));
 	    //kmerParser->push_back(new OptionOneParam (STR_KMER_PER_READ.c_str(), "number of selected kmers per read", false, "0"));
 	    //kmerParser->push_back (new OptionOneParam (STR_KMER_ABUNDANCE_MIN, "min abundance a kmer need to be considered", false, "1"));
 	    kmerParser->push_back (new OptionOneParam (STR_KMER_ABUNDANCE_MIN, "min abundance a kmer need to be considered", false, "2"));
-	    kmerParser->push_back (new OptionOneParam (STR_KMER_ABUNDANCE_MAX, "max abundance a kmer can have to be considered", false, "999999999"));
+	    KmerCountType maxAbundance = -1;
+	    kmerParser->push_back (new OptionOneParam (STR_KMER_ABUNDANCE_MAX, "max abundance a kmer can have to be considered", false, Stringify::format("%i", maxAbundance)));
+
 	    //kmerParser->push_back(dskParser->getParser (STR_KMER_ABUNDANCE_MIN));
 	    //if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_KMER_ABUNDANCE_MIN)))  {  p->setDefaultValue ("0"); }
 	    //if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_SOLIDITY_KIND)))  {  p->setDefaultValue ("all"); }

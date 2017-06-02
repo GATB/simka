@@ -142,6 +142,7 @@ class Simka_ComputeDistance():
 		command += os.path.join(SCRIPT_DIR, "..", "bin", "simka2-distance")
 		command += " -database-dir " + args._databaseDir
 		command += " -kmer-size " + str(self.database._kmerSize)
+		command += " -nb-kmers " + str(self.database._nbKmers)
 		command += " -partition-id " + str(partitionId)
 		command += " -max-datasets " + str(self.nbFileProcessed+self.maximumProcessedDatasets)
 		command += "   > /dev/null 2>&1     &"
@@ -153,6 +154,7 @@ class Simka_ComputeDistance():
 		command = os.path.join(SCRIPT_DIR, "..", "bin", "simka2-distanceFinal") + \
 			" -database-dir " + args._databaseDir + \
 			" -kmer-size " + str(self.database._kmerSize) + \
+			" -nb-kmers " + str(self.database._nbKmers) + \
 			" -nb-partitions " + str(self.database._nbPartitions) + \
 			" -max-datasets " + str(self.nbFileProcessed+self.maximumProcessedDatasets)
 		#print "simka2-distance (computeDistanceFinal):    besoin de pouvoir submit ce job en HPC mode ?"
