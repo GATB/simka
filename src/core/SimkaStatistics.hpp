@@ -61,9 +61,106 @@ public:
 
 	SimkaStatistics& operator+=  (const SimkaStatistics& other){
 
-		_brayCurtisNumerator += other._brayCurtisNumerator;
-		_matrixNbDistinctSharedKmers += other._matrixNbDistinctSharedKmers;
-		_nbKmersPerDatasetPairs += other._nbKmersPerDatasetPairs;
+		//cout << "lol1" << endl;
+
+		size_t nbOldBanks = _nbBanks - _nbNewBanks;
+
+		for(size_t i=0; i<_nbDistinctKmersPerDataset.size(); i++){
+			_nbDistinctKmersPerDataset[i] += other._nbDistinctKmersPerDataset[i];
+		}
+
+		//cout << "lol2  " << _sketchSize << endl;
+		//cout << "lala" << endl;
+		//cout << _stats._brayCurtisNumerator._matrix_rectangular.size() << endl;
+		//cout << _stats._brayCurtisNumerator._matrix_rectangular[0].size() << endl;
+		//cout << _stats._brayCurtisNumerator._matrix_squaredHalf.size() << endl;
+		//cout << _stats._brayCurtisNumerator._matrix_squaredHalf[0].size() << endl;
+
+		//cout << _brayCurtisNumerator._matrix_rectangular.size() << endl;
+		for(size_t i=0; i<_brayCurtisNumerator._matrix_rectangular.size(); i++){
+			for(size_t j=0; j<_brayCurtisNumerator._matrix_rectangular[i].size(); j++){
+
+				size_t iCrossed = i;
+				size_t jCrossed = j;
+				size_t iMarginal = i+nbOldBanks;
+				size_t jMarginal = j;
+
+				//cout << "xd1  " << _nbDistinctKmersPerDataset[iMarginal] << " " << _nbDistinctKmersPerDataset[jMarginal] << " " << _matrixNbDistinctSharedKmers._matrix_squaredHalf[iCrossed][jCrossed] << endl;
+				if(_nbDistinctKmersPerDataset[iMarginal] + _nbDistinctKmersPerDataset[jMarginal] - _matrixNbDistinctSharedKmers._matrix_rectangular[iCrossed][jCrossed] >= _sketchSize){
+					continue;
+				}
+				//cout << "xd2" << endl;
+
+				//cout << _brayCurtisNumerator._matrix_rectangular[i][j] << " " << _matrixNbDistinctSharedKmers._matrix_rectangular[i][j] << " " << _nbKmersPerDatasetPairs._matrix_rectangular[i][j] << endl;
+
+				_brayCurtisNumerator._matrix_rectangular[i][j] += other._brayCurtisNumerator._matrix_rectangular[i][j];
+				_matrixNbDistinctSharedKmers._matrix_rectangular[i][j] += other._matrixNbDistinctSharedKmers._matrix_rectangular[i][j];
+				_nbKmersPerDatasetPairs._matrix_rectangular[i][j] += other._nbKmersPerDatasetPairs._matrix_rectangular[i][j];
+				//cout << "xd3" << endl;
+			}
+		}
+
+		//cout << "lol3" << endl;
+
+		if(_brayCurtisNumerator._matrix_squaredHalf.size() > 0){
+			for(size_t i=0; i<_brayCurtisNumerator._matrix_squaredHalf.size(); i++){
+
+				u_int64_t jOffset = _brayCurtisNumerator._matrix_squaredHalf.size() - _brayCurtisNumerator._matrix_squaredHalf[i].size();
+
+				for(size_t j=0; j<_brayCurtisNumerator._matrix_squaredHalf[i].size(); j++){
+
+
+					size_t iCrossed = i;
+					size_t jCrossed = j;
+					size_t iMarginal = i+nbOldBanks;
+					size_t jMarginal = j+nbOldBanks+1+jOffset;
+
+					if(_nbDistinctKmersPerDataset[iMarginal] + _nbDistinctKmersPerDataset[jMarginal] - _matrixNbDistinctSharedKmers._matrix_squaredHalf[iCrossed][jCrossed] >= _sketchSize){
+						continue;
+					}
+
+
+					_brayCurtisNumerator._matrix_squaredHalf[i][j] += other._brayCurtisNumerator._matrix_squaredHalf[i][j];
+					_matrixNbDistinctSharedKmers._matrix_squaredHalf[i][j] += other._matrixNbDistinctSharedKmers._matrix_squaredHalf[i][j];
+					_nbKmersPerDatasetPairs._matrix_squaredHalf[i][j] += other._nbKmersPerDatasetPairs._matrix_squaredHalf[i][j];
+
+				}
+			}
+		}
+
+		//cout << "lol4" << endl;
+		/*
+		for(size_t i=0; i<_brayCurtisNumerator._matrix_rectangular.size(); i++){
+			for(size_t j=0; j<_brayCurtisNumerator._matrix_rectangular[i].size(); j++){
+
+				if(_nbDistinctKmersPerDataset[i] + _nbDistinctKmersPerDataset[j] - _matrixNbDistinctSharedKmers._matrix_squaredHalf[i][j] >= _sketchSize){
+					continue;
+				}
+
+				_brayCurtisNumerator._matrix_rectangular[i][j] += other._brayCurtisNumerator._matrix_rectangular[i][j];
+				_matrixNbDistinctSharedKmers._matrix_rectangular[i][j] += other._matrixNbDistinctSharedKmers._matrix_rectangular[i][j];
+				_nbKmersPerDatasetPairs._matrix_rectangular[i][j] += other._nbKmersPerDatasetPairs._matrix_rectangular[i][j];
+			}
+		}
+
+		for(size_t i=0; i<_brayCurtisNumerator._matrix_squaredHalf.size(); i++){
+			for(size_t j=0; j<_brayCurtisNumerator._matrix_squaredHalf[i].size(); j++){
+
+
+				if(_nbDistinctKmersPerDataset[i] + _nbDistinctKmersPerDataset[j] - _matrixNbDistinctSharedKmers._matrix_squaredHalf[i][j] >= _sketchSize){
+					continue;
+				}
+
+				_brayCurtisNumerator._matrix_squaredHalf[i][j] += other._brayCurtisNumerator._matrix_squaredHalf[i][j];
+				_matrixNbDistinctSharedKmers._matrix_squaredHalf[i][j] += other._matrixNbDistinctSharedKmers._matrix_squaredHalf[i][j];
+				_nbKmersPerDatasetPairs._matrix_squaredHalf[i][j] += other._nbKmersPerDatasetPairs._matrix_squaredHalf[i][j];
+			}
+		}
+		*/
+
+		//_nbKmersPerDatasetPairs += other._brayCurtisNumerator;
+		//_matrixNbDistinctSharedKmers += other._matrixNbDistinctSharedKmers;
+		//_nbKmersPerDatasetPairs += other._nbKmersPerDatasetPairs;
 
 		return *this;
 	}
@@ -75,6 +172,11 @@ public:
 		Iterator<long double>* it = file->iterator();
 		LOCAL(it);
 		it->first();
+
+		for(size_t i=0; i<_nbDistinctKmersPerDataset.size(); i++){
+			_nbDistinctKmersPerDataset[i] = it->item();
+			it->next();
+		}
 
 	    _brayCurtisNumerator.load(it);
 	    _matrixNbDistinctSharedKmers.load(it);
@@ -90,6 +192,10 @@ public:
 
 
 		BagGzFile<long double>* file = new BagGzFile<long double>(filename);
+
+		for(size_t i=0; i<_nbDistinctKmersPerDataset.size(); i++){
+			file->insert((long double)_nbDistinctKmersPerDataset[i]);
+		}
 
 	    _brayCurtisNumerator.save(file);
 	    _matrixNbDistinctSharedKmers.save(file);

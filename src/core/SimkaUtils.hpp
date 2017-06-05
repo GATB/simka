@@ -472,7 +472,6 @@ public:
 
 
 
-
 		if(_stats->_nbKmersPerDatasetPairs._matrix_squaredHalf.size() > 0){
 			for(size_t ii=0; ii<_sharedNewBanks.size(); ii++){
 
