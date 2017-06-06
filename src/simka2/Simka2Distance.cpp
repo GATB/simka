@@ -84,9 +84,13 @@ public:
 	//bool _computeComplexDistances;
 	//size_t _nbBanks;
 	//vector<string> _currentDatasetIds;
+	u_int64_t _nbDistinctKmers;
+	u_int64_t _nbDistinctKmersPerPartition;
+	u_int64_t _processedKmerRangeMin;
+	u_int64_t _processedKmerRangeMax;
 
-	DatasetMergerDistance(size_t nbBanks, size_t partitionId, vector<string>& datasetToMergeDirs, SimkaStatistics* stats, SimkaCountProcessorSimple<span>* processor, map<string, u_int64_t>& idToOrder):
-		DiskBasedMergeSort<span>(partitionId, datasetToMergeDirs, idToOrder, true)
+	DatasetMergerDistance(size_t nbBanks, size_t partitionId, vector<string>& datasetToMergeDirs, SimkaStatistics* stats, SimkaCountProcessorSimple<span>* processor, map<string, u_int64_t>& idToOrder, u_int64_t nbDistinctKmersPerPartition):
+		DiskBasedMergeSort<span>(0, datasetToMergeDirs, idToOrder, true)
     {
 
 
@@ -97,7 +101,11 @@ public:
 		_nbBankThatHaveKmer = 0;
 		_stats = stats;
 		_processor = processor;
+		_nbDistinctKmers = 0;
+		_nbDistinctKmersPerPartition = nbDistinctKmersPerPartition;
 
+		_processedKmerRangeMin = _nbDistinctKmersPerPartition * partitionId;
+		_processedKmerRangeMax = _processedKmerRangeMin + _nbDistinctKmersPerPartition;
     }
 
 	void process(Type& kmer, u_int64_t bankId, u_int64_t abundance){
@@ -128,7 +136,7 @@ public:
 
 	void insert(const Type& kmer, const CountVector& counts, size_t nbBankThatHaveKmer){
 
-
+		//cout << _processedKmerRangeMin << " " << _processedKmerRangeMax << endl;
 		/*
 		cout << kmer.toString(31) << "     ";
 		for(size_t i=0; i<counts.size(); i++){
@@ -144,9 +152,13 @@ public:
 		//	_stats->_nbSharedKmers += 1;
 		//}
 
-		_processor->process(this->_partitionId, kmer, counts);
+		//if()
+		if(_nbDistinctKmers >= _processedKmerRangeMin && _nbDistinctKmers < _processedKmerRangeMax){
+			_processor->process(this->_partitionId, kmer, counts);
+		}
 
 
+		_nbDistinctKmers += 1;
 		/*
 		if(_stats->_computeComplexDistances || _nbBankThatHaveKmer > 1){
 
@@ -165,6 +177,77 @@ public:
 		insert(_lastKmer, _abundancePerBank, _nbBankThatHaveKmer);
 		delete _solidCounter;
 		//cout << "ENNNNNNNNNNNNNNNNNNNNNNNND2" << endl;
+    }
+
+
+
+
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*********************************************************************
+* ** SimkaAlgorithm
+*********************************************************************/
+template<size_t span>
+class DistinctMergedKmerCounter : public DiskBasedMergeSort<span>
+{
+
+public:
+
+	typedef typename Kmer<span>::Type                                       Type;
+
+
+	u_int64_t _nbDistinctMergedKmers;
+
+    Type _lastKmer;
+    bool _isInit;
+
+
+	DistinctMergedKmerCounter(size_t partitionId, vector<string>& datasetToMergeDirs, map<string, u_int64_t>& idToOrder):
+		DiskBasedMergeSort<span>(partitionId, datasetToMergeDirs, idToOrder, false)
+    {
+		//_lastKmer = Type(0);
+		_nbDistinctMergedKmers = 0;
+		_isInit = false;
+    }
+
+	void process(Type& kmer, u_int64_t bankId, u_int64_t abundance){
+
+		if(_isInit){
+			if(kmer == _lastKmer){
+			}
+			else{
+				_nbDistinctMergedKmers += 1;
+				_lastKmer = kmer;
+			}
+		}
+		else{
+			_isInit = true;
+			_lastKmer = kmer;
+		}
+	}
+
+
+
+	void end(){
+		_nbDistinctMergedKmers += 1;
     }
 
 
@@ -197,6 +280,8 @@ public:
 	size_t _partitionId;
 	size_t _maxDatasets;
 	size_t _sketchSize;
+	size_t _distanceType;
+	u_int64_t _nbDistinctMergedKmers;
 
 	Simka2Database _database;
 	vector<string> _allIds;
@@ -225,15 +310,41 @@ public:
 		parseArgs();
 		createDatabases();
 		initStatistics();
-		distance();
 
 
-		saveStats();
 
-		delete _stats;
-		delete _processor;
 
-		//writeFinishSignal();
+
+		if(_distanceType == 0){
+
+			DistinctMergedKmerCounter<span> distinctMergedKmerCounter(_partitionId, _kmerSpectrumDirs, _idToOrder);
+			distinctMergedKmerCounter.execute();
+			u_int64_t nbDistinctMergedKmers = distinctMergedKmerCounter._nbDistinctMergedKmers;
+
+			//string filename = _dirMatrixParts + "/" + Stringify::format("%i", _partitionId) + "-nbDistinctMergedKmers.bin";
+			string filename = _dirMatrixParts + "/" + "nbDistinctMergedKmers.bin";
+			ofstream file(filename.c_str(), std::ios::binary);
+		    file.write((char const*)(&nbDistinctMergedKmers), sizeof(nbDistinctMergedKmers));
+		    file.close();
+
+		}
+		else if(_distanceType == 1){
+			distance();
+			saveStats();
+
+			delete _stats;
+			delete _processor;
+		}
+
+
+		//distance();
+
+
+		//saveStats();
+
+		//delete _stats;
+		//delete _processor;
+
 
 	}
 
@@ -244,8 +355,10 @@ public:
     	_partitionId = getInput()->getInt(STR_SIMKA2_PARTITION_ID);
     	_databaseDir =  getInput()->getStr(STR_SIMKA2_DATABASE_DIR);
     	_maxDatasets = getInput()->getInt(STR_SIMKA2_DISTANCE_MAX_PROCESSABLE_DATASETS);
+    	_nbDistinctMergedKmers = getInput()->getInt(STR_SIMKA2_NB_DISTINCT_MERGED_KMERS);
 
 		_sketchSize = getInput()->getInt(STR_SIMKA_SKETCH_SIZE);
+		_distanceType = getInput()->getInt(STR_SIMKA2_DISTANCE_TYPE);
 
     	_dirMatrixParts = _databaseDir + "/distance/temp_parts";
     	//_dirMatrixMatrixBinary = _databaseDir + "/distance/matrix_binary";
@@ -287,13 +400,16 @@ public:
 		_stats = new SimkaStatistics(_nbBanks, _nbNewBanks, _computeSimpleDistances, _computeComplexDistances, _kmerSize, _sketchSize);
 		simka2_loadStatInfos(_databaseDir, _database._uniqKmerSpectrumDirs, _database._entries, _kmerSpectrumDirs, _stats, _database._entriesInfos);
 
+		//for(size_t i=0; i<_nbBanks; i++){
+		//	cout << _stats-> << endl;
+		//}
 	}
 
 	void distance(){
 
 		_processor = new SimkaCountProcessorSimple<span> (_stats, _nbBanks, _nbNewBanks, _kmerSize, 0);
 
-		DatasetMergerDistance<span> datasetMergerDistance(_nbBanks, _partitionId, _kmerSpectrumDirs, _stats, _processor, _idToOrder);
+		DatasetMergerDistance<span> datasetMergerDistance(_nbBanks, _partitionId, _kmerSpectrumDirs, _stats, _processor, _idToOrder, _nbDistinctMergedKmers);
 		datasetMergerDistance.execute();
 
 		_processor->end();
@@ -303,12 +419,6 @@ public:
 	void saveStats(){
 		string filename = _dirMatrixParts + "/" + Stringify::format("%i", _partitionId) + ".gz";
 		_stats->save(filename);
-	}
-
-	void writeFinishSignal(){
-		string finishFilename = _dirMatrixParts + "/" + Stringify::format("%i", _partitionId) + "-success";
-		IFile* file = System::file().newFile(finishFilename, "w");
-		delete file;
 	}
 
 
@@ -339,6 +449,8 @@ public:
 	    parser->push_front (new OptionOneParam (STR_SIMKA2_DATABASE_DIR, "dir path to a simka database", true));
 	    parser->push_front (new OptionOneParam (STR_SIMKA2_PARTITION_ID, "number of the partition", true));
 	    parser->push_front (new OptionOneParam (STR_SIMKA2_DISTANCE_MAX_PROCESSABLE_DATASETS, "maximum number of datasets that can be processed", true));
+	    parser->push_front (new OptionOneParam (STR_SIMKA2_DISTANCE_TYPE, "0: count nb distinct merged kmers, 1: compute distances", true));
+	    parser->push_front (new OptionOneParam (STR_SIMKA2_NB_DISTINCT_MERGED_KMERS, "number of distinct kmers among N datasets", true));
 	    //parser->push_front (new OptionOneParam (STR_SIMKA2_DISTANCE_MATRIX_DIR, "input filename of k-mer spectrums for which distances has to be computed", true));
 
 	    IOptionsParser* kmerParser = new OptionsParser ("kmer");

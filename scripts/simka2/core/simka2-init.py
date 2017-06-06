@@ -33,6 +33,7 @@ def init_settings():
         resourceAllocator = Simka2ResourceAllocator(bool(args._isHPC), int(args._nbCores), int(args._maxMemory), int(args._maxJobs), None, None)
         maxJobs, coresPerJob = resourceAllocator.executeForDistanceJobs(-1)
         nbPartitions = min(400, maxJobs*coresPerJob)
+    nbPartitions = 200
     #nbPartitions = 1 #for simkaMin distance computation
 
     settings_file = open(os.path.join(args._databaseDir, "settings.txt"), "w")

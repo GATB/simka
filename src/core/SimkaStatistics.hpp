@@ -67,6 +67,7 @@ public:
 
 		for(size_t i=0; i<_nbDistinctKmersPerDataset.size(); i++){
 			_nbDistinctKmersPerDataset[i] += other._nbDistinctKmersPerDataset[i];
+			//cout << i << " :" << _nbDistinctKmersPerDataset[i] << endl;
 		}
 
 		//cout << "lol2  " << _sketchSize << endl;

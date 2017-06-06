@@ -2,6 +2,7 @@
 import os, sys, argparse, shutil, struct
 from simka2_database import SimkaDatabase
 from simka2_utils import Simka2ResourceAllocator, JobScheduler, ProgressBar, SimkaCommand
+from math import ceil
 
 parser = argparse.ArgumentParser(description='Description')
 
@@ -63,6 +64,11 @@ class Simka_ComputeDistance():
 
 		self.mergeKmerSpectrums()
 
+
+		self.computeNbMergedDistinctKmers()
+
+
+
 		#print maxJobs, self.jobCores, self.maximumProcessedDatasets, args._maxMemory
 		print "maximum number of processed files:",  self.maximumProcessedDatasets, maxJobs, self.jobCores
 		self.jobScheduler = JobScheduler(maxJobs, ProgressBar("Computing distances", self.resourceAllocator.getNbDistanceJobToSubmit(self.database._nbPartitions, self.jobCores)))
@@ -85,6 +91,45 @@ class Simka_ComputeDistance():
 		ret = os.system(command)
 		if ret != 0: exit(1)
 
+	def computeNbMergedDistinctKmers(self):
+		command = os.path.join(SCRIPT_DIR, "..", "bin", "simka2-distance")
+		command += " -database-dir " + args._databaseDir
+		command += " -kmer-size " + str(self.database._kmerSize)
+		command += " -nb-kmers " + str(self.database._nbKmers)
+		command += " -partition-id 0 "
+		command += " -max-datasets " + str(self.nbFileProcessed+self.maximumProcessedDatasets)
+		command += " -distance-type 0 "
+		command += " -nb-distinct-kmers-total 0 "
+		command += "   > /dev/null 2>&1 "
+		ret = os.system(command)
+		if ret != 0: exit(1)
+
+		filename = os.path.join(self.tempDir, "nbDistinctMergedKmers.bin")
+		f = open(filename, mode='rb')
+		self.nbDistinctMergedKmers = struct.unpack("Q", f.read(8))[0]
+		f.close()
+		#self.nbDistinctMergedKmers = 0
+		#for i in range(0, self.database._nbPartitions):
+		#	filename = os.path.join(self.tempDir, str(i) + "-nbDistinctMergedKmers.bin")
+		#	f = open(filename, mode='rb')
+		#	size = struct.unpack("Q", f.read(8))[0]
+		#	f.close()
+		#	self.nbDistinctMergedKmers += size
+		#	#os.remove(filename)
+		print("Nb distinct Merged Kmers: " + str(self.nbDistinctMergedKmers))
+		self.clearTempDir()
+
+	def computeDistanceFinal(self):
+		command = os.path.join(SCRIPT_DIR, "..", "bin", "simka2-distance") + \
+			" -database-dir " + args._databaseDir + \
+			" -kmer-size " + str(self.database._kmerSize) + \
+			" -nb-kmers " + str(self.database._nbKmers) + \
+			" -nb-partitions " + str(self.database._nbPartitions) + \
+			" -max-datasets " + str(self.nbFileProcessed+self.maximumProcessedDatasets)
+		#print "simka2-distance (computeDistanceFinal):    besoin de pouvoir submit ce job en HPC mode ?"
+		#command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
+		ret = os.system(command)
+		if ret != 0: exit(1)
 
 	def computeDistanceParts(self):
 
@@ -120,6 +165,7 @@ class Simka_ComputeDistance():
 			command += checkPointFilename + " "
 			command += " python " + os.path.join(SCRIPT_DIR, "simka2-run-job-multi.py") + " "
 			command += " " + os.path.join(self.tempDir, "commands_input_" + str(i))
+			#command += " & "
 			command += "   > /dev/null 2>&1     &"
 			#scommand += " & "
 			command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
@@ -133,10 +179,12 @@ class Simka_ComputeDistance():
 
 	def constructJobCommand(self, partitionId):
 
+		#print self.database._nbPartitions, partitionId
 		checkPointFilename = os.path.join(self.tempDir, str(partitionId) + "-")
 		unsuccessCheckPointFilename = checkPointFilename + "unsuccess"
 		if os.path.exists(unsuccessCheckPointFilename): os.remove(unsuccessCheckPointFilename)
 
+		nbKmerPerpart = ceil(float(self.nbDistinctMergedKmers) / float(self.database._nbPartitions))
 		command = "python " + os.path.join(SCRIPT_DIR, "simka2-run-job.py") + " "
 		command += checkPointFilename + " "
 		command += os.path.join(SCRIPT_DIR, "..", "bin", "simka2-distance")
@@ -145,7 +193,10 @@ class Simka_ComputeDistance():
 		command += " -nb-kmers " + str(self.database._nbKmers)
 		command += " -partition-id " + str(partitionId)
 		command += " -max-datasets " + str(self.nbFileProcessed+self.maximumProcessedDatasets)
-		command += "   > /dev/null 2>&1     &"
+		command += " -distance-type 1 "
+		command += " -nb-distinct-kmers-total " + str(nbKmerPerpart)
+		#command += " & "
+		#command += "   > /dev/null 2>&1     &"
 		#print command
 		self.jobCommandsFile.write(checkPointFilename + "|" + command + "\n")
 

@@ -29,6 +29,7 @@ class SimkaKmerSpectrumMerger():
 
 	def __init__(self):
 		self.database = SimkaDatabase(args._databaseDir)
+		self.database._nbPartitions = 1
 
 	def clearTempDir(self):
 		self.tempDir = os.path.join(self.database.dirname, "merge")
