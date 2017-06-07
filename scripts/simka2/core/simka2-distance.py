@@ -196,7 +196,7 @@ class Simka_ComputeDistance():
 		command += " -distance-type 1 "
 		command += " -nb-distinct-kmers-total " + str(nbKmerPerpart)
 		#command += " & "
-		#command += "   > /dev/null 2>&1     &"
+		command += "   > /dev/null 2>&1     &"
 		#print command
 		self.jobCommandsFile.write(checkPointFilename + "|" + command + "\n")
 

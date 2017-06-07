@@ -7,7 +7,7 @@ class SimkaSettings():
 
     #MAX_OPEN_FILES = 1000
     MIN_FILES_TO_START_MERGE = 1000
-    MAX_OPEN_FILES_PER_MERGE = 100
+    MAX_OPEN_FILES_PER_MERGE = 1000
 
     @staticmethod
     def getDirSize(dirpath):
