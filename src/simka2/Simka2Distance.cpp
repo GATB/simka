@@ -153,10 +153,17 @@ public:
 		//}
 
 		//if()
-		if(_nbDistinctKmers >= _processedKmerRangeMin && _nbDistinctKmers < _processedKmerRangeMax){
-			_processor->process(this->_partitionId, kmer, counts);
+		//if(_nbDistinctKmers >= _processedKmerRangeMin && _nbDistinctKmers < _processedKmerRangeMax){
+		//	_processor->process(this->_partitionId, kmer, counts);
+		//}
+		if(_nbDistinctKmers >= _processedKmerRangeMin){
+			if(_nbDistinctKmers < _processedKmerRangeMax){
+				_processor->process(this->_partitionId, kmer, counts);
+			}
+			else{
+				this->_isDone = true;
+			}
 		}
-
 
 		_nbDistinctKmers += 1;
 		/*

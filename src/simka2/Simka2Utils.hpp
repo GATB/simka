@@ -253,6 +253,7 @@ public:
 	vector<u_int64_t> _indexReordering;
 	map<string, u_int64_t>& _idToOrder;
 	bool _needReordering;
+	bool _isDone;
 
     DiskBasedMergeSort(size_t partitionId, vector<string>& datasetToMergeDirs, map<string, u_int64_t>& idToOrder, bool needReordering):
     	_datasetToMergeDirs(datasetToMergeDirs), _idToOrder(idToOrder), _needReordering(needReordering)
@@ -261,6 +262,7 @@ public:
     	_partitionId = partitionId;
 
     	_nbBanks = 0;
+    	_isDone = false;
 		//_nbBanks = _datasetIds.size();
 
     	//cout << _outputFilename << endl;
@@ -449,6 +451,9 @@ public:
 			    	//_indexReordering[bestIt->getBankId()];
 			    	//bestIt->abundance();
 			    	process(bestIt->value(), _indexReordering[bestIt->getBankId()], bestIt->abundance());
+			    	if(_isDone){
+			    		break;
+			    	}
 			    	//}
 
 		    	//cout << bestIt->value().toString(31) << " " << bestIt->getBankId() <<  " "<< bestIt->abundance() << endl;
