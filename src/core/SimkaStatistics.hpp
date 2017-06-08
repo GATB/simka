@@ -93,6 +93,12 @@ public:
 				size_t iMarginal = i+nbOldBanks;
 				size_t jMarginal = j;
 
+				u_int64_t nextNbDistinctKmersNext = _nbDistinctKmersPerDataset[iMarginal] + _nbDistinctKmersPerDataset[jMarginal] - _matrixNbDistinctSharedKmers._matrix_rectangular[iCrossed][jCrossed] + other._matrixNbDistinctSharedKmers._matrix_rectangular[i][j] ;// + other._matrixNbDistinctSharedKmers._matrix_squaredHalf[i][j];
+				//cout << "xd1  " << _nbDistinctKmersPerDataset[iMarginal] << " " << _nbDistinctKmersPerDataset[jMarginal] << " " << _matrixNbDistinctSharedKmers._matrix_squaredHalf[iCrossed][jCrossed] << endl;
+				if(nextNbDistinctKmersNext >= _sketchSize){
+					continue;
+				}
+
 				//u_int64_t nextNbDistinctKmersNext = _nbDistinctKmersPerDataset[iMarginal] + _nbDistinctKmersPerDataset[jMarginal] - _matrixNbDistinctSharedKmers._matrix_rectangular[iCrossed][jCrossed];// + other._matrixNbDistinctSharedKmers._matrix_rectangular[i][j];
 				//cout << "xd1  " << _nbDistinctKmersPerDataset[iMarginal] << " " << _nbDistinctKmersPerDataset[jMarginal] << " " << _matrixNbDistinctSharedKmers._matrix_squaredHalf[iCrossed][jCrossed] << endl;
 				//if(nextNbDistinctKmersNext >= _sketchSize){
@@ -183,8 +189,8 @@ public:
 
 	void load(const string& filename){
 
-		IterableGzFile<long double>* file = new IterableGzFile<long double>(filename);
-		Iterator<long double>* it = file->iterator();
+		IterableGzFile<u_int64_t>* file = new IterableGzFile<u_int64_t>(filename);
+		Iterator<u_int64_t>* it = file->iterator();
 		LOCAL(it);
 		it->first();
 
@@ -208,11 +214,11 @@ public:
 	void save (const string& filename){
 
 
-		BagGzFile<long double>* file = new BagGzFile<long double>(filename);
+		BagGzFile<u_int64_t>* file = new BagGzFile<u_int64_t>(filename);
 
 		for(size_t i=0; i<_nbDistinctKmersPerDataset.size(); i++){
-			file->insert((long double)_nbDistinctKmersPerDataset[i]);
-			file->insert((long double)_nbKmersPerDataset[i]);
+			file->insert((u_int64_t)_nbDistinctKmersPerDataset[i]);
+			file->insert((u_int64_t)_nbKmersPerDataset[i]);
 		}
 
 	    _brayCurtisNumerator.save(file);

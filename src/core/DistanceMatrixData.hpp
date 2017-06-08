@@ -69,7 +69,7 @@ public:
 		return *this;
 	}
 
-	void load(Iterator<long double>* gzIt){
+	void load(Iterator<u_int64_t>* gzIt){
 		for(size_t i=0; i<_matrix_rectangular.size(); i++){
 			for(size_t j=0; j<_matrix_rectangular[i].size(); j++){
 				_matrix_rectangular[i][j] = gzIt->item();
@@ -85,7 +85,7 @@ public:
 		}
 	}
 
-	void save (Bag<long double>* bag){
+	void save (Bag<u_int64_t>* bag){
 
 		for(size_t i=0; i<_matrix_rectangular.size(); i++){
 			for(size_t j=0; j<_matrix_rectangular[i].size(); j++){
