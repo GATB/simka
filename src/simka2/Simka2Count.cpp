@@ -760,16 +760,16 @@ public:
 
 		//_outputDirTemp = _outputDirTemp;
 
-		if(!System::file().doesExist(_outputDirTemp)){
-			std::cerr << "Error: can't create output temp directory (" << _outputDirTemp << ")" << std::endl;
-			exit(EXIT_FAILURE);
+		//if(!System::file().doesExist(_outputDirTemp)){
+		//std::cerr << "Error: can't create output temp directory (" << _outputDirTemp << ")" << std::endl;
+		//exit(EXIT_FAILURE);
 			/*
 			int ok = System::file().mkdir(_outputDirTemp, -1);
 			if(ok != 0){
 				std::cerr << "Error: can't create output temp directory (" << _outputDirTemp << ")" << std::endl;
 				exit(1);
 			}*/
-		}
+		//}
 
 		//_outputDirTemp = System::file().getRealPath(_outputDirTemp) + "/";
 		//cout << _outputDirTemp << endl;

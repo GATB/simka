@@ -83,15 +83,13 @@ class ComputeKmerSpectrumAll():
 				pass
 
 			#-- create dir for temporary files
-			outputDirTemp = self.getOutputDirTemp(id)
-			if os.path.exists(outputDirTemp):
-				shutil.rmtree(outputDirTemp, ignore_errors=True)
+			#outputDirTemp = self.getOutputDirTemp(id)
+			#if os.path.exists(outputDirTemp):
+			#	shutil.rmtree(outputDirTemp, ignore_errors=True)
 
-			os.makedirs(outputDirTemp)
+			#os.makedirs(outputDirTemp)
 
 			#-- create input filename
-			inputFilename = os.path.join(outputDirTemp, "input.txt")
-			inputFile = open(inputFilename, "w")
 
 			abs_filenames = ""
 			filenames_paireds = filenames.split(";")
@@ -109,14 +107,13 @@ class ComputeKmerSpectrumAll():
 				abs_filenames += "\n"
 			abs_filenames = abs_filenames[:-1]
 
-			inputFile.write(abs_filenames)
-			inputFile.close()
 
-			self.computeKmerSpectrum(id, inputFilename, outputDirTemp, nbPairedDatasets)
+
+			self.computeKmerSpectrum(id, abs_filenames, nbPairedDatasets)
 		maininputFile.close()
 
 
-	def computeKmerSpectrum(self, id, inputFilename, outputDirTemp, nbPairedDatasets):
+	def computeKmerSpectrum(self, id, abs_filenames, nbPairedDatasets):
 
 		#print id
 		kmerSpectrumOutputDir = os.path.join(self.database.get_default_kmer_spectrum_dir_of_id(id, True))
@@ -127,6 +124,11 @@ class ComputeKmerSpectrumAll():
 			shutil.rmtree(kmerSpectrumOutputDir, ignore_errors=True)
 
 		os.makedirs(kmerSpectrumOutputDir)
+
+		inputFilename = os.path.join(kmerSpectrumOutputDir, "input.txt")
+		inputFile = open(inputFilename, "w")
+		inputFile.write(abs_filenames)
+		inputFile.close()
 
 		checkPointFilename = kmerSpectrumOutputDir + "/"#os.path.join(kmerSpectrumOutputDir, "success")
 		successCheckPointFilename = checkPointFilename + "success"
@@ -159,7 +161,7 @@ class ComputeKmerSpectrumAll():
 			os.path.join(SCRIPT_DIR, "..", "bin", "simka2-count") + \
 			" -id " + id + \
 			" -in " + inputFilename + \
-			" -out-tmp " + outputDirTemp + \
+			" -out-tmp " + "dummy" + \
 			" -out " + kmerSpectrumOutputDir + \
 			" -kmer-size " + str(self.database._kmerSize) + \
 			" -max-reads " + str(self.database._maxReads) + \
@@ -182,19 +184,19 @@ class ComputeKmerSpectrumAll():
 
 		os.system(command + " >> " + logFilename + " 2>&1   &")
 
-		self.jobScheduler.submitJob((checkPointFilename, self.jobEnd, (id, self.database.get_default_kmer_spectrum_dir_of_id(id, False), outputDirTemp)))
+		self.jobScheduler.submitJob((checkPointFilename, self.jobEnd, (id, self.database.get_default_kmer_spectrum_dir_of_id(id, False))))
 
 	def jobEnd(self, data):
 		id = data[0]
 		kmerSpectrumOutputDir = data[1]
-		outputDirTemp = data[2]
+		#outputDirTemp = data[2]
 
 		kmerSpectrumOutputDirAbs = os.path.join(self.database.dirname, kmerSpectrumOutputDir)
 		SimkaSettings.saveDirSize(kmerSpectrumOutputDirAbs)
 
 		self.database.add_entry(id, kmerSpectrumOutputDir)
 
-		shutil.rmtree(outputDirTemp, ignore_errors=True)
+		#shutil.rmtree(outputDirTemp, ignore_errors=True)
 
 
 	def countNbDatasetToProcess(self):
