@@ -127,11 +127,12 @@ public:
 				//LOCAL (storage);
 
 				//stats.clear();
-				stats.load(filename);
+				if(System::file().doesExist(filename)){
+					stats.load(filename);
 
-				//cout << stats._nbDistinctKmers << "   " << stats._nbKmers << endl;
-				mainStats += stats;
-
+					//cout << stats._nbDistinctKmers << "   " << stats._nbKmers << endl;
+					mainStats += stats;
+				}
 				//nbKmers += stats._nbKmers;
 			}
 		}
