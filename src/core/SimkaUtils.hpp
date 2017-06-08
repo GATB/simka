@@ -457,12 +457,14 @@ public:
 		for(size_t i=0; i<_bankOffset; i++){
 			if(counts[i]){
 				_stats->_nbDistinctKmersPerDataset[i] += 1;
+				_stats->_nbKmersPerDataset[i] += counts[i];
 				_sharedOldBanks.push_back(i);
 			}
 		}
 		for(size_t i=_bankOffset; i<counts.size(); i++){
 			if(counts[i]){
 				_stats->_nbDistinctKmersPerDataset[i] += 1;
+				_stats->_nbKmersPerDataset[i] += counts[i];
 				_sharedNewBanks.push_back(i);
 			}
 		}
@@ -471,7 +473,7 @@ public:
 
 
 
-
+		/*
 		if(_stats->_nbKmersPerDatasetPairs._matrix_squaredHalf.size() > 0){
 			for(size_t ii=0; ii<_sharedNewBanks.size(); ii++){
 
@@ -547,7 +549,7 @@ public:
 
 			}
 		}
-
+		*/
 
 		updateDistanceDefault(counts);
     }
@@ -577,9 +579,9 @@ public:
 					u_int64_t j = _sharedNewBanks[jj];
 
 					//cout << _stats->_nbSolidDistinctKmersPerBank[i] << endl;
-					if(_stats->_nbDistinctKmersPerDataset[i] + _stats->_nbDistinctKmersPerDataset[j] - _stats->_matrixNbDistinctSharedKmers._matrix_squaredHalf[i-_bankOffset][j-_bankOffset-jOffset-1] >= _stats->_sketchSize){ //_minHashUnion[i] is _skecthSize
-						continue;
-					}
+					//if(_stats->_nbDistinctKmersPerDataset[i] + _stats->_nbDistinctKmersPerDataset[j] - _stats->_matrixNbDistinctSharedKmers._matrix_squaredHalf[i-_bankOffset][j-_bankOffset-jOffset-1] >= _stats->_sketchSize){ //_minHashUnion[i] is _skecthSize
+					//	continue;
+					//}
 					//cout << _minHashUnion[i] << " " <<  _minHashUnion[j] << " " << _minHashUnionCross[i][j] << "    " << (_minHashUnion[i] + _minHashUnion[j] - _minHashUnionCross[i][j]) << "  " << _stats->_nbSolidDistinctKmersPerBank[i] << endl;
 
 					//size_t symetricIndex = j + ((_nbBanks-1)*i) - (i*(i-1)/2);
@@ -628,9 +630,9 @@ public:
 
 				u_int64_t j = _sharedOldBanks[jj];
 
-				if(_stats->_nbDistinctKmersPerDataset[i] + _stats->_nbDistinctKmersPerDataset[j] - _stats->_matrixNbDistinctSharedKmers._matrix_rectangular[i-_bankOffset][j] >= _stats->_sketchSize){
-					continue;
-				}
+				//if(_stats->_nbDistinctKmersPerDataset[i] + _stats->_nbDistinctKmersPerDataset[j] - _stats->_matrixNbDistinctSharedKmers._matrix_rectangular[i-_bankOffset][j] >= _stats->_sketchSize){
+				//	continue;
+				//}
 
 				u_int64_t abundanceJ = counts[j];
 

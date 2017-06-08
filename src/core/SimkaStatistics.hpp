@@ -24,8 +24,10 @@ public:
 	DistanceMatrixData _brayCurtisNumerator;
 	DistanceMatrixData _matrixNbDistinctSharedKmers;
 
+	DistanceMatrixData _nbDistinctKmersPerDatasetPairs;
 	DistanceMatrixData _nbKmersPerDatasetPairs;
 	vector<u_int64_t> _nbDistinctKmersPerDataset;
+	vector<u_int64_t> _nbKmersPerDataset;
 	//vector<u_int64_t> _nbKmersPerDataset;
 	//DistanceMatrixData _nbKmersPerDatasetPairs;
 
@@ -48,6 +50,7 @@ public:
 		_matrixNbDistinctSharedKmers.resize(_nbBanks, _nbNewBanks);
 		_nbKmersPerDatasetPairs.resize(_nbBanks, _nbNewBanks);
 		_nbDistinctKmersPerDataset.resize(_nbBanks, 0);
+		_nbKmersPerDataset.resize(_nbBanks, 0);
 		//_nbKmersPerDataset.resize(_nbBanks, 0);
 		/*
 		 *     	_minHashUnion.resize(_nbBanks, 0);
@@ -67,8 +70,12 @@ public:
 
 		for(size_t i=0; i<_nbDistinctKmersPerDataset.size(); i++){
 			_nbDistinctKmersPerDataset[i] += other._nbDistinctKmersPerDataset[i];
+			_nbKmersPerDataset[i] += other._nbKmersPerDataset[i];
+			//cout << _nbKmersPerDataset[0] << endl;
 			//cout << i << " :" << _nbDistinctKmersPerDataset[i] << endl;
+			//cout << _nbDistinctKmersPerDataset[i] << " ";
 		}
+		//cout << endl;
 
 		//cout << "lol2  " << _sketchSize << endl;
 		//cout << "lala" << endl;
@@ -86,17 +93,19 @@ public:
 				size_t iMarginal = i+nbOldBanks;
 				size_t jMarginal = j;
 
+				//u_int64_t nextNbDistinctKmersNext = _nbDistinctKmersPerDataset[iMarginal] + _nbDistinctKmersPerDataset[jMarginal] - _matrixNbDistinctSharedKmers._matrix_rectangular[iCrossed][jCrossed];// + other._matrixNbDistinctSharedKmers._matrix_rectangular[i][j];
 				//cout << "xd1  " << _nbDistinctKmersPerDataset[iMarginal] << " " << _nbDistinctKmersPerDataset[jMarginal] << " " << _matrixNbDistinctSharedKmers._matrix_squaredHalf[iCrossed][jCrossed] << endl;
-				if(_nbDistinctKmersPerDataset[iMarginal] + _nbDistinctKmersPerDataset[jMarginal] - _matrixNbDistinctSharedKmers._matrix_rectangular[iCrossed][jCrossed] >= _sketchSize){
-					continue;
-				}
+				//if(nextNbDistinctKmersNext >= _sketchSize){
+				//	continue;
+				//}
 				//cout << "xd2" << endl;
 
 				//cout << _brayCurtisNumerator._matrix_rectangular[i][j] << " " << _matrixNbDistinctSharedKmers._matrix_rectangular[i][j] << " " << _nbKmersPerDatasetPairs._matrix_rectangular[i][j] << endl;
 
 				_brayCurtisNumerator._matrix_rectangular[i][j] += other._brayCurtisNumerator._matrix_rectangular[i][j];
 				_matrixNbDistinctSharedKmers._matrix_rectangular[i][j] += other._matrixNbDistinctSharedKmers._matrix_rectangular[i][j];
-				_nbKmersPerDatasetPairs._matrix_rectangular[i][j] += other._nbKmersPerDatasetPairs._matrix_rectangular[i][j];
+				_nbKmersPerDatasetPairs._matrix_rectangular[i][j] += other._nbKmersPerDataset[iMarginal] + other._nbKmersPerDataset[jMarginal];
+				//_nbKmersPerDatasetPairs._matrix_rectangular[i][j] += other._nbKmersPerDatasetPairs._matrix_rectangular[i][j];
 				//cout << "xd3" << endl;
 			}
 		}
@@ -116,18 +125,23 @@ public:
 					size_t iMarginal = i+nbOldBanks;
 					size_t jMarginal = j+nbOldBanks+1+jOffset;
 
-					if(_nbDistinctKmersPerDataset[iMarginal] + _nbDistinctKmersPerDataset[jMarginal] - _matrixNbDistinctSharedKmers._matrix_squaredHalf[iCrossed][jCrossed] >= _sketchSize){
+					u_int64_t nextNbDistinctKmersNext = _nbDistinctKmersPerDataset[iMarginal] + _nbDistinctKmersPerDataset[jMarginal] - _matrixNbDistinctSharedKmers._matrix_squaredHalf[iCrossed][jCrossed] + other._matrixNbDistinctSharedKmers._matrix_squaredHalf[i][j] ;// + other._matrixNbDistinctSharedKmers._matrix_squaredHalf[i][j];
+					//cout << "xd1  " << _nbDistinctKmersPerDataset[iMarginal] << " " << _nbDistinctKmersPerDataset[jMarginal] << " " << _matrixNbDistinctSharedKmers._matrix_squaredHalf[iCrossed][jCrossed] << endl;
+					if(nextNbDistinctKmersNext >= _sketchSize){
 						continue;
 					}
 
-
 					_brayCurtisNumerator._matrix_squaredHalf[i][j] += other._brayCurtisNumerator._matrix_squaredHalf[i][j];
 					_matrixNbDistinctSharedKmers._matrix_squaredHalf[i][j] += other._matrixNbDistinctSharedKmers._matrix_squaredHalf[i][j];
-					_nbKmersPerDatasetPairs._matrix_squaredHalf[i][j] += other._nbKmersPerDatasetPairs._matrix_squaredHalf[i][j];
+					_nbKmersPerDatasetPairs._matrix_squaredHalf[i][j] += other._nbKmersPerDataset[iMarginal] + other._nbKmersPerDataset[jMarginal];
 
+					//cout << _matrixNbDistinctSharedKmers._matrix_squaredHalf[i][j] << " ";
+					//if(iMarginal == 0 && jMarginal==1)
+						//cout << _nbKmersPerDatasetPairs._matrix_squaredHalf[0][1] << "  " << _brayCurtisNumerator._matrix_squaredHalf[0][1] << endl;
 				}
 			}
 		}
+		//cout << endl;
 
 		//cout << "lol4" << endl;
 		/*
@@ -177,11 +191,13 @@ public:
 		for(size_t i=0; i<_nbDistinctKmersPerDataset.size(); i++){
 			_nbDistinctKmersPerDataset[i] = it->item();
 			it->next();
+			_nbKmersPerDataset[i] = it->item();
+			it->next();
 		}
 
 	    _brayCurtisNumerator.load(it);
 	    _matrixNbDistinctSharedKmers.load(it);
-	    _nbKmersPerDatasetPairs.load(it);
+	    //_nbKmersPerDatasetPairs.load(it);
 
 
 
@@ -196,11 +212,12 @@ public:
 
 		for(size_t i=0; i<_nbDistinctKmersPerDataset.size(); i++){
 			file->insert((long double)_nbDistinctKmersPerDataset[i]);
+			file->insert((long double)_nbKmersPerDataset[i]);
 		}
 
 	    _brayCurtisNumerator.save(file);
 	    _matrixNbDistinctSharedKmers.save(file);
-	    _nbKmersPerDatasetPairs.save(file);
+	    //_nbKmersPerDatasetPairs.save(file);
 
 		file->flush();
 

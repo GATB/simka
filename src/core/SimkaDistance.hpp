@@ -239,6 +239,8 @@ private:
     	double intersection = 2 * crossedData[i2][j2];
 
     	double dist = 1 - intersection / union_;
+
+    	//cout << i << j << " " << dist << "   :   " << crossedData[i2][j2] << "    "  << marginalData[i2][j2] << endl;
     	/*
     	//double intersection = _stats._abundance_jaccard_intersection[i][j];
     	double union_ = _stats._nbSolidKmersPerBank[i] + _stats._nbSolidKmersPerBank[j];
@@ -283,6 +285,10 @@ private:
     	//cout << (- 1 / (float)_stats._kmerSize) << "   " << ((float)(2*dist) / (float)(1+dist)) << "    " << log( ((float)(2*dist) / (float)(1+dist))) << endl;
     	//dist = (- 1 / (float)_stats._kmerSize) * log( ((float)(2*dist) / (float)(1+dist)));
     	return dist ;*/
+    	//double dist = 1 - (crossedData[i2][j2] / (double) _stats._sketchSize);
+    	//cout << i << j << " " << dist << "   :   " << crossedData[i2][j2] << "    "  << _stats._sketchSize << endl;
+
+
     	return 1 - (crossedData[i2][j2] / (double) _stats._sketchSize);
     }
 

@@ -185,6 +185,7 @@ class Simka_ComputeDistance():
 		if os.path.exists(unsuccessCheckPointFilename): os.remove(unsuccessCheckPointFilename)
 
 		nbKmerPerpart = ceil(float(self.nbDistinctMergedKmers) / float(self.database._nbPartitions))
+		#print("nb kmer per part: ", nbKmerPerpart)
 		command = "python " + os.path.join(SCRIPT_DIR, "simka2-run-job.py") + " "
 		command += checkPointFilename + " "
 		command += os.path.join(SCRIPT_DIR, "..", "bin", "simka2-distance")

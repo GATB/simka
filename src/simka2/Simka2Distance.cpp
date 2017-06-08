@@ -88,6 +88,7 @@ public:
 	u_int64_t _nbDistinctKmersPerPartition;
 	u_int64_t _processedKmerRangeMin;
 	u_int64_t _processedKmerRangeMax;
+	u_int64_t _lol;
 
 	DatasetMergerDistance(size_t nbBanks, size_t partitionId, vector<string>& datasetToMergeDirs, SimkaStatistics* stats, SimkaCountProcessorSimple<span>* processor, map<string, u_int64_t>& idToOrder, u_int64_t nbDistinctKmersPerPartition):
 		DiskBasedMergeSort<span>(0, datasetToMergeDirs, idToOrder, true)
@@ -102,10 +103,12 @@ public:
 		_stats = stats;
 		_processor = processor;
 		_nbDistinctKmers = 0;
+		_lol = 0;
 		_nbDistinctKmersPerPartition = nbDistinctKmersPerPartition;
 
 		_processedKmerRangeMin = _nbDistinctKmersPerPartition * partitionId;
 		_processedKmerRangeMax = _processedKmerRangeMin + _nbDistinctKmersPerPartition;
+		cout << partitionId << ": " << _processedKmerRangeMin << " " << _processedKmerRangeMax << endl;
     }
 
 	void process(Type& kmer, u_int64_t bankId, u_int64_t abundance){
@@ -159,6 +162,7 @@ public:
 		if(_nbDistinctKmers >= _processedKmerRangeMin){
 			if(_nbDistinctKmers < _processedKmerRangeMax){
 				_processor->process(this->_partitionId, kmer, counts);
+				_lol += 1;
 			}
 			else{
 				this->_isDone = true;
@@ -184,6 +188,7 @@ public:
 		insert(_lastKmer, _abundancePerBank, _nbBankThatHaveKmer);
 		delete _solidCounter;
 		//cout << "ENNNNNNNNNNNNNNNNNNNNNNNND2" << endl;
+		cout << "nb processed kmers: " << _lol << endl;
     }
 
 
