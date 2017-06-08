@@ -71,9 +71,7 @@ class Simka_ComputeDistance():
 
 		#print maxJobs, self.jobCores, self.maximumProcessedDatasets, args._maxMemory
 		#print "maximum number of processed files:",  self.maximumProcessedDatasets, maxJobs, self.jobCores
-		self.jobScheduler = JobScheduler(self.maxJobs, ProgressBar("Computing distances", self.resourceAllocator.getNbDistanceJobToSubmit(self.database._nbPartitions, self.jobCores)))
 
-		self.jobScheduler.start()
 		self.computeDistanceParts()
 		self.jobScheduler.join()
 
@@ -179,6 +177,10 @@ class Simka_ComputeDistance():
 			#else:
 
 
+		self.jobScheduler = JobScheduler(self.maxJobs, ProgressBar("Computing distances", jobCommandsId))
+
+		self.jobScheduler.start()
+
 		"""
 		i = 0
 		while(i < self.database._nbPartitions):
@@ -193,6 +195,7 @@ class Simka_ComputeDistance():
 		"""
 
 		for i in range(0, jobCommandsId):
+			#print i
 			checkPointFilename = os.path.join(self.tempDir, "commands_" + str(i) + "-")
 			unsuccessCheckPointFilename = checkPointFilename + "unsuccess"
 			if os.path.exists(unsuccessCheckPointFilename): os.remove(unsuccessCheckPointFilename)
@@ -202,7 +205,7 @@ class Simka_ComputeDistance():
 			command += " python " + os.path.join(SCRIPT_DIR, "simka2-run-job-multi.py") + " "
 			command += " " + os.path.join(self.tempDir, "commands_input_" + str(i))
 			#command += " & "
-			#command += "   > /dev/null 2>&1     &"
+			command += "   > /dev/null 2>&1     &"
 			#scommand += " & "
 			command = SimkaCommand.createHPCcommand(command, args._isHPC, args.submit_command)
 			os.system(command)
@@ -221,7 +224,7 @@ class Simka_ComputeDistance():
 		if os.path.exists(unsuccessCheckPointFilename): os.remove(unsuccessCheckPointFilename)
 
 		nbKmerPerpart = ceil(float(self.nbDistinctMergedKmers) / float(self.database._nbPartitions))
-		print("nb kmer per part: ", nbKmerPerpart)
+		#print("nb kmer per part: ", nbKmerPerpart)
 		command = "python " + os.path.join(SCRIPT_DIR, "simka2-run-job.py") + " "
 		command += checkPointFilename + " "
 		command += os.path.join(SCRIPT_DIR, "..", "bin", "simka2-distance")
@@ -234,7 +237,7 @@ class Simka_ComputeDistance():
 		command += " -distance-type 1 "
 		command += " -nb-distinct-kmers-total " + str(nbKmerPerpart)
 		#command += " & "
-		#command += "   > /dev/null 2>&1     &"
+		command += "   > /dev/null 2>&1     &"
 		#print command
 		self.jobCommandsFile.write(checkPointFilename + "|" + command + "\n")
 

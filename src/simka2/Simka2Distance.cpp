@@ -101,6 +101,7 @@ public:
 	size_t _sketchSize;
 	vector<string>& _kmerSpectrumDirs;
 	string& _dirMatrixParts;
+	size_t _partitionId;
 
 	DatasetMergerDistance(size_t nbBanks, size_t partitionId, size_t nbPartitionToProcess, vector<string>& datasetToMergeDirs, map<string, u_int64_t>& idToOrder, u_int64_t nbDistinctKmersPerPartition,
 			Simka2Database& database, bool computeSimpleDistances, bool computeComplexDistances, size_t nbNewBanks, size_t kmerSize, size_t sketchSize, vector<string>& kmerSpectrumDirs, string& dirMatrixParts):
@@ -119,15 +120,16 @@ public:
 		_lol = 0;
 		_nbDistinctKmersPerPartition = nbDistinctKmersPerPartition;
 		_currentPartitionId = partitionId*nbPartitionToProcess;
+		_partitionId = partitionId;
 		//_nbPartitionToProcess = nbPartitionToProcess;
 
-		cout << partitionId << " " <<  nbPartitionToProcess << " " <<  _nbDistinctKmersPerPartition << endl;
+		//cout << partitionId << " " <<  nbPartitionToProcess << " " <<  _nbDistinctKmersPerPartition << endl;
 		_partitionRangeMin = partitionId * nbPartitionToProcess;
 		_partitionRangeMax = (partitionId+1) * nbPartitionToProcess;
 		_processedKmerRangeMin = _partitionRangeMin * _nbDistinctKmersPerPartition;
 		_processedKmerRangeMax = _partitionRangeMax * _nbDistinctKmersPerPartition;
 		//_processedKmerRangeMax = _processedKmerRangeMin + _nbDistinctKmersPerPartition;
-		cout << partitionId << ": " << _processedKmerRangeMin << " " << _processedKmerRangeMax << endl;
+		//cout << partitionId << ": " << _processedKmerRangeMin << " " << _processedKmerRangeMax << endl;
 
 		initPartition();
     }
@@ -187,11 +189,11 @@ public:
 				_lol += 1;
 			}
 			else{
-				cout << "------------ DOOOOONE" << endl;
+				//cout << "------------ DOOOOONE" << endl;
 				this->_isDone = true;
 				return;
 			}
-			if(_lol >= _nbDistinctKmersPerPartition){
+			if(_lol > _nbDistinctKmersPerPartition){
 			//if(_nbDistinctKmers % _nbDistinctKmersPerPartition == 0){
 				endPartition();
 				initPartition();
@@ -213,7 +215,7 @@ public:
 
 
 	void end(){
-		cout << "\tthe last of us: " << _currentPartitionId << endl;
+		//cout << "\tthe last of us: " << _currentPartitionId << endl;
 		//cout << "ENNNNNNNNNNNNNNNNNNNNNNNND" << endl;
 		insert(_lastKmer, _abundancePerBank, _nbBankThatHaveKmer);
 		delete _solidCounter;
@@ -225,7 +227,7 @@ public:
 	void initPartition(){
 		_lol = 0;
 		//if(_currentPartitionId >= _partitionRangeMin && _currentPartitionId < _partitionRangeMax){
-			cout << "Init partition: " << _currentPartitionId << endl;
+			//cout << "Init partition: " << _currentPartitionId << endl;
 			_stats = new SimkaStatistics(_nbBanks, _nbNewBanks, _computeSimpleDistances, _computeComplexDistances, _kmerSize, _sketchSize);
 			simka2_loadStatInfos(_database._dir, _database._uniqKmerSpectrumDirs, _database._entries, _kmerSpectrumDirs, _stats, _database._entriesInfos);
 			_processor = new SimkaCountProcessorSimple<span> (_stats, _nbBanks, _nbNewBanks, _kmerSize, 0);
@@ -233,9 +235,10 @@ public:
 	}
 
 	void endPartition(){
+		//cout << "LOL: " << _lol << endl;
 		//cout << "nb processed kmers: " << _lol << endl;
 		//if(_currentPartitionId >= _partitionRangeMin && _currentPartitionId < _partitionRangeMax){
-			cout << "End partition: " << _currentPartitionId << endl;
+		//cout << "End partition: " << _currentPartitionId << "   " << _partitionId << endl;
 			saveStats();
 
 			delete _stats;
