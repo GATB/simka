@@ -327,19 +327,19 @@ public:
 
 	void merge(){
 
-		if(_justSaveMergeInfos){
-			saveMergeInfos();
-		}
-		else{
+		//if(_justSaveMergeInfos){
+		//saveMergeInfos();
+		//}
+		//else{
 			//for(size_t i=0; i<0; i++){
 				DatasetMergerWriter<span> diskBasedMergeSort(_partitionId, _kmerSpectrumDirs, _outputDir);
 				diskBasedMergeSort.execute();
 				//_nbMergedBanks = diskBasedMergeSort._nbBanks;
 				//break;
 			//}
-		}
+				//}
 
-
+				saveMergeInfos();
 		//mergeDatasets();
 		//for(size_t i=0; i<_nbBanks; i++){
 			//cout << i << endl;

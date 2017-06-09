@@ -60,7 +60,7 @@ class Simka_ComputeDistance():
 		#---
 		print "nb file processed: ", self.nbFileProcessed
 		self.resourceAllocator = Simka2ResourceAllocator(bool(args._isHPC), int(args._nbCores), int(args._maxMemory), int(args._maxJobs), args.submit_command, args.submit_file)
-		self.maxJobs, self.jobCores, self.maximumProcessedDatasets = self.resourceAllocator.executeForDistanceJobs(self.database._nbPartitions, self.nbFileProcessed, len(self.database.entries))
+		self.maxJobs, self.jobCores, self.maximumProcessedDatasets = self.resourceAllocator.executeForDistanceJobs(self.nbFileProcessed, len(self.database.entries))
 
 		self.mergeKmerSpectrums()
 

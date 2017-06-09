@@ -6,8 +6,8 @@ import datetime
 class SimkaSettings():
 
     #MAX_OPEN_FILES = 1000
-    MIN_FILES_TO_START_MERGE = 1000
-    MAX_OPEN_FILES_PER_MERGE = 1000
+    MIN_FILES_TO_START_MERGE = 2
+    MAX_OPEN_FILES_PER_MERGE = 2
 
     @staticmethod
     def getDirSize(dirpath):
@@ -83,11 +83,11 @@ class Simka2ResourceAllocator():
         else:
             return self.execute_count_singleNode(nbSamplesToProcess, kmerSize)
 
-    def executeForDistanceJobs(self, nbPartitions, nbProcessedDatasets=-1, nbDatasets=-1):
+    def executeForDistanceJobs(self, nbProcessedDatasets=-1, nbDatasets=-1):
         if self.isHPC:
-            return self.execute_distance_HPC(nbPartitions, nbProcessedDatasets, nbDatasets)
+            return self.execute_distance_HPC(nbProcessedDatasets, nbDatasets)
         else:
-            return self.execute_distance_singleNode(nbPartitions, nbProcessedDatasets, nbDatasets)
+            return self.execute_distance_singleNode(nbProcessedDatasets, nbDatasets)
 
     def execute_count_singleNode(self, nbSamplesToProcess, kmerSize):
 
@@ -126,14 +126,14 @@ class Simka2ResourceAllocator():
 
     #nbProcessedDatasets is the number of datasets for which distance has already been computed by Simka
     #nbDatasets is the total amount of datasets in the database
-    def execute_distance_singleNode(self, nbPartitions, nbProcessedDatasets=-1, nbDatasets=-1):
+    def execute_distance_singleNode(self, nbProcessedDatasets=-1, nbDatasets=-1):
 
         maxJobs = 0
 
-        if nbPartitions == -1:
-            maxJobs = self.nbCores
-        else:
-            maxJobs = nbPartitions
+        #if nbPartitions == -1:
+        maxJobs = self.nbCores
+        #else:
+        #    maxJobs = nbPartitions
 
         maxJobs = min(maxJobs, self.nbCores)
 
@@ -236,7 +236,7 @@ class Simka2ResourceAllocator():
 
 
 
-    def execute_distance_HPC(self, nbPartitions, nbProcessedDatasets=-1, nbDatasets=-1):
+    def execute_distance_HPC(self, nbProcessedDatasets=-1, nbDatasets=-1):
         """
         maxJobs = 0
 
@@ -254,10 +254,10 @@ class Simka2ResourceAllocator():
 
         maxJobs = 0
 
-        if nbPartitions == -1:
-            maxJobs = self.maxJobs
-        else:
-            maxJobs = nbPartitions
+        #if nbPartitions == -1:
+        maxJobs = self.maxJobs
+        ##else:
+        #    maxJobs = nbPartitions
 
         maxJobs = min(maxJobs, self.maxJobs)
 
