@@ -274,7 +274,9 @@ class SimkaKmerSpectrumMerger():
 
 		checkPointFilename = os.path.join(mergeOutputAbsDir, str(self.jobCommandsId) + "-")
 		unsuccessCheckPointFilename = checkPointFilename + "unsuccess"
+		successCheckPointFilename = checkPointFilename + "success"
 		if os.path.exists(unsuccessCheckPointFilename): os.remove(unsuccessCheckPointFilename)
+		if os.path.exists(successCheckPointFilename): os.remove(successCheckPointFilename)
 
 		#print "\n\n---MERGE: " + str(len(mergedDirs))
 		#s = ""
