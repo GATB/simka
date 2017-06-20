@@ -1,1 +1,0 @@
-E: ../example/data/A.fasta , ../example/data/A.fasta ; ../example/data/B.fasta , ../example/data/B.fasta

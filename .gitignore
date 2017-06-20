@@ -1,9 +1,0 @@
-/build/
-*.pyc
-.DS_Store
-*.png
-*.csv.gz
-*.csv
-*.pdf
-*.bin
-.*

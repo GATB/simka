@@ -1,3 +1,0 @@
-C: ../example/data/C.fasta
-D: ../example/data/D_paired_1.fasta ; ../example/data/D_paired_2.fasta
-E: ../example/data/A.fasta , ../example/data/A.fasta ; ../example/data/B.fasta , ../example/data/B.fasta
