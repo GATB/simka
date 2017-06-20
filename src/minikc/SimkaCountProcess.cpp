@@ -19,8 +19,11 @@ int main (int argc, char* argv[])
 
 	//cout << argc << " " << argv << endl;
 	int ret=1;
+	int nbTries = 0;
 	while(ret != 0){
 		ret = system(command.c_str());
 		nanosleep((const struct timespec[]){{0, 10000000L}}, NULL);
+		if(nbTries > 3) exit(1);
+		nbTries += 1;
 	}
 }
