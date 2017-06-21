@@ -33,7 +33,7 @@ using namespace gatb::core::system::impl;
 
 
 #define MERGE_BUFFER_SIZE 1000
-#define SIMKA_MERGE_MAX_FILE_USED 100
+#define SIMKA_MERGE_MAX_FILE_USED 200
 
 template<size_t span>
 class DistanceCommand : public gatb::core::tools::dp::ICommand //, public gatb::core::system::SmartPointer
@@ -142,7 +142,24 @@ public:
 
     typedef typename Kmer<span>::Type                                       Type;
     typedef typename Kmer<span>::Count                                      Count;
-    typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
+
+    struct Kmer_BankId_Count{
+		Type _type;
+		u_int32_t _bankId;
+		u_int64_t _count;
+
+		Kmer_BankId_Count(){
+
+		}
+
+		Kmer_BankId_Count(Type type, u_int64_t bankId, u_int64_t count){
+			_type = type;
+			_bankId = bankId;
+			_count = count;
+		}
+	};
+
+    //typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
     //typedef typename Kmer<span>::ModelCanonical                             ModelCanonical;
     //typedef typename ModelCanonical::Kmer                                   KmerType;
 
@@ -184,15 +201,15 @@ public:
 	}
 
 	Type& value(){
-		return get<0>(_it->item());
+		return _it->item()._type;
 	}
 
 	u_int16_t getBankId(){
-		return get<1>(_it->item());
+		return _it->item()._bankId;
 	}
 
 	u_int64_t& abundance(){
-		return get<2>(_it->item());
+		return _it->item()._count;
 	}
 
 
@@ -577,11 +594,30 @@ public:
 
 	typedef typename Kmer<span>::Type                                       Type;
 	typedef typename Kmer<span>::Count                                      Count;
-    typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
-    typedef tuple<Type, u_int64_t, u_int64_t, StorageIt<span>*> kxp;
-	struct kxpcomp { bool operator() (kxp l,kxp r) { return (get<0>(r) < get<0>(l)); } } ;
+    //typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
+    //typedef tuple<Type, u_int64_t, u_int64_t, StorageIt<span>*> kxp;
 
+	typedef typename StorageIt<span>::Kmer_BankId_Count Kmer_BankId_Count;
 
+	struct kxp{
+		Type _type;
+		u_int32_t _bankId;
+		u_int64_t _count;
+		StorageIt<span>* _it;
+
+		kxp(){
+
+		}
+
+		kxp(Type type, u_int64_t bankId, u_int64_t count, StorageIt<span>* it){
+			_type = type;
+			_bankId = bankId;
+			_count = count;
+			_it = it;
+		}
+	};
+
+	struct kxpcomp { bool operator() (kxp& l, kxp& r) { return (r._type < l._type); } } ;
 
 	string _outputDir;
 	string _outputFilename;
@@ -673,7 +709,7 @@ public:
 		if (pq.size() != 0) // everything empty, no kmer at all
 		{
 			//get first pointer
-			bestIt = get<3>(pq.top()); pq.pop();
+			bestIt = pq.top()._it; pq.pop();
 			_cachedBag->insert(Kmer_BankId_Count(bestIt->value(), bestIt->getBankId(), bestIt->abundance()));
 			//best_p = get<1>(pq.top()) ; pq.pop();
 			//previous_kmer = bestIt->value();
@@ -691,12 +727,12 @@ public:
 
 					//otherwise get new best
 					//best_p = get<1>(pq.top()) ; pq.pop();
-					bestIt = get<3>(pq.top()); pq.pop();
+					bestIt = pq.top()._it; pq.pop();
 				}
 
 				pq.push(kxp(bestIt->value(), bestIt->getBankId(), bestIt->abundance(), bestIt)); //push new val of this pointer in pq, will be counted later
 
-		    	bestIt = get<3>(pq.top()); pq.pop();
+		    	bestIt = pq.top()._it; pq.pop();
 		    	_cachedBag->insert(Kmer_BankId_Count(bestIt->value(), bestIt->getBankId(), bestIt->abundance()));
 		    	//cout << bestIt->value().toString(31) << " " << bestIt->getBankId() <<  " "<< bestIt->abundance() << endl;
 				//bestIt = get<3>(pq.top()); pq.pop();
@@ -747,13 +783,55 @@ public:
 
 	typedef typename Kmer<span>::Type                                       Type;
 	typedef typename Kmer<span>::Count                                      Count;
-    typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
+    //typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
 
-    typedef tuple<Type, u_int64_t, u_int64_t, StorageIt<span>*> kxp;
+    //typedef tuple<Type, u_int64_t, u_int64_t, StorageIt<span>*> kxp;
+
+	typedef typename DiskBasedMergeSort<span>::Kmer_BankId_Count Kmer_BankId_Count;
+	typedef typename DiskBasedMergeSort<span>::kxp kxp;
+
+
+	/*
+	struct Kmer_BankId_Count{
+		Type _type;
+		u_int64_t _bankId;
+		u_int64_t _count;
+
+		Kmer_BankId_Count(){
+
+		}
+
+		Kmer_BankId_Count(Type type, u_int64_t bankId, u_int64_t count){
+			_type = type;
+			_bankId = bankId;
+			_count = count;
+		}
+	};
+
+	struct kxp{
+		Type _type;
+		u_int32_t _bankId;
+		u_int64_t _count;
+		StorageIt<span>* _it;
+
+		kxp(){
+
+		}
+
+		kxp(Type type, u_int64_t bankId, u_int64_t count, StorageIt<span>* it){
+			_type = type;
+			_bankId = bankId;
+			_count = count;
+			_it = it;
+		}
+	};*/
+
+
+
 	//typedef std::pair<u_int16_t, Type> kxp; //id pointer in vec_pointer , value
     //typedef std::pair<u_int16_t, Type> kxp; //id pointer in vec_pointer , value
 	//struct kxpcomp { bool operator() (Kmer_BankId_Count l,Kmer_BankId_Count r) { return ((r.second) < (l.second)); } } ;
-	struct kxpcomp { bool operator() (kxp l,kxp r) { return (get<0>(r) < get<0>(l)); } } ;
+	struct kxpcomp { bool operator() (kxp& l,kxp& r) { return (r._type < l._type); } } ;
 
 	Parameter& p;
 
@@ -806,10 +884,21 @@ public:
 			//cout << _stats->_chord_sqrt_N2[i] << endl;
     	}
 	}*/
-	typedef tuple<u_int64_t, size_t> sortItem_Size_Filename_ID;
+	struct sortItem_Size_Filename_ID{
 
-	static bool sortFileBySize (sortItem_Size_Filename_ID i, sortItem_Size_Filename_ID j){
-		return ( get<0>(i) < get<0>(j) );
+		u_int64_t _size;
+		size_t _datasetID;
+
+		sortItem_Size_Filename_ID(){}
+
+		sortItem_Size_Filename_ID(u_int64_t size, size_t datasetID){
+			_size = size;
+			_datasetID = datasetID;
+		}
+	};
+
+	static bool sortFileBySize (sortItem_Size_Filename_ID& i, sortItem_Size_Filename_ID& j){
+		return ( i._size < j._size );
 	}
 
 	static u_int64_t getFileSize(const string& filename){
@@ -869,7 +958,7 @@ public:
 
 			for(size_t i=0; i<SIMKA_MERGE_MAX_FILE_USED; i++){
 				sortItem_Size_Filename_ID sfi = filenameSizes[i];
-				mergeDatasetIds.push_back(get<1>(sfi));
+				mergeDatasetIds.push_back(sfi._datasetID);
 				//datasetIndex += 1;
 				//if(datasetIndex >= _nbBanks) break;
 
@@ -962,7 +1051,7 @@ public:
 		u_int64_t nbKmers = 0;
 
     	for(size_t i=0; i<filenameSizes.size(); i++){
-    		size_t datasetId = get<1>(filenameSizes[i]);
+    		size_t datasetId = filenameSizes[i]._datasetID;
     		string filename = p.outputDir + "/solid/part_" + Stringify::format("%i", p.partitionId) + "/__p__" + Stringify::format("%i", datasetId) + ".gz";
     		//cout << filename << endl;
     		IterableGzFile<Kmer_BankId_Count>* partition = new IterableGzFile<Kmer_BankId_Count>(filename, 10000);
@@ -1071,7 +1160,7 @@ public:
 	    if (pq.size() != 0) // everything empty, no kmer at all
 	    {
 	        //get first pointer
-	    	bestIt = get<3>(pq.top()); pq.pop();
+	    	bestIt = pq.top()._it; pq.pop();
 	        //best_p = get<1>(pq.top()) ; pq.pop();
 	        previous_kmer = bestIt->value();
 	        solidCounter->init (bestIt->getBankId(), bestIt->abundance());
@@ -1088,7 +1177,7 @@ public:
 
 					//otherwise get new best
 					//best_p = get<1>(pq.top()) ; pq.pop();
-			    	bestIt = get<3>(pq.top()); pq.pop();
+			    	bestIt = pq.top()._it; pq.pop();
 				}
 
 		    	//cout << bestIt->value().toString(31) << " " << bestIt->getBankId() <<  " "<< bestIt->abundance() << endl;
@@ -1098,7 +1187,7 @@ public:
 					//if diff, changes to new array, get new min pointer
 					pq.push(kxp(bestIt->value(), bestIt->getBankId(), bestIt->abundance(), bestIt)); //push new val of this pointer in pq, will be counted later
 
-			    	bestIt = get<3>(pq.top()); pq.pop();
+			    	bestIt = pq.top()._it; pq.pop();
 					//best_p = get<1>(pq.top()) ; pq.pop();
 
 					//if new best is diff, this is the end of this kmer

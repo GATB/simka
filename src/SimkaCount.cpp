@@ -175,7 +175,7 @@ public:
 
         typedef typename Kmer<span>::Type  Type;
         typedef typename Kmer<span>::Count Count;
-        typedef tuple<Type, u_int64_t, u_int64_t> Kmer_BankId_Count;
+        typedef typename SimkaCompressedProcessor<span>::Kmer_BankId_Count Kmer_BankId_Count;
 
     	void operator ()  (Parameter p){
 

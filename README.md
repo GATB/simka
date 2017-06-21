@@ -86,7 +86,7 @@ For further instructions on using simka, see User Manual, below.
 
 # Changelog
 
-* version 1.3.3 Jun 21, 2017:
+* version 1.4 Jun 21, 2017:
 	- update gatb-core to version 1.2.2
 	- simka now provide gz compressed results
 	- new scripts for result visualization
