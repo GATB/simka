@@ -35,6 +35,55 @@ using namespace gatb::core::system::impl;
 #define MERGE_BUFFER_SIZE 1000
 #define SIMKA_MERGE_MAX_FILE_USED 200
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+struct sortItem_Size_Filename_ID{
+
+	u_int64_t _size;
+	size_t _datasetID;
+
+	sortItem_Size_Filename_ID(){}
+
+	sortItem_Size_Filename_ID(u_int64_t size, size_t datasetID){
+		_size = size;
+		_datasetID = datasetID;
+	}
+};
+
+bool sortFileBySize (sortItem_Size_Filename_ID& i, sortItem_Size_Filename_ID& j){
+	return ( i._size < j._size );
+}
+
+u_int64_t getFileSize(const string& filename){
+	std::ifstream in(filename, std::ifstream::ate | std::ifstream::binary);
+	u_int64_t size = in.tellg();
+	in.close();
+	return size;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 template<size_t span>
 class DistanceCommand : public gatb::core::tools::dp::ICommand //, public gatb::core::system::SmartPointer
 {
@@ -884,29 +933,9 @@ public:
 			//cout << _stats->_chord_sqrt_N2[i] << endl;
     	}
 	}*/
-	struct sortItem_Size_Filename_ID{
 
-		u_int64_t _size;
-		size_t _datasetID;
 
-		sortItem_Size_Filename_ID(){}
-
-		sortItem_Size_Filename_ID(u_int64_t size, size_t datasetID){
-			_size = size;
-			_datasetID = datasetID;
-		}
-	};
-
-	static bool sortFileBySize (sortItem_Size_Filename_ID& i, sortItem_Size_Filename_ID& j){
-		return ( i._size < j._size );
-	}
-
-	static u_int64_t getFileSize(const string& filename){
-		std::ifstream in(filename, std::ifstream::ate | std::ifstream::binary);
-		u_int64_t size = in.tellg();
-		in.close();
-		return size;
-	}
+	//struct sortFileBySize { bool operator() (sortItem_Size_Filename_ID& l,sortItem_Size_Filename_ID& r) { return (r._size < l._size); } } ;
 
 	void execute(){
 
