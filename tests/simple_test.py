@@ -1,5 +1,5 @@
 
-import sys, os, shutil
+import sys, os, shutil, glob, gzip
 os.chdir(os.path.split(os.path.realpath(__file__))[0])
 
 suffix = " > /dev/null 2>&1"
@@ -13,36 +13,62 @@ def clear():
 	os.mkdir(dir)
 
 
-def __test_matrices(result_dir, truth_dir):
+def decompress_simka_results(dir):
+	result_filenames = glob.glob(os.path.join(dir, '*.csv.gz'))
+	for filename_gz in result_filenames:
+		#filename_gz = result_dir + "/" + filename
+		with gzip.open(filename_gz, 'rb') as f:
+			outFile = open(filename_gz[:-3], "w")
+			outFile.write(f.read())
+			outFile.close()
+			os.remove(filename_gz)
+
+def __test_matrices(simka_vs_truth, result_dir, truth_dir):
 
 	ok = True
 
-	result_filenames = os.listdir(result_dir)
-	result_filenames.remove("mat_abundance_jaccard.csv") #This distance is computed from Bray Curtis distance
-	truth_filenames = os.listdir(truth_dir)
-	if "mat_abundance_jaccard.csv" in truth_filenames:
-		truth_filenames.remove("mat_abundance_jaccard.csv") #This distance is computed from Bray Curtis distance
+	decompress_simka_results(result_dir)
+	result_filenames = glob.glob(os.path.join(result_dir, '*.csv'))
+	if len(result_filenames) == 0:
+		print("Error: no results")
+		exit(1)
 
-	for i in range(0, len(result_filenames)):
+	if simka_vs_truth:
+		truth_filenames = glob.glob(os.path.join(truth_dir, '*.csv'))
+	else: #simka vs simka
+		#if result_dir+"/mat_abundance_jaccard.csv" in truth_filenames: #comparing simka results vs simka results
+		#truth_filenames.remove(result_dir+"/mat_abundance_jaccard.csv") #This distance is computed from Bray Curtis distance
+		decompress_simka_results(truth_dir)
+		truth_filenames = glob.glob(os.path.join(truth_dir, '*.csv'))
 
-		res_file = open(result_dir + "/" + result_filenames[i], "r")
-		truth_file = open(truth_dir + "/" + truth_filenames[i], "r")
-		
-		res_str = res_file.read()
-		truth_str = truth_file.read()
+	truth_filenames.sort()
+	result_filenames.sort()
 
-		res_file.close()
-		truth_file.close()
+	for result_filename in result_filenames:
+		distanceName = os.path.split(result_filename)[1]
+		for truth_filename in truth_filenames:
+			distanceName2 = os.path.split(truth_filename)[1]
+			if distanceName != distanceName2: continue
 
-		if(res_str != truth_str):
-			print("\t- TEST ERROR:    " + result_dir + "    " + result_filenames[i])
-			ok = False
+			res_file = open(result_filename, "r")
+			truth_file = open(truth_filename, "r")
+
+			#print res_file, truth_file
+			res_str = res_file.read()
+			truth_str = truth_file.read()
+
+			res_file.close()
+			truth_file.close()
+
+			if(res_str != truth_str):
+				print("\t- TEST ERROR:    " + distanceName)
+				ok = False
 
 	return ok
 
 
 def test_dists(dir):
-	if(__test_matrices("__results__/" + dir, "truth/" + dir)):
+	if(__test_matrices(True, "__results__/" + dir, "truth/" + dir)):
 		print("\tOK")
 	else:
 		print("\tFAILED")
@@ -50,11 +76,12 @@ def test_dists(dir):
 
 
 def test_parallelization():
-	if(__test_matrices("__results__/results_resources1", "__results__/results_resources2")):
+	if(__test_matrices(False, "__results__/results_resources1", "__results__/results_resources2")):
 		print("\tOK")
 	else:
 		print("\tFAILED")
 		sys.exit(1)
+
 
 #----------------------------------------------------------------
 #----------------------------------------------------------------

@@ -15,7 +15,7 @@ else
 fi
 
 # run simka
-command="$bindir/simka -in ../example/simka_input.txt -out output/ -out-tmp temp_output"
+command="$bindir/simka -in ../example/simka_input.txt -out ./simka_results/ -out-tmp ./simka_temp_output"
 #printf "$command\n\n"
 
 $command
@@ -36,5 +36,9 @@ rm -rf temp_output
 
 printf "\nCommand used:\n" 
 printf "\t$command\n"
-printf "Command for creating heatmaps and dendrogram:\n"
-printf "\tpython ../scripts/create_heatmaps.py output/\n"
+
+printf "\nCommand for visualizing results:\n"
+printf "\tpython ../scripts/visualization/run-visualization.py -in ./simka_results/ -out ./simka_results/ -pca -heatmap -tree\n"
+
+printf "\nCommand for visualizing results with metadata annotations:\n"
+printf "\tpython ../scripts/visualization/run-visualization.py -in ./simka_results/ -out ./simka_results/ -pca -heatmap -tree -metadata-in ../example/dataset_metadata.csv -metadata-variable VARIABLE_1\n"

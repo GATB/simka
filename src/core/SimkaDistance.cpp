@@ -652,7 +652,11 @@ void SimkaStatistics::outputMatrix(const string& outputDir, const vector<string>
 
 void SimkaStatistics::dumpMatrix(const string& outputDir, const vector<string>& bankNames, const string& outputFilename, const vector<vector<float> >& matrix){
 
-	char buffer[200];
+
+	string filename = outputDir + "/" + outputFilename + ".csv";
+	gzFile out = gzopen((filename + ".gz").c_str(),"wb");
+
+	//char buffer[200];
 	string str;
 
 	for(size_t i=0; i<matrix.size(); i++){
@@ -660,31 +664,37 @@ void SimkaStatistics::dumpMatrix(const string& outputDir, const vector<string>& 
 		//str += ";" + datasetInfos[i]._name;
 	}
 	str += '\n';
+	gzwrite(out, str.c_str(), str.size());
 
 	for(size_t i=0; i<matrix.size(); i++){
 
-		str += bankNames[i] + ";";
+		str = "";
+		str += bankNames[i];
 		//str += datasetInfos[i]._name + ";";
 		for(size_t j=0; j<matrix.size(); j++){
 
+			str += ";" + Stringify::format("%f", matrix[i][j]);
 			//snprintf(buffer,200,"%.2f", matrix[i][j]);
-			snprintf(buffer,200,"%f", matrix[i][j]);
-			str += string(buffer) + ";";
+			//snprintf(buffer,200,"%f", matrix[i][j]);
+			//str += string(buffer) + ";";
 
 			//str += to_string(matrix[i][j]) + ";";
 		}
 
 		//matrixNormalizedStr.erase(matrixNormalizedStr.end()-1);
-		str.erase(str.size()-1);
+		//str.erase(str.size()-1);
 		//str.pop_back(); //remove ; at the end of the line
 		str += '\n';
+
+		gzwrite(out, str.c_str(), str.size());
 	}
 
+	gzclose(out);
 
-	gatb::core::system::IFile* file = gatb::core::system::impl::System::file().newFile(outputDir + "/" + outputFilename + _outputFilenameSuffix + ".csv", "wb");
-	file->fwrite(str.c_str(), str.size(), 1);
-	file->flush();
-	delete file;
+	//gatb::core::system::IFile* file = gatb::core::system::impl::System::file().newFile(outputDir + "/" + outputFilename + _outputFilenameSuffix + ".csv", "wb");
+	//file->fwrite(str.c_str(), str.size(), 1);
+	//file->flush();
+	//delete file;
 
 }
 

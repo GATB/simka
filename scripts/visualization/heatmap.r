@@ -36,10 +36,63 @@ if (!require("gplots")) {
 args <- commandArgs(trailingOnly = TRUE)
 #png(file=args[3],width=800,height=800,res=65)
 
-pdf(file=args[3])
-n=100 # number of steps between 2 colors
+
+width = as.numeric(args[4])
+height = as.numeric(args[5])
+format = args[6]
+
+if(format == "png"){
+	png(file=paste0(args[3], ".png"), width=width, height=height, units="in",res=72)
+} else{
+	pdf(file=paste0(args[3], ".pdf"), width=width, height=height)
+}
+
 cr3 = as.matrix(read.table(file=args[1], sep=";", header=TRUE, row.names=1))  # can be symetric matrix
 cr3_norm = as.matrix(read.table(file=args[2], sep=";", header=TRUE, row.names=1))  # must be a symetric matrix
+
+
+
+
+use_metadata = F
+if(length(args) == 8){
+	
+	use_metadata = T
+	metadata_table = as.matrix(read.table(file=args[7], sep=";", header=TRUE, row.names=1))
+	metadata_variable = args[8]
+	#print(metadata_table)
+	variables = metadata_table[,metadata_variable]
+	#print(variables)
+	
+	meatadata_index = list()
+	dataset_ids = rownames(metadata_table)
+	for(i in 1:length(dataset_ids)){
+		dataset_id = dataset_ids[i]
+		#print(dataset_id)
+		#print(variables[[i]])
+		meatadata_index[[dataset_id]] = variables[[i]]
+		#print(meatadata_index[[dataset_id]])
+	}
+	
+	colors = c()
+	dataset_ids = rownames(cr3_norm)
+	for(i in 1:dim(cr3_norm)[1]){
+		dataset_id = dataset_ids[i]
+		colors = c(colors, meatadata_index[[dataset_id]])
+	}
+	colors_numeric_temp = c()
+	colors_numeric = as.numeric(as.factor(colors))
+	for(i in 1:length(colors_numeric)){
+		colors_numeric_temp = c(colors_numeric_temp, colors_numeric[i]+1)
+	}
+	colors_numeric = colors_numeric_temp
+	#print(colors)
+}
+
+
+
+
+
+n=100 # number of steps between 2 colors
 
 ## Transforming 0-1 distances in 0-100 similarity measure
 if(grepl("chord",args[1]) || grepl("hellinger",args[1])){
@@ -84,19 +137,48 @@ dendrogram  = as.dendrogram(cluster)
 # Heatmap 
 par(fig=c(0.2,1,0,0.8),mar=rep(1,4))
 
+if(use_metadata){
+	
+	colors_numeric=as.character(colors_numeric)
  heatmap.2(cr3,
  trace = "none",
  dendrogram = "row",
  key = FALSE,
-  Rowv=dendrogram,
-  Colv = rev(dendrogram),
+ Rowv=dendrogram,
+ Colv = rev(dendrogram),
  col=palette,
  breaks = breaks,
  margins=c(10,10),
- main = args[4], cexRow = 0.2, cexCol = 0.2)
+ main="Simka heatmap", sub="", cexRow = 0.8, cexCol = 0.8, RowSideColors=colors_numeric, ColSideColors=colors_numeric)
+	
+} else {
+	
+ heatmap.2(cr3,
+ trace = "none",
+ dendrogram = "row",
+ key = FALSE,
+ Rowv=dendrogram,
+ Colv = rev(dendrogram),
+ col=palette,
+ breaks = breaks,
+ margins=c(10,10),
+ main="Simka heatmap", sub="", cexRow = 0.8, cexCol = 0.8)
+}
+
+
+
+if(use_metadata){
+	par(lend = 1)           # square line ends for the color legend
+	legend("topright", title=metadata_variable, legend=unique(colors), col=unique(colors_numeric), pch=16, lty= 1,             # line style
+	lwd = 10
+	)
+	
+}
+
+
 
 # Adding the colour scale
-par(fig=c(0.05,0.4,0.8,1), mar=rep(1,4), new=TRUE)
+par(fig=c(0.05,0.4,0.8,1), mar=rep(2,4), new=TRUE)
 
 if(trueMax.needed){
 
@@ -121,6 +203,11 @@ if(trueMax.needed){
  plot(range(breaks),c(0,2),type="n",yaxt="n",ylab="",xlab="",xaxs = "i", yaxs = "i")
  rect(breaks[-length(breaks)],0,breaks[-1],2,col=palette,border=NA)
 }
+
+
+
+
+
 
 d=dev.off()
 

@@ -55,11 +55,10 @@ Then, you can try the software on your computer, as follows:
     cd example
     ./simple_test.sh
 
-The installation creates 3 executables (./build/bin directory):
+The installation creates 4 executables (./build/bin directory):
 
     simka: main software to be used for your analysis
-    simkaCount: not to be used directly, called by 'simka'
-    simkaMerge: not to be used directly, called by 'simka'
+    simkaCount, simkaMerge and simkaCOuntProcess: not to be used directly, called by 'simka'
 
 All softwares must stay in the same folder; so, if you want to move them elsewhere on your system, consider to let them altogether.
 
@@ -89,6 +88,8 @@ For further instructions on using simka, see User Manual, below.
 
 * version 1.3.3 Jun 21, 2017:
 	- update gatb-core to version 1.2.2
+	- simka now provide gz compressed results
+	- new scripts for result visualization
 * version 1.3.2 Oct 25, 2016:
 	- improve memory usage of symetrical distances
 	- option -data-info to compute information on the input data (nb reads per dataset...)
@@ -192,8 +193,24 @@ Example:
 
 where simka_results_dir is the folder containing the distances matrices of Simka (-out)
 
-To learn advanced usage, run example: ./example/1-basic_usage/2-visualization.py.
-For instance, you can add annotations to figures (colors) by provding a metadata table in a specific format.
+Visualization scripts accept metadata table in standard csv format:
+
+	DATASET_ID;VARIABLE_NAME_1;VARIABLE_NAME_2
+	A;1;aquatic
+	B;1;human
+	C;2;human
+	D;2;soil
+	E;3;soil
+
+An example of this table is given at ./example/dataset_metadata.csv
+
+Dataset ID in the metadata table must match with the dataset ID in simka distance matrices
+
+Add the following options to activate annotations:
+	- -metadata-in: filename to a metadata table
+	- -metadata-variable: the name of the variable that you want to display in figures (the name of the column), for instance VARIABLE_NAME_1 in example above
+
+Visualization example commands are given when running simka example (./example/simple_test.sh).
 
 ## Usage for simka
 
