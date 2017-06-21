@@ -7,18 +7,18 @@
 
 # What is Simka?
 
-Simka is a comparative metagenomics method dedicated to NGS datasets. It computes a large collection of distances classically used in ecology to compare communities by approximating species counts by k-mer counts.
+Simka is a de novo comparative metagenomics tool. Simka represents each dataset as a k-mer spectrum and compute several classical ecological distances between them.
 
 Developper: Gaëtan Benoit.
 Contact: gaetan.benoit@inria.fr
 
-#Reference
+# Reference
 	
-G. Benoit, P. Peterlongo, D. Lavenier, C. Lemaitre. (2015) [Simka: fast kmer-based method for estimating the similarity between numerous metagenomic datasets](https://hal.inria.fr/hal-01180603). Hal-Inria
+Benoit G, Peterlongo P, Mariadassou M, Drezen E, Schbath S, Lavenier D, Lemaitre C. (2016) [Multiple comparative metagenomics using multiset k-mer counting](https://doi.org/10.7717/peerj-cs.94). PeerJ Computer Science 2:e94 
 
-G. Benoit, P. Peterlongo, M. Mariadassou, E Drezen, S. Schbath, D. Lavenier, C. Lemaitre. Multiple comparative metagenomics using multiset k-mer counting. *Submitted*.
+Benoit G, Peterlongo P, Lavenier D, Lemaitre C. (2015) [Simka: fast kmer-based method for estimating the similarity between numerous metagenomic datasets](https://hal.inria.fr/hal-01180603). Hal-Inria
 
-#Install a binary release of simka
+# Install a binary release of simka
 
 Retrieve the binary archive file from one of the official simka releases (see "Releases" tab on the Github web page of the simka project); file name is "simka-xyz-bin-Darwin.tar.gz" or "simka-xyz-bin-Linux.tar.gz" (where xyz is a release version).
 
@@ -38,7 +38,7 @@ In case the software does not run appropriately on your system, you should consi
 
 For further instructions on using simka, see User Manual, below.
 
-#Install simka from source code: git clone
+# Install simka from source code: git clone
 
 Requirements: cmake 2.6+ and gcc 4.5+ (Linux) or clang 4.1+ (Mac OSX).
 
@@ -65,7 +65,7 @@ All softwares must stay in the same folder; so, if you want to move them elsewhe
 
 For further instructions on using simka, see User Manual, below.
 
-#Install simka from source code: using a source release archive
+# Install simka from source code: using a source release archive
 
 Requirements: cmake 2.6+ and gcc 4.5+ (Linux) or clang 4.1+ (Mac OSX).
 
@@ -85,9 +85,11 @@ Then, you can try the software on your computer, as follows:
 
 For further instructions on using simka, see User Manual, below.
 
-#Changelog
+# Changelog
 
-* version 1.3.1 Oct 25, 2016:
+* version 1.3.3 Jun 21, 2017:
+	- update gatb-core to version 1.2.2
+* version 1.3.2 Oct 25, 2016:
 	- improve memory usage of symetrical distances
 	- option -data-info to compute information on the input data (nb reads per dataset...)
 	- intermediate merge sort passes to handle large number of datasets
@@ -108,46 +110,45 @@ For further instructions on using simka, see User Manual, below.
 
 # User manual
 
-##Description
-Simka computes several ecology distances between N metagenomic read sets at the k-mer level.
+## Description
+Simka computes several classical ecological distances between N (metagenomic) read sets based on k-mer counts.
 Simka is implemented with the GATB library (http://gatb.inria.fr/).
 
-
-##Input
+## Input
 	
-The input file (-in) lists the samples. This sample can be in fasta, fastq and in gzip compressed format (.gz).
+The input file (-in) lists the datasets. These datasets can be in fasta, fastq and in gzip compressed format (.gz).
 
-One sample per line with the following syntax:
+One dataset per line with the following syntax (you can put any number of spaces and/or tabs between syntax):
 
     ID1: filename.fasta
     ID2: filename.fasta
     ID3: filename.fasta
 
-The sample ID in the name that will appear in the headers of the distance matrices.
+The dataset ID in the name that will appear in the headers of the distance matrices.
 
-Simka supports the management of paired and concatenated files.
+You can find a simka input file in example directory: ./example/data/simka_input.txt
 
+If a given datset has been splitted in several parts, Simka can automatically concatenate them.
+
+    ID1: filename_part1.fasta , filename_part2.fasta , ...
+    
 If you have paired files, you can list them separated by a ‘;’:
 
-    ID1_paired: filename_pair1.fasta ; filename_pair2.fasta
-
-If you want to concatenate some files (for example, if you have multiple experiment for a single environment), you can list them separated by a ‘,’:
-
-    ID1_concat: filenameX.fasta.gz , filenameY.fasta.gz
+    ID1: filename_pair1.fasta ; filename_pair2.fasta
 
 You can combine concatenated and paired operations:
 
-    ID1_concat: filenameX_1.fasta.gz , filenameY_1.fasta.gz ; filenameX_2.fasta.gz , filenameY_2.fasta.gz
+    ID1: filename_part1_pair1.fasta , filename_part2_pair1.fasta ; filename_part1_pair2.fasta , filename_part2_pair2.fasta
 
-There is a difference between paired and concatenated files depending on the value of the option -max-reads.
+Paired syntax is only usefull if the -max-reads option of Simka is set.
 
 Example:
 
 If -max-reads is set to 100, then Simka will considered the 100 first reads of the first paired files and the 100 first reads of the second paired files…
 
-##Output
+## Output
 
-###Temporary output
+### Temporary output
 
 The option -out-tmp controls where the temporary files of Simka will be stored.
 
@@ -155,48 +156,53 @@ This option is mandatory since the disk usage of Simka can be high depending on 
 
 This option must target a directory on your faster disk with some free space.
 
-At the end of an execution, Simka does not remove the temporary files.
-These files can be re-used in case you want to add new samples in the input files.
-In this case, Simka will not count again the samples already counted.
+One may want to add new datasets to existing Simka results without recomputing everything again (for instance, if your metagenomic project is incomplete).
+This can only be achieved by keeping those temporary files on the disk using the option -keep-tmp of Simka.
 
-###Results output
+### Result output
 
-The option -out is the directory which will hold the distances matrices.
+Simka results are distance matrices. A distance matrix is a squared matrix of size N (where N is the number of input datasets). Each value in the matrix give you the distance between a pair of datasets. These values are usually in the range [0, 1]. A distance value of 0 means that the pair of dataset is perfectly similar. The higher the distance value is, the more dissimilar is the pair of datasets.
 
-By default, Simka provides a abundance-based Bray-Curtis distance (and Jaccard) and all presence-absence-based distances.
+Simka results will be stored in the directory indicated by -out option.
 
-The option -simple-dist allow to compute more ecology distances which are fast to compute (Chord, Hellinger, Kulczinski).
+By default, Simka compute an abundance-based Bray-Curtis distance matrix and a presence-absence-based Jaccard distance matrix.
 
-The option -complex-dist allow to compute others ecology distances which are long to compute (Jensen-Shannon, Canberra, Whittaker).
+The option -simple-dist allows to compute more ecology distances which are fast to compute (Chord, Hellinger, Kulczinski...).
+
+The option -complex-dist allows to compute others ecology distances which can be very long to compute (Jensen-Shannon, Canberra, Whittaker...).
 
 The matrice names follow this template:
 
-    mat_[abundance|presenceAbsence]_[distanceName].csv
+    mat_[abundance|presenceAbsence]_[distanceName].csv.gz
 
-The distance matrices containing ‘simka’ are distances introduces by the comparead method (See equation 1 of the Simka paper).
+The distance matrices containing ‘simka’ are distances introduces by the comparead method.
 These distances have the advantage of having a symmetrical and asymmetrical version.
 
-##Generating heatmaps and clustering
-	
-Requirements: python,R and gplots package
+## Visualize simka results
 
-Run the script create_heatmaps.py (located in "scripts" folder) in the scripts folder.
+Simka results can be visualized through heatmaps, hierarchical clustering and PCA (MDS or PCoA to be exact).
+	
+Requirements: R, gplots package (only for heatmap)
+
+Use the script run-visualization.py (located in "scripts/visualization" folder).
 
 Example: 
 
-    python create_heatmaps.py matricesFolder
+    python run-visualization.py -in simka_results_dir -out output_figures_dir -pca -heatmap -tree
 
-where matricesFolder in the folder containing the distances matrices of Simka (-out)
+where simka_results_dir is the folder containing the distances matrices of Simka (-out)
 
+To learn advanced usage, run example: ./example/1-basic_usage/2-visualization.py.
+For instance, you can add annotations to figures (colors) by provding a metadata table in a specific format.
 
-##Usage for simka
+## Usage for simka
 
 To see simka in-line help:
 
     ./bin/simka
 
 
-##The options of simka by command examples
+## Simka command examples
 
 Run the toy example:
 
@@ -239,7 +245,7 @@ Allow more memory and cores improve the execution time:
     ./bin/simka … -max-memory 20000 -nb-cores 8
 
 
-##Computer cluster options
+## Computer cluster options
 
 Simka can be ran on computer cluster equipped of a job scheduling system such as SGE. Giving a job file template and a submission command, Simka will take care of creating and synchronizing the jobs until the end of the execution.
 
@@ -264,9 +270,9 @@ Command example:
 Simka will run a maximum of 6 simultaneous counting jobs, each using 200/6 cores and 500000/6 MB of memory. Simka will run a maximum of 18 merging jobs. A merging job can not be ran on more than 1 core and use very low memory. By default Simka use -nb-cores/2 counting jobs simultaneously and -nb-cores merging jobs simultaneously.
 
 
-##Possible issues with Simka
+## Possible issues with Simka
 
-TOO MUCH OPENED FILES
+### TOO MUCH OPENED FILES
 
 Simka is a disk-based method. Depending on the chosen options (-nb-cores -max-memory), it is possible that Simka required a lot of open files.
 
