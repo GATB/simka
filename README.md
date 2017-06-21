@@ -207,6 +207,7 @@ An example of this table is given at ./example/dataset_metadata.csv
 Dataset ID in the metadata table must match with the dataset ID in simka distance matrices
 
 Add the following options to activate annotations:
+
 	* -metadata-in: filename to a metadata table
 	* -metadata-variable: the name of the variable that you want to display in figures (the name of the column), for instance VARIABLE_NAME_1 in example above
 
