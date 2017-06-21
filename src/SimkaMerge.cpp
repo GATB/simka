@@ -61,7 +61,7 @@ struct sortItem_Size_Filename_ID{
 	}
 };
 
-bool sortFileBySize (sortItem_Size_Filename_ID& i, sortItem_Size_Filename_ID& j){
+bool sortFileBySize (sortItem_Size_Filename_ID i, sortItem_Size_Filename_ID j){
 	return ( i._size < j._size );
 }
 

@@ -40,7 +40,7 @@ For further instructions on using simka, see User Manual, below.
 
 # Install simka from source code: git clone
 
-Requirements: cmake 2.6+ and gcc 4.5+ (Linux) or clang 4.1+ (Mac OSX).
+Requirements: cmake 2.6+ and gcc 4.4.7+ (Linux) or clang 4.1+ (Mac OSX).
 
 From the command-line:
 
