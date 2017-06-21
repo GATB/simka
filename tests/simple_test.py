@@ -1,14 +1,17 @@
 
 import sys, os, shutil
+os.chdir(os.path.split(os.path.realpath(__file__))[0])
 
 suffix = " > /dev/null 2>&1"
 dir = "__results__"
 
-if os.path.exists("temp_output"):
-	shutil.rmtree("temp_output")
-if os.path.exists("__results__"):
-	shutil.rmtree("__results__")
-os.mkdir(dir)
+def clear():
+	if os.path.exists("temp_output"):
+		shutil.rmtree("temp_output")
+	if os.path.exists("__results__"):
+		shutil.rmtree("__results__")
+	os.mkdir(dir)
+
 
 def __test_matrices(result_dir, truth_dir):
 
@@ -53,8 +56,13 @@ def test_parallelization():
 		print("\tFAILED")
 		sys.exit(1)
 
+#----------------------------------------------------------------
+#----------------------------------------------------------------
+#----------------------------------------------------------------
+
 
 #test k=31 t=0
+clear()
 print("TESTING k=31 t=0")
 command = "../build/bin/simka -in ../example/simka_input.txt -out ./__results__/results_k31_t0 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 31 -abundance-min 0 -verbose 0"
 print(command)
@@ -62,6 +70,7 @@ os.system(command + suffix)
 test_dists("results_k31_t0")
 
 #test k=21 t=0
+clear()
 print("TESTING k=21 t=0")
 command = "../build/bin/simka -in ../example/simka_input.txt -out ./__results__/results_k21_t0 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 0 -verbose 0"
 print(command)
@@ -69,6 +78,7 @@ os.system(command + suffix)
 test_dists("results_k21_t0")
 
 #test k=31 t=2
+clear()
 print("TESTING k=31 t=2")
 command = "../build/bin/simka -in ../example/simka_input.txt -out ./__results__/results_k31_t2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 31 -abundance-min 2 -verbose 0"
 print(command)
@@ -76,6 +86,7 @@ os.system(command + suffix)
 test_dists("results_k31_t2")
 
 #test k=21 t=2
+clear()
 print("TESTING k=21 t=2")
 command = "../build/bin/simka -in ../example/simka_input.txt -out ./__results__/results_k21_t2 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 2 -verbose 0"
 print(command)
@@ -83,6 +94,7 @@ os.system(command + suffix)
 test_dists("results_k21_t2")
 
 #test resources 1
+clear()
 print("TESTING parallelization")
 command = "../build/bin/simka -in ../example/simka_input.txt -out ./__results__/results_resources1 -out-tmp ./temp_output -simple-dist -complex-dist -kmer-size 21 -abundance-min 0 -nb-cores 20 -max-memory 4000  -verbose 0"
 os.system(command + suffix)
@@ -90,4 +102,7 @@ command = "../build/bin/simka -in ../example/simka_input.txt -out ./__results__/
 os.system(command + suffix)
 test_parallelization()
 
-shutil.rmtree(dir)
+#----------------------------------------------------------------
+#----------------------------------------------------------------
+#----------------------------------------------------------------
+clear()
