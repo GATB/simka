@@ -66,7 +66,7 @@ bool sortFileBySize (sortItem_Size_Filename_ID& i, sortItem_Size_Filename_ID& j)
 }
 
 u_int64_t getFileSize(const string& filename){
-	std::ifstream in(filename, std::ifstream::ate | std::ifstream::binary);
+	std::ifstream in(filename.c_str(), std::ifstream::ate | std::ifstream::binary);
 	u_int64_t size = in.tellg();
 	in.close();
 	return size;
