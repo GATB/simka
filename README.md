@@ -58,7 +58,7 @@ Then, you can try the software on your computer, as follows:
 The installation creates 4 executables (./build/bin directory):
 
     simka: main software to be used for your analysis
-    simkaCount, simkaMerge and simkaCOuntProcess: not to be used directly, called by 'simka'
+    simkaCount, simkaMerge and simkaCountProcess: not to be used directly, called by 'simka'
 
 All softwares must stay in the same folder; so, if you want to move them elsewhere on your system, consider to let them altogether.
 
@@ -193,7 +193,7 @@ Example:
 
 where simka_results_dir is the folder containing the distances matrices of Simka (-out)
 
-Visualization scripts accept metadata table in standard csv format:
+Figures can be annotated by providing a metadata data in standard csv format:
 
 	DATASET_ID;VARIABLE_NAME_1;VARIABLE_NAME_2
 	A;1;aquatic
@@ -207,8 +207,8 @@ An example of this table is given at ./example/dataset_metadata.csv
 Dataset ID in the metadata table must match with the dataset ID in simka distance matrices
 
 Add the following options to activate annotations:
-	- -metadata-in: filename to a metadata table
-	- -metadata-variable: the name of the variable that you want to display in figures (the name of the column), for instance VARIABLE_NAME_1 in example above
+	* -metadata-in: filename to a metadata table
+	* -metadata-variable: the name of the variable that you want to display in figures (the name of the column), for instance VARIABLE_NAME_1 in example above
 
 Visualization example commands are given when running simka example (./example/simple_test.sh).
 
