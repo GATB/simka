@@ -937,7 +937,7 @@ public:
 				std::string::size_type pos = id.find(".gz");
 				id.erase(pos, 3);
 
-				size_t datasetId = stoull(id);
+				size_t datasetId = stoul(id);
 				//cout << filenames[i] << " " << datasetId << endl;
 
 				filenameSizes.push_back(sortItem_Size_Filename_ID(getFileSize(partDir+filenames[i]), datasetId));
