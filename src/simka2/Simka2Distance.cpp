@@ -18,6 +18,7 @@
 
 
 
+#define OUTPUT_RANDOM_KMERS
 
 
 
@@ -85,8 +86,13 @@ public:
 	//size_t _nbBanks;
 	//vector<string> _currentDatasetIds;
 	SimkaOntheflySubsampler _simkaOntheflySubsampler;
+	size_t _kmerSize;
 
-	DatasetMergerDistance(size_t nbBanks, size_t partitionId, vector<string>& datasetToMergeDirs, SimkaStatistics* stats, SimkaCountProcessorSimple<span>* processor, map<string, u_int64_t>& idToOrder, u_int64_t nbPickableKmers):
+#ifdef OUTPUT_RANDOM_KMERS
+	ofstream _outputFileRandomKmers;
+#endif
+
+	DatasetMergerDistance(size_t nbBanks, size_t partitionId, vector<string>& datasetToMergeDirs, SimkaStatistics* stats, SimkaCountProcessorSimple<span>* processor, map<string, u_int64_t>& idToOrder, u_int64_t nbPickableKmers, const string& matrixDirTemp, size_t kmerSize):
 		DiskBasedMergeSort<span>(partitionId, datasetToMergeDirs, idToOrder, true)
     {
 
@@ -100,7 +106,13 @@ public:
 		_simkaOntheflySubsampler.init(nbPickableKmers);
 		_mdr = 0;
 		_seen = 0;
+		_kmerSize = kmerSize;
 		cout << "START" << endl;
+
+#ifdef OUTPUT_RANDOM_KMERS
+		_outputFileRandomKmers.open(matrixDirTemp + "/randomKmerSelection_" + to_string(partitionId) + ".txt");
+#endif
+
     }
 
 	void process(Type& kmer, u_int64_t bankId, u_int64_t abundance){
@@ -170,11 +182,21 @@ public:
 			//cout << multidimBoostrap_prob << endl;
 			//cout << "=========" << endl;
 			for(size_t j=0; j<MULTISCALE_BOOSTRAP_NB_BOOSTRAPS; j++){
-				int number = _simkaOntheflySubsampler.getNumber(i, j);
-				if(number > 0){
-					_processor->process(this->_partitionId, kmer, counts, i, j, number, _sharedNewBanks);
+				//int number = _simkaOntheflySubsampler.getNumber(i);
+				if(_simkaOntheflySubsampler.isPicked(i)){
+					#ifdef OUTPUT_RANDOM_KMERS
+						string kmerStr = kmer.toString(_kmerSize);
+						_outputFileRandomKmers.write(kmerStr.c_str(), kmerStr.size());
+						for(size_t i=0; i<counts.size(); i++){
+							string countStr = ";" + to_string(counts[i]);
+							_outputFileRandomKmers.write(countStr.c_str(), countStr.size());
+						}
+						string endLine = "\n";
+						_outputFileRandomKmers.write(endLine.c_str(), endLine.size());
+					#endif
+					_processor->process(this->_partitionId, kmer, counts, i, j, 1, _sharedNewBanks);
+					_mdr += 1;
 				}
-				_mdr += number;
 				//if(number > 10){
 				//cout << j << ": " << number << endl;
 				//}
@@ -205,6 +227,9 @@ public:
 
 
 	void end(){
+		#ifdef OUTPUT_RANDOM_KMERS
+			_outputFileRandomKmers.close();
+		#endif
 		cout << "SEEN: " << _seen << endl;
 		cout << "PICKED: " << _mdr << endl;
 		//cout << "ENNNNNNNNNNNNNNNNNNNNNNNND" << endl;
@@ -421,7 +446,7 @@ public:
 
 		_processor = new SimkaCountProcessorSimple<span> (_stats, _nbBanks, _nbNewBanks, _kmerSize, 0);
 
-		DatasetMergerDistance<span> datasetMergerDistance(_nbBanks, _partitionId, _kmerSpectrumDirs, _stats, _processor, _idToOrder, _nbDistinctMergedKmers);
+		DatasetMergerDistance<span> datasetMergerDistance(_nbBanks, _partitionId, _kmerSpectrumDirs, _stats, _processor, _idToOrder, _nbDistinctMergedKmers, _dirMatrixParts, _kmerSize);
 		datasetMergerDistance.execute();
 
 		_processor->end();

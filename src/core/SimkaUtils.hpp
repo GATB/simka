@@ -11,9 +11,9 @@
 #include <gatb/gatb_core.hpp>
 #include "SimkaDistance.hpp"
 
-#include <boost/random/binomial_distribution.hpp>
-#include <boost/random/mersenne_twister.hpp>
-#include <boost/random/variate_generator.hpp>
+//#include <boost/random/binomial_distribution.hpp>
+//#include <boost/random/mersenne_twister.hpp>
+//#include <boost/random/variate_generator.hpp>
 
 const string STR_SIMKA_SOLIDITY_PER_DATASET = "-solidity-single";
 const string STR_SIMKA_MAX_READS = "-max-reads";
@@ -57,17 +57,19 @@ class SimkaOntheflySubsampler
 {
 public:
 
-	typedef boost::random::binomial_distribution<u_int64_t, long double> binomial_distrib;
-	typedef boost::random::variate_generator<boost::random::mt19937&, binomial_distrib> binomial_distrib_gen;
+	typedef uniform_real_distribution<long double> RealDitribution;
+	//typedef boost::random::variate_generator<boost::random::mt19937&, binomial_distrib> binomial_distrib_gen;
 
-    std::mt19937 _generator;
+    std::mt19937 _rng;
 	//default_random_engine _generator;
 	//vector<vector<default_random_engine> > _distribsRE;
 	//vector< > _distribs;
-    vector<binomial_distrib_gen> _distribs;
+    vector<RealDitribution> _distribs;
+    vector<long double> _pickProbs;
 
-	inline int getNumber(size_t sampleRateIndex, size_t bootn){
-		return _distribs[sampleRateIndex]();
+	inline bool isPicked(size_t sampleRateIndex){
+		long double p = _distribs[sampleRateIndex](_rng);
+		return p < _pickProbs[sampleRateIndex];
 		//cout << sampleRateIndex << endl;
 		//int lol = _distribs[sampleRateIndex]();
 		//cout << "lol: " << lol << endl;
@@ -76,30 +78,36 @@ public:
 		//return _distribs[sampleRateIndex][bootn](_generator);
 	}
 
-	boost::random::mt19937 _rng;                 // produces randomness out of thin air
+	//boost::random::mt19937 _rng;                 // produces randomness out of thin air
 	void init(long double nbPickableKmers){
 
-		srand (time(NULL));
-		_rng = boost::random::mt19937(rand());
+		//srand (time(NULL));
+		//_rng = boost::random::mt19937(rand());
 
 		//cout << "LOOOO" << endl;
 		//nbPickableKmers = 100000000000ULL;
 		//cout << nbPickableKmers << endl;
 
 		std::random_device rd;
-		_generator = mt19937(rd());
+		_rng = mt19937(rd());
 
 		for(size_t i=0; i<SimkaUtils::NB_SUBSAMPLING_RATES; i++){
-			float pickProb = SimkaUtils::SUBSAMPLING_RATES[i];
+			//float pickProb = SimkaUtils::SUBSAMPLING_RATES[i];
+			long double nbPickedKmers = SimkaUtils::SUBSAMPLING_RATES[i];
 
-			long double nbPickedKmers = nbPickableKmers * pickProb;
+			long double p = (long double) nbPickedKmers/ (long double) nbPickableKmers;
+			//long double p = (long double) nbPickedKmers/ (long double) nbPickableKmers/ (long double)nbPickableKmers;
+			_pickProbs.push_back(p);
+
+			RealDitribution distrib(0, 1);
+			_distribs.push_back(distrib);
 
 			//vector<default_random_engine> lol1;
-			vector<binomial_distrib > lol2;
+			//vector<binomial_distrib > lol2;
 
 			//for(size_t j=0; j<MULTISCALE_BOOSTRAP_NB_BOOSTRAPS; j++){
 
-				cout << "ALLO: " << nbPickableKmers << "  " << nbPickedKmers << "  " << pickProb << endl;
+				//cout << "ALLO: " << nbPickableKmers << "  " << nbPickedKmers << "  " << pickProb << endl;
 				//cout << "ALLO " << (nbPickedKmers/nbPickableKmers/nbPickableKmers) << endl;
 				//cout << nbPickableKmers << " " << nbPickedKmers << endl;
 				//default_random_engine generator(rd());
@@ -108,13 +116,13 @@ public:
 			    // perform 4 trials, each succeeds 1 in 2 times
 			    //std::binomial_distribution<> d(4, 0.5);
 
-				long double p = (long double) nbPickedKmers/ (long double) nbPickableKmers/ (long double)nbPickableKmers;
-				binomial_distrib my_binomial(nbPickableKmers, p);      // binomial distribution with n=20, p=0.5
+			//long double p = (long double) nbPickedKmers/ (long double) nbPickableKmers/ (long double)nbPickableKmers;
+			//binomial_distrib my_binomial(nbPickableKmers, p);      // binomial distribution with n=20, p=0.5
 				//binomial_distrib my_binomial(20, 0.5);      // binomial distribution with n=20, p=0.5
 
-				binomial_distrib_gen next_value(_rng, my_binomial);
+			//binomial_distrib_gen next_value(_rng, my_binomial);
 
-				_distribs.push_back(next_value);
+			//_distribs.push_back(next_value);
 				// see random number distributions
 				//boost::random::variate_generator<boost::random::mt19937&, boost::random::binomial_distribution<> >
 				//         next_value(rng, my_binomial);     // glues randomness with mapping

@@ -31,7 +31,7 @@ const string STR_SIMKA_DISTANCE_CANBERRA = "-canberra";
 const string STR_SIMKA_DISTANCE_KULCZYNSKI = "-kulczynski";
 
 
-#define MULTISCALE_BOOSTRAP_NB_BOOSTRAPS 10
+#define MULTISCALE_BOOSTRAP_NB_BOOSTRAPS 1
 
 typedef vector<u_int16_t> SpeciesAbundanceVectorType;
 
