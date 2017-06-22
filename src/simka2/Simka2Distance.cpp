@@ -18,7 +18,7 @@
 
 
 
-#define OUTPUT_RANDOM_KMERS
+//#define OUTPUT_RANDOM_KMERS
 
 
 

@@ -21,9 +21,9 @@
 #include "SimkaDistance.hpp"
 #include "SimkaUtils.hpp"
 
-const size_t SimkaUtils::NB_SUBSAMPLING_RATES = 1;
-//const float SimkaUtils::SUBSAMPLING_RATES[SimkaUtils::NB_SUBSAMPLING_RATES]  = {100, 1000, 10000, 100000, 1000000, 10000000};
-const float SimkaUtils::SUBSAMPLING_RATES[SimkaUtils::NB_SUBSAMPLING_RATES]  = {100000};
+const size_t SimkaUtils::NB_SUBSAMPLING_RATES = 6;
+const float SimkaUtils::SUBSAMPLING_RATES[SimkaUtils::NB_SUBSAMPLING_RATES]  = {100, 1000, 10000, 100000, 1000000, 10000000};
+//const float SimkaUtils::SUBSAMPLING_RATES[SimkaUtils::NB_SUBSAMPLING_RATES]  = {100000};
 
 
 SimkaStatistics::SimkaStatistics(size_t nbBanks, size_t nbNewBanks, bool computeSimpleDistances, bool computeComplexDistances)
