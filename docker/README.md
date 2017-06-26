@@ -75,7 +75,7 @@ So, here is an example of command to use while setting up a Simka job for GoDock
     #!/bin/bash
     /opt/simka/bin/simka -in $GODOCKER_HOME/simka/example/simka_input.txt -out $GODOCKER_HOME/simka/example/simka_results/ -out-tmp $GODOCKER_HOME/simka/example/simka_temp_output
     
-In the above short script, we suppose that the data are located in the home directory of the use (denoted by variable $GODOCKER\_HOME). Simply adapt paths to your needs. If you want to use data located in Omaha, use #GODOCKER\_DATA variable instead.
+In the above short script, we suppose that the data are located in the home directory of the user (denoted by variable $GODOCKER\_HOME). Simply adapt paths to your needs. If you want to use data located in Omaha, use '/omaha-beach' instead.
 
 In this script, please DO NOT modify path: ```/opt/simka/bin/simka```. It targets the simka binary within the Simka Docker image.
 
@@ -89,7 +89,7 @@ After running a Simka data processing job, you can prepare PNG images using:
 In this script:
 
 * DO NOT modify path: "python2.7 /opt/simka/scripts/visualization/run-visualization.py". It targets a simka python script within the Simka Docker container.
-* adapt the use of $GODOCKER\_HOME to your needs; you can also targets data located in Omaha using #GODOCKER\_DATA
+* adapt the use of $GODOCKER\_HOME to your needs; you can also targets data located in Omaha using '/omaha-beach'
 
 
 ### Making your own Simka image for GoDocker
