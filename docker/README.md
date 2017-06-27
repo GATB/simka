@@ -37,7 +37,7 @@ Please refer to the documented header of the ```Dockerfile``` located in this di
 
 ## What is GoDocker?
 
-[GoDocker](https://godocker.genouest.org/) is a front-end to execute Docker containers on the [Genouest](http://www.genouest.org) bioinformatics platform. An account is required to access this service.
+[GoDocker](http://www.genouest.org/godocker/) is a front-end to execute Docker containers on the [Genouest](http://www.genouest.org) bioinformatics platform. An account is required to access this service.
 
 ## How to prepare a Simka job
 
