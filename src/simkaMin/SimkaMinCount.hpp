@@ -1021,19 +1021,6 @@ public:
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 		//iterateSequences();
 		//dispatcher->iterate (itSeq, command, 1000);
 
@@ -1043,8 +1030,33 @@ public:
 		delete dispatcher;
 		delete bloomFilter;
 
+		size_t sketchSize = _kmerCountSorter.size();
+		vector<u_int64_t> kmers(sketchSize);
+		//cout << sketchSize << endl;
+		for(size_t i=0; i<sketchSize; i++){
+
+			//cout << kmers.size()-1-i << endl;
+			u_int64_t kmer = _kmerCountSorter.top();
+			kmers[kmers.size()-1-i] = kmer;
+			_kmerCountSorter.pop();
+
+		}
 
 		countKmersMutex.lock();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 		u_int64_t filePos = (datasetId * _sketchSize * (sizeof(u_int64_t) + sizeof(KmerCountType))) + KMER_SPECTRUM_HEADER_SIZE;
 		//cout << "DATASTE ID: " << datasetId << "    " << filePos << endl;
@@ -1053,18 +1065,16 @@ public:
 
 		//_kmerCountSorter.pop(); //Discard greater element because queue size is always equal to (_sketchSize + 1) because of an optimization
 
-		size_t sketchSize = _kmerCountSorter.size();
-		//cout << sketchSize << endl;
-		for(size_t i=0; i<sketchSize; i++){
+		//cout << "----------" << endl;
+		for(size_t i=0; i<kmers.size(); i++){
 
-			u_int64_t kmer = _kmerCountSorter.top();
-			cout << kmer << endl;
+			u_int64_t kmer = kmers[i];
+			//cout << kmer << endl;
 			KmerCountType count = _kmerCounts[kmer];
 
 			_outputFile.write((const char*)&kmer, sizeof(kmer));
 			_outputFile.write((const char*)&count, sizeof(count));
 
-			_kmerCountSorter.pop();
 			//mergeSynch(kmer, _kmerCounts[kmer]);
 			//KmerCount kmerCount = _kmerCountSorter.top();
 			//cout << kmerCount._kmer << "  " << kmerCount._count << endl;

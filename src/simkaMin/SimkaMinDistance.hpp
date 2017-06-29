@@ -106,17 +106,17 @@ public:
 			//cout << kmer1 << " " << kmer2 << endl;
 			if(kmer1 > kmer2){
 				_nbDistinctKmers += 1;
-				_nbKmers += count1;
-
-				if(_kmerSpectrumiterator1->isDone()) break;
-				_kmerSpectrumiterator1->next(kmer1, count1);
-			}
-			else if(kmer1 < kmer2){
-				_nbDistinctKmers += 1;
 				_nbKmers += count2;
 
 				if(_kmerSpectrumiterator2->isDone()) break;
 				_kmerSpectrumiterator2->next(kmer2, count2);
+			}
+			else if(kmer1 < kmer2){
+				_nbDistinctKmers += 1;
+				_nbKmers += count1;
+
+				if(_kmerSpectrumiterator1->isDone()) break;
+				_kmerSpectrumiterator1->next(kmer1, count1);
 			}
 			else{
 				_nbDistinctKmers += 1;
