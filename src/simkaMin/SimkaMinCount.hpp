@@ -1066,7 +1066,7 @@ public:
 
 
 
-		u_int64_t filePos = (datasetId * _sketchSize * (sizeof(u_int64_t) + sizeof(KmerCountType))) + KMER_SPECTRUM_HEADER_SIZE;
+		u_int64_t filePos = (datasetId * _sketchSize * sizeof(KmerAndCountType)) + KMER_SPECTRUM_HEADER_SIZE;
 		//cout << "DATASTE ID: " << datasetId << "    " << filePos << endl;
 		_outputFile.seekp(filePos);
 
@@ -1077,11 +1077,13 @@ public:
 		for(size_t i=0; i<kmers.size(); i++){
 
 			u_int64_t kmer = kmers[i];
-			//cout << kmer << endl;
-			KmerCountType count = _kmerCounts[kmer];
 
-			_outputFile.write((const char*)&kmer, sizeof(kmer));
-			_outputFile.write((const char*)&count, sizeof(count));
+			KmerAndCountType kmerCount(kmer, _kmerCounts[kmer]);
+			//cout << kmer << endl;
+			//KmerCountType count = ;
+
+			_outputFile.write((const char*)&kmerCount, sizeof(kmerCount));
+			//_outputFile.write((const char*)&count, sizeof(count));
 
 			//mergeSynch(kmer, _kmerCounts[kmer]);
 			//KmerCount kmerCount = _kmerCountSorter.top();

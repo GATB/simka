@@ -24,6 +24,18 @@ typedef u_int16_t KmerCountType;
 typedef unordered_map<u_int64_t, KmerCountType> KmerCountDictionaryType;
 typedef float DistanceValueType;
 
+struct KmerAndCountType{
+
+public:
+	u_int64_t _kmer;
+	KmerCountType _count;
+
+	KmerAndCountType(u_int64_t kmer, KmerCountType count){
+		_kmer = kmer;
+		_count = count;
+	}
+};
+
 
 class SimkaMinCommons {
 public:
