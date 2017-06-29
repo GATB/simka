@@ -52,7 +52,7 @@ public:
 
 	void first(size_t datasetId){
 		//if(_buffer){FREE (_buffer);}
-		u_int64_t pos = KMER_SPECTRUM_HEADER_SIZE + (datasetId*_sketchSize*(sizeof(u_int64_t)+sizeof(KmerCountType)));
+		u_int64_t pos = KMER_SPECTRUM_HEADER_SIZE + (datasetId*_sketchSize*sizeof(KmerAndCountType));
 		fseek(_is, pos, SEEK_SET);
 		_nbItems = 0;
 		//cout << sizeof(KmerAndCountType) << endl;
@@ -71,7 +71,7 @@ public:
 		KmerAndCountType kmerCount = _buffer[_nbItems];
 		kmer = kmerCount._kmer;
 		count = kmerCount._count;
-		cout << kmer << " " << count << endl;
+		//cout << kmer << " " << count << endl;
 
 		//_kmerSpectrumFile.read((char*)(&kmer), sizeof(kmer));
 		//_kmerSpectrumFile.read((char*)(&count), sizeof(count));
