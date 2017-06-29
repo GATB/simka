@@ -134,6 +134,9 @@ RUN cd /opt \
 
 COPY run_simka.sh /opt/simka
 
+# Fix: ensure script has exec permission
+RUN chmod +x /opt/simka/run_simka.sh
+
 # ###
 #     Start simka. 
 #
