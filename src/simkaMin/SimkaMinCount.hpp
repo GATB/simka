@@ -34,7 +34,7 @@
 
 //#define MERGE_BUFFER_SIZE 10000
 
-/*
+
 //-------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------
@@ -111,7 +111,7 @@ public:
 	//typedef typename KmerCountSorter KmerSorter;
 
 	std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter> _kmerCountSorter;
-	KmerCountDictionaryType _kmerCounts;
+
 
 	//std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter>& _kmerCountSorterSynch;
 	//KmerCountDictionaryType& _kmerCountsSynch;
@@ -119,11 +119,13 @@ public:
 	Bloom<KmerType>* _bloomFilter;
 	u_int64_t _nbInsertedKmersInBloom;
 
-	ofstream _outputFile;
+	vector<u_int64_t>& _kmers;
+	KmerCountDictionaryType& _kmerCounts;
+	//ofstream _outputFile;
 
 
-	SelectKmersCommand(size_t kmerSize, size_t sketchSize, Bloom<KmerType>* bloomFilter)
-	: _model(kmerSize), _itKmer(_model), _bloomFilter(bloomFilter)
+	SelectKmersCommand(size_t kmerSize, size_t sketchSize, Bloom<KmerType>* bloomFilter, vector<u_int64_t>& kmers, KmerCountDictionaryType& kmerCounts)
+	: _model(kmerSize), _itKmer(_model), _bloomFilter(bloomFilter), _kmers(kmers), _kmerCounts(kmerCounts)
 	{
 		_kmerSize = kmerSize;
 		_sketchSize = sketchSize;
@@ -132,7 +134,7 @@ public:
 	}
 
 	SelectKmersCommand(const SelectKmersCommand& copy)
-	: _model(copy._kmerSize), _itKmer(_model), _bloomFilter(copy._bloomFilter)
+	: _model(copy._kmerSize), _itKmer(_model), _bloomFilter(copy._bloomFilter), _kmers(copy._kmers), _kmerCounts(copy._kmerCounts)
 	{
 		_kmerSize = copy._kmerSize;
 		_sketchSize = copy._sketchSize;
@@ -148,7 +150,16 @@ public:
 		//cout << "deleteeeeee" << endl;
 
 
+		size_t sketchSize = _kmerCountSorter.size();
+		//cout << sketchSize << endl;
+		for(size_t i=0; i<sketchSize; i++){
 
+			//cout << kmers.size()-1-i << endl;
+			u_int64_t kmer = _kmerCountSorter.top();
+			_kmers[_kmers.size()-1-i] = kmer;
+			_kmerCountSorter.pop();
+
+		}
 
 		//_mutex.lock();
 
@@ -156,6 +167,7 @@ public:
 		//cout << "deleteeeeee" << endl;
 		//cout << this << endl;
 
+		/*
 		u_int64_t filePos = _datasetId * _sketchSize * (sizeof(u_int64_t) + sizeof(KmerCountType));
 		_outputFile.seekp(filePos);
 
@@ -181,18 +193,78 @@ public:
 			//cout << _minHashKmers[i] << " " << _minHashKmersCounts[i] << endl;
 		}
 
-		_outputFile.close();
+		_outputFile.close();*/
 		//cout << "deleteeeeee1" << endl;
 
 		//_mutex.unlock();
 	}
 
 
+	void operator()(Sequence& sequence){
 
+		_itKmer.setData(sequence.getData());
+
+		for(_itKmer.first(); !_itKmer.isDone(); _itKmer.next()){
+			//cout << _itKmer->value().toString(_kmerSize) << endl;
+
+			KmerType kmer = _itKmer->value();
+
+
+
+			u_int64_t kmerValue = kmer.getVal();
+			u_int64_t kmerHashed;
+			MurmurHash3_x64_128 ( (const char*)&kmerValue, sizeof(kmerValue), 100, &_hash_otpt);
+			kmerHashed = _hash_otpt[0];
+
+			//todo: verifier dabord si le kmer peut etre insérer, plus rapide que els accès au table de hachage (bloom et selected)
+
+			if(_kmerCountSorter.size() < _sketchSize){
+				if(_bloomFilter->contains(kmer)){
+					//Filling the queue with first elements
+					if(_kmerCounts.find(kmerHashed) == _kmerCounts.end()){
+						_kmerCountSorter.push(kmerHashed);
+						_kmerCounts[kmerHashed] = 2;
+						//cout << _kmerCountSorter.size() << endl;
+					}
+					else{
+						_kmerCounts[kmerHashed] += 1;
+					}
+				}
+				else{
+					_bloomFilter->insert(kmer);
+					_nbInsertedKmersInBloom += 1;
+				}
+			}
+			else{
+				if(kmerHashed < _kmerCountSorter.top()){
+					if(_bloomFilter->contains(kmer)){
+
+						if(_kmerCounts.find(kmerHashed) == _kmerCounts.end()){
+							//cout << kmer << "     " << _kmerCounts.size() << endl;
+							u_int64_t greaterValue = _kmerCountSorter.top();
+							_kmerCounts.erase(greaterValue);
+							_kmerCountSorter.pop();
+							_kmerCountSorter.push(kmerHashed);
+							_kmerCounts[kmerHashed] = 2;
+						}
+						else{
+							_kmerCounts[kmerHashed] += 1;
+						}
+					}
+					else{
+						if(kmerHashed < _kmerCountSorter.top() ){
+							_bloomFilter->insert(kmer);
+							_nbInsertedKmersInBloom += 1;
+						}
+					}
+				}
+			}
+		}
+	}
 
 
 };
-
+/*
  	size_t _kmerSize;
 	size_t _sketchSize;
 	vector<u_int64_t> _minHashValues;
@@ -244,7 +316,7 @@ public:
 
 
 
- */
+*/
 
 
 
@@ -939,17 +1011,23 @@ public:
 		//mutex commandMutex;
 		//std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter> kmerCountSorter;
 		//unordered_map<u_int64_t, KmerCountType> kmerCounts;
-		//SelectKmersCommand<span> command(_kmerSize, _sketchSize, bloomFilter, _outputDir, datasetId);
 
 
+		vector<u_int64_t> kmers(_sketchSize);
+		KmerCountDictionaryType _kmerCounts;
+
+		{
+			SelectKmersCommand<span> command(_kmerSize, _sketchSize, bloomFilter, kmers, _kmerCounts);
+			dispatcher->iterate (itSeq, command, 1000);
+		}
+
+		/*
 		ModelCanonical model;
 		ModelCanonicalIterator itKmer(model);
 
 		u_int64_t _hash_otpt[2];
 
 
-		std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter> _kmerCountSorter;
-		KmerCountDictionaryType _kmerCounts;
 
 		u_int64_t _nbInsertedKmersInBloom = 0;
 
@@ -959,70 +1037,10 @@ public:
 
 			Sequence& sequence = itSeq->item();
 
-			itKmer.setData(sequence.getData());
 
-			for(itKmer.first(); !itKmer.isDone(); itKmer.next()){
-				//cout << _itKmer->value().toString(_kmerSize) << endl;
-
-				KmerType kmer = itKmer->value();
-
-
-
-				u_int64_t kmerValue = kmer.getVal();
-				u_int64_t kmerHashed;
-				MurmurHash3_x64_128 ( (const char*)&kmerValue, sizeof(kmerValue), 100, &_hash_otpt);
-				kmerHashed = _hash_otpt[0];
-
-				//todo: verifier dabord si le kmer peut etre insérer, plus rapide que els accès au table de hachage (bloom et selected)
-
-				if(_kmerCountSorter.size() < _sketchSize){
-					if(bloomFilter->contains(kmer)){
-						//Filling the queue with first elements
-						if(_kmerCounts.find(kmerHashed) == _kmerCounts.end()){
-							_kmerCountSorter.push(kmerHashed);
-							_kmerCounts[kmerHashed] = 2;
-							//cout << _kmerCountSorter.size() << endl;
-						}
-						else{
-							_kmerCounts[kmerHashed] += 1;
-						}
-					}
-					else{
-						bloomFilter->insert(kmer);
-						_nbInsertedKmersInBloom += 1;
-					}
-				}
-				else{
-					if(kmerHashed < _kmerCountSorter.top()){
-						if(bloomFilter->contains(kmer)){
-
-							if(_kmerCounts.find(kmerHashed) == _kmerCounts.end()){
-								//cout << kmer << "     " << _kmerCounts.size() << endl;
-								u_int64_t greaterValue = _kmerCountSorter.top();
-								_kmerCounts.erase(greaterValue);
-								_kmerCountSorter.pop();
-								_kmerCountSorter.push(kmerHashed);
-								_kmerCounts[kmerHashed] = 2;
-							}
-							else{
-								_kmerCounts[kmerHashed] += 1;
-							}
-						}
-						else{
-							if(kmerHashed < _kmerCountSorter.top() ){
-								bloomFilter->insert(kmer);
-								_nbInsertedKmersInBloom += 1;
-							}
-						}
-					}
-				}
-			}
 		}
+		*/
 
-
-
-		//iterateSequences();
-		//dispatcher->iterate (itSeq, command, 1000);
 
 
 
@@ -1030,17 +1048,7 @@ public:
 		delete dispatcher;
 		delete bloomFilter;
 
-		size_t sketchSize = _kmerCountSorter.size();
-		vector<u_int64_t> kmers(sketchSize);
-		//cout << sketchSize << endl;
-		for(size_t i=0; i<sketchSize; i++){
 
-			//cout << kmers.size()-1-i << endl;
-			u_int64_t kmer = _kmerCountSorter.top();
-			kmers[kmers.size()-1-i] = kmer;
-			_kmerCountSorter.pop();
-
-		}
 
 		countKmersMutex.lock();
 
