@@ -88,7 +88,7 @@ target_link_libraries (simkaCount  ${gatb-core-libraries})
 add_executable        (simkaMerge  src/SimkaMerge.cpp ${ProjectFiles})
 target_link_libraries (simkaMerge  ${gatb-core-libraries})
 
-add_executable        (simkaMin  src/SimkaMin/SimkaMin.cpp ${SimkaMinFiles})
+add_executable        (simkaMin  src/simkaMin/SimkaMin.cpp ${SimkaMinFiles})
 target_link_libraries (simkaMin  ${gatb-core-libraries})
 
 ################################################################################
