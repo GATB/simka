@@ -1,2 +1,5 @@
 /build/
 .DS_Store
+/docker/simka_results/
+/docker/simka_temp_output/
+
