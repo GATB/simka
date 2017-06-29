@@ -34,7 +34,7 @@ using namespace std;
 
 
 
-
+/*
 template<typename Filter> class SimkaPotaraBankFiltered : public BankDelegate
 {
 public:
@@ -71,7 +71,7 @@ private:
     size_t _datasetId;
     size_t _nbDatasets;
 };
-
+*/
 
 class SimkaCount : public Tool
 {

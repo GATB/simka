@@ -72,6 +72,7 @@ ENDFOREACH ()
 
 # we define the files to be compiled
 file (GLOB_RECURSE  ProjectFiles  src/core/Simka*  ${PROJECT_BINARY_DIR}/src/core/template/*.cpp)
+file (GLOB_RECURSE  SimkaMinFiles  src/simkaMin/MurmurHash3.h src/simkaMin/MurmurHash3.cpp src/simkaMin/*.hpp)#   ${PROJECT_BINARY_DIR}/src/core/template/*.cpp)
 
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 set(PROJECT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/bin)
@@ -86,6 +87,9 @@ target_link_libraries (simkaCount  ${gatb-core-libraries})
 
 add_executable        (simkaMerge  src/SimkaMerge.cpp ${ProjectFiles})
 target_link_libraries (simkaMerge  ${gatb-core-libraries})
+
+add_executable        (simkaMin  src/SimkaMin/SimkaMin.cpp ${SimkaMinFiles})
+target_link_libraries (simkaMin  ${gatb-core-libraries})
 
 ################################################################################
 #  PACKAGING
