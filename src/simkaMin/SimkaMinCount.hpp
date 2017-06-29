@@ -27,6 +27,7 @@
 #include "SimkaMinCommons.hpp"
 #include "SimkaCommons.hpp"
 #include "MurmurHash3.h"
+#include <mutex>
 //#include "../../thirdparty/KMC/kmc_api/kmc_file.h"
 //#include "../../thirdparty/KMC/kmc_api/kmer_defs.h"
 //#include "../utils/MurmurHash3.h"
