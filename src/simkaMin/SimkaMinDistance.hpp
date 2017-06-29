@@ -122,7 +122,7 @@ public:
 				_nbDistinctKmers += 1;
 				_nbKmers += count1 + count2;
 				_nbDistinctSharedKmers += 1;
-				_nbSharedKmers += count1 + count2;
+				_nbSharedKmers += min(count1, count2);
 
 				if(_kmerSpectrumiterator2->isDone() || _kmerSpectrumiterator1->isDone()) break;
 				_kmerSpectrumiterator1->next(kmer1, count1);
