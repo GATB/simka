@@ -15,24 +15,49 @@
 #include "SimkaMinCommons.hpp"
 
 
-
 class KmerSpectrumIterator{
 public:
+
+	struct KmerAndCountType{
+		u_int64_t _kmer;
+		KmerCountType _count;
+	};
 
 	ifstream _kmerSpectrumFile;
 	size_t _sketchSize;
 	bool _isDone;
 	u_int64_t _nbItems;
 
+	//u_int8_t* _buffer;
+	//u_int64_t _bufferSize;
+
+	char* _buffer;
+
 	KmerSpectrumIterator(const string& filename, size_t sketchSize){
+		_buffer = 0;
 		_kmerSpectrumFile.open(filename + ".kmers", ios::binary);
 		_sketchSize = sketchSize;
+
+
+        _buffer  = (char*) MALLOC (sizeof(KmerAndCountType) * _sketchSize);
+		//_bufferSize = _sketchSize * (sizeof(KmerAndCountType));
+		//_buffer = new u_int8_t[_bufferSize];
+		//_buffer.resize(_bufferSize);
+		//cout << _sketchSize << " " << sizeof(KmerAndCountType) << " " << _bufferSize << endl;
+	}
+
+	~KmerSpectrumIterator(){
+		_kmerSpectrumFile.close();
+		if(_buffer){FREE (_buffer);}
 	}
 
 	void first(size_t datasetId){
+		//if(_buffer){FREE (_buffer);}
 		u_int64_t pos = KMER_SPECTRUM_HEADER_SIZE + (datasetId*_sketchSize*(sizeof(u_int64_t)+sizeof(KmerCountType)));
 		_kmerSpectrumFile.seekg(pos);
 		_nbItems = 0;
+		//cout << sizeof(KmerAndCountType) << endl;
+		_kmerSpectrumFile.read((char*)_buffer, sizeof(KmerAndCountType)*_sketchSize);
 	}
 
 	inline bool isDone(){
@@ -40,10 +65,15 @@ public:
 	}
 
 	inline void next(u_int64_t& kmer, KmerCountType& count){
-		//u_int64_t kmer;
-		_kmerSpectrumFile.read((char*)(&kmer), sizeof(kmer));
-		//KmerCountType count;
-		_kmerSpectrumFile.read((char*)(&count), sizeof(count));
+		KmerAndCountType kmerCount; // =  _buffer[_nbItems];
+		memcpy(&kmerCount, &_buffer[_nbItems*10], 10);
+
+		kmer = kmerCount._kmer;
+		count = kmerCount._count;
+		//cout << kmer << " " << count << endl;
+
+		//_kmerSpectrumFile.read((char*)(&kmer), sizeof(kmer));
+		//_kmerSpectrumFile.read((char*)(&count), sizeof(count));
 		_nbItems += 1;
 	}
 
