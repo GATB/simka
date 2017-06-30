@@ -201,7 +201,7 @@ public:
 		if(_kmerCountSorter.size() < _sketchSize){
 			if(_kmerCounts.find(kmerHashed) == _kmerCounts.end()){
 				_kmerCountSorter.push(kmerHashed);
-				_kmerCounts[kmerHashed] = 2;
+				_kmerCounts[kmerHashed] = 1;
 				//cout << _kmerCountSorter.size() << endl;
 			}
 			else{
@@ -216,7 +216,7 @@ public:
 					_kmerCounts.erase(greaterValue);
 					_kmerCountSorter.pop();
 					_kmerCountSorter.push(kmerHashed);
-					_kmerCounts[kmerHashed] = 2;
+					_kmerCounts[kmerHashed] = 1;
 				}
 				else{
 					_kmerCounts[kmerHashed] += 1;
@@ -983,7 +983,7 @@ public:
 		//unordered_map<u_int64_t, KmerCountType> kmerCounts;
 
 
-		vector<u_int64_t> kmers(_sketchSize);
+		vector<u_int64_t> kmers(_sketchSize); //TODO only used for reversing kmers not really optimized...
 		KmerCountDictionaryType _kmerCounts;
 
 		{
