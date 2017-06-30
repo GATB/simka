@@ -36,6 +36,17 @@ public:
 	}
 };
 
+struct PairwiseDistance{
+	u_int64_t _i;
+	u_int64_t _j;
+	DistanceValueType _distance;
+
+	PairwiseDistance(u_int64_t i, u_int64_t j, DistanceValueType distance){
+		_i = i;
+		_j = j;
+		_distance = distance;
+	}
+};
 
 class SimkaMinCommons {
 public:
