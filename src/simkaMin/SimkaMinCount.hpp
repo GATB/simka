@@ -209,16 +209,18 @@ public:
 			}
 		}
 		else{
-			if(_kmerCounts.find(kmerHashed) == _kmerCounts.end()){
-				//cout << kmer << "     " << _kmerCounts.size() << endl;
-				u_int64_t greaterValue = _kmerCountSorter.top();
-				_kmerCounts.erase(greaterValue);
-				_kmerCountSorter.pop();
-				_kmerCountSorter.push(kmerHashed);
-				_kmerCounts[kmerHashed] = 2;
-			}
-			else{
-				_kmerCounts[kmerHashed] += 1;
+			if(kmerHashed < _kmerCountSorter.top()){
+				if(_kmerCounts.find(kmerHashed) == _kmerCounts.end()){
+					//cout << kmer << "     " << _kmerCounts.size() << endl;
+					u_int64_t greaterValue = _kmerCountSorter.top();
+					_kmerCounts.erase(greaterValue);
+					_kmerCountSorter.pop();
+					_kmerCountSorter.push(kmerHashed);
+					_kmerCounts[kmerHashed] = 2;
+				}
+				else{
+					_kmerCounts[kmerHashed] += 1;
+				}
 			}
 		}
 	}
