@@ -13,13 +13,17 @@ void displayHelp(){
 	cout << "Usage: ./simkaMin [count|merge|distance|info|export]" << endl;
 
 	cout << endl << "[Distance computation options]" << endl;
-	cout << "\tcount    : count a datatse" << endl;
-	cout << "\tmerge    : count a datatse" << endl;
-	cout << "\tdistance : count a datatse" << endl;
-	cout << "\tinfo     : count a datatse" << endl;
+	cout << "\tspectrum    : transform datasets in k-mer spectrums" << endl;
+	cout << "\tmerge       : merge multiple k-mer spectrum files into a single" << endl;
+	cout << "\tdistance    : compute Jaccard and Bray-Curtis distances between k-mer spectrums" << endl;
 
 	cout << endl << "[Distance matrix manipulation options]" << endl;
-	cout << "\texport   : export distance matrices stored in binary format" << endl;
+	cout << "\texport      : export distance matrices stored in binary format" << endl;
+
+	cout << endl << "[Other options]" << endl;
+	cout << "\tinfo        : list datasets contained in a k-mer spectrum file" << endl;
+
+	cout << endl;
 }
 
 int main (int argc, char* argv[])
@@ -63,18 +67,20 @@ int main (int argc, char* argv[])
 
     		string programName = string(argv[1]);
 
-    		if(programName == "count"){
+    		if(programName == "spectrum"){
     			Simka2ComputeKmerSpectrum().run (argc, args);
     		}
     		else if(programName == "merge"){
-    			//Simka2ComputeKmerSpectrum().run (argc, argv);
-    			//cout << "start count" << endl;
+    			cout << "todo" << endl;
     		}
     		else if(programName == "distance"){
     			SimkaMinDistance().run(argc, args);
     		}
     		else if(programName == "export"){
     			SimkaMinDistanceMatrixExporter().run(argc, args);
+    		}
+    		else if(programName == "info"){
+    			cout << "todo" << endl;
     		}
     		else{
     			displayHelp();

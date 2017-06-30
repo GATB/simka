@@ -18,6 +18,7 @@ const string STR_SIMKA_SKETCH_SIZE = "-nb-kmers";
 const string STR_SIMKA_URI_INPUT_1 = "-in1";
 const string STR_SIMKA_URI_INPUT_2 = "-in2";
 const string STR_SIMKA_INPUT_IDS = "-in-ids";
+const string STR_SIMKA_ABUNDANCE_FILTER = "-filter";
 //const string STR_SIMKA2_DATASET_ID = "-id";
 
 typedef u_int16_t KmerCountType;

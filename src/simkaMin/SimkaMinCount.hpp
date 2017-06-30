@@ -122,15 +122,16 @@ public:
 	vector<u_int64_t>& _kmers;
 	KmerCountDictionaryType& _kmerCounts;
 	//ofstream _outputFile;
+	bool _useAbundanceFilter;
 
-
-	SelectKmersCommand(size_t kmerSize, size_t sketchSize, Bloom<KmerType>* bloomFilter, vector<u_int64_t>& kmers, KmerCountDictionaryType& kmerCounts)
+	SelectKmersCommand(size_t kmerSize, size_t sketchSize, Bloom<KmerType>* bloomFilter, vector<u_int64_t>& kmers, KmerCountDictionaryType& kmerCounts, bool useAbundanceFilter)
 	: _model(kmerSize), _itKmer(_model), _bloomFilter(bloomFilter), _kmers(kmers), _kmerCounts(kmerCounts)
 	{
 		_kmerSize = kmerSize;
 		_sketchSize = sketchSize;
 		_isMaster = true;
 		_nbInsertedKmersInBloom = 0;
+		_useAbundanceFilter = useAbundanceFilter;
 	}
 
 	SelectKmersCommand(const SelectKmersCommand& copy)
@@ -140,6 +141,7 @@ public:
 		_sketchSize = copy._sketchSize;
 		_isMaster = false;
 		_nbInsertedKmersInBloom = 0;
+		_useAbundanceFilter = copy._useAbundanceFilter;
 	}
 
 
@@ -161,42 +163,6 @@ public:
 
 		}
 
-		//_mutex.lock();
-
-		//cout << "Inserted k-mers: " << _nbInsertedKmersInBloom << endl;
-		//cout << "deleteeeeee" << endl;
-		//cout << this << endl;
-
-		/*
-		u_int64_t filePos = _datasetId * _sketchSize * (sizeof(u_int64_t) + sizeof(KmerCountType));
-		_outputFile.seekp(filePos);
-
-
-		_kmerCountSorter.pop(); //Discard greater element because queue size is always equal to (_sketchSize + 1) because of an optimization
-
-		size_t sketchSize = _kmerCountSorter.size();
-		for(size_t i=0; i<sketchSize; i++){
-
-			u_int64_t kmer = _kmerCountSorter.top();
-			KmerCountType count = _kmerCounts[kmer];
-
-			_outputFile.write((const char*)&kmer, sizeof(kmer));
-			_outputFile.write((const char*)&count, sizeof(count));
-
-			_kmerCountSorter.pop();
-			//mergeSynch(kmer, _kmerCounts[kmer]);
-			//KmerCount kmerCount = _kmerCountSorter.top();
-			//cout << kmerCount._kmer << "  " << kmerCount._count << endl;
-			//_partitionWriter->insert(kmerCount._kmer, _datasetIDbin, kmerCount._count);
-			//_kmerCountSorter.pop();
-			//_partitionWriter->insert(_minHashKmers[i], _datasetIDbin, _minHashKmersCounts[i] );
-			//cout << _minHashKmers[i] << " " << _minHashKmersCounts[i] << endl;
-		}
-
-		_outputFile.close();*/
-		//cout << "deleteeeeee1" << endl;
-
-		//_mutex.unlock();
 	}
 
 
@@ -218,50 +184,89 @@ public:
 
 			//todo: verifier dabord si le kmer peut etre insérer, plus rapide que els accès au table de hachage (bloom et selected)
 
-			if(_kmerCountSorter.size() < _sketchSize){
+			//cout << _useAbundanceFilter << endl;
+			if(_useAbundanceFilter){
+				processFiltered(kmer, kmerHashed);
+			}
+			else{
+				processUnfiltered(kmerHashed);
+			}
+
+
+		}
+	}
+
+	inline void processUnfiltered(u_int64_t kmerHashed){
+
+		if(_kmerCountSorter.size() < _sketchSize){
+			if(_kmerCounts.find(kmerHashed) == _kmerCounts.end()){
+				_kmerCountSorter.push(kmerHashed);
+				_kmerCounts[kmerHashed] = 2;
+				//cout << _kmerCountSorter.size() << endl;
+			}
+			else{
+				_kmerCounts[kmerHashed] += 1;
+			}
+		}
+		else{
+			if(_kmerCounts.find(kmerHashed) == _kmerCounts.end()){
+				//cout << kmer << "     " << _kmerCounts.size() << endl;
+				u_int64_t greaterValue = _kmerCountSorter.top();
+				_kmerCounts.erase(greaterValue);
+				_kmerCountSorter.pop();
+				_kmerCountSorter.push(kmerHashed);
+				_kmerCounts[kmerHashed] = 2;
+			}
+			else{
+				_kmerCounts[kmerHashed] += 1;
+			}
+		}
+	}
+
+	inline void processFiltered(KmerType& kmer, u_int64_t kmerHashed){
+
+		if(_kmerCountSorter.size() < _sketchSize){
+			if(_bloomFilter->contains(kmer)){
+				//Filling the queue with first elements
+				if(_kmerCounts.find(kmerHashed) == _kmerCounts.end()){
+					_kmerCountSorter.push(kmerHashed);
+					_kmerCounts[kmerHashed] = 2;
+					//cout << _kmerCountSorter.size() << endl;
+				}
+				else{
+					_kmerCounts[kmerHashed] += 1;
+				}
+			}
+			else{
+				_bloomFilter->insert(kmer);
+				_nbInsertedKmersInBloom += 1;
+			}
+		}
+		else{
+			if(kmerHashed < _kmerCountSorter.top()){
 				if(_bloomFilter->contains(kmer)){
-					//Filling the queue with first elements
+
 					if(_kmerCounts.find(kmerHashed) == _kmerCounts.end()){
+						//cout << kmer << "     " << _kmerCounts.size() << endl;
+						u_int64_t greaterValue = _kmerCountSorter.top();
+						_kmerCounts.erase(greaterValue);
+						_kmerCountSorter.pop();
 						_kmerCountSorter.push(kmerHashed);
 						_kmerCounts[kmerHashed] = 2;
-						//cout << _kmerCountSorter.size() << endl;
 					}
 					else{
 						_kmerCounts[kmerHashed] += 1;
 					}
 				}
 				else{
-					_bloomFilter->insert(kmer);
-					_nbInsertedKmersInBloom += 1;
-				}
-			}
-			else{
-				if(kmerHashed < _kmerCountSorter.top()){
-					if(_bloomFilter->contains(kmer)){
-
-						if(_kmerCounts.find(kmerHashed) == _kmerCounts.end()){
-							//cout << kmer << "     " << _kmerCounts.size() << endl;
-							u_int64_t greaterValue = _kmerCountSorter.top();
-							_kmerCounts.erase(greaterValue);
-							_kmerCountSorter.pop();
-							_kmerCountSorter.push(kmerHashed);
-							_kmerCounts[kmerHashed] = 2;
-						}
-						else{
-							_kmerCounts[kmerHashed] += 1;
-						}
-					}
-					else{
-						if(kmerHashed < _kmerCountSorter.top() ){
-							_bloomFilter->insert(kmer);
-							_nbInsertedKmersInBloom += 1;
-						}
+					if(kmerHashed < _kmerCountSorter.top() ){
+						_bloomFilter->insert(kmer);
+						_nbInsertedKmersInBloom += 1;
 					}
 				}
 			}
 		}
 	}
-
 
 };
 /*
@@ -504,18 +509,18 @@ public:
 
 	//struct kxpcomp { bool operator() (KmerCount_It& l,KmerCount_It& r) { return (r._count.value < l._count.value); } } ;
 
-	u_int64_t _nbReads;
+	//u_int64_t _nbReads;
 
-	size_t _nbPartitions;
+	//size_t _nbPartitions;
 	u_int64_t _maxMemory;
 	size_t _nbCores;
 	string _outputDir;
 	string _outputDirTemp;
 	//size_t _nbBanks;
 	string _inputFilename;
-	string _datasetID;
+	//string _datasetID;
 	size_t _kmerSize;
-	pair<CountNumber, CountNumber> _abundanceThreshold;
+	//pair<CountNumber, CountNumber> _abundanceThreshold;
 	//SIMKA_SOLID_KIND _solidKind;
 	//bool _soliditySingle;
 	int64_t _maxNbReads;
@@ -529,11 +534,11 @@ public:
 	//SimkaDistance* _simkaDistance;
 
 	//string _banksInputFilename;
-	string _h5Filename;
+	//string _h5Filename;
 	//vector<string> _tempFilenamesToDelete;
 	//IBank* _banks;
 	IProperties* _options;
-	size_t _localNbPartitions;
+	//size_t _localNbPartitions;
 
 	//vector<string> _bankNames;
 	//vector<u_int64_t> _nbReadsPerDataset;
@@ -544,33 +549,28 @@ public:
 	//vector<size_t> _nbBankPerDataset;
 	//size_t _nbBankPerDataset;
 
-	string _largerBankId;
-	bool _computeSimpleDistances;
-	bool _computeComplexDistances;
-	bool _keepTmpFiles;
+	//string _largerBankId;
+	//bool _computeSimpleDistances;
+	//bool _computeComplexDistances;
+	//bool _keepTmpFiles;
 
-	string _kmerDatataseFilename;
+	//string _kmerDatataseFilename;
 
-	vector<ICommand*> _cmds;
+	//vector<ICommand*> _cmds;
 	//SimkaPartitionWriter<span>* _partitionWriter;
 
 
-	vector<vector<u_int64_t>> _bufferKmers;
-	vector<vector<u_int32_t>> _bufferCounts;
-	vector<size_t> _bufferIndex;
 
-	vector<u_int64_t> _minHashValues;
-	vector<u_int64_t> _minHashKmers;
-	vector<u_int32_t> _minHashKmersCounts;
 
 	size_t _sketchSize;
+	bool _useAbundanceFilter;
 	//pthread_mutex_t _mutex;
 
 	//typedef typename SelectKmersCommand<span>::KmerCountSorter KmerCountSorter;
 	//std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter> _kmerCountSorter;
 	//KmerCountDictionaryType _kmerCounts;
 
-	size_t _nbBanks;
+	//size_t _nbBanks;
 	//vector<string> _bankNames;
 	//vector<size_t> _nbBankPerDataset;
 
@@ -601,6 +601,8 @@ public:
 
 		string command = "rm -rf " + _outputDirTemp;
 		system(command.c_str());
+
+		cout << "Output results: " << _outputDir << endl;
 	}
 
 	void parseArgs(){
@@ -608,10 +610,8 @@ public:
 		_options = getInput();
 
 		_sketchSize = _options->getInt(STR_SIMKA_SKETCH_SIZE);
+		_useAbundanceFilter = _options->get(STR_SIMKA_ABUNDANCE_FILTER);
 
-		_computeSimpleDistances = _options->get(STR_SIMKA_COMPUTE_ALL_SIMPLE_DISTANCES);
-		_computeComplexDistances = _options->get(STR_SIMKA_COMPUTE_ALL_COMPLEX_DISTANCES);
-		_keepTmpFiles = _options->get(STR_SIMKA_KEEP_TMP_FILES);
 		_maxMemory = _options->getInt(STR_MAX_MEMORY);
 	    _nbCores = _options->getInt(STR_NB_CORES);
 		_inputFilename = _options->getStr(STR_URI_INPUT);
@@ -622,8 +622,8 @@ public:
 		//cout << "outputdir temp to check: " << _outputDirTemp << endl;
 		//_outputDirTemp = _options->get(STR_URI_OUTPUT_TMP) ? _options->getStr(STR_URI_OUTPUT_TMP) : "./";
 		_kmerSize = _options->getInt(STR_KMER_SIZE);
-		_abundanceThreshold.first = _options->getInt(STR_KMER_ABUNDANCE_MIN);
-		_abundanceThreshold.second = min((u_int64_t)_options->getInt(STR_KMER_ABUNDANCE_MAX), (u_int64_t)(999999999));
+		//_abundanceThreshold.first = _options->getInt(STR_KMER_ABUNDANCE_MIN);
+		//_abundanceThreshold.second = min((u_int64_t)_options->getInt(STR_KMER_ABUNDANCE_MAX), (u_int64_t)(999999999));
 
 		//_nbPartitions = _options->getInt(STR_SIMKA2_NB_PARTITION);
 		//cout << _options->getInt(STR_KMER_ABUNDANCE_MAX) << endl;
@@ -899,42 +899,6 @@ public:
 
 
 
-	/*
-	void count(){
-
-		IBank* bank = Bank::open(_inputFilename);
-		LOCAL(bank);
-
-		SimkaSequenceFilter sequenceFilter(_minReadSize, _minReadShannonIndex);
-		IBank* filteredBank = new SimkaPotaraBankFiltered<SimkaSequenceFilter>(bank, sequenceFilter, _maxNbReads, _nbBankPerDataset);
-
-		LOCAL(filteredBank);
-
-
-		Iterator<Sequence>* itSeq = createIterator<Sequence> (
-				filteredBank->iterator(),
-				filteredBank->estimateNbItems(),
-				"Computing minhash sketch and counting"
-		);
-		LOCAL(itSeq);
-
-
-		IDispatcher* dispatcher = new SerialDispatcher();
-		u_int64_t bloomMemoryBits = _maxMemory * MBYTE * 8;
-		Bloom<Type>*  bloomFilter = new BloomCacheCoherent<Type>(bloomMemoryBits, 7);
-		//mutex commandMutex;
-		//std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter> kmerCountSorter;
-		//unordered_map<u_int64_t, KmerCountType> kmerCounts;
-		SelectKmersCommand<span> command(_kmerSize, _sketchSize, _kmerCountSorter, _kmerCounts, bloomFilter);
-
-		dispatcher->iterate (itSeq, command, 1000);
-
-		delete dispatcher;
-		delete bloomFilter;
-
-	}
-	 */
-
 	void startNewThread(size_t datasetId, const string& inputFilename, size_t nbBankPerDataset){
 
 
@@ -1005,9 +969,13 @@ public:
 
 
 		IDispatcher* dispatcher = new SerialDispatcher();
-		u_int64_t bloomMemoryBits = (_maxMemory * MBYTE * 8)  / _maxRunningThreads;
-		bloomMemoryBits = max(bloomMemoryBits, (u_int64_t) 10000);
-		Bloom<KmerType>*  bloomFilter = new BloomCacheCoherent<KmerType>(bloomMemoryBits, 7);
+		Bloom<KmerType>*  bloomFilter = 0;
+
+		if(_useAbundanceFilter){
+			u_int64_t bloomMemoryBits = (_maxMemory * MBYTE * 8)  / _maxRunningThreads;
+			bloomMemoryBits = max(bloomMemoryBits, (u_int64_t) 10000);
+			bloomFilter = new BloomCacheCoherent<KmerType>(bloomMemoryBits, 7);
+		}
 		//mutex commandMutex;
 		//std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter> kmerCountSorter;
 		//unordered_map<u_int64_t, KmerCountType> kmerCounts;
@@ -1017,7 +985,7 @@ public:
 		KmerCountDictionaryType _kmerCounts;
 
 		{
-			SelectKmersCommand<span> command(_kmerSize, _sketchSize, bloomFilter, kmers, _kmerCounts);
+			SelectKmersCommand<span> command(_kmerSize, _sketchSize, bloomFilter, kmers, _kmerCounts, _useAbundanceFilter);
 			dispatcher->iterate (itSeq, command, 1000);
 		}
 
@@ -1220,12 +1188,13 @@ public:
 	    IOptionsParser* kmerParser = new OptionsParser ("kmer");
 	    kmerParser->push_back (new OptionOneParam (STR_KMER_SIZE, "size of a kmer", false, "31"));
 	    kmerParser->push_back (new OptionOneParam (STR_SIMKA_SKETCH_SIZE, "number of kmers used to compute distances", false, "100000"));
+	    kmerParser->push_back (new OptionNoParam (STR_SIMKA_ABUNDANCE_FILTER, "filter out k-mer seen one time (potentially erroneous)", false));
 	    //kmerParser->push_back(dskParser->getParser (STR_KMER_SIZE));
 	    //kmerParser->push_back(new OptionOneParam (STR_KMER_PER_READ.c_str(), "number of selected kmers per read", false, "0"));
 	    //kmerParser->push_back (new OptionOneParam (STR_KMER_ABUNDANCE_MIN, "min abundance a kmer need to be considered", false, "1"));
-	    kmerParser->push_back (new OptionOneParam (STR_KMER_ABUNDANCE_MIN, "min abundance a kmer need to be considered", false, "2"));
-	    KmerCountType maxAbundance = -1;
-	    kmerParser->push_back (new OptionOneParam (STR_KMER_ABUNDANCE_MAX, "max abundance a kmer can have to be considered", false, Stringify::format("%i", maxAbundance)));
+	    //kmerParser->push_back (new OptionOneParam (STR_KMER_ABUNDANCE_MIN, "min abundance a kmer need to be considered", false, "2"));
+	    //KmerCountType maxAbundance = -1;
+	    //kmerParser->push_back (new OptionOneParam (STR_KMER_ABUNDANCE_MAX, "max abundance a kmer can have to be considered", false, Stringify::format("%i", maxAbundance)));
 
 	    //kmerParser->push_back(dskParser->getParser (STR_KMER_ABUNDANCE_MIN));
 	    //if (Option* p = dynamic_cast<Option*> (parser->getParser(STR_KMER_ABUNDANCE_MIN)))  {  p->setDefaultValue ("0"); }
@@ -1248,7 +1217,7 @@ public:
 	    //Core parser
 	    IOptionsParser* coreParser = new OptionsParser ("core");
 	    coreParser->push_back(new OptionOneParam(STR_NB_CORES, "number of cores", false, "0"));
-	    coreParser->push_back (new OptionOneParam (STR_MAX_MEMORY, "max memory (MB)", false, "8000"));
+	    coreParser->push_back (new OptionOneParam (STR_MAX_MEMORY, "max memory (MB). Only used if -filter is enabled", false, "8000"));
 	    //coreParser->push_back (new OptionOneParam (STR_SIMKA2_NB_PARTITION, "nb partitions", true));
 
 

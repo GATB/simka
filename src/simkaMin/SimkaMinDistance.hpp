@@ -340,6 +340,7 @@ public:
 		//string command = "rm -rf " + _outputDirTemp;
 		//system(command.c_str());
 
+		cout << "Output results: " << _outputDir << endl;
 	}
 
 	void parseArgs(){
@@ -431,8 +432,8 @@ public:
 
 		for(size_t i=0; i<_threads.size(); i++){
 			_threads[i]->join();
-			//delete _threads[i];
-			cout << i << endl;
+			delete _threads[i];
+			//cout << i << endl;
 		}
 
 		//Fill diagonal with 0
@@ -453,11 +454,11 @@ public:
 		_distanceMatrixBrayCurtis.close();
 
 		string command = "cp " + string(_inputFilename1+".ids") + " " + _outputDir + "/matrix_infos.ids ";
-		cout << command << endl;
+		//cout << command << endl;
 		system(command.c_str());
 	}
 
-	vector<ComputeDistanceManager> _computeDistanceManagers;
+
 
 	void computeDistanceSymetrical(){
 		cout << "compute symetrical distances" << endl;
