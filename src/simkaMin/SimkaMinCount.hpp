@@ -124,6 +124,9 @@ public:
 	//ofstream _outputFile;
 	bool _useAbundanceFilter;
 
+	u_int8_t* _seq;
+	//char _bin2NT[4];// = {'A','C','T','G'};
+
 	SelectKmersCommand(size_t kmerSize, size_t sketchSize, Bloom<KmerType>* bloomFilter, vector<u_int64_t>& kmers, KmerCountDictionaryType& kmerCounts, bool useAbundanceFilter)
 	: _model(kmerSize), _itKmer(_model), _bloomFilter(bloomFilter), _kmers(kmers), _kmerCounts(kmerCounts)
 	{
@@ -142,6 +145,12 @@ public:
 		_isMaster = false;
 		_nbInsertedKmersInBloom = 0;
 		_useAbundanceFilter = copy._useAbundanceFilter;
+
+		_seq = new u_int8_t[_kmerSize];
+		//_bin2NT[0] = 'A'; // = {'A','C','T','G'};
+		//_bin2NT[1] = 'C';
+		//_bin2NT[2] = 'T';
+		//_bin2NT[3] = 'G';
 	}
 
 
@@ -151,6 +160,8 @@ public:
 		if(_kmerCountSorter.size() == 0) return;
 		//cout << "deleteeeeee" << endl;
 
+
+		delete _seq;
 
 		size_t sketchSize = _kmerCountSorter.size();
 		//cout << sketchSize << endl;
@@ -166,6 +177,20 @@ public:
 	}
 
 
+	//inline void stringify(KmerType& kmer){
+
+	//}
+
+	/*
+    std::string toString (size_t sizeKmer) const
+    {
+
+
+        for (size_t i=0; i<sizeKmer; i++)  {  seq[sizeKmer-i-1] = bin2NT [(*this)[i]];  }
+        seq[sizeKmer]='\0';
+        return seq;
+    }*/
+
 	void operator()(Sequence& sequence){
 
 		_itKmer.setData(sequence.getData());
@@ -177,9 +202,19 @@ public:
 
 
 
-			u_int64_t kmerValue = kmer.getVal();
+	        for (size_t i=0; i<_kmerSize; i++)  {
+	        	//cout << kmer[i] << endl;
+	        	_seq[_kmerSize-i-1] = bin2NT [kmer[i]];
+	        }
+
+	        //cout << kmer.toString(_kmerSize) << endl;
+	        //cout << _seq << endl;
+			//string kmerStr = kmer.toString(_kmerSize);
+
+
+			//u_int64_t kmerValue = kmer.getVal();
 			u_int64_t kmerHashed;
-			MurmurHash3_x64_128 ( (const char*)&kmerValue, sizeof(kmerValue), 100, &_hash_otpt);
+			MurmurHash3_x64_128 ( _seq, _kmerSize, 100, &_hash_otpt);
 			kmerHashed = _hash_otpt[0];
 
 			//todo: verifier dabord si le kmer peut etre insérer, plus rapide que els accès au table de hachage (bloom et selected)
