@@ -1188,7 +1188,7 @@ public:
 
 		//Kmer parser
 	    IOptionsParser* kmerParser = new OptionsParser ("kmer");
-	    kmerParser->push_back (new OptionOneParam (STR_KMER_SIZE, "size of a kmer", false, "31"));
+	    kmerParser->push_back (new OptionOneParam (STR_KMER_SIZE, "size of a kmer", false, "21"));
 	    kmerParser->push_back (new OptionOneParam (STR_SIMKA_SKETCH_SIZE, "number of kmers used to compute distances", false, "100000"));
 	    kmerParser->push_back (new OptionNoParam (STR_SIMKA_ABUNDANCE_FILTER, "filter out k-mer seen one time (potentially erroneous)", false));
 	    //kmerParser->push_back(dskParser->getParser (STR_KMER_SIZE));
