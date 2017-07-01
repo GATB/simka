@@ -261,10 +261,8 @@ public:
 					}
 				}
 				else{
-					if(kmerHashed < _kmerCountSorter.top() ){
-						_bloomFilter->insert(kmer);
-						_nbInsertedKmersInBloom += 1;
-					}
+					_bloomFilter->insert(kmer);
+					_nbInsertedKmersInBloom += 1;
 				}
 			}
 		}
