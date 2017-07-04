@@ -79,9 +79,13 @@ class SelectKmersCommand
 public:
 
 
-    typedef typename Kmer<span>::Type  KmerType;
 	typedef typename Kmer<span>::ModelCanonical ModelCanonical;
 	typedef typename Kmer<span>::ModelCanonical::Iterator ModelCanonicalIterator;
+    typedef typename Kmer<span>::Type  KmerType;
+    typedef typename Kmer<span>::ModelCanonical::Kmer  KmerType2;
+
+
+    //typedef typename ModelCanonical::Kmer Lol;
 
 	size_t _kmerSize;
 	size_t _sketchSize;
@@ -159,6 +163,7 @@ public:
 			//cout << kmers.size()-1-i << endl;
 			u_int64_t kmer = _kmerCountSorter.top();
 			cout << kmer << endl;
+			//cout << i << ": " << kmer << endl;
 			_kmers[_kmers.size()-1-i] = kmer;
 			_kmerCountSorter.pop();
 
@@ -193,11 +198,60 @@ public:
 
 	void operator()(Sequence& sequence){
 
-		_itKmer.setData(sequence.getData());
+		//_itKmer.setData(sequence.getData());
+		//cout << sequence.toString() << endl;
 
+        size_t len  = sequence.getDataSize() - _kmerSize + 1; /// _kmerSize;
+        char*  data = sequence.getDataBuffer();
+
+        // We iterate the sequence data by block of size kmerSize
+        for (size_t i=0; i<len; i++, data += 1)
+        {
+            // We get the kmer value of the current block
+        	KmerType2 kmer = _model.codeSeed (data, sequence.getDataEncoding());
+        	//cout << kmer.value().toString(_kmerSize) << endl;
+
+        	if(!kmer.isValid()) continue;
+
+			//KmerType kmer = _itKmer->value();
+			//KmerType kmerRev = revcomp(kmer.value(), _kmerSize);
+			//string kmerStr = kmer.value().toString(_kmerSize);
+			//string kmerStrRev = kmerRev.toString(_kmerSize);
+
+			//if(kmerStrRev < kmerStr){
+			//	kmerStr = kmerStrRev;
+			//}
+
+			u_int64_t kmerValue = kmer.value().getVal();
+			u_int64_t kmerHashed;
+			MurmurHash3_x64_128 ((const char*)&kmerValue, sizeof(kmerValue), 42, &_hash_otpt);
+			kmerHashed = _hash_otpt[0];
+
+			//cout << kmerStr << ": " << kmerHashed << endl;
+			//todo: verifier dabord si le kmer peut etre insérer, plus rapide que els accès au table de hachage (bloom et selected)
+
+			//cout << _useAbundanceFilter << endl;
+			if(_useAbundanceFilter){
+				//processFiltered(kmer, kmerHashed);
+			}
+			else{
+				processUnfiltered(kmerHashed);
+			}
+
+
+            //cout << kmer.isValid() << endl;
+            // We update the occurrences number for this kmer value
+            //distrib [kmer.value().toInt()] += 1;
+        }
+
+    	/*
 		for(_itKmer.first(); !_itKmer.isDone(); _itKmer.next()){
 			//cout << _itKmer->value().toString(_kmerSize) << endl;
 
+
+			Lol kkaka = _itKmer->value().value();
+
+			//cout << _itKmer->value().isValid() << endl;
 			KmerType kmer = _itKmer->value();
 			KmerType kmerRev = revcomp(kmer, _kmerSize);
 			string kmerStr = kmer.toString(_kmerSize);
@@ -212,6 +266,11 @@ public:
 			MurmurHash3_x64_128 ( kmerStr.c_str(), _kmerSize, 42, &_hash_otpt);
 			kmerHashed = _hash_otpt[0];
 
+			if(kmerHashed == 66908235404){
+				//cout << kmer.value().isValid() << endl;
+				cout << sequence.toString() << endl;
+				cout << kmerStr << endl;
+			}
 			//cout << kmerStr << ": " << kmerHashed << endl;
 			//todo: verifier dabord si le kmer peut etre insérer, plus rapide que els accès au table de hachage (bloom et selected)
 
@@ -224,7 +283,7 @@ public:
 			}
 
 
-		}
+		}*/
 	}
 
 	inline void processUnfiltered(u_int64_t kmerHashed){
@@ -256,6 +315,7 @@ public:
 		}
 	}
 
+	/*
 	inline void processFiltered(KmerType& kmer, u_int64_t kmerHashed){
 
 		if(_kmerCountSorter.size() < _sketchSize){
@@ -297,7 +357,7 @@ public:
 				}
 			}
 		}
-	}
+	}*/
 
 };
 /*
