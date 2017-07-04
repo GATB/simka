@@ -158,6 +158,7 @@ public:
 
 			//cout << kmers.size()-1-i << endl;
 			u_int64_t kmer = _kmerCountSorter.top();
+			cout << kmer << endl;
 			_kmers[_kmers.size()-1-i] = kmer;
 			_kmerCountSorter.pop();
 
@@ -165,6 +166,30 @@ public:
 
 	}
 
+	/*
+	string revcomp(string& seq){
+		string rev = "";
+		for(size_t i=seq.size()-1; i>=0; i++){
+			if(seq[i] == 'A'){
+				rev += 'T';
+			}
+			else if(seq[i] == 'C'){
+				rev += 'G';
+			}
+			else if(seq[i] == 'G'){
+				rev += 'C';
+			}
+			else if(seq[i] == 'T'){
+				rev += 'A';
+			}
+		}
+		return rev;
+	}
+	*/
+
+	//void minRevComp(string& kmer){
+		//string revKmer =
+	//}
 
 	void operator()(Sequence& sequence){
 
@@ -174,14 +199,20 @@ public:
 			//cout << _itKmer->value().toString(_kmerSize) << endl;
 
 			KmerType kmer = _itKmer->value();
+			KmerType kmerRev = revcomp(kmer, _kmerSize);
+			string kmerStr = kmer.toString(_kmerSize);
+			string kmerStrRev = kmerRev.toString(_kmerSize);
 
+			if(kmerStrRev < kmerStr){
+				kmerStr = kmerStrRev;
+			}
 
-
-			u_int64_t kmerValue = kmer.getVal();
+			//u_int64_t kmerValue = kmer.getVal();
 			u_int64_t kmerHashed;
-			MurmurHash3_x64_128 ( (const char*)&kmerValue, sizeof(kmerValue), 100, &_hash_otpt);
+			MurmurHash3_x64_128 ( kmerStr.c_str(), _kmerSize, 42, &_hash_otpt);
 			kmerHashed = _hash_otpt[0];
 
+			//cout << kmerStr << ": " << kmerHashed << endl;
 			//todo: verifier dabord si le kmer peut etre insérer, plus rapide que els accès au table de hachage (bloom et selected)
 
 			//cout << _useAbundanceFilter << endl;
