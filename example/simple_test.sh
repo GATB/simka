@@ -18,10 +18,12 @@ fi
 command="$bindir/simka -in ../example/simka_input.txt -out ./simka_results/ -out-tmp ./simka_temp_output"
 #printf "$command\n\n"
 
+# DO NOT add lines between '$command' exec and 'var...' !
 $command
+var=$?
 
 printf "\n\n\n"
-var=$?
+
 if [ $var -eq 0 ]
 then
     echo  "*** Test: PASSED"
