@@ -82,7 +82,7 @@ public:
 	typedef typename Kmer<span>::ModelCanonical ModelCanonical;
 	typedef typename Kmer<span>::ModelCanonical::Iterator ModelCanonicalIterator;
     typedef typename Kmer<span>::Type  KmerType;
-    typedef typename Kmer<span>::ModelCanonical::Kmer  KmerType2;
+    typedef typename Kmer<span>::ModelCanonical::Kmer  KmerCanonicalType;
 
 
     //typedef typename ModelCanonical::Kmer Lol;
@@ -116,6 +116,7 @@ public:
 
 	std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter> _kmerCountSorter;
 
+	vector<KmerCanonicalType> _kmers;
 
 	//std::priority_queue< u_int64_t, vector<u_int64_t>, KmerCountSorter>& _kmerCountSorterSynch;
 	//KmerCountDictionaryType& _kmerCountsSynch;
@@ -123,13 +124,13 @@ public:
 	Bloom<KmerType>* _bloomFilter;
 	u_int64_t _nbInsertedKmersInBloom;
 
-	vector<u_int64_t>& _kmers;
+	vector<u_int64_t>& _hashedKmers;
 	KmerCountDictionaryType& _kmerCounts;
 	//ofstream _outputFile;
 	bool _useAbundanceFilter;
 
 	SelectKmersCommand(size_t kmerSize, size_t sketchSize, Bloom<KmerType>* bloomFilter, vector<u_int64_t>& kmers, KmerCountDictionaryType& kmerCounts, bool useAbundanceFilter)
-	: _model(kmerSize), _itKmer(_model), _bloomFilter(bloomFilter), _kmers(kmers), _kmerCounts(kmerCounts)
+	: _model(kmerSize), _itKmer(_model), _bloomFilter(bloomFilter), _hashedKmers(kmers), _kmerCounts(kmerCounts)
 	{
 		_kmerSize = kmerSize;
 		_sketchSize = sketchSize;
@@ -139,7 +140,7 @@ public:
 	}
 
 	SelectKmersCommand(const SelectKmersCommand& copy)
-	: _model(copy._kmerSize), _itKmer(_model), _bloomFilter(copy._bloomFilter), _kmers(copy._kmers), _kmerCounts(copy._kmerCounts)
+	: _model(copy._kmerSize), _itKmer(_model), _bloomFilter(copy._bloomFilter), _hashedKmers(copy._hashedKmers), _kmerCounts(copy._kmerCounts)
 	{
 		_kmerSize = copy._kmerSize;
 		_sketchSize = copy._sketchSize;
@@ -162,9 +163,9 @@ public:
 
 			//cout << kmers.size()-1-i << endl;
 			u_int64_t kmer = _kmerCountSorter.top();
-			cout << kmer << endl;
+			//cout << kmer << endl;
 			//cout << i << ": " << kmer << endl;
-			_kmers[_kmers.size()-1-i] = kmer;
+			_hashedKmers[_hashedKmers.size()-1-i] = kmer;
 			_kmerCountSorter.pop();
 
 		}
@@ -196,19 +197,24 @@ public:
 		//string revKmer =
 	//}
 
+
 	void operator()(Sequence& sequence){
 
+		_model.build(sequence.getData(), _kmers);
 		//_itKmer.setData(sequence.getData());
 		//cout << sequence.toString() << endl;
 
-        size_t len  = sequence.getDataSize() - _kmerSize + 1; /// _kmerSize;
-        char*  data = sequence.getDataBuffer();
+        //size_t len  = sequence.getDataSize() - _kmerSize + 1; /// _kmerSize;
+        //char*  data = sequence.getDataBuffer();
 
-        // We iterate the sequence data by block of size kmerSize
-        for (size_t i=0; i<len; i++, data += 1)
-        {
+        for(size_t i=0; i<_kmers.size(); i++){
+
+        	KmerCanonicalType& kmer = _kmers[i];
+			// We iterate the sequence data by block of size kmerSize
+			//for (size_t i=0; i<len; i++, data += 1)
+			//{
             // We get the kmer value of the current block
-        	KmerType2 kmer = _model.codeSeed (data, sequence.getDataEncoding());
+        	//KmerType2 kmer = _model.codeSeed (data, sequence.getDataEncoding());
         	//cout << kmer.value().toString(_kmerSize) << endl;
 
         	if(!kmer.isValid()) continue;
@@ -224,7 +230,7 @@ public:
 
 			u_int64_t kmerValue = kmer.value().getVal();
 			u_int64_t kmerHashed;
-			MurmurHash3_x64_128 ((const char*)&kmerValue, sizeof(kmerValue), 42, &_hash_otpt);
+			MurmurHash3_x64_128 ((const char*)&kmerValue, sizeof(kmerValue), 100, &_hash_otpt);
 			kmerHashed = _hash_otpt[0];
 
 			//cout << kmerStr << ": " << kmerHashed << endl;
@@ -232,7 +238,7 @@ public:
 
 			//cout << _useAbundanceFilter << endl;
 			if(_useAbundanceFilter){
-				//processFiltered(kmer, kmerHashed);
+				processFiltered(kmer.value(), kmerHashed);
 			}
 			else{
 				processUnfiltered(kmerHashed);
@@ -315,8 +321,8 @@ public:
 		}
 	}
 
-	/*
-	inline void processFiltered(KmerType& kmer, u_int64_t kmerHashed){
+
+	inline void processFiltered(const KmerType& kmer, u_int64_t kmerHashed){
 
 		if(_kmerCountSorter.size() < _sketchSize){
 			if(_bloomFilter->contains(kmer)){
@@ -357,7 +363,7 @@ public:
 				}
 			}
 		}
-	}*/
+	}
 
 };
 /*
