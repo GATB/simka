@@ -154,10 +154,10 @@ private:
     
 #ifdef CHI2_TEST
     
-    typedef std::pair<u_int64_t, CountVector>                       minimizer_Abundances;               //minimisers_abundances;
-    struct compare_minimisers { bool operator() (minimizer_Abundances l,minimizer_Abundances r) { return r.first < l.first; } } ;
-    std::map< float, minimizer_Abundances, compare_minimisers>      ch2_to_minimisers_abundances;       //ch2 --> minimizer_Abundances
-    std::unordered_map<u_int64_t, float>                            stored_minimisers_xi2;              //minimiser --> xi2
+    typedef std::pair<u_int64_t, CountVector> minimizer_Abundances;               //minimisers_abundances;
+//    struct compare_those_minimisers { bool operator() (float l,float r) { return r < l; } } ;
+    std::map< float, minimizer_Abundances>    ch2_to_minimisers_abundances;       //ch2 --> minimizer_Abundances
+    std::unordered_map<u_int64_t, float>                                    stored_minimisers_xi2;              //minimiser --> xi2
 //    typedef Kmer<span>::ModelMinimizer<Kmer<>::ModelCanonical>      ModelMinimizer;
 //    ModelMinimizer mm;
 #endif // CHI2_TEST
@@ -186,7 +186,7 @@ public:
         _nbKmerCounted = 0;
         //isAbundanceThreshold = _abundanceThreshold.first > 1 || _abundanceThreshold.second < 1000000;
         #ifdef CHI2_TEST
-//                mm = ModelMinimizer(_kmerSize, 8);
+//        mm = ModelMinimizer(_kmerSize, 8);
         #endif // CHI2_TEST
         
     }
@@ -266,6 +266,7 @@ public:
         //cout << X2j << endl;
         
         u_int64_t thisminimiser = 0;//kmer.minimizer().value(); /// TODO HERE: GET THE KMER MINIMISER
+        
         std::unordered_map<u_int64_t, float>::iterator storedM = stored_minimisers_xi2.find(thisminimiser);
         if (storedM != stored_minimisers_xi2.end()){                                                                            // this minimiser exists - only one occurrence of a minimiser
             if (storedM->second <X2j){                                                                                          // the stored minimizer has lower Xi2 value, we must replace it
