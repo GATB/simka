@@ -13,7 +13,7 @@
 const string STR_SIMKA_SOLIDITY_PER_DATASET = "-solidity-single";
 const string STR_SIMKA_MAX_READS = "-max-reads";
 const string STR_SIMKA_MIN_READ_SIZE = "-min-read-size";
-const string STR_SIMKA_MIN_READ_SHANNON_INDEX = "-read-shannon-index";
+const string STR_SIMKA_MIN_READ_SHANNON_INDEX = "-min-shannon-index";
 const string STR_SIMKA_MIN_KMER_SHANNON_INDEX = "-kmer-shannon-index";
 const string STR_KMER_PER_READ = "-kmer-per-read";
 const string STR_SIMKA_COMPUTE_ALL_SIMPLE_DISTANCES= "-simple-dist";
