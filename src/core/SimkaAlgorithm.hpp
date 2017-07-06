@@ -265,7 +265,7 @@ public:
         }
         //cout << X2j << endl;
         
-        u_int64_t thisminimiser = 0;//kmer.minimizer().value();
+        u_int64_t thisminimiser = 0;//kmer.minimizer().value(); /// TODO HERE: GET THE KMER MINIMISER
         std::unordered_map<u_int64_t, float>::iterator storedM = stored_minimisers_xi2.find(thisminimiser);
         if (storedM != stored_minimisers_xi2.end()){                                                                            // this minimiser exists - only one occurrence of a minimiser
             if (storedM->second <X2j){                                                                                          // the stored minimizer has lower Xi2 value, we must replace it
