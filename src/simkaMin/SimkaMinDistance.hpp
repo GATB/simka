@@ -292,6 +292,7 @@ public:
 	//vector<u_int32_t> _minHashKmersCounts;
 
 	size_t _sketchSize;
+	u_int32_t _seed;
 	//pthread_mutex_t _mutex;
 
 	//typedef typename SelectKmersCommand<span>::KmerCountSorter KmerCountSorter;
@@ -371,9 +372,10 @@ public:
 		size_t sketchSize1;
 		size_t sketchSize2;
 		size_t kmerSizeDummy;
-		SimkaMinCommons::getKmerInfos(_inputFilename1, kmerSizeDummy, sketchSize1);
-		SimkaMinCommons::getKmerInfos(_inputFilename2, kmerSizeDummy, sketchSize2);
+		SimkaMinCommons::getKmerInfos(_inputFilename1, kmerSizeDummy, sketchSize1, _seed);
+		SimkaMinCommons::getKmerInfos(_inputFilename2, kmerSizeDummy, sketchSize2, _seed);
 		_sketchSize = min(sketchSize1, sketchSize2);
+
 
 
 		if(sketchSize1 != sketchSize2){
@@ -381,6 +383,7 @@ public:
 		}
 		cout << _nbDataset1 << " " << _nbDataset2 << endl;
 		cout << _sketchSize << endl;
+		cout << _seed << endl;
 	}
 
 	/*
@@ -644,13 +647,15 @@ public:
 	{
 		IProperties* args = getInput();
 
+		u_int32_t seed1;
+		u_int32_t seed2;
 		size_t dummy;
 		size_t kmerSize1;
 		size_t kmerSize2;
 		string inputFilename1 = args->getStr(STR_SIMKA_URI_INPUT_1);
 		string inputFilename2 = args->getStr(STR_SIMKA_URI_INPUT_2);
-		SimkaMinCommons::getKmerInfos(inputFilename1, kmerSize1, dummy);
-		SimkaMinCommons::getKmerInfos(inputFilename2, kmerSize2, dummy);
+		SimkaMinCommons::getKmerInfos(inputFilename1, kmerSize1, dummy, seed1);
+		SimkaMinCommons::getKmerInfos(inputFilename2, kmerSize2, dummy, seed2);
 		//size_t kmerSize = getInput()->getInt (STR_KMER_SIZE);
 
 		if(kmerSize1 != kmerSize2){
@@ -658,6 +663,12 @@ public:
 			exit(1);
 		}
 
+		if(seed1 != seed2){
+			cout << "ERROR: can't compare both spectrums because of different seeds (" << seed1 << " and " << seed2 << ")" << endl;
+			exit(1);
+		}
+
+		cout << seed1 << " " << seed2 << endl;
 		SimkaMinDistanceAlgorithm* algo = new SimkaMinDistanceAlgorithm(args);
 		algo->execute();
 		delete algo;

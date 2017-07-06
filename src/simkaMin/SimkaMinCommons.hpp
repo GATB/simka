@@ -12,8 +12,9 @@
 #include <unordered_map>
 #include <gatb/gatb_core.hpp>
 
-#define KMER_SPECTRUM_HEADER_SIZE (1+4) //At the begining of the .kmers file we store the size of the kmer (on 1 byte) and the sketch size (on 4 bytes)
+#define KMER_SPECTRUM_HEADER_SIZE (1+4+4) //At the begining of the .kmers file we store the size of the kmer (on 1 byte), the sketch size (on 4 bytes), the seed used by Murmurhash3 (4 bytes)
 
+const string STR_SIMKA_SEED = "-seed";
 const string STR_SIMKA_SKETCH_SIZE = "-nb-kmers";
 const string STR_SIMKA_URI_INPUT_1 = "-in1";
 const string STR_SIMKA_URI_INPUT_2 = "-in2";
@@ -99,7 +100,7 @@ public:
 		return nbDatasets;
 	}
 
-	static void getKmerInfos(const string& filename, size_t& kmerSize, size_t& sketchSize){
+	static void getKmerInfos(const string& filename, size_t& kmerSize, size_t& sketchSize, u_int32_t& seed){
 
 		string filenameKmers = filename + ".kmers";
 		ifstream file(filenameKmers.c_str(), ios::binary);
@@ -108,11 +109,15 @@ public:
 		file.read((char*)(&kmerSize_), sizeof(kmerSize_));
 		u_int32_t sketchSize_;
 		file.read((char*)(&sketchSize_), sizeof(sketchSize_));
+		u_int32_t seed_;
+		file.read((char*)(&seed_), sizeof(seed_));
 
 		file.close();
 
 		kmerSize = kmerSize_;
 		sketchSize = sketchSize_;
+		seed = seed_;
+
 	}
 
 

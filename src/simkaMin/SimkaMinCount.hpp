@@ -89,6 +89,7 @@ public:
 
 	size_t _kmerSize;
 	size_t _sketchSize;
+	u_int32_t _seed;
 	//vector<u_int64_t> _minHashValues;
 	//vector<u_int64_t> _minHashKmers;
 	ModelCanonical _model;
@@ -129,11 +130,12 @@ public:
 	//ofstream _outputFile;
 	bool _useAbundanceFilter;
 
-	SelectKmersCommand(size_t kmerSize, size_t sketchSize, Bloom<KmerType>* bloomFilter, vector<u_int64_t>& kmers, KmerCountDictionaryType& kmerCounts, bool useAbundanceFilter)
+	SelectKmersCommand(size_t kmerSize, size_t sketchSize, u_int32_t seed, Bloom<KmerType>* bloomFilter, vector<u_int64_t>& kmers, KmerCountDictionaryType& kmerCounts, bool useAbundanceFilter)
 	: _model(kmerSize), _itKmer(_model), _bloomFilter(bloomFilter), _hashedKmers(kmers), _kmerCounts(kmerCounts)
 	{
 		_kmerSize = kmerSize;
 		_sketchSize = sketchSize;
+		_seed = seed;
 		_isMaster = true;
 		_nbInsertedKmersInBloom = 0;
 		_useAbundanceFilter = useAbundanceFilter;
@@ -144,6 +146,7 @@ public:
 	{
 		_kmerSize = copy._kmerSize;
 		_sketchSize = copy._sketchSize;
+		_seed = copy._seed;
 		_isMaster = false;
 		_nbInsertedKmersInBloom = 0;
 		_useAbundanceFilter = copy._useAbundanceFilter;
@@ -230,7 +233,7 @@ public:
 
 			u_int64_t kmerValue = kmer.value().getVal();
 			u_int64_t kmerHashed;
-			MurmurHash3_x64_128 ((const char*)&kmerValue, sizeof(kmerValue), 100, &_hash_otpt);
+			MurmurHash3_x64_128 ((const char*)&kmerValue, sizeof(kmerValue), _seed, &_hash_otpt);
 			kmerHashed = _hash_otpt[0];
 
 			//cout << kmerStr << ": " << kmerHashed << endl;
@@ -658,7 +661,7 @@ public:
 
 
 
-
+	size_t _seed;
 	size_t _sketchSize;
 	bool _useAbundanceFilter;
 	//pthread_mutex_t _mutex;
@@ -706,6 +709,7 @@ public:
 
 		_options = getInput();
 
+		_seed = _options->getInt(STR_SIMKA_SEED);
 		_sketchSize = _options->getInt(STR_SIMKA_SKETCH_SIZE);
 		_useAbundanceFilter = _options->get(STR_SIMKA_ABUNDANCE_FILTER);
 
@@ -859,8 +863,10 @@ public:
 		//Save sketch info
 		u_int8_t kmerSize = _kmerSize;
 		u_int32_t sketchSize = _sketchSize;
+		u_int32_t seed = _seed;
 		_outputFile.write((const char*)&kmerSize, sizeof(kmerSize));
 		_outputFile.write((const char*)&sketchSize, sizeof(sketchSize));
+		_outputFile.write((const char*)&seed, sizeof(seed));
 
 		//cout << _maxRunningThreads << endl;
 
@@ -1082,7 +1088,7 @@ public:
 		KmerCountDictionaryType _kmerCounts;
 
 		{
-			SelectKmersCommand<span> command(_kmerSize, _sketchSize, bloomFilter, kmers, _kmerCounts, _useAbundanceFilter);
+			SelectKmersCommand<span> command(_kmerSize, _sketchSize, _seed, bloomFilter, kmers, _kmerCounts, _useAbundanceFilter);
 			dispatcher->iterate (itSeq, command, 1000);
 		}
 
@@ -1252,6 +1258,7 @@ public:
 	    //parser->push_front (new OptionNoParam (STR_SIMKA_COMPUTE_DATA_INFO, "compute (and display) information before running Simka, such as the number of reads per dataset", false));
 	    //parser->push_front (new OptionNoParam (STR_SIMKA_KEEP_TMP_FILES, "keep temporary files", false));
 	    //parser->push_front (new OptionOneParam (STR_URI_OUTPUT_TMP, "output directory for temporary files", true));
+	    parser->push_front (new OptionOneParam (STR_SIMKA_SEED, "seed used for random k-mer selection", false, "100"));
 	    parser->push_front (new OptionOneParam (STR_URI_OUTPUT, "output filename for kmer spectrum", false, "./simkaMin_kmers.bin"));
 	    parser->push_front (new OptionOneParam (STR_URI_INPUT, "input filename | TODO SPECIF", true));
 	    //parser->push_front (new OptionOneParam (STR_SIMKA2_DATASET_ID, "identifier of the input dataset", true));
