@@ -90,7 +90,7 @@ parserDev = parser.add_argument_group("[advanced (developer) options]")
 
 parserMain.add_argument('-in', action="store", dest="input_filename", help="input file of datasets. One sample per line: id1: filename1...", required=True)
 parserMain.add_argument('-out', action="store", dest="out", default="./simka_results", help="output directory for result files (distance matrices)")
-parserMain.add_argument('-bin', action="store", dest="bin", default="../build/bin/simkaMin", help="path to simkaMin program", )
+parserMain.add_argument('-bin', action="store", dest="bin", default="../../build/bin/simkaMin", help="path to simkaMin program", )
 parserMain.add_argument('-seed', action="store", dest="seed", default="100", help="seed used for random k-mer selection")
 
 parserKmer.add_argument('-kmer-size', action="store", dest="kmer_size", help="size of a kmer", default="21")
