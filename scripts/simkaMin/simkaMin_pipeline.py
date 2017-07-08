@@ -6,6 +6,7 @@ from os.path import isfile, join, splitext
 import sys, argparse
 
 
+os.chdir(os.path.split(os.path.realpath(__file__))[0])
 
 
 
