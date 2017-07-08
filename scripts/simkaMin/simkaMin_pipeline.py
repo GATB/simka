@@ -6,7 +6,7 @@ from os.path import isfile, join, splitext
 import sys, argparse
 
 
-os.chdir(os.path.split(os.path.realpath(__file__))[0])
+#os.chdir(os.path.split(os.path.realpath(__file__))[0])
 
 
 
@@ -89,8 +89,8 @@ parserRead = parser.add_argument_group("[read options]")
 parserDev = parser.add_argument_group("[advanced (developer) options]")
 
 parserMain.add_argument('-in', action="store", dest="input_filename", help="input file of datasets. One sample per line: id1: filename1...", required=True)
+parserMain.add_argument('-bin', action="store", dest="bin", help="path to simkaMin program (should be at build/bin/simkaMin)", required=True)
 parserMain.add_argument('-out', action="store", dest="out", default="./simka_results", help="output directory for result files (distance matrices)")
-parserMain.add_argument('-bin', action="store", dest="bin", default="../../build/bin/simkaMin", help="path to simkaMin program", )
 parserMain.add_argument('-seed', action="store", dest="seed", default="100", help="seed used for random k-mer selection")
 
 parserKmer.add_argument('-kmer-size', action="store", dest="kmer_size", help="size of a kmer", default="21")
@@ -150,18 +150,21 @@ exportCommand += " -nb-cores " + args.nb_cores
 print("\n\n#-----------------------------")
 print("# Sketching")
 print("#-----------------------------\n")
-os.system(sketchCommand)
+ret = os.system(sketchCommand)
+if ret != 0: print("ERROR"); exit(1)
 
 print("\n\n#-----------------------------")
 print("# Computing distances")
 print("#-----------------------------\n")
-os.system(distanceCommand)
+ret = os.system(distanceCommand)
+if ret != 0: print("ERROR"); exit(1)
 
 
 print("\n\n#-----------------------------")
 print("# Exporting distances")
 print("#-----------------------------\n")
-os.system(exportCommand)
+ret = os.system(exportCommand)
+if ret != 0: print("ERROR"); exit(1)
 
 print("\n\n")
 print("Result dir: " + args.out)
