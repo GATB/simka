@@ -190,8 +190,22 @@ public:
 			}
 		}
 
-		DistanceValueType jaccard =  1 - (long double) _nbDistinctSharedKmers / (long double) _nbDistinctKmers;
-		DistanceValueType braycurtis =  1 - (long double) (2*_nbSharedKmers) / (long double) _nbKmers;
+		DistanceValueType jaccard;
+		DistanceValueType braycurtis;
+
+
+		if(_nbDistinctKmers == 0){
+			jaccard = 1;
+		}
+		else{
+			jaccard = 1 - (long double) _nbDistinctSharedKmers / (long double) _nbDistinctKmers;
+		}
+
+		if(_nbKmers == 0){
+			braycurtis = 1;
+		}else{
+			braycurtis =  1 - (long double) (2*_nbSharedKmers) / (long double) _nbKmers;
+		}
 
 		_jaccardDistances.push_back(PairwiseDistance(i, j, jaccard));
 		_braycurtisDistances.push_back(PairwiseDistance(i, j, braycurtis));
