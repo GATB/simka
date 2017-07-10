@@ -69,7 +69,7 @@ def outputHeatmap(outputFilename, matrixAsymFilename, matrixSymFilename):
 
 	print("\t"+command)
 #print command
-	os.system(command + " > /dev/null 2>&1  ")
+	os.system(command)# + " > /dev/null 2>&1  ")
 
 def outputHclust(outputFilename, matrixNormFilename):
 	if not args.want_tree: return
@@ -92,7 +92,7 @@ def outputPca(outputFilename, matrixNormFilename):
 	#print(args.metadata_filename)
 	#print(args.metadata_variable)
 	#print command
-	os.system(command + " > /dev/null 2>&1  ")
+	os.system(command)# + " > /dev/null 2>&1  ")
 
 def execute():
 	files = [ f for f in listdir(args.input_dir) if isfile(join(args.input_dir,f))]
