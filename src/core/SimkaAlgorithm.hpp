@@ -160,6 +160,10 @@ private:
     std::unordered_map<u_int64_t, float>                                    stored_minimisers_xi2;              //minimiser --> xi2
 //    typedef Kmer<span>::ModelMinimizer<Kmer<>::ModelCanonical>      ModelMinimizer;
 //    ModelMinimizer mm;
+    typedef typename Kmer<span>::ModelCanonical Model;
+    typedef typename Kmer<span>::template ModelMinimizer<Model>  ModelMini;
+    ModelMini modelMini;
+    
 #endif // CHI2_TEST
     size_t _maxChi2Values;
     
@@ -169,7 +173,10 @@ public:
     //typedef typename Kmer<span>::Count Count;
     
     SimkaCountProcessorSimple(SimkaStatistics* stats, size_t nbBanks, size_t kmerSize, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, double minKmerShannonIndex) :
-    _stats(stats)
+    _stats(stats),
+    #ifdef CHI2_TEST 
+    modelMini(kmerSize,8)
+    #endif
     {
         
         _maxChi2Values = 1000;
@@ -185,9 +192,6 @@ public:
         
         _nbKmerCounted = 0;
         //isAbundanceThreshold = _abundanceThreshold.first > 1 || _abundanceThreshold.second < 1000000;
-        #ifdef CHI2_TEST
-//        mm = ModelMinimizer(_kmerSize, 8);
-        #endif // CHI2_TEST
         
     }
     
@@ -265,7 +269,8 @@ public:
         }
         //cout << X2j << endl;
         
-        u_int64_t thisminimiser = 0;//kmer.minimizer().value(); /// TODO HERE: GET THE KMER MINIMISER
+        //u_int64_t thisminimiser = 0;//kmer.minimizer().value(); /// TODO HERE: GET THE KMER MINIMISER
+        u_int64_t thisminimiser = modelMini.getMinimizerValue(kmer);
         
         std::unordered_map<u_int64_t, float>::iterator storedM = stored_minimisers_xi2.find(thisminimiser);
         if (storedM != stored_minimisers_xi2.end()){                                                                            // this minimiser exists - only one occurrence of a minimiser
