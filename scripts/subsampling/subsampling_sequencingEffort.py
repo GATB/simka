@@ -5,7 +5,7 @@ os.chdir(os.path.split(os.path.realpath(__file__))[0])
 input_filename = sys.argv[1]
 nb_boostraps = int(sys.argv[2])
 output_dir_temp = os.path.join(sys.argv[3], "__temp__")
-SEQUENCING_EFFORT_MAX = 1000000
+SEQUENCING_EFFORT_MAX = int(sys.argv[4])
 SEQUENCING_EFFORT = [10000, 100000]#, 10000000, 100000000]
 
 
