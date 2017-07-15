@@ -176,8 +176,8 @@ public:
 
 		if(init){
 			_nbKmersToPick = 0;
-			vector<u_int32_t> pickedReads;
-			u_int64_t nbPickedKmers = sample(_bankNames[referenceDatasetID], nbReadsToPick, subsamplingSpace_maxReads, pickedReads, subsamplingKind);
+			//vector<u_int32_t> pickedReads;
+			u_int64_t nbPickedKmers = determineSubsamplingSpace(_bankNames[referenceDatasetID]);
 
 			ofstream dataset_info_file(start_filename.c_str(), ios::binary);
 
@@ -191,6 +191,108 @@ public:
 			dataset_info_file.read((char*)&_nbKmersToPick, sizeof(_nbKmersToPick));
 			dataset_info_file.close();
 		}
+
+	}
+
+	u_int64_t determineSubsamplingSpace(const string& bankId){
+
+		//vector<u_int32_t> nbKmersPerReads;
+
+		u_int64_t nbKmers = 0;
+
+		string inputDir = _outputDir + "/input/";
+		IBank* bank = Bank::open(inputDir + bankId);
+		LOCAL(bank);
+
+		//u_int64_t nbReads = 0;
+		//u_int64_t realSize = 0;
+		Iterator<Sequence>* it = bank->iterator();
+		for(it->first(); !it->isDone(); it->next()){
+			if(it->item().getDataSize() < _kmerSize){
+				//nbKmersPerReads.push_back(0);
+			}
+			else{
+				u_int64_t nbKmersInRead = it->item().getDataSize() - _kmerSize + 1;
+				nbKmers += nbKmersInRead;
+				//cout << nbKmersInRead << endl;
+				//nbKmersPerReads.push_back(nbKmersInRead);
+			}
+
+
+			//if(nbReads >= subsamplingSpace_maxReads){
+			//	break;
+			//}
+
+			//nbReads += 1;
+		}
+
+		/*
+		cout << nbKmersPerReads.size() << endl;
+
+		vector<u_int32_t> readIds(nbKmersPerReads.size(), 0);
+		for(size_t i=0; i<readIds.size(); i++){
+			readIds[i] = i;
+		}
+		//cout << readIds.size() << endl;
+
+		//cout << readIds.size() << endl;
+		pickedReads.resize(nbKmersPerReads.size(), 0);
+
+		//cout << "subsampling" << endl;
+		//cout << nbKmersPerReads.size() << endl;
+		setupRandomNumberGenerator(0, nbKmersPerReads.size()-1);
+		std::random_shuffle (readIds.begin(), readIds.end(), myrandom);
+		//cout << _nbKmersPerReads.size() << endl;
+
+		u_int64_t nbPickedKmers = 0;
+		//vector<u_int32_t> pickedReads(nbKmersPerReads.size(), 0);
+		pickedReads.clear();
+		pickedReads.resize(nbKmersPerReads.size(), 0);
+
+		u_int64_t nbPickedReads = 0;
+
+		//cout << "max to pick:   " << maxKmersToPick << endl;
+
+		for(size_t i=0; i<readIds.size(); i++){
+
+			//cout << nbKmers << "   " << maxKmersToPick << endl;
+			//if(nbPickedReads < maxReads){
+			//	break;
+			//}
+
+			int r = readIds[i];
+			//int r = generateUniformInt();
+			if(nbKmersPerReads[r] == 0){
+				continue;
+			}
+
+			pickedReads[r] = 1;
+			nbPickedKmers += nbKmersPerReads[r];
+			nbPickedReads += 1;
+
+			if(_nbKmersToPick != 0){
+				if(nbPickedKmers >= _nbKmersToPick){
+					break;
+				}
+			}
+			else if(nbPickedReads >= nbReadsToPick){
+				break;
+			}
+
+			//cout << r << "   " << nbKmers  << "    " << nbKmersPerReads[r] << endl;
+		}
+
+		cout << "nb picked reads: " << nbPickedReads << endl;
+		cout << "nb picked k-mers: " << nbPickedKmers << endl;
+
+		//for(size_t i=0; i<pickedReads.size(); i++){
+		//	if(pickedReads[i] > 0)
+		//	cout << pickedReads[i];
+		//}
+		//cout << endl;
+		 */
+		return nbKmers;
+
 
 	}
 
@@ -220,15 +322,18 @@ public:
 	int _rngN;
 
 	u_int64_t sample(const string& bankId, u_int64_t nbReadsToPick, u_int64_t subsamplingSpace_maxReads, vector<u_int32_t>& pickedReads, size_t subsamplingKind){
+		bool isRandom = (nbReadsToPick != 0);
+		cout << "NB read to pick: " << nbReadsToPick << endl;
+		cout << "MAX pickable reads: " << subsamplingSpace_maxReads << endl;
 		if(subsamplingKind == 0){
-			return sampleWithReplacement(bankId, nbReadsToPick, subsamplingSpace_maxReads, pickedReads);
+			return sampleWithReplacement(bankId, nbReadsToPick, subsamplingSpace_maxReads, pickedReads, isRandom);
 		}
 		else{
-			return sampleWithoutReplacement(bankId, nbReadsToPick, subsamplingSpace_maxReads, pickedReads);
+			return sampleWithoutReplacement(bankId, nbReadsToPick, subsamplingSpace_maxReads, pickedReads, isRandom);
 		}
 	}
 
-	u_int64_t sampleWithReplacement(const string& bankId, u_int64_t nbReadsToPick, u_int64_t subsamplingSpace_maxReads, vector<u_int32_t>& pickedReads){
+	u_int64_t sampleWithReplacement(const string& bankId, u_int64_t nbReadsToPick, u_int64_t subsamplingSpace_maxReads, vector<u_int32_t>& pickedReads, bool isRandom){
 
 		vector<u_int32_t> nbKmersPerReads;
 
@@ -331,16 +436,17 @@ public:
 
 	static int myrandom (int i) { return std::rand()%i;}
 
-	u_int64_t sampleWithoutReplacement(const string& bankId, u_int64_t nbReadsToPick, u_int64_t subsamplingSpace_maxReads, vector<u_int32_t>& pickedReads){
+	u_int64_t sampleWithoutReplacement(const string& bankId, u_int64_t nbReadsToPick, u_int64_t subsamplingSpace_maxReads, vector<u_int32_t>& pickedReads, bool isRandom){
 
+		if(isRandom){
 			vector<u_int32_t> nbKmersPerReads;
 
 			string inputDir = _outputDir + "/input/";
 			IBank* bank = Bank::open(inputDir + bankId);
 			LOCAL(bank);
 
-			u_int64_t nbReads = 0;
-			u_int64_t realSize = 0;
+			u_int64_t nbPickedKmers = 0;
+			//u_int64_t realSize = 0;
 			Iterator<Sequence>* it = bank->iterator();
 			for(it->first(); !it->isDone(); it->next()){
 				if(it->item().getDataSize() < _kmerSize){
@@ -348,20 +454,20 @@ public:
 				}
 				else{
 					u_int64_t nbKmersInRead = it->item().getDataSize() - _kmerSize + 1;
-
+					nbPickedKmers += nbKmersInRead;
 					//cout << nbKmersInRead << endl;
 					nbKmersPerReads.push_back(nbKmersInRead);
 				}
 
 
-				if(nbReads >= subsamplingSpace_maxReads){
+				if(nbPickedKmers >= subsamplingSpace_maxReads){
 					break;
 				}
 
-				nbReads += 1;
+				//nbReads += 1;
 			}
 
-			cout << nbKmersPerReads.size() << endl;
+			//cout << nbKmersPerReads.size() << endl;
 
 			vector<u_int32_t> readIds(nbKmersPerReads.size(), 0);
 			for(size_t i=0; i<readIds.size(); i++){
@@ -370,7 +476,7 @@ public:
 			//cout << readIds.size() << endl;
 
 			//cout << readIds.size() << endl;
-			pickedReads.resize(nbKmersPerReads.size(), 0);
+			//pickedReads.resize(nbKmersPerReads.size(), 0);
 
 			//cout << "subsampling" << endl;
 			//cout << nbKmersPerReads.size() << endl;
@@ -378,12 +484,12 @@ public:
 			std::random_shuffle (readIds.begin(), readIds.end(), myrandom);
 			//cout << _nbKmersPerReads.size() << endl;
 
-			u_int64_t nbPickedKmers = 0;
+			nbPickedKmers = 0;
 			//vector<u_int32_t> pickedReads(nbKmersPerReads.size(), 0);
 			pickedReads.clear();
 			pickedReads.resize(nbKmersPerReads.size(), 0);
 
-			u_int64_t nbPickedReads = 0;
+			//u_int64_t nbPickedReads = 0;
 
 			//cout << "max to pick:   " << maxKmersToPick << endl;
 
@@ -402,21 +508,26 @@ public:
 
 				pickedReads[r] = 1;
 				nbPickedKmers += nbKmersPerReads[r];
-				nbPickedReads += 1;
+				//nbPickedReads += 1;
 
-				if(_nbKmersToPick != 0){
-					if(nbPickedKmers >= _nbKmersToPick){
-						break;
-					}
-				}
-				else if(nbPickedReads >= nbReadsToPick){
+
+				if(nbPickedKmers >= nbReadsToPick){
 					break;
 				}
+
+				//if(_nbKmersToPick != 0){
+				//	if(nbPickedKmers >= _nbKmersToPick){
+				//		break;
+				//	}
+				//}
+				//else if(nbPickedReads >= nbReadsToPick){
+				//	break;
+				//}
 
 				//cout << r << "   " << nbKmers  << "    " << nbKmersPerReads[r] << endl;
 			}
 
-			cout << "nb picked reads: " << nbPickedReads << endl;
+			//cout << "nb picked reads: " << nbPickedReads << endl;
 			cout << "nb picked k-mers: " << nbPickedKmers << endl;
 
 			//for(size_t i=0; i<pickedReads.size(); i++){
@@ -426,22 +537,60 @@ public:
 			//cout << endl;
 
 			return nbPickedKmers;
-			//if(_nbKmersToPick == 0){
-			//	_nbKmersToPick = nbPickedKmers;
-			//}
-			//cout << endl;
-			//for(size_t i=0; i<pickedReads.size(); i++){
-			//	cout << pickedReads[i];
-			//}
-			//cout << endl;
-
-			//return pickedReads;
-			//for(size_t i=0; i<pickedReads.size(); i++){
-			//	if(pickedReads[i] > 0){
-			//		cout << i << "   " << pickedReads[i] << endl;
-			//	}
-			//}
 		}
+		else{
+
+			u_int64_t nbPickedKmers = 0;
+			//vector<u_int32_t> nbKmersPerReads;
+
+			string inputDir = _outputDir + "/input/";
+			IBank* bank = Bank::open(inputDir + bankId);
+			LOCAL(bank);
+
+			//u_int64_t readIndex = 0;
+			//u_int64_t realSize = 0;
+			Iterator<Sequence>* it = bank->iterator();
+			for(it->first(); !it->isDone(); it->next()){
+				if(it->item().getDataSize() < _kmerSize){
+					pickedReads.push_back(0);
+				}
+				else{
+					u_int64_t nbKmersInRead = it->item().getDataSize() - _kmerSize + 1;
+					nbPickedKmers += nbKmersInRead;
+					pickedReads.push_back(1);
+
+					//cout << nbKmersInRead << endl;
+					//nbKmersPerReads.push_back(nbKmersInRead);
+				}
+
+
+				if(nbPickedKmers >= subsamplingSpace_maxReads){
+					break;
+				}
+
+				//readIndex += 1;
+			}
+
+
+			return nbPickedKmers;
+		}
+
+		//if(_nbKmersToPick == 0){
+		//	_nbKmersToPick = nbPickedKmers;
+		//}
+		//cout << endl;
+		//for(size_t i=0; i<pickedReads.size(); i++){
+		//	cout << pickedReads[i];
+		//}
+		//cout << endl;
+
+		//return pickedReads;
+		//for(size_t i=0; i<pickedReads.size(); i++){
+		//	if(pickedReads[i] > 0){
+		//		cout << i << "   " << pickedReads[i] << endl;
+		//	}
+		//}
+	}
 
 
 };
