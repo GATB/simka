@@ -85,6 +85,7 @@ class ComputeBootstraps():
 
         for sequencing_effort in SEQUENCING_EFFORT:
 
+			if sequencing_effort >= SEQUENCING_EFFORT_MAX: continue
             #nb_reads_to_pick = int((self.subsampling_kmer_space * percent) / float(100))
 
             command = simka_command
