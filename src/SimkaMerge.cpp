@@ -83,13 +83,12 @@ u_int64_t getFileSize(const string& filename){
 
 
 
-
+/*
 template<size_t span>
 class DistanceCommand : public gatb::core::tools::dp::ICommand //, public gatb::core::system::SmartPointer
 {
 public:
 
-    /** Shortcut. */
     typedef typename Kmer<span>::Type           Type;
     typedef typename Kmer<span>::Count          Count;
 
@@ -102,7 +101,6 @@ public:
 	vector<Type> _bufferKmers;
 	vector<CountVector> _bufferCounts;
 
-    /** Constructor. */
     DistanceCommand (
     		const string& tmpDir,
 			const vector<string>& datasetIds,
@@ -154,7 +152,7 @@ public:
 	void use () {}
 	void forget () {}
 };
-
+*/
 
 
 
@@ -1066,7 +1064,7 @@ public:
 
 		//PARALLEL line to remove
 		_stats = new SimkaStatistics(_nbBanks, p.computeSimpleDistances, p.computeComplexDistances, p.outputDir, _datasetIds);
-		_processor = new SimkaCountProcessorSimple<span> (_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, p.minShannonIndex);
+		_processor = new SimkaCountProcessorSimple<span> (_stats, _nbBanks, p.kmerSize, _abundanceThreshold, SUM, false, p.minShannonIndex, p.outputDir, p.partitionId);
 		//_processor->use();
 
 
@@ -1373,10 +1371,10 @@ public:
 	}
 
 	void resetCommands(){
-		for (size_t i=0; i<_nbCores; i++){
-			DistanceCommand<span>* cmd = dynamic_cast<DistanceCommand<span>*>(_cmds[i]);
-			cmd->_bufferIndex = 0;
-		}
+		//for (size_t i=0; i<_nbCores; i++){
+		//	DistanceCommand<span>* cmd = dynamic_cast<DistanceCommand<span>*>(_cmds[i]);
+		//	cmd->_bufferIndex = 0;
+		//}
 
 	}
 

@@ -151,6 +151,9 @@ private:
     //vector<size_t> _banksOks;
     
     vector<u_int16_t> _sharedBanks;
+    string _outputDir;
+    size_t _partitionId;
+    ofstream _outputPartitionFile;
     
 #ifdef CHI2_TEST
     
@@ -172,13 +175,17 @@ public:
     typedef typename Kmer<span>::Type  Type;
     //typedef typename Kmer<span>::Count Count;
     
-    SimkaCountProcessorSimple(SimkaStatistics* stats, size_t nbBanks, size_t kmerSize, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, double minKmerShannonIndex) :
+    SimkaCountProcessorSimple(SimkaStatistics* stats, size_t nbBanks, size_t kmerSize, const pair<size_t, size_t>& abundanceThreshold, SIMKA_SOLID_KIND solidKind, bool soliditySingle, double minKmerShannonIndex, const string& outputDir, size_t partitionId) :
     _stats(stats),
     #ifdef CHI2_TEST 
     modelMini(kmerSize,8)
     #endif
     {
-        
+    	_outputDir = outputDir;
+    	_partitionId = partitionId;
+    	string outputFilename = _outputDir + "/select_kmers_out_" + Stringify::format("%i", _partitionId) + ".txt";
+    	_outputPartitionFile.open(outputFilename.c_str());
+
         _maxChi2Values = 1000;
         // We configure the vector for the N.(N+1)/2 possible pairs
         //_countTotal.resize (_nbBanks*(_nbBanks+1)/2);
@@ -199,11 +206,28 @@ public:
     void end(){
 #ifdef CHI2_TEST
         
+
 //        size_t nbValues = ch2_to_minimisers_abundances.size();
         std::map< float, minimizer_Abundances>::iterator it; // std::map< float, minimizer_Abundances, ch2_to_minimisers_abundancesFunction>
         for (it = ch2_to_minimisers_abundances.begin(); it!=ch2_to_minimisers_abundances.end(); ++it){
-            updateDistance(it->second.second);
+
+        	CountVector& counts = it->second.second;
+            updateDistance(counts);
+
+            string outLine = "";
+            for(size_t i=0; i<counts.size(); i++){
+            	CountNumber count = counts[i];
+            	string countStr = Stringify::format("%i", count);
+            	outLine += countStr + " ";
+            }
+
+            outLine.erase(outLine.size()-1); //remove last space
+            outLine += "\n";
+
+        	_outputPartitionFile.write(outLine.c_str(), outLine.size());
         }
+
+        _outputPartitionFile.close();
 //        for(size_t i=0; i<nbValues; i++){
 //            double val = ch2_to_minimisers_abundances.top().first;
 //            CountVector counts = ch2_to_minimisers_abundances.top().second;
