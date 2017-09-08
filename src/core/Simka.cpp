@@ -204,7 +204,7 @@ void Simka::execute ()
 
 	cout << params._soliditySingle << endl;
 */
-
+    
 
     /** We launch the tool with the correct Integer implementation according to the choosen kmer size. */
     Integer::apply<Functor,Parameter> (kmerSize, params);

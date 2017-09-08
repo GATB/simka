@@ -51,7 +51,7 @@ public:
     //typedef typename Kmer<KSIZE_1>::Type  Type;
     //typedef typename Kmer<KSIZE_1>::Count Count;
     //typedef kmer::impl::Kmer<>::ModelDirect KmerModel;
-
+    
     // Constructor
 	Simka();
 

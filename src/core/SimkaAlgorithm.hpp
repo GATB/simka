@@ -156,19 +156,15 @@ private:
     ofstream _outputPartitionFile;
     
 #ifdef CHI2_TEST
-    
-    typedef std::pair<u_int64_t, CountVector> minimizer_Abundances;               //minimisers_abundances;
-//    struct compare_those_minimisers { bool operator() (float l,float r) { return r < l; } } ;
-    std::map< float, minimizer_Abundances>    ch2_to_minimisers_abundances;       //ch2 --> minimizer_Abundances
-    std::unordered_map<u_int64_t, float>                                    stored_minimisers_xi2;              //minimiser --> xi2
-//    typedef Kmer<span>::ModelMinimizer<Kmer<>::ModelCanonical>      ModelMinimizer;
-//    ModelMinimizer mm;
-    typedef typename Kmer<span>::ModelCanonical Model;
-    typedef typename Kmer<span>::template ModelMinimizer<Model>  ModelMini;
-    ModelMini modelMini;
+
+    // structure storing for each minimiser seen in the kmer the associated maximal Xi2 value and its corresponding count vector
+    std::unordered_map<u_int64_t, std::pair< float, CountVector>>           stored_minimisers_to_xi2_and_counts;              //minimiser --> <xi2, abondances>
+    // Model needed to grab minimiser int values
+    typedef typename Kmer<span>::ModelCanonical                             Model;
+    typedef typename Kmer<span>::template ModelMinimizer<Model>             ModelMini;
+    ModelMini                                                               modelMini;
     
 #endif // CHI2_TEST
-    size_t _maxChi2Values;
     
 public:
     
@@ -186,7 +182,6 @@ public:
     	string outputFilename = _outputDir + "/select_kmers_out_" + Stringify::format("%i", _partitionId) + ".txt";
     	_outputPartitionFile.open(outputFilename.c_str());
 
-        _maxChi2Values = 1000;
         // We configure the vector for the N.(N+1)/2 possible pairs
         //_countTotal.resize (_nbBanks*(_nbBanks+1)/2);
         
@@ -206,53 +201,58 @@ public:
     void end(){
 #ifdef CHI2_TEST
         
-
-//        size_t nbValues = ch2_to_minimisers_abundances.size();
-        std::map< float, minimizer_Abundances>::iterator it; // std::map< float, minimizer_Abundances, ch2_to_minimisers_abundancesFunction>
-        for (it = ch2_to_minimisers_abundances.begin(); it!=ch2_to_minimisers_abundances.end(); ++it){
-
-        	CountVector& counts = it->second.second;
-            updateDistance(counts);
-
-            string outLine = "";
+        
+        //        size_t nbValues = ch2_to_minimisers_abundances.size();
+        //        std::unordered_map<u_int64_t, std::pair< float, CountVector>>::iterator it;
+        
+        //        std::map< float, minimizer_Abundances>::iterator it; // std::map< float, minimizer_Abundances, ch2_to_minimisers_abundancesFunction>
+        //        for (it = stored_minimisers_xi2.begin(); it!=stored_minimisers_xi2.end(); ++it){
+        for (auto kv : stored_minimisers_to_xi2_and_counts){
+                        auto value = kv.second;                         // value is a couple xi2,vector count.
+            string outLine =  Stringify::format("%f",value.first);      // print the (xi2)
+            outLine += " ";
+            outLine += Stringify::format("%d",kv.first);                // print key (the minimiser)
+            CountVector& counts = value.second;                         // get the count vector and print it.
+            updateDistance(counts);                                     // update the distances with the selected kmers - WARNING: this is useless here as we will re-start for selected counts the distances computations.
+            
+            outLine += " - ";
             for(size_t i=0; i<counts.size(); i++){
-            	CountNumber count = counts[i];
-            	string countStr = Stringify::format("%i", count);
-            	outLine += countStr + " ";
+                CountNumber count = counts[i];
+                string countStr = Stringify::format("%i", count);
+                outLine += countStr + " ";
             }
-
             outLine.erase(outLine.size()-1); //remove last space
             outLine += "\n";
-
-        	_outputPartitionFile.write(outLine.c_str(), outLine.size());
+            _outputPartitionFile.write(outLine.c_str(), outLine.size());
         }
-
+        
         _outputPartitionFile.close();
-//        for(size_t i=0; i<nbValues; i++){
-//            double val = ch2_to_minimisers_abundances.top().first;
-//            CountVector counts = ch2_to_minimisers_abundances.top().second;
-//            
-//            
-//            //cout << val << endl;
-//            //for(size_t j=0; j<counts.size(); j++){
-//            //	cout << counts[j] << " ";
-//            //}
-//            //cout << endl;
-//            
-//            updateDistance(counts);
-//            
-//            ch2_to_minimisers_abundances.pop();
-//        }
+        //        for(size_t i=0; i<nbValues; i++){
+        //            double val = ch2_to_minimisers_abundances.top().first;
+        //            CountVector counts = ch2_to_minimisers_abundances.top().second;
+        //
+        //
+        //            //cout << val << endl;
+        //            //for(size_t j=0; j<counts.size(); j++){
+        //            //	cout << counts[j] << " ";
+        //            //}
+        //            //cout << endl;
+        //            
+        //            updateDistance(counts);
+        //            
+        //            ch2_to_minimisers_abundances.pop();
+        //        }
 #endif // CHI2_TEST
     }
     
     void process (size_t partId, const typename Kmer<span>::Type& kmer, const CountVector& counts){
-        
-        //cout << kmer.toString(_kmerSize) << endl;
-        //for(size_t i=0; i<counts.size(); i++){
-        //	cout << counts[i] << " ";
-        //}
-        //cout << endl;
+        //DEBUG
+//        cout << kmer.toString(_kmerSize) << endl;
+//        for(size_t i=0; i<counts.size(); i++){
+//        	cout << counts[i] << " ";
+//        }
+//        cout << endl;
+        //GUBED
         
 #ifdef PRINT_STATS
         _totalAbundance = 0;
@@ -291,50 +291,23 @@ public:
         for(size_t i=0; i<counts.size(); i++){
             X2j += pow((counts[i]/_totalAbundance - _stats->_datasetNbReads[i]/_stats->_totalReads), 2) / (_stats->_datasetNbReads[i] / (_stats->_totalReads*_totalAbundance));
         }
-        //cout << X2j << endl;
         
-        //u_int64_t thisminimiser = 0;//kmer.minimizer().value(); /// TODO HERE: GET THE KMER MINIMISER
-        u_int64_t thisminimiser = modelMini.getMinimizerValue(kmer);
-        
-        std::unordered_map<u_int64_t, float>::iterator storedM = stored_minimisers_xi2.find(thisminimiser);
-        if (storedM != stored_minimisers_xi2.end()){                                                                            // this minimiser exists - only one occurrence of a minimiser
-            if (storedM->second <X2j){                                                                                          // the stored minimizer has lower Xi2 value, we must replace it
-                std::map< float, minimizer_Abundances>::const_iterator storedkmerIt = ch2_to_minimisers_abundances.find(X2j);   // get all minimisers with this Xi2 (there me be more than one)
-                while(storedkmerIt != ch2_to_minimisers_abundances.end() && storedkmerIt->first == X2j){                        // find the stored minimiser with value kmer.minimizer().value()
-                    if(storedkmerIt->second.first == thisminimiser){                                                            // found it
-                        ch2_to_minimisers_abundances.erase(storedkmerIt);                                                       // remove this previous element (in order to maintain the map ordered)
-                        ch2_to_minimisers_abundances.insert({X2j, minimizer_Abundances(thisminimiser,counts)});                 // add the new element X2J --> <minimiser, counts>
-                        storedM->second=X2j;                                                                                    // update the stored X2J in the map minimisers --> map
-                        break;                                                                                                  // we made the modification for this minimiser, we can stop searching the list
-                        // TODO : we must pass exactly once here, this should be asserted
-                    }
-                    storedkmerIt++;                                                                                             // try next equal minimiser or leave -- TODO : we could check here that we found a least one value (assert)
-                }
-            }
-            
+
+        u_int64_t thisminimiser = modelMini.getMinimizerValue(kmer);                                                            // get the kmer minimiser
+        auto xi2_and_counts = stored_minimisers_to_xi2_and_counts.find(thisminimiser);                                          // get the minimiser couple xi2 and counts if exists:
+        if (xi2_and_counts == stored_minimisers_to_xi2_and_counts.end())                                                        // if this minimiser does not have already an entry;
+        {
+            stored_minimisers_to_xi2_and_counts[thisminimiser] = std::pair< float, CountVector>(X2j,counts);                // add a novel entry for this minimiser with its xi2, count vector
         }
-        
-        else { // this minimiser does not exist - if the set ch2_to_minimisers_abundances is full (ch2_to_minimisers_abundances.size() == _maxChi2Values) then we may replace the lowest minimiser value
-            if(ch2_to_minimisers_abundances.size() > _maxChi2Values){                                                           // ch2_to_minimisers_abundances is full.
-                if(X2j > ch2_to_minimisers_abundances[0].first){                                                                // Smallest xi is smaller than X2J. We replace it.
-                    u_int64_t toremove_minimiser = ch2_to_minimisers_abundances[0].first;                                       // shortcut
-                    stored_minimisers_xi2.erase(stored_minimisers_xi2.find(toremove_minimiser));                                // Remove in the stored_minimisers_xi2 the minimiser having this smaller xi2 value
-                    stored_minimisers_xi2.insert({thisminimiser,X2j});                                                          // add the correct minimiser.
-                    ch2_to_minimisers_abundances.erase(ch2_to_minimisers_abundances.begin());                                   // remove this smallest element
-                    ch2_to_minimisers_abundances.insert({X2j, minimizer_Abundances(thisminimiser,counts)});                     // add the new element X2J --> <minimiser, counts>
-                }
-            }
-            else {                                                                                                              // just add the new minimiser
-                stored_minimisers_xi2.insert({thisminimiser,X2j});                                                              // add the correct minimiser
-                ch2_to_minimisers_abundances.insert({X2j, minimizer_Abundances(thisminimiser,counts)});                         // add the new element X2J --> <minimiser, counts>
+        else                                                                                                                    // this minimiser already has an entry;
+        {
+            if(xi2_and_counts->first<X2j){                                                                                      // if the stored Xi2 is lower than the current one, replace it
+                stored_minimisers_to_xi2_and_counts[thisminimiser] = std::pair< float, CountVector>(X2j,counts);            // replace the entry for this minimiser with its xi2, count vector
             }
         }
+  
         
         
-        
-        
-        //cout << ch2_to_minimisers_abundances.size() << "    " << X2j << "   " << ch2_to_minimisers_abundances.top() << endl;
-        //cout <<  X2j << "    " << pvalue << endl;
         
         return;
         
@@ -374,7 +347,6 @@ public:
         //	computeStats(counts);
         //}
         //else{
-        
         updateDistance(counts);
         
         //else
