@@ -619,7 +619,7 @@ public:
 	//size_t _nbBanks;
 	string _inputFilename;
 	//string _datasetID;
-	size_t _kmerSize;
+	u_int8_t _kmerSize;
 	//pair<CountNumber, CountNumber> _abundanceThreshold;
 	//SIMKA_SOLID_KIND _solidKind;
 	//bool _soliditySingle;
@@ -661,9 +661,10 @@ public:
 
 
 
-	size_t _seed;
-	size_t _sketchSize;
+	u_int32_t _seed;
+	u_int32_t _sketchSize;
 	bool _useAbundanceFilter;
+	u_int32_t _nbDatasets;
 	//pthread_mutex_t _mutex;
 
 	//typedef typename SelectKmersCommand<span>::KmerCountSorter KmerCountSorter;
@@ -682,8 +683,8 @@ public:
 	mutex countKmersMutex;
 
 	ofstream _outputFile;
-	string _outputFilenameKmers;
-	string _outputFilenameIds;
+	//string _outputFilenameKmers;
+	//string _outputFilenameIds;
 
 	Simka2ComputeKmerSpectrumAlgorithm(IProperties* options):
 		Algorithm("simka", -1, options)
@@ -739,6 +740,17 @@ public:
 		_minReadShannonIndex = _options->getDouble(STR_SIMKA_MIN_READ_SHANNON_INDEX);
 		_minReadShannonIndex = std::max(_minReadShannonIndex, 0.0);
 		_minReadShannonIndex = std::min(_minReadShannonIndex, 2.0);
+
+
+		if(!System::file().doesExist(_inputFilename)){
+			std::cerr << "Error: input does not exist (" << _inputFilename << ")" << std::endl;
+			exit(1);
+		}
+
+		if(System::file().doesExist(_outputDir)){
+			std::cerr << "Error: output file already exist (" << _outputDir << ")" << std::endl;
+			exit(1);
+		}
 		//_nbBankPerDataset = _options->getInt("-nb-dataset");
 
 		//_minKmerShannonIndex = _options->getDouble(STR_SIMKA_MIN_KMER_SHANNON_INDEX);
@@ -812,11 +824,11 @@ public:
 			extension += fields[i];
 		}*/
 
-		_outputFilenameIds = _outputDir + ".ids";
-		_outputFilenameKmers = _outputDir + ".kmers";
+		//_outputFilenameIds = _outputDir + ".ids";
+		//_outputFilenameKmers = _outputDir + ".kmers";
 
-		System::file().remove(_outputFilenameIds);
-		System::file().remove(_outputFilenameKmers);
+		//System::file().remove(_outputFilenameIds);
+		//System::file().remove(_outputFilenameKmers);
 
 	}
 
@@ -855,18 +867,20 @@ public:
 	void countDatasets(){
 
 		cout << endl << endl;
-		cout << "Counting kmers..." << endl;
+		cout << "Sketching..." << endl;
 
 
-		_outputFile.open(_outputFilenameKmers, ios::binary);
+		_outputFile.open(_outputDir, ios::binary);
 
 		//Save sketch info
-		u_int8_t kmerSize = _kmerSize;
-		u_int32_t sketchSize = _sketchSize;
-		u_int32_t seed = _seed;
-		_outputFile.write((const char*)&kmerSize, sizeof(kmerSize));
-		_outputFile.write((const char*)&sketchSize, sizeof(sketchSize));
-		_outputFile.write((const char*)&seed, sizeof(seed));
+		//u_int8_t kmerSize = _kmerSize;
+		//u_int32_t sketchSize = _sketchSize;
+		//u_int32_t seed = _seed;
+		_nbDatasets = 0;
+		_outputFile.write((const char*)&_kmerSize, sizeof(_kmerSize));
+		_outputFile.write((const char*)&_sketchSize, sizeof(_sketchSize));
+		_outputFile.write((const char*)&_seed, sizeof(_seed));
+		_outputFile.write((const char*)&_nbDatasets, sizeof(_nbDatasets));
 
 		//cout << _maxRunningThreads << endl;
 
@@ -887,9 +901,7 @@ public:
 		string inputDir = _outputDirTemp; // + "/input/";
 		ifstream inputFile(_inputFilename.c_str());
 
-		ofstream outputFileIds(_outputFilenameIds.c_str(), ios::binary);
-		u_int32_t nbDatasets = 0;
-		outputFileIds.write((const char*)&nbDatasets, sizeof(nbDatasets));
+		//ofstream outputFileIds(_outputFilenameIds.c_str(), ios::binary);
 		//_banksInputFilename =  inputDir + "__input_simka__"; //_inputFilename + "_dsk_dataset_temp__";
 		//IFile* bankFile = System::file().newFile(_banksInputFilename, "wb");
 
@@ -974,12 +986,8 @@ public:
 			//count();
 			//_bankNames.push_back(bankId);
 
-			u_int8_t idSize = bankId.size();
-			outputFileIds.write((const char*)& idSize, sizeof(idSize));
-			outputFileIds.write(bankId.c_str(), bankId.size());
-
 			datasetId += 1;
-			nbDatasets += 1;
+			_nbDatasets += 1;
 		}
 
 
@@ -992,14 +1000,53 @@ public:
 
 		joinThreads();
 
-		outputFileIds.seekp(0);
-		outputFileIds.write((const char*)&nbDatasets, sizeof(nbDatasets));
-		_outputFile.close();
 		inputFile.close();
-		outputFileIds.close();
+
+		writeIds();
+
+		//outputFileIds.seekp(0);
+		//outputFileIds.write((const char*)&nbDatasets, sizeof(nbDatasets));
+		_outputFile.close();
+		//outputFileIds.close();
 
 	}
 
+	void writeIds(){
+
+		_outputFile.seekp(SimkaMinCommons::getFilePosition_nbDatasets());
+		_outputFile.write((const char*)&_nbDatasets, sizeof(_nbDatasets));
+		_outputFile.seekp(SimkaMinCommons::getFilePosition_sketchIds(_nbDatasets, _sketchSize));
+
+		ifstream inputFile(_inputFilename.c_str());
+
+		string line;
+		string linePart;
+		vector<string> lineIdDatasets;
+
+
+		while(getline(inputFile, line)){
+
+			line.erase(std::remove(line.begin(),line.end(),' '),line.end());
+			if(line == "") continue;
+
+			lineIdDatasets.clear();
+
+			stringstream lineStream(line);
+			while(getline(lineStream, linePart, ':')){
+				lineIdDatasets.push_back(linePart);
+			}
+
+			string bankId = lineIdDatasets[0];
+
+			u_int8_t idSize = bankId.size();
+			_outputFile.write((const char*)& idSize, sizeof(idSize));
+			_outputFile.write(bankId.c_str(), bankId.size());
+
+		}
+
+		inputFile.close();
+
+	}
 
 
 	void startNewThread(size_t datasetId, const string& inputFilename, size_t nbBankPerDataset){

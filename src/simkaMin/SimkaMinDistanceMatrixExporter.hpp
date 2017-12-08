@@ -42,13 +42,19 @@ public:
 	string _inputDir;
 	string _outputDir;
 	string _inputFilenameIds;
+	string _inputSketchFilename1;
+	string _inputSketchFilename2;
 
-	vector<string> _ids;
-	vector<string> _wantedIds;
-	vector<size_t> _wantedIdsIndex;
-	unordered_map<string, size_t> _idToIndex;
-	size_t _inputMatrixSize;
-	size_t _outputMatrixSize;
+	vector<string> _ids1;
+	vector<string> _ids2;
+	//vector<string> _wantedIds;
+	//vector<size_t> _wantedIdsIndex_1;
+	//vector<size_t> _wantedIdsIndex_2;
+	//unordered_map<string, size_t> _idToIndex_1;
+	//unordered_map<string, size_t> _idToIndex_2;
+	size_t _inputMatrixSize_1;
+	size_t _inputMatrixSize_2;
+	//size_t _outputMatrixSize;
 
 
 	SimkaMinDistanceMatrixExporterAlgorithm(IProperties* options):
@@ -60,7 +66,7 @@ public:
 		_inputFilenameIds = "";
 		parseArgs();
 		createWantedIds();
-		createIdsIndex();
+		//createIdsIndex();
 		writeMatrices();
 	}
 
@@ -69,6 +75,8 @@ public:
 		_options = getInput();
 
 		_inputDir = _options->getStr(STR_URI_INPUT);
+		_inputSketchFilename1 = _options->getStr(STR_SIMKA_URI_INPUT_1);
+		_inputSketchFilename2 = _options->getStr(STR_SIMKA_URI_INPUT_2);
 		_outputDir = _options->getStr(STR_URI_OUTPUT);
 
 		if(getInput()->get(STR_SIMKA_INPUT_IDS)){
@@ -87,10 +95,13 @@ public:
 
 	void createWantedIds(){
 
-		SimkaMinCommons::readIds(_inputDir + "/matrix_infos", _ids);
+		SimkaMinCommons::readIds(_inputSketchFilename1, _ids1);
+		SimkaMinCommons::readIds(_inputSketchFilename2, _ids2);
 
+		/*
 		if(_inputFilenameIds.empty()){
-			_wantedIds = vector<string>(_ids);
+			_wantedIds = vector<string>(_ids1);
+			_wantedIds.insert(_wantedIds.end(), _ids2.begin(), _ids2.end());
 		}
 		else{
 			string line;
@@ -104,20 +115,26 @@ public:
 				_wantedIds.push_back(line);
 			}
 		}
+		*/
 
-		_inputMatrixSize = _ids.size();
+		_inputMatrixSize_1 = _ids1.size();
+		_inputMatrixSize_2 = _ids2.size();
 		//_outputMatrixSize = _wantedIds.size();
-		cout << "original matrix size: " << _inputMatrixSize << endl;
+		cout << "Matrix size: " << _inputMatrixSize_1 << " x " << _inputMatrixSize_2 << endl;
 	}
 
+	/*
 	void createIdsIndex(){
 
-		for(size_t i=0; i<_ids.size(); i++){
-			_idToIndex[_ids[i]] = i;
+		for(size_t i=0; i<_ids1.size(); i++){
+			_idToIndex_1[_ids1[i]] = i;
+		}
+		for(size_t i=0; i<_ids2.size(); i++){
+			_idToIndex_2[_ids2[i]] = i;
 		}
 
 		for(size_t i=0; i<_wantedIds.size(); i++){
-			if(_idToIndex.find(_wantedIds[i]) == _idToIndex.end()){
+			if(_idToIndex_1.find(_wantedIds[i]) == _idToIndex_1.end()){
 				cout << "ID not found in distance matrix: " << _wantedIds[i] << endl;
 			}
 			else{
@@ -131,6 +148,7 @@ public:
 		_outputMatrixSize = _wantedIdsIndex.size();
 		cout << "output matrix size: " << _outputMatrixSize << endl;
 	}
+	*/
 
 	void writeMatrices(){
 		vector<string> matrixFilenames = System::file().listdir(_inputDir);
@@ -139,6 +157,7 @@ public:
 		for(size_t i=0; i<matrixFilenames.size(); i++){
 			string matrixFilename = _inputDir + "/" + matrixFilenames[i];
 			if(matrixFilename.find("mat_") == string::npos) continue;
+			if(matrixFilename.find(".bin") == string::npos) continue;
 
 			string distanceName = matrixFilenames[i];
 			string ext = ".bin";
@@ -153,31 +172,31 @@ public:
 
 	void writeMatrixASCII(const string& distanceName, const string& binaryMatrixFilename){
 
-		vector<float> rowData(_inputMatrixSize, 0);
+		vector<float> rowData(_ids1.size(), 0);
 		ifstream binaryMatrixFile(binaryMatrixFilename.c_str(), ios::binary);
 		string filename = _outputDir + "/" + distanceName + ".csv";
 		gzFile out = gzopen((filename + ".gz").c_str(),"wb");
 
 		string str = "";
 
-		for(size_t i=0; i<_outputMatrixSize; i++){
-			str += ";" + _ids[_wantedIdsIndex[i]];
+		for(size_t i=0; i<_ids1.size(); i++){
+			str += ";" + _ids1[i]; //_ids[_wantedIdsIndex[i]];
 		}
 		str += '\n';
 		gzwrite(out, str.c_str(), str.size());
 
-
-		for(size_t i=0; i<_outputMatrixSize; i++){
+		for(size_t i=0; i<_ids2.size(); i++){
 
 			str = "";
-			str += _ids[_wantedIdsIndex[i]] + ";";
+			str += _ids2[i] + ";"; //[_wantedIdsIndex[i]] + ";";
 
-			size_t rowIndex = _wantedIdsIndex[i];
-			SimkaDistanceMatrixBinary::loadRow(rowIndex, binaryMatrixFile, rowData);
+			//size_t rowIndex = _wantedIdsIndex[i];
+			SimkaDistanceMatrixBinary::loadRow(i, binaryMatrixFile, rowData);
 
-			for(size_t j=0; j<_outputMatrixSize; j++){
+			for(size_t j=0; j<_ids1.size(); j++){
 
-				str += Stringify::format("%f", rowData[_wantedIdsIndex[j]]) + ";";
+				//str += Stringify::format("%f", rowData[_wantedIdsIndex[j]]) + ";";
+				str += Stringify::format("%f", rowData[j]) + ";";
 
 			}
 
@@ -186,7 +205,6 @@ public:
 
 			gzwrite(out, str.c_str(), str.size());
 		}
-
 
 		gzclose(out);
 		binaryMatrixFile.close();
@@ -210,7 +228,9 @@ public:
 	    IOptionsParser* parser = getParser();//new OptionsParser ("Simka2 - Compute Kmer Spectrum");
 
 	    parser->push_front (new OptionOneParam (STR_URI_OUTPUT, "output dir for distance matrices", false, "./simkaMin_results"));
-	    parser->push_front (new OptionOneParam (STR_SIMKA_INPUT_IDS, "filename of ids in the result matrix (one id per line). Do not used this option to used all ids.", false));
+	    //parser->push_front (new OptionOneParam (STR_SIMKA_INPUT_IDS, "filename of ids in the result matrix (one id per line). Do not used this option to used all ids.", false));
+	    parser->push_front (new OptionOneParam (STR_SIMKA_URI_INPUT_2, "second used sketch file (-in2 argument of ./simkaMin distance)", true));
+	    parser->push_front (new OptionOneParam (STR_SIMKA_URI_INPUT_1, "first used sketch file (-in1 argument of ./simkaMin distance)", true));
 	    parser->push_front (new OptionOneParam (STR_URI_INPUT, "input dir containing distance matrices in binary format (-out argument of ./simkaMin distance)", true));
 
 	}

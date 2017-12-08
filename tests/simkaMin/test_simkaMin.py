@@ -49,7 +49,6 @@ def clear():
 		shutil.rmtree("__results__")
 	os.mkdir(dir)
 
-
 def decompress_simka_results(dir):
 	result_filenames = glob.glob(os.path.join(dir, '*.csv.gz'))
 	for filename_gz in result_filenames:
@@ -133,6 +132,69 @@ def test():
 						test_dists(outputDir)
 						clear()
 
-test()
 
 
+#----------------------------------------------------------------
+#----------------------------------------------------------------
+#----------------------------------------------------------------
+def test_append():
+	print("Test append command")
+	clear()
+
+	out_dir = "./test_append"
+	if os.path.exists(out_dir):
+		shutil.rmtree(out_dir)
+	os.mkdir(out_dir)
+
+	merged_sketch_filename = os.path.join(out_dir, "merged_sketch.bin")
+	filename = "../../example/simka_input.txt"
+	for line in open(filename):
+		line = line.strip()
+		if len(line) == 0: continue
+
+		filename_temp = os.path.join("../../example/test_simkaMin_input_temp.txt")
+		f = open(filename_temp, "w")
+		f.write(line)
+		f.close()
+
+		sketch_filename = os.path.join(out_dir, "sketch.bin")
+		command = "../../build/bin/simkaMin sketch -in " + filename_temp + " -out " + sketch_filename + " -nb-kmers 100 -kmer-size 21"
+		ret = os.system(command + suffix)
+		if ret != 0: exit(1)
+
+
+		if os.path.exists(merged_sketch_filename):
+			command = "../../build/bin/simkaMin append -in1 " + merged_sketch_filename + " -in2 " + sketch_filename
+			ret = os.system(command + suffix)
+			if ret != 0: exit(1)
+			os.remove(sketch_filename)
+		else:
+			shutil.move(sketch_filename, merged_sketch_filename)
+
+		os.remove(filename_temp)
+
+	command = "../../build/bin/simkaMin distance -in1 " +  merged_sketch_filename + " -in2 " + merged_sketch_filename + " -out " + dir
+	ret = os.system(command + suffix)
+	if ret != 0: exit(1)
+
+	command = "../../build/bin/simkaMin export -in " + dir + " -in1 " +  merged_sketch_filename + " -in2 " + merged_sketch_filename + " -out " + dir
+	ret = os.system(command + suffix)
+	if ret != 0: exit(1)
+
+
+	if(__test_matrices(dir, "truth_simkaMin/k21__0-100")):
+		print("\tOK")
+	else:
+		print("\tFAILED")
+		exit(1)
+
+
+#test()
+test_append()
+
+
+
+if os.path.exists("__results__"):
+	shutil.rmtree("__results__")
+if os.path.exists("test_append"):
+	shutil.rmtree("test_append")

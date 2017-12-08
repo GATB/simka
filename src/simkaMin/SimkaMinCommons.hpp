@@ -12,7 +12,7 @@
 #include <unordered_map>
 #include <gatb/gatb_core.hpp>
 
-#define KMER_SPECTRUM_HEADER_SIZE (1+4+4) //At the begining of the .kmers file we store the size of the kmer (on 1 byte), the sketch size (on 4 bytes), the seed used by Murmurhash3 (4 bytes)
+#define KMER_SPECTRUM_HEADER_SIZE (1+4+4+4) //At the begining of the .kmers file we store the size of the kmer (on 1 byte), the sketch size (on 4 bytes), the seed used by Murmurhash3 (4 bytes), the number of datasets in the sketch file (4 bytes)
 
 const string STR_SIMKA_SEED = "-seed";
 const string STR_SIMKA_SKETCH_SIZE = "-nb-kmers";
@@ -70,23 +70,29 @@ public:
 		//return string linkedDatasetID( buffer.begin(), buffer.end() );
 	}
 
+
 	static void readIds(const string& filename, vector<string>& datasetIds){
 
-		string filenameIds = filename + ".ids";
-		ifstream file(filenameIds.c_str(), ios::binary);
+		u_int8_t kmerSize;
+		u_int32_t sketchSize, seed, nbDatasets;
+		getKmerInfos(filename, kmerSize, sketchSize, seed, nbDatasets);
 
-		u_int32_t nbDatasets;
-		file.read((char*)(&nbDatasets), sizeof(nbDatasets));
+		ifstream file(filename.c_str(), ios::binary);
+		file.seekg(SimkaMinCommons::getFilePosition_sketchIds(nbDatasets, sketchSize));
+
+		//u_int32_t nbDatasets;
+		//file.read((char*)(&nbDatasets), sizeof(nbDatasets));
 		string datasetId;
 
 		for(size_t i=0; i<nbDatasets; i++){
-			readString(datasetId, file);
+			SimkaMinCommons::readString(datasetId, file);
 			datasetIds.push_back(datasetId);
 		}
 
 		file.close();
 	}
 
+	/*
 	static u_int32_t readNbDatasets(const string& filename){
 
 		string filenameIds = filename + ".ids";
@@ -98,12 +104,12 @@ public:
 		file.close();
 
 		return nbDatasets;
-	}
+	}*/
 
-	static void getKmerInfos(const string& filename, size_t& kmerSize, size_t& sketchSize, u_int32_t& seed){
+	static void getKmerInfos(const string& filename, u_int8_t& kmerSize, u_int32_t& sketchSize, u_int32_t& seed, u_int32_t& nbDatasets){
 
-		string filenameKmers = filename + ".kmers";
-		ifstream file(filenameKmers.c_str(), ios::binary);
+		//string filenameKmers = filename + ".kmers";
+		ifstream file(filename.c_str(), ios::binary);
 
 		u_int8_t kmerSize_;
 		file.read((char*)(&kmerSize_), sizeof(kmerSize_));
@@ -111,15 +117,26 @@ public:
 		file.read((char*)(&sketchSize_), sizeof(sketchSize_));
 		u_int32_t seed_;
 		file.read((char*)(&seed_), sizeof(seed_));
+		u_int32_t nbDatasets_;
+		file.read((char*)(&nbDatasets_), sizeof(nbDatasets_));
 
 		file.close();
 
 		kmerSize = kmerSize_;
 		sketchSize = sketchSize_;
 		seed = seed_;
+		nbDatasets = nbDatasets_;
 
 	}
 
+	static u_int64_t getFilePosition_sketchIds(u_int32_t nbDatasets, u_int32_t sketchSize){
+		u_int64_t filePos = KMER_SPECTRUM_HEADER_SIZE + (nbDatasets * sketchSize * sizeof(KmerAndCountType));
+		return filePos;
+	}
+
+	static u_int64_t getFilePosition_nbDatasets(){
+		return 1+4+4;
+	}
 
 };
 

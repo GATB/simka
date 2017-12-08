@@ -122,7 +122,7 @@ distanceOutputDir = os.path.join(args.out, "distance")
 if not os.path.exists(distanceOutputDir): os.makedirs(distanceOutputDir)
 
 #Create commands
-sketchCommand = args.bin + " spectrum "
+sketchCommand = args.bin + " sketch "
 sketchCommand += " -in " + args.input_filename
 sketchCommand += " -out " + sketchFilename
 sketchCommand += " -seed " + args.seed
@@ -143,6 +143,8 @@ distanceCommand += " -nb-cores " + args.nb_cores
 
 exportCommand = args.bin + " export "
 exportCommand += " -in " + distanceOutputDir
+exportCommand += " -in1 " + sketchFilename
+exportCommand += " -in2 " + sketchFilename
 #exportCommand += " -in-ids " + distanceOutputDir #not applicable here
 exportCommand += " -out " + args.out
 exportCommand += " -nb-cores " + args.nb_cores

@@ -31,7 +31,7 @@ public:
 
 	KmerSpectrumIterator(const string& filename, size_t sketchSize){
 		_buffer = 0;
-		_is = fopen((filename + ".kmers").c_str(), "rb");
+		_is = fopen((filename).c_str(), "rb");
 
 		//_kmerSpectrumFile.open(filename + ".kmers", ios::binary);
 		_sketchSize = sketchSize;
@@ -305,7 +305,7 @@ public:
 	//vector<u_int64_t> _minHashKmers;
 	//vector<u_int32_t> _minHashKmersCounts;
 
-	size_t _sketchSize;
+	u_int32_t _sketchSize;
 	u_int32_t _seed;
 	//pthread_mutex_t _mutex;
 
@@ -326,8 +326,8 @@ public:
 
 	//vector<string> _datasetIds1;
 	//vector<string> _datasetIds2;
-	size_t _nbDataset1;
-	size_t _nbDataset2;
+	u_int32_t _nbDataset1;
+	u_int32_t _nbDataset2;
 
 	ofstream _distanceMatrixJaccard;
 	ofstream _distanceMatrixBrayCurtis;
@@ -380,14 +380,14 @@ public:
 	}
 
 	void readInfos(){
-		_nbDataset1 = SimkaMinCommons::readNbDatasets(_inputFilename1);
-		_nbDataset2 = SimkaMinCommons::readNbDatasets(_inputFilename2);
+		//_nbDataset1 = SimkaMinCommons::readNbDatasets(_inputFilename1);
+		//_nbDataset2 = SimkaMinCommons::readNbDatasets(_inputFilename2);
 
-		size_t sketchSize1;
-		size_t sketchSize2;
-		size_t kmerSizeDummy;
-		SimkaMinCommons::getKmerInfos(_inputFilename1, kmerSizeDummy, sketchSize1, _seed);
-		SimkaMinCommons::getKmerInfos(_inputFilename2, kmerSizeDummy, sketchSize2, _seed);
+		u_int32_t sketchSize1;
+		u_int32_t sketchSize2;
+		u_int8_t kmerSizeDummy;
+		SimkaMinCommons::getKmerInfos(_inputFilename1, kmerSizeDummy, sketchSize1, _seed, _nbDataset1);
+		SimkaMinCommons::getKmerInfos(_inputFilename2, kmerSizeDummy, sketchSize2, _seed, _nbDataset2);
 		_sketchSize = min(sketchSize1, sketchSize2);
 
 
@@ -470,9 +470,9 @@ public:
 		_distanceMatrixJaccard.close();
 		_distanceMatrixBrayCurtis.close();
 
-		string command = "cp " + string(_inputFilename1+".ids") + " " + _outputDir + "/matrix_infos.ids ";
+		//string command = "cp " + string(_inputFilename1+".ids") + " " + _outputDir + "/matrix_infos.ids ";
 		//cout << command << endl;
-		system(command.c_str());
+		//system(command.c_str());
 	}
 
 
@@ -651,8 +651,8 @@ public:
 	    IOptionsParser* parser = getParser();//new OptionsParser ("Simka2 - Compute Kmer Spectrum");
 
 	    parser->push_front (new OptionOneParam (STR_URI_OUTPUT, "output dir for distance matrices", false, "./simkaMin_results"));
-	    parser->push_front (new OptionOneParam (STR_SIMKA_URI_INPUT_2, "filename to a kmer count file to compare with -in1", true));
-	    parser->push_front (new OptionOneParam (STR_SIMKA_URI_INPUT_1, "filename to a kmer count file to compare with -in2", true));
+	    parser->push_front (new OptionOneParam (STR_SIMKA_URI_INPUT_2, "filename to a sketch file to compare with -in1", true));
+	    parser->push_front (new OptionOneParam (STR_SIMKA_URI_INPUT_1, "filename to a sketch file to compare with -in2", true));
 
 	}
 
@@ -663,26 +663,26 @@ public:
 
 		u_int32_t seed1;
 		u_int32_t seed2;
-		size_t dummy;
-		size_t kmerSize1;
-		size_t kmerSize2;
+		u_int32_t dummy;
+		u_int8_t kmerSize1;
+		u_int8_t kmerSize2;
 		string inputFilename1 = args->getStr(STR_SIMKA_URI_INPUT_1);
 		string inputFilename2 = args->getStr(STR_SIMKA_URI_INPUT_2);
-		SimkaMinCommons::getKmerInfos(inputFilename1, kmerSize1, dummy, seed1);
-		SimkaMinCommons::getKmerInfos(inputFilename2, kmerSize2, dummy, seed2);
+		SimkaMinCommons::getKmerInfos(inputFilename1, kmerSize1, dummy, seed1, dummy);
+		SimkaMinCommons::getKmerInfos(inputFilename2, kmerSize2, dummy, seed2, dummy);
 		//size_t kmerSize = getInput()->getInt (STR_KMER_SIZE);
 
 		if(kmerSize1 != kmerSize2){
-			cout << "ERROR: can't compare both spectrums because of different kmer sizes (" << kmerSize1 << " and " << kmerSize2 << ")" << endl;
+			cerr << "ERROR: can't compare both sketches because of different kmer sizes (" << kmerSize1 << " and " << kmerSize2 << ")" << endl;
 			exit(1);
 		}
 
 		if(seed1 != seed2){
-			cout << "ERROR: can't compare both spectrums because of different seeds (" << seed1 << " and " << seed2 << ")" << endl;
+			cerr << "ERROR: can't compare both sketches because of different seeds (" << seed1 << " and " << seed2 << ")" << endl;
 			exit(1);
 		}
 
-		cout << seed1 << " " << seed2 << endl;
+		//cout << seed1 << " " << seed2 << endl;
 		SimkaMinDistanceAlgorithm* algo = new SimkaMinDistanceAlgorithm(args);
 		algo->execute();
 		delete algo;
