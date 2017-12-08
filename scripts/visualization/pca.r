@@ -21,6 +21,10 @@ if(format == "png"){
 
 distanceMatrix = as.matrix(read.table(file=distanceMatrixFilename, sep=";", header=TRUE, row.names=1))
 
+distance_name = basename(distanceMatrixFilename)
+distance_name = unlist(strsplit(distance_name, "[.]"))[1]
+distance_name = gsub("mat_", "", distance_name)
+
 use_metadata = F
 if(length(args) == 9){
 	suppressPackageStartupMessages(library(dendextend))
@@ -97,7 +101,7 @@ if(use_metadata){
 	text(x, y, labels=rownames(distData$data), font=2)
 }
 
-title("Simka MDS/PCoA")
+title(paste0("Simka PCoA\n", distance_name))
 
 
 

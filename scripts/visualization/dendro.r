@@ -4,6 +4,9 @@
 
 args <- commandArgs(trailingOnly = TRUE)
 distanceMatrixFilename = args[1]
+distance_name = basename(distanceMatrixFilename)
+distance_name = unlist(strsplit(distance_name, "[.]"))[1]
+distance_name = gsub("mat_", "", distance_name)
 
 
 distanceMatrix = as.matrix(read.table(file=distanceMatrixFilename, sep=";", header=TRUE, row.names=1))
@@ -37,6 +40,7 @@ if(length(args) == 7){
 		#print(dataset_id)
 		#print(variables[[i]])
 		meatadata_index[[dataset_id]] = variables[[i]]
+		print(paste0(dataset_id, " ", variables[[i]]))
 		#print(meatadata_index[[dataset_id]])
 	}
 	
@@ -61,18 +65,18 @@ if(length(args) == 7){
 distanceMatrix = distanceMatrix*100
 #inv_cr3 = matrix(100, ncol=dim(cr3)[1], nrow=dim(cr3)[1]) - cr3
 Commet_distance = as.dist(distanceMatrix)
-hc = hclust(Commet_distance, method="ward.D2")
+hc = hclust(Commet_distance, method="average")
 dendo_cr3 = as.dendrogram(hc)
 
 if(use_metadata){
 	
-	colors_numeric = colors_numeric[hc$order]
-	dendo_cr3 %>% set("labels_col", colors_numeric) %>% set("branches_k_color", colors_numeric) %>% # change color
-	plot(main="Simka hierarchical clustering", cex = 0.3, xlab="", sub="")
+	colors_numeric_hc = colors_numeric[hc$order]
+	dendo_cr3 %>% set("labels_col", colors_numeric_hc) %>% set("branches_k_color", colors_numeric_hc) %>% # change color
+	plot(main=paste0("Simka hierarchical clustering\n", distance_name), cex = 0.3, xlab="", sub="")
 	legend("topright", title=metadata_variable, legend=unique(colors), col=unique(colors_numeric), pch=16)
 
 } else{
-	plot(dendo_cr3, main="Simka hierarchical clustering", cex = 0.3, xlab="", sub="")
+	plot(dendo_cr3, main=paste0("Simka hierarchical clustering\n", distance_name), cex = 0.3, xlab="", sub="")
 
 }
 

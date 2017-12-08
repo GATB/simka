@@ -51,6 +51,9 @@ cr3 = as.matrix(read.table(file=args[1], sep=";", header=TRUE, row.names=1))  # 
 cr3_norm = as.matrix(read.table(file=args[2], sep=";", header=TRUE, row.names=1))  # must be a symetric matrix
 
 
+distance_name = basename(args[1])
+distance_name = unlist(strsplit(distance_name, "[.]"))[1]
+distance_name = gsub("mat_", "", distance_name)
 
 
 use_metadata = F
@@ -131,7 +134,7 @@ if(trueMax.needed){
 
 # Dendrogram is obtained with the symetric matrix
  distance    = dist(cr3_norm)
- cluster     = hclust(distance, method="ward.D2")
+ cluster     = hclust(distance, method="average")
 dendrogram  = as.dendrogram(cluster)
 
 # Heatmap 
@@ -149,7 +152,7 @@ if(use_metadata){
  col=palette,
  breaks = breaks,
  margins=c(10,10),
- main="Simka heatmap", sub="", cexRow = 0.8, cexCol = 0.8, RowSideColors=colors_numeric, ColSideColors=colors_numeric)
+ main=paste0("Simka heatmap\n", distance_name), sub="", cexRow = 0.8, cexCol = 0.8, RowSideColors=colors_numeric, ColSideColors=colors_numeric)
 	
 } else {
 	
@@ -162,7 +165,7 @@ if(use_metadata){
  col=palette,
  breaks = breaks,
  margins=c(10,10),
- main="Simka heatmap", sub="", cexRow = 0.8, cexCol = 0.8)
+ main=paste0("Simka heatmap\n", distance_name), sub="", cexRow = 0.8, cexCol = 0.8)
 }
 
 
