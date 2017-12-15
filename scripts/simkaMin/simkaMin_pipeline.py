@@ -117,7 +117,7 @@ args =  parser.parse_args()
 if not os.path.exists(args.out): os.makedirs(args.out)
 sketchDir = os.path.join(args.out, "sketch")
 if not os.path.exists(sketchDir): os.makedirs(sketchDir)
-sketchFilename = os.path.join(sketchDir, "sketch")
+sketchFilename = os.path.join(sketchDir, "sketch.bin")
 distanceOutputDir = os.path.join(args.out, "distance")
 if not os.path.exists(distanceOutputDir): os.makedirs(distanceOutputDir)
 
@@ -148,6 +148,7 @@ exportCommand += " -in2 " + sketchFilename
 #exportCommand += " -in-ids " + distanceOutputDir #not applicable here
 exportCommand += " -out " + args.out
 exportCommand += " -nb-cores " + args.nb_cores
+
 
 print("\n\n#-----------------------------")
 print("# Sketching")

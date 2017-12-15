@@ -8,6 +8,7 @@
 #include "SimkaMinCount.hpp"
 #include "SimkaMinDistance.hpp"
 #include "SimkaMinDistanceMatrixExporter.hpp"
+#include "SimkaMinDistanceMatrixMerger.hpp"
 #include "SimkaMinInfos.hpp"
 #include "SimkaMinAppend.hpp"
 
@@ -20,6 +21,7 @@ void displayHelp(){
 
 	cout << endl << "[Distance matrix manipulation options]" << endl;
 	cout << "\texport      : export distance matrices stored in binary format" << endl;
+	//cout << "\tmatrix-update       : update existing distance matrices" << endl;
 
 	cout << endl << "[Sketch options]" << endl;
 	cout << "\tappend      : merge multiple sketch files into a single one" << endl;
@@ -80,6 +82,9 @@ int main (int argc, char* argv[])
     		}
     		else if(programName == "export"){
     			SimkaMinDistanceMatrixExporter().run(argc, args);
+    		}
+    		else if(programName == "matrix-update"){ //Hidden feature
+    			SimkaMinDistanceMatrixMerger().run(argc, args);
     		}
     		else if(programName == "info"){
     			SimkaMinInfos().run(argc, args);

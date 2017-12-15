@@ -124,7 +124,7 @@ public:
 				PairwiseDistance& jaccard = _jaccardDistances[i];
 				PairwiseDistance& braycurtis = _braycurtisDistances[i];
 
-				u_int64_t pos = jaccard._i*_nbDatasets1*sizeof(DistanceValueType) + (jaccard._j*sizeof(DistanceValueType));
+				u_int64_t pos = jaccard._i*_nbDatasets2*sizeof(DistanceValueType) + (jaccard._j*sizeof(DistanceValueType));
 				_distanceMatrixJaccard.seekp(pos);
 				_distanceMatrixBrayCurtis.seekp(pos);
 				_distanceMatrixJaccard.write((const char*)&jaccard._distance, sizeof(jaccard._distance));
@@ -145,6 +145,7 @@ public:
 	}
 
 	void computeDistance_unsynch(size_t i, size_t j){
+
 
 		_nbDistinctSharedKmers = 0;
 		_nbDistinctKmers = 0;
@@ -206,6 +207,11 @@ public:
 		}else{
 			braycurtis =  1 - (long double) (2*_nbSharedKmers) / (long double) _nbKmers;
 		}
+
+
+		//_mutex.lock();
+		//cout << i << " " << j << " " << braycurtis << endl;
+		//_mutex.unlock();
 
 		_jaccardDistances.push_back(PairwiseDistance(i, j, jaccard));
 		_braycurtisDistances.push_back(PairwiseDistance(i, j, braycurtis));
@@ -588,6 +594,69 @@ public:
 	void computeDistanceRectangle(){
 
 		cout << "compute rectangle distances" << endl;
+
+
+		u_int64_t nbDistancesToCompute = _nbDataset1*_nbDataset2;
+		//u_int64_t nbDistancesToCompute = _nbDataset1*_nbDataset1; //(_nbDataset1*(_nbDataset1-1)) / 2;
+		u_int64_t nbDistancePerThreads = nbDistancesToCompute / _nbCores;
+		u_int64_t nbDistancesRemaining = nbDistancesToCompute-(nbDistancePerThreads*_nbCores);
+
+		//vector<size_t> startDistanceI;
+		//vector<size_t> startDistanceJ;
+		//size_t si=0;
+		//size_t sj=0;
+
+		cout << "NB CORES: " << _nbCores << endl;
+		cout << "NB DISTANCES: " << nbDistancesToCompute << endl;
+		cout << "NB DISTANCES PER CORE: " << nbDistancePerThreads << endl;
+
+		u_int64_t nbDistances = 0;
+
+		size_t nbRunnedThreads = 0;
+		size_t i=0;
+		size_t j=0;
+
+
+		//_computeDistanceManagers.push_back();
+		thread* t = new thread(&SimkaMinDistanceAlgorithm::computeDistances_rectanglular_unsynch, this, i, j, nbDistancePerThreads, nbRunnedThreads);
+		_threads.push_back(t);
+		//computeDistances_unsynch(i, j, nbDistancePerThreads, true);
+
+		bool done = false;
+		nbRunnedThreads += 1;
+		for(i=0; i<_nbDataset1; i++){
+
+			if(done) break;
+
+			for(j=0; j<_nbDataset2; j++){
+
+				if(done) break;
+
+				if(nbDistances >= nbDistancePerThreads){
+					//cout << i << " " << j << endl;
+
+					//cout << "lol: " << nbRunnedThreads << " " << nbDistancesRemaining << endl;
+					if(nbRunnedThreads == _nbCores-1){ //Last threads compute remaining distances
+						//cout << " LOL " << endl;);
+						thread* t = new thread(&SimkaMinDistanceAlgorithm::computeDistances_rectanglular_unsynch, this, i, j, nbDistancePerThreads+nbDistancesRemaining, nbRunnedThreads);
+						_threads.push_back(t);
+						//computeDistances_unsynch(i, j, nbDistancePerThreads+nbDistancesRemaining, true);
+						done = true;
+						//nbDistances -= nbDistancesRemaining;
+					}
+					else{
+						thread* t = new thread(&SimkaMinDistanceAlgorithm::computeDistances_rectanglular_unsynch, this, i, j, nbDistancePerThreads, nbRunnedThreads);
+						_threads.push_back(t);
+						//computeDistances_unsynch(i, j, nbDistancePerThreads, true);
+					}
+
+					nbRunnedThreads += 1;
+					nbDistances = 0;
+				}
+				nbDistances += 1;
+			}
+		}
+
 	}
 
 	void computeDistances_unsynch(size_t si, size_t sj, size_t nbDistancesToCompute, size_t id){
@@ -598,6 +667,7 @@ public:
 		u_int64_t nbComputedDistances = 0;
 
 		for(size_t j=sj; j<_nbDataset1; j++){
+			//cout << j << endl;
 			//cout << si << " " << j << endl;
 			computeDistanceManager.computeDistance_unsynch(si, j);
 			nbComputedDistances += 1;
@@ -607,6 +677,7 @@ public:
 
 		if(nbComputedDistances < nbDistancesToCompute){
 
+			//cout << "lala2" << endl;
 			for(size_t i=si; i<_nbDataset1; i++){
 				for(size_t j=i+1; j<_nbDataset1; j++){
 					//cout << i << " " << j << endl;
@@ -622,7 +693,41 @@ public:
 
 	}
 
+	void computeDistances_rectanglular_unsynch(size_t si, size_t sj, size_t nbDistancesToCompute, size_t id){
 
+		//isSymetrical set to false
+		ComputeDistanceManager computeDistanceManager(_inputFilename1, _inputFilename2, _sketchSize, _distanceMatrixJaccard, _distanceMatrixBrayCurtis, false, _nbDataset1, _nbDataset2, _mutex);
+
+		_mutex.lock();
+		cout << "------------------- " << si << " " << sj << endl;
+		_mutex.unlock();
+
+		u_int64_t nbComputedDistances = 0;
+
+		for(size_t j=sj; j<_nbDataset2; j++){
+			//cout << si << " " << j << endl;
+			computeDistanceManager.computeDistance_unsynch(si, j);
+			nbComputedDistances += 1;
+			if(nbComputedDistances >= nbDistancesToCompute) break;
+		}
+		si += 1;
+
+		if(nbComputedDistances < nbDistancesToCompute){
+
+			for(size_t i=si; i<_nbDataset1; i++){
+				for(size_t j=0; j<_nbDataset2; j++){ // (0 instead of i+1)
+					//cout << i << " " << j << endl;
+					computeDistanceManager.computeDistance_unsynch(i, j);
+					nbComputedDistances += 1;
+					if(nbComputedDistances >= nbDistancesToCompute) break;
+				}
+				if(nbComputedDistances >= nbDistancesToCompute) break;
+			}
+		}
+
+
+
+	}
 
 };
 
