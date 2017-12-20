@@ -28,6 +28,7 @@ public:
 	//u_int64_t _bufferSize;
 
 	KmerAndCountType* _buffer;
+	u_int64_t _cardinality;
 
 	KmerSpectrumIterator(const string& filename, size_t sketchSize){
 		_buffer = 0;
@@ -52,8 +53,12 @@ public:
 
 	void first(size_t datasetId){
 		//if(_buffer){FREE (_buffer);}
-		u_int64_t pos = KMER_SPECTRUM_HEADER_SIZE + (datasetId*_sketchSize*sizeof(KmerAndCountType));
+		u_int64_t pos = KMER_SPECTRUM_HEADER_SIZE + (datasetId*(_sketchSize*sizeof(KmerAndCountType)+8));
 		fseek(_is, pos, SEEK_SET);
+
+		//file.read(, sizeof(_cardinality));
+		fread((char*)(&_cardinality), sizeof(_cardinality), 1, _is);
+
 		_nbItems = 0;
 		//cout << sizeof(KmerAndCountType) << endl;
 		//_kmerSpectrumFile.read((char*)_buffer, 10*_sketchSize);
@@ -193,13 +198,14 @@ public:
 
 		//---------------------------------------------------
 
+
 		long double Ma = 0;
 		long double Mb = 0;
 		long double sigma_bb_sum = 0;
 		long double sigma_ab_sum = 0;
 
 		long double n = _nbDistinctKmers;
-		Ma = (_nbSharedKmers) / (long double) n;
+		Ma = _nbSharedKmers / (long double) n;
 		Mb = _nbKmers / (long double) n;
 
 
@@ -253,8 +259,8 @@ public:
 		}
 
 
-		//---------------------------------------------------
 
+		//---------------------------------------------------
 
 
 
@@ -282,8 +288,13 @@ public:
 		//---------------------------------------------------
 
 
-		//long double C = ((long double)(N-n)) / ((long double)(N-1));
-		long double C = 1; //0.99;
+		u_int64_t card_A = _kmerSpectrumiterator1->_cardinality;
+		u_int64_t card_B = _kmerSpectrumiterator2->_cardinality;
+		long double jac = 1-jaccard;
+		u_int64_t card_intersection_AB = (jac*(card_A+card_B)) / (1+jac);
+		u_int64_t N = card_A + card_B - card_intersection_AB;
+		long double C = ((long double)(N-n)) / ((long double)(N-1));
+		//long double C = 1; //0.99;
 
 		braycurtis = (long double) _nbSharedKmers / (long double) _nbKmers;
 		long double sigma_bb = sigma_bb_sum / (long double) n;
@@ -301,6 +312,7 @@ public:
 
 		_mutex.lock();
 		//cout << sigma_bb_sum << " " << sigma_ab_sum << " " << Mb2 << endl;
+		cout << C << endl;
 		cout << braycurtis  << "  " << braycurtis_J1 << "  " << braycurtis_J2 << endl;
 		_mutex.unlock();
 
@@ -311,7 +323,7 @@ public:
 		braycurtis_J2 = 1 - 2*braycurtis_J2;
 
 
-		//braycurtis = braycurtis_J2;
+		braycurtis = braycurtis_J1;
 		//////---------------------------------------------------
 
 

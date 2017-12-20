@@ -10,6 +10,7 @@
 
 
 #include <unordered_map>
+#include <unordered_set>
 #include <gatb/gatb_core.hpp>
 
 #define KMER_SPECTRUM_HEADER_SIZE (1+4+4+4) //At the begining of the .kmers file we store the size of the kmer (on 1 byte), the sketch size (on 4 bytes), the seed used by Murmurhash3 (4 bytes), the number of datasets in the sketch file (4 bytes)
@@ -130,7 +131,7 @@ public:
 	}
 
 	static u_int64_t getFilePosition_sketchIds(u_int32_t nbDatasets, u_int32_t sketchSize){
-		u_int64_t filePos = KMER_SPECTRUM_HEADER_SIZE + (nbDatasets * sketchSize * sizeof(KmerAndCountType));
+		u_int64_t filePos = KMER_SPECTRUM_HEADER_SIZE + (nbDatasets * (sketchSize * sizeof(KmerAndCountType) + 8)); //cardinality
 		return filePos;
 	}
 

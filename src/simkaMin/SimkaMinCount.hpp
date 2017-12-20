@@ -130,8 +130,10 @@ public:
 	//ofstream _outputFile;
 	bool _useAbundanceFilter;
 
-	SelectKmersCommand(size_t kmerSize, size_t sketchSize, u_int32_t seed, Bloom<KmerType>* bloomFilter, vector<u_int64_t>& kmers, KmerCountDictionaryType& kmerCounts, bool useAbundanceFilter)
-	: _model(kmerSize), _itKmer(_model), _bloomFilter(bloomFilter), _hashedKmers(kmers), _kmerCounts(kmerCounts)
+	unordered_set<u_int64_t>& _cardinalityComputer;
+
+	SelectKmersCommand(size_t kmerSize, size_t sketchSize, u_int32_t seed, Bloom<KmerType>* bloomFilter, vector<u_int64_t>& kmers, KmerCountDictionaryType& kmerCounts, bool useAbundanceFilter, unordered_set<u_int64_t>& cardinalityComputer)
+	: _model(kmerSize), _itKmer(_model), _bloomFilter(bloomFilter), _hashedKmers(kmers), _kmerCounts(kmerCounts), _cardinalityComputer(cardinalityComputer)
 	{
 		_kmerSize = kmerSize;
 		_sketchSize = sketchSize;
@@ -142,7 +144,7 @@ public:
 	}
 
 	SelectKmersCommand(const SelectKmersCommand& copy)
-	: _model(copy._kmerSize), _itKmer(_model), _bloomFilter(copy._bloomFilter), _hashedKmers(copy._hashedKmers), _kmerCounts(copy._kmerCounts)
+	: _model(copy._kmerSize), _itKmer(_model), _bloomFilter(copy._bloomFilter), _hashedKmers(copy._hashedKmers), _kmerCounts(copy._kmerCounts), _cardinalityComputer(copy._cardinalityComputer)
 	{
 		_kmerSize = copy._kmerSize;
 		_sketchSize = copy._sketchSize;
@@ -235,6 +237,8 @@ public:
 			u_int64_t kmerHashed;
 			MurmurHash3_x64_128 ((const char*)&kmerValue, sizeof(kmerValue), _seed, &_hash_otpt);
 			kmerHashed = _hash_otpt[0];
+
+			_cardinalityComputer.insert(kmerHashed);
 
 			//cout << kmerStr << ": " << kmerHashed << endl;
 			//todo: verifier dabord si le kmer peut etre insérer, plus rapide que els accès au table de hachage (bloom et selected)
@@ -1131,11 +1135,13 @@ public:
 		//unordered_map<u_int64_t, KmerCountType> kmerCounts;
 
 
+		unordered_set<u_int64_t> cardinalityComputer;
+
 		vector<u_int64_t> kmers(_sketchSize); //TODO only used for reversing kmers not really optimized...
 		KmerCountDictionaryType _kmerCounts;
 
 		{
-			SelectKmersCommand<span> command(_kmerSize, _sketchSize, _seed, bloomFilter, kmers, _kmerCounts, _useAbundanceFilter);
+			SelectKmersCommand<span> command(_kmerSize, _sketchSize, _seed, bloomFilter, kmers, _kmerCounts, _useAbundanceFilter, cardinalityComputer);
 			dispatcher->iterate (itSeq, command, 1000);
 		}
 
@@ -1184,9 +1190,15 @@ public:
 
 
 
-		u_int64_t filePos = (datasetId * _sketchSize * sizeof(KmerAndCountType)) + KMER_SPECTRUM_HEADER_SIZE;
-		//cout << "DATASTE ID: " << datasetId << "    " << filePos << endl;
+		u_int64_t filePos = (datasetId * (_sketchSize * sizeof(KmerAndCountType) + 8)) + KMER_SPECTRUM_HEADER_SIZE;
 		_outputFile.seekp(filePos);
+
+		u_int64_t cardinality = cardinalityComputer.size();
+		_outputFile.write((const char*)&cardinality, sizeof(cardinality));
+		cardinalityComputer.clear();
+
+
+		//cout << "DATASTE ID: " << datasetId << "    " << filePos << endl;
 
 
 		//_kmerCountSorter.pop(); //Discard greater element because queue size is always equal to (_sketchSize + 1) because of an optimization
@@ -1211,6 +1223,7 @@ public:
 			//_partitionWriter->insert(_minHashKmers[i], _datasetIDbin, _minHashKmersCounts[i] );
 			//cout << _minHashKmers[i] << " " << _minHashKmersCounts[i] << endl;
 		}
+
 
 		System::file().remove(inputFilename);
 
