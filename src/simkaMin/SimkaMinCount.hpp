@@ -28,6 +28,7 @@
 #include "SimkaCommons.hpp"
 #include "MurmurHash3.h"
 #include <mutex>
+#include "hyperloglog/hll.hpp"
 //#include "../../thirdparty/KMC/kmc_api/kmc_file.h"
 //#include "../../thirdparty/KMC/kmc_api/kmer_defs.h"
 //#include "../utils/MurmurHash3.h"
@@ -131,9 +132,10 @@ public:
 	bool _useAbundanceFilter;
 
 	unordered_set<u_int64_t>& _cardinalityComputer;
+	Hll<u_int64_t>& _hll;
 
-	SelectKmersCommand(size_t kmerSize, size_t sketchSize, u_int32_t seed, Bloom<KmerType>* bloomFilter, vector<u_int64_t>& kmers, KmerCountDictionaryType& kmerCounts, bool useAbundanceFilter, unordered_set<u_int64_t>& cardinalityComputer)
-	: _model(kmerSize), _itKmer(_model), _bloomFilter(bloomFilter), _hashedKmers(kmers), _kmerCounts(kmerCounts), _cardinalityComputer(cardinalityComputer)
+	SelectKmersCommand(size_t kmerSize, size_t sketchSize, u_int32_t seed, Bloom<KmerType>* bloomFilter, vector<u_int64_t>& kmers, KmerCountDictionaryType& kmerCounts, bool useAbundanceFilter, unordered_set<u_int64_t>& cardinalityComputer, Hll<u_int64_t>& hll)
+	: _model(kmerSize), _itKmer(_model), _bloomFilter(bloomFilter), _hashedKmers(kmers), _kmerCounts(kmerCounts), _cardinalityComputer(cardinalityComputer), _hll(hll)
 	{
 		_kmerSize = kmerSize;
 		_sketchSize = sketchSize;
@@ -144,7 +146,7 @@ public:
 	}
 
 	SelectKmersCommand(const SelectKmersCommand& copy)
-	: _model(copy._kmerSize), _itKmer(_model), _bloomFilter(copy._bloomFilter), _hashedKmers(copy._hashedKmers), _kmerCounts(copy._kmerCounts), _cardinalityComputer(copy._cardinalityComputer)
+	: _model(copy._kmerSize), _itKmer(_model), _bloomFilter(copy._bloomFilter), _hashedKmers(copy._hashedKmers), _kmerCounts(copy._kmerCounts), _cardinalityComputer(copy._cardinalityComputer), _hll(copy._hll)
 	{
 		_kmerSize = copy._kmerSize;
 		_sketchSize = copy._sketchSize;
@@ -238,7 +240,8 @@ public:
 			MurmurHash3_x64_128 ((const char*)&kmerValue, sizeof(kmerValue), _seed, &_hash_otpt);
 			kmerHashed = _hash_otpt[0];
 
-			_cardinalityComputer.insert(kmerHashed);
+			_hll.add(kmerHashed);
+			//_cardinalityComputer.insert(kmerHashed);
 
 			//cout << kmerStr << ": " << kmerHashed << endl;
 			//todo: verifier dabord si le kmer peut etre insérer, plus rapide que els accès au table de hachage (bloom et selected)
@@ -1136,12 +1139,13 @@ public:
 
 
 		unordered_set<u_int64_t> cardinalityComputer;
+		Hll<u_int64_t> hll(16);
 
 		vector<u_int64_t> kmers(_sketchSize); //TODO only used for reversing kmers not really optimized...
 		KmerCountDictionaryType _kmerCounts;
 
 		{
-			SelectKmersCommand<span> command(_kmerSize, _sketchSize, _seed, bloomFilter, kmers, _kmerCounts, _useAbundanceFilter, cardinalityComputer);
+			SelectKmersCommand<span> command(_kmerSize, _sketchSize, _seed, bloomFilter, kmers, _kmerCounts, _useAbundanceFilter, cardinalityComputer, hll);
 			dispatcher->iterate (itSeq, command, 1000);
 		}
 
@@ -1193,7 +1197,11 @@ public:
 		u_int64_t filePos = (datasetId * (_sketchSize * sizeof(KmerAndCountType) + 8)) + KMER_SPECTRUM_HEADER_SIZE;
 		_outputFile.seekp(filePos);
 
-		u_int64_t cardinality = cardinalityComputer.size();
+		//u_int64_t cardinality = cardinalityComputer.size();
+		//cout << cardinality << endl;
+		//cout << hll.approximateCountDistinct() << endl;
+		u_int64_t cardinality = hll.approximateCountDistinct();
+		cout << cardinality << endl;
 		_outputFile.write((const char*)&cardinality, sizeof(cardinality));
 		cardinalityComputer.clear();
 

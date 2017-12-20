@@ -72,7 +72,7 @@ ENDFOREACH ()
 
 # we define the files to be compiled
 file (GLOB_RECURSE  ProjectFiles  src/core/Simka*  ${PROJECT_BINARY_DIR}/src/core/template/*.cpp)
-file (GLOB_RECURSE  SimkaMinFiles  src/simkaMin/MurmurHash3.h src/simkaMin/MurmurHash3.cpp src/simkaMin/*.hpp)#   ${PROJECT_BINARY_DIR}/src/core/template/*.cpp)
+file (GLOB_RECURSE  SimkaMinFiles  src/simkaMin/MurmurHash3.h src/simkaMin/MurmurHash3.cpp  src/simkaMin/hyperloglog/*.hpp src/simkaMin/hyperloglog/*.cpp  src/simkaMin/*.hpp)#   ${PROJECT_BINARY_DIR}/src/core/template/*.cpp)
 
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 set(PROJECT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/bin)
