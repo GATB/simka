@@ -147,6 +147,11 @@ public:
 	void computeDistance_unsynch(size_t i, size_t j){
 
 
+		long double Ma = 0;
+		long double Mb = 0;
+		long double sigma_b_2_sum = 0;
+		long double sigma_ab_sum = 0;
+
 		_nbDistinctSharedKmers = 0;
 		_nbDistinctKmers = 0;
 		_nbKmers = 0;
@@ -176,6 +181,8 @@ public:
 				_nbDistinctKmers += 1;
 				_nbKmers += count1;
 
+				sigma_b_2_sum += count1;
+
 				if(_kmerSpectrumiterator1->isDone()) break;
 				_kmerSpectrumiterator1->next(kmer1, count1);
 			}
@@ -190,6 +197,69 @@ public:
 				_kmerSpectrumiterator2->next(kmer2, count2);
 			}
 		}
+
+
+		Ma = _nbSharedKmers / (long double) _nbDistinctKmers;
+		Mb = _nbKmers / (long double) _nbDistinctKmers;
+
+
+
+
+
+		//---------------------------------------------------
+
+		_kmerSpectrumiterator1->first(i);
+		_kmerSpectrumiterator2->first(j);
+
+		_kmerSpectrumiterator1->next(kmer1, count1);
+		_kmerSpectrumiterator2->next(kmer2, count2);
+
+		while(_nbDistinctKmers < _sketchSize){ //_nbDistinctKmers < _sketchSize && (!_kmerSpectrumiterator1->isDone()) && (!_kmerSpectrumiterator2->isDone()) ){
+
+
+
+			//cout << kmer1 << " " << kmer2 << endl;
+			if(kmer1 > kmer2){
+				//_nbDistinctKmers += 1;
+				//_nbKmers += count2;
+
+				sigma_b_2_sum += pow(count2-Mb, 2);
+				sigma_ab_sum += (-Ma) * (count2-Mb);
+
+				if(_kmerSpectrumiterator2->isDone()) break;
+				_kmerSpectrumiterator2->next(kmer2, count2);
+			}
+			else if(kmer1 < kmer2){
+				//_nbDistinctKmers += 1;
+				//_nbKmers += count1;
+
+				sigma_b_2_sum += pow(count1-Mb, 2);
+				sigma_ab_sum += (-Ma) * (count1-Mb);
+
+				if(_kmerSpectrumiterator1->isDone()) break;
+				_kmerSpectrumiterator1->next(kmer1, count1);
+			}
+			else{
+				//_nbDistinctKmers += 1;
+				//_nbKmers += count1 + count2;
+				//_nbDistinctSharedKmers += 1;
+				//_nbSharedKmers += min(count1, count2);
+				sigma_b_2_sum += pow(count1+count2-Mb, 2);
+				sigma_ab_sum += (min(count1, count2)-Ma) * (count1+count2-Mb);
+
+				if(_kmerSpectrumiterator2->isDone() || _kmerSpectrumiterator1->isDone()) break;
+				_kmerSpectrumiterator1->next(kmer1, count1);
+				_kmerSpectrumiterator2->next(kmer2, count2);
+			}
+		}
+
+
+		//---------------------------------------------------
+
+
+
+
+
 
 		DistanceValueType jaccard;
 		DistanceValueType braycurtis;
@@ -209,9 +279,32 @@ public:
 		}
 
 
-		//_mutex.lock();
-		//cout << i << " " << j << " " << braycurtis << endl;
-		//_mutex.unlock();
+
+		//---------------------------------------------------
+
+		//long double C = ((long double)(N-n)) / ((long double)(N-1));
+		long double C = 0.999;
+
+		braycurtis = (long double) _nbSharedKmers / (long double) _nbKmers;
+		long double sigma_b_2 = sigma_b_2_sum / (long double) _nbDistinctKmers;
+		long double sigma_ab = sigma_ab_sum / (long double) _nbDistinctKmers;
+
+		long double braycurtis_J1 = braycurtis - C/_nbKmers * (braycurtis * sigma_b_2 - sigma_ab) / pow(Mb, 2);
+		_mutex.lock();
+		cout << braycurtis  << "  " << braycurtis_J1 << endl;
+		_mutex.unlock();
+
+		//---------------------------------------------------
+
+
+
+
+
+
+
+
+
+
 
 		_jaccardDistances.push_back(PairwiseDistance(i, j, jaccard));
 		_braycurtisDistances.push_back(PairwiseDistance(i, j, braycurtis));
