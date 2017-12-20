@@ -5,6 +5,7 @@
 #define _HLL_H_
 
 
+
 struct HLLHdr {
   char magic[2] = {'H','L'};
   char format;
