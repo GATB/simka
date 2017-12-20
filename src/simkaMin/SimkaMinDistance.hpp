@@ -146,12 +146,6 @@ public:
 
 	void computeDistance_unsynch(size_t i, size_t j){
 
-
-		long double Ma = 0;
-		long double Mb = 0;
-		long double sigma_b_2_sum = 0;
-		long double sigma_ab_sum = 0;
-
 		_nbDistinctSharedKmers = 0;
 		_nbDistinctKmers = 0;
 		_nbKmers = 0;
@@ -181,8 +175,6 @@ public:
 				_nbDistinctKmers += 1;
 				_nbKmers += count1;
 
-				sigma_b_2_sum += count1;
-
 				if(_kmerSpectrumiterator1->isDone()) break;
 				_kmerSpectrumiterator1->next(kmer1, count1);
 			}
@@ -199,14 +191,21 @@ public:
 		}
 
 
-		Ma = _nbSharedKmers / (long double) _nbDistinctKmers;
-		Mb = _nbKmers / (long double) _nbDistinctKmers;
-
-
-
-
-
 		//---------------------------------------------------
+
+		long double Ma = 0;
+		long double Mb = 0;
+		long double sigma_bb_sum = 0;
+		long double sigma_ab_sum = 0;
+
+		long double n = _nbDistinctKmers;
+		Ma = (_nbSharedKmers) / (long double) n;
+		Mb = _nbKmers / (long double) n;
+
+
+
+
+
 
 		_kmerSpectrumiterator1->first(i);
 		_kmerSpectrumiterator2->first(j);
@@ -214,37 +213,37 @@ public:
 		_kmerSpectrumiterator1->next(kmer1, count1);
 		_kmerSpectrumiterator2->next(kmer2, count2);
 
+		_nbDistinctKmers = 0;
 		while(_nbDistinctKmers < _sketchSize){ //_nbDistinctKmers < _sketchSize && (!_kmerSpectrumiterator1->isDone()) && (!_kmerSpectrumiterator2->isDone()) ){
 
 
 
-			//cout << kmer1 << " " << kmer2 << endl;
 			if(kmer1 > kmer2){
-				//_nbDistinctKmers += 1;
+				_nbDistinctKmers += 1;
 				//_nbKmers += count2;
 
-				sigma_b_2_sum += pow(count2-Mb, 2);
+				sigma_bb_sum += pow(count2-Mb, 2);
 				sigma_ab_sum += (-Ma) * (count2-Mb);
 
 				if(_kmerSpectrumiterator2->isDone()) break;
 				_kmerSpectrumiterator2->next(kmer2, count2);
 			}
 			else if(kmer1 < kmer2){
-				//_nbDistinctKmers += 1;
+				_nbDistinctKmers += 1;
 				//_nbKmers += count1;
 
-				sigma_b_2_sum += pow(count1-Mb, 2);
+				sigma_bb_sum += pow(count1-Mb, 2);
 				sigma_ab_sum += (-Ma) * (count1-Mb);
 
 				if(_kmerSpectrumiterator1->isDone()) break;
 				_kmerSpectrumiterator1->next(kmer1, count1);
 			}
 			else{
-				//_nbDistinctKmers += 1;
+				_nbDistinctKmers += 1;
 				//_nbKmers += count1 + count2;
 				//_nbDistinctSharedKmers += 1;
 				//_nbSharedKmers += min(count1, count2);
-				sigma_b_2_sum += pow(count1+count2-Mb, 2);
+				sigma_bb_sum += pow(count1+count2-Mb, 2);
 				sigma_ab_sum += (min(count1, count2)-Ma) * (count1+count2-Mb);
 
 				if(_kmerSpectrumiterator2->isDone() || _kmerSpectrumiterator1->isDone()) break;
@@ -282,19 +281,38 @@ public:
 
 		//---------------------------------------------------
 
+
 		//long double C = ((long double)(N-n)) / ((long double)(N-1));
-		long double C = 0.999;
+		long double C = 1; //0.99;
 
 		braycurtis = (long double) _nbSharedKmers / (long double) _nbKmers;
-		long double sigma_b_2 = sigma_b_2_sum / (long double) _nbDistinctKmers;
-		long double sigma_ab = sigma_ab_sum / (long double) _nbDistinctKmers;
+		long double sigma_bb = sigma_bb_sum / (long double) n;
+		long double sigma_ab = sigma_ab_sum / (long double) n;
+		long double Mb2 = pow(Mb, 2);
 
-		long double braycurtis_J1 = braycurtis - C/_nbKmers * (braycurtis * sigma_b_2 - sigma_ab) / pow(Mb, 2);
+
+		//J1[s] = J0[s] - C/n * (J0[s] * s.bb - s.ab) / Bbar[s]^2
+		long double braycurtis_J1 = braycurtis - C/n * (braycurtis * sigma_bb - sigma_ab) / Mb2;
+
+
+		//J2[s] = (J0[s] + C/n * s.ab/Bbar[s]^2) / (1 + C/n * s.bb/Bbar[s]^2)
+		long double braycurtis_J2 = (braycurtis + C/n * sigma_ab/Mb2) / (1 + C/n * sigma_bb/Mb2);
+
+
 		_mutex.lock();
-		cout << braycurtis  << "  " << braycurtis_J1 << endl;
+		//cout << sigma_bb_sum << " " << sigma_ab_sum << " " << Mb2 << endl;
+		cout << braycurtis  << "  " << braycurtis_J1 << "  " << braycurtis_J2 << endl;
 		_mutex.unlock();
 
-		//---------------------------------------------------
+
+
+		braycurtis = 1 - 2*braycurtis;
+		braycurtis_J1 = 1 - 2*braycurtis_J1;
+		braycurtis_J2 = 1 - 2*braycurtis_J2;
+
+
+		//braycurtis = braycurtis_J2;
+		//////---------------------------------------------------
 
 
 
