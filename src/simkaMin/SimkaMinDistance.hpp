@@ -90,6 +90,8 @@ public:
 
 	ofstream& _distanceMatrixJaccard;
 	ofstream& _distanceMatrixBrayCurtis;
+	ofstream& _distanceMatrixBrayCurtis_J1;
+	ofstream& _distanceMatrixBrayCurtis_J2;
 
 	size_t _sketchSize;
 	KmerSpectrumIterator* _kmerSpectrumiterator1;
@@ -106,10 +108,12 @@ public:
 
 	vector<PairwiseDistance> _jaccardDistances;
 	vector<PairwiseDistance> _braycurtisDistances;
+	vector<PairwiseDistance> _braycurtisDistances_J1;
+	vector<PairwiseDistance> _braycurtisDistances_J2;
 	mutex& _mutex;
 
-	ComputeDistanceManager(const string& filename1, const string& filename2, size_t sketchSize, ofstream& distanceMatrixJaccard, ofstream& distanceMatrixBrayCurtis, bool isSymmetrical, size_t nbDatasets1, size_t nbDatasets2, mutex& mutex)
-	: _distanceMatrixJaccard(distanceMatrixJaccard), _distanceMatrixBrayCurtis(distanceMatrixBrayCurtis), _mutex(mutex)
+	ComputeDistanceManager(const string& filename1, const string& filename2, size_t sketchSize, ofstream& distanceMatrixJaccard, ofstream& distanceMatrixBrayCurtis, ofstream& distanceMatrixBrayCurtis_J1, ofstream& distanceMatrixBrayCurtis_J2, bool isSymmetrical, size_t nbDatasets1, size_t nbDatasets2, mutex& mutex)
+	: _distanceMatrixJaccard(distanceMatrixJaccard), _distanceMatrixBrayCurtis(distanceMatrixBrayCurtis), _distanceMatrixBrayCurtis_J1(distanceMatrixBrayCurtis_J1), _distanceMatrixBrayCurtis_J2(distanceMatrixBrayCurtis_J2), _mutex(mutex)
 	{
 		_sketchSize = sketchSize;
 		_kmerSpectrumiterator1 = new KmerSpectrumIterator(filename1, _sketchSize);
@@ -128,23 +132,35 @@ public:
 			for(size_t i=0; i<_jaccardDistances.size() ; i++){
 				PairwiseDistance& jaccard = _jaccardDistances[i];
 				PairwiseDistance& braycurtis = _braycurtisDistances[i];
+				PairwiseDistance& braycurtis_J1 = _braycurtisDistances_J1[i];
+				PairwiseDistance& braycurtis_J2 = _braycurtisDistances_J2[i];
 
 				u_int64_t pos = jaccard._i*_nbDatasets2*sizeof(DistanceValueType) + (jaccard._j*sizeof(DistanceValueType));
 				_distanceMatrixJaccard.seekp(pos);
 				_distanceMatrixBrayCurtis.seekp(pos);
+				_distanceMatrixBrayCurtis_J1.seekp(pos);
+				_distanceMatrixBrayCurtis_J2.seekp(pos);
 				_distanceMatrixJaccard.write((const char*)&jaccard._distance, sizeof(jaccard._distance));
 				_distanceMatrixBrayCurtis.write((const char*)&braycurtis._distance, sizeof(braycurtis._distance));
+				_distanceMatrixBrayCurtis_J1.write((const char*)&braycurtis_J1._distance, sizeof(braycurtis_J1._distance));
+				_distanceMatrixBrayCurtis_J2.write((const char*)&braycurtis_J2._distance, sizeof(braycurtis_J2._distance));
 
 				if(_isSymmetrical){
 					u_int64_t pos = jaccard._j*_nbDatasets1*sizeof(DistanceValueType) + (jaccard._i*sizeof(DistanceValueType));
 					_distanceMatrixJaccard.seekp(pos);
 					_distanceMatrixBrayCurtis.seekp(pos);
+					_distanceMatrixBrayCurtis_J1.seekp(pos);
+					_distanceMatrixBrayCurtis_J2.seekp(pos);
 					_distanceMatrixJaccard.write((const char*)&jaccard._distance, sizeof(jaccard._distance));
 					_distanceMatrixBrayCurtis.write((const char*)&braycurtis._distance, sizeof(braycurtis._distance));
+					_distanceMatrixBrayCurtis_J1.write((const char*)&braycurtis_J1._distance, sizeof(braycurtis_J1._distance));
+					_distanceMatrixBrayCurtis_J2.write((const char*)&braycurtis_J2._distance, sizeof(braycurtis_J2._distance));
 				}
 			}
 			_mutex.unlock();
 			_braycurtisDistances.clear();
+			_braycurtisDistances_J1.clear();
+			_braycurtisDistances_J2.clear();
 			_jaccardDistances.clear();
 		}
 	}
@@ -323,7 +339,7 @@ public:
 		braycurtis_J2 = 1 - 2*braycurtis_J2;
 
 
-		braycurtis = braycurtis_J1;
+		//braycurtis = braycurtis_J1;
 		//////---------------------------------------------------
 
 
@@ -338,6 +354,8 @@ public:
 
 		_jaccardDistances.push_back(PairwiseDistance(i, j, jaccard));
 		_braycurtisDistances.push_back(PairwiseDistance(i, j, braycurtis));
+		_braycurtisDistances_J1.push_back(PairwiseDistance(i, j, braycurtis_J1));
+		_braycurtisDistances_J2.push_back(PairwiseDistance(i, j, braycurtis_J2));
 
 
 		if(_jaccardDistances.size() > 1000){
@@ -345,24 +363,36 @@ public:
 			for(size_t i=0; i<_jaccardDistances.size() ; i++){
 				PairwiseDistance& jaccard = _jaccardDistances[i];
 				PairwiseDistance& braycurtis = _braycurtisDistances[i];
+				PairwiseDistance& braycurtis_J1 = _braycurtisDistances_J1[i];
+				PairwiseDistance& braycurtis_J2 = _braycurtisDistances_J2[i];
 
 				u_int64_t pos = jaccard._i*_nbDatasets1*sizeof(DistanceValueType) + (jaccard._j*sizeof(DistanceValueType));
 				_distanceMatrixJaccard.seekp(pos);
 				_distanceMatrixBrayCurtis.seekp(pos);
+				_distanceMatrixBrayCurtis_J1.seekp(pos);
+				_distanceMatrixBrayCurtis_J2.seekp(pos);
 				_distanceMatrixJaccard.write((const char*)&jaccard._distance, sizeof(jaccard._distance));
 				_distanceMatrixBrayCurtis.write((const char*)&braycurtis._distance, sizeof(braycurtis._distance));
+				_distanceMatrixBrayCurtis_J1.write((const char*)&braycurtis_J1._distance, sizeof(braycurtis_J1._distance));
+				_distanceMatrixBrayCurtis_J2.write((const char*)&braycurtis_J2._distance, sizeof(braycurtis_J2._distance));
 
 				if(_isSymmetrical){
 					u_int64_t pos = jaccard._j*_nbDatasets1*sizeof(DistanceValueType) + (jaccard._i*sizeof(DistanceValueType));
 					_distanceMatrixJaccard.seekp(pos);
 					_distanceMatrixBrayCurtis.seekp(pos);
+					_distanceMatrixBrayCurtis_J1.seekp(pos);
+					_distanceMatrixBrayCurtis_J2.seekp(pos);
 					_distanceMatrixJaccard.write((const char*)&jaccard._distance, sizeof(jaccard._distance));
 					_distanceMatrixBrayCurtis.write((const char*)&braycurtis._distance, sizeof(braycurtis._distance));
+					_distanceMatrixBrayCurtis_J1.write((const char*)&braycurtis_J1._distance, sizeof(braycurtis_J1._distance));
+					_distanceMatrixBrayCurtis_J2.write((const char*)&braycurtis_J2._distance, sizeof(braycurtis_J2._distance));
 				}
 			}
 			_mutex.unlock();
 			_braycurtisDistances.clear();
 			_jaccardDistances.clear();
+			_braycurtisDistances_J1.clear();
+			_braycurtisDistances_J2.clear();
 		}
 
 		//cout << "NB DISTINCT KMERS: " << _nbDistinctKmers << endl;
@@ -460,6 +490,8 @@ public:
 
 	ofstream _distanceMatrixJaccard;
 	ofstream _distanceMatrixBrayCurtis;
+	ofstream _distanceMatrixBrayCurtis_J1;
+	ofstream _distanceMatrixBrayCurtis_J2;
 
 	mutex _mutex;
 
@@ -566,6 +598,8 @@ public:
 
 		_distanceMatrixJaccard.open((_outputDir + "/mat_presenceAbsence_jaccard.bin").c_str(), ios::binary);
 		_distanceMatrixBrayCurtis.open((_outputDir + "/mat_abundance_braycurtis.bin").c_str(), ios::binary);
+		_distanceMatrixBrayCurtis_J1.open((_outputDir + "/mat_abundance_braycurtis_J1.bin").c_str(), ios::binary);
+		_distanceMatrixBrayCurtis_J2.open((_outputDir + "/mat_abundance_braycurtis_J2.bin").c_str(), ios::binary);
 
 		bool isSymmetrical = false;
 		if(_inputFilename1 == _inputFilename2){
@@ -589,15 +623,21 @@ public:
 				u_int64_t pos = i*_nbDataset1*sizeof(DistanceValueType) + (j*sizeof(DistanceValueType));
 				_distanceMatrixJaccard.seekp(pos);
 				_distanceMatrixBrayCurtis.seekp(pos);
+				_distanceMatrixBrayCurtis_J1.seekp(pos);
+				_distanceMatrixBrayCurtis_J2.seekp(pos);
 				DistanceValueType nullDist = 0;
 				_distanceMatrixJaccard.write((const char*)&nullDist, sizeof(nullDist));
 				_distanceMatrixBrayCurtis.write((const char*)&nullDist, sizeof(nullDist));
+				_distanceMatrixBrayCurtis_J1.write((const char*)&nullDist, sizeof(nullDist));
+				_distanceMatrixBrayCurtis_J2.write((const char*)&nullDist, sizeof(nullDist));
 			}
 		}
 
 
 		_distanceMatrixJaccard.close();
 		_distanceMatrixBrayCurtis.close();
+		_distanceMatrixBrayCurtis_J1.close();
+		_distanceMatrixBrayCurtis_J2.close();
 
 		//string command = "cp " + string(_inputFilename1+".ids") + " " + _outputDir + "/matrix_infos.ids ";
 		//cout << command << endl;
@@ -784,7 +824,7 @@ public:
 
 	void computeDistances_unsynch(size_t si, size_t sj, size_t nbDistancesToCompute, size_t id){
 
-		ComputeDistanceManager computeDistanceManager(_inputFilename1, _inputFilename2, _sketchSize, _distanceMatrixJaccard, _distanceMatrixBrayCurtis, true, _nbDataset1, _nbDataset2, _mutex);
+		ComputeDistanceManager computeDistanceManager(_inputFilename1, _inputFilename2, _sketchSize, _distanceMatrixJaccard, _distanceMatrixBrayCurtis, _distanceMatrixBrayCurtis_J1, _distanceMatrixBrayCurtis_J2, true, _nbDataset1, _nbDataset2, _mutex);
 
 		cout << "-------------------" << endl;
 		u_int64_t nbComputedDistances = 0;
@@ -819,7 +859,7 @@ public:
 	void computeDistances_rectanglular_unsynch(size_t si, size_t sj, size_t nbDistancesToCompute, size_t id){
 
 		//isSymetrical set to false
-		ComputeDistanceManager computeDistanceManager(_inputFilename1, _inputFilename2, _sketchSize, _distanceMatrixJaccard, _distanceMatrixBrayCurtis, false, _nbDataset1, _nbDataset2, _mutex);
+		ComputeDistanceManager computeDistanceManager(_inputFilename1, _inputFilename2, _sketchSize, _distanceMatrixJaccard, _distanceMatrixBrayCurtis, _distanceMatrixBrayCurtis_J1, _distanceMatrixBrayCurtis_J2, false, _nbDataset1, _nbDataset2, _mutex);
 
 		_mutex.lock();
 		cout << "------------------- " << si << " " << sj << endl;
