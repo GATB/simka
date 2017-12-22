@@ -1,6 +1,6 @@
 
 #python create_heatmaps.py matrixFolder simkaRscriptFolder
-import os
+import os, struct, math
 from os import listdir
 from os.path import isfile, join, splitext
 import sys, argparse
@@ -110,6 +110,29 @@ args =  parser.parse_args()
 
 
 #-------------------------------------------------------------------------------------------------------------
+# Sketch reader
+#-------------------------------------------------------------------------------------------------------------
+def read_sketch_header(sketchFilename):
+    f = open(sketchFilename, mode='rb')
+    kmerSize = struct.unpack("B", f.read(1))[0] #B = unsigned char
+    sketchSize = struct.unpack("I", f.read(4))[0] #I = unsigned int
+    seed = struct.unpack("I", f.read(4))[0] #I = unsigned int
+    nbDatasets = struct.unpack("I", f.read(4))[0] #I = unsigned int
+    f.close()
+
+    #u_int8_t kmerSize_;
+    #file.read((char*)(&kmerSize_), sizeof(kmerSize_));
+    #u_int32_t sketchSize_;
+    #file.read((char*)(&sketchSize_), sizeof(sketchSize_));
+    #u_int32_t seed_;
+    #file.read((char*)(&seed_), sizeof(seed_));
+    #u_int32_t nbDatasets_;
+    #file.read((char*)(&nbDatasets_), sizeof(nbDatasets_));
+
+    return {"kmerSize": kmerSize, "sketchSize": sketchSize, "seed": seed, "nbDatasets": nbDatasets}
+
+
+#-------------------------------------------------------------------------------------------------------------
 # SimkaMin pipeline
 #-------------------------------------------------------------------------------------------------------------
 
@@ -135,11 +158,7 @@ sketchCommand += " -min-shannon-index " + args.min_shannon_index
 sketchCommand += " -nb-cores " + args.nb_cores
 sketchCommand += " -max-memory " + args.max_memory
 
-distanceCommand = args.bin + " distance "
-distanceCommand += " -in1 " + sketchFilename
-distanceCommand += " -in2 " + sketchFilename
-distanceCommand += " -out " + distanceOutputDir
-distanceCommand += " -nb-cores " + args.nb_cores
+
 
 exportCommand = args.bin + " export "
 exportCommand += " -in " + distanceOutputDir
@@ -159,13 +178,39 @@ if ret != 0: print("ERROR"); exit(1)
 print("\n\n#-----------------------------")
 print("# Computing distances")
 print("#-----------------------------\n")
-ret = os.system(distanceCommand)
-if ret != 0: print("ERROR"); exit(1)
+open(distanceOutputDir + "/mat_presenceAbsence_jaccard.bin", "wb").close()
+open(distanceOutputDir + "/mat_abundance_braycurtis.bin", "wb").close()
+sketch_header = read_sketch_header(sketchFilename)
+MAX_DATASETS_PROCESS = 100
+nbDatasetToProcess = sketch_header["nbDatasets"]
+def create_distance_command(i, j, n1, n2):
+    distanceCommand = args.bin + " distance "
+    distanceCommand += " -in1 " + sketchFilename
+    distanceCommand += " -in2 " + sketchFilename
+    distanceCommand += " -out " + distanceOutputDir
+    distanceCommand += " -nb-cores " + args.nb_cores
+    distanceCommand += " -start-i " + str(i)
+    distanceCommand += " -start-j " + str(j)
+    distanceCommand += " -n-i " + str(n1)
+    distanceCommand += " -n-j " + str(n2)
+    return distanceCommand
+
+step = int(math.ceil( float(nbDatasetToProcess) / float(MAX_DATASETS_PROCESS)))
+done = False
+for i in range(0, step):
+    n1 = min(MAX_DATASETS_PROCESS, nbDatasetToProcess-i*MAX_DATASETS_PROCESS)
+    for j in range(i, step):
+        n2 = min(MAX_DATASETS_PROCESS, nbDatasetToProcess-j*MAX_DATASETS_PROCESS)
+        distanceCommand = create_distance_command(i, j, n1, n2)
+        print distanceCommand
+        ret = os.system(distanceCommand)
+        if ret != 0: print("ERROR"); exit(1)
 
 
 print("\n\n#-----------------------------")
 print("# Exporting distances")
 print("#-----------------------------\n")
+#print exportCommand
 ret = os.system(exportCommand)
 if ret != 0: print("ERROR"); exit(1)
 

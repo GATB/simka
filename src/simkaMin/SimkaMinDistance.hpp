@@ -264,7 +264,8 @@ public:
 
 		//reprise: essayer d'écrire la partie symétrique sans acces random au disque
 
-		if(_isSymmetrical){
+		/*
+		//if(_isSymmetrical){
 			for(size_t i=0; i<_jaccardDistances_nb ; i++){
 
 				PairwiseDistance& jaccard = _jaccardDistances[i];
@@ -283,7 +284,8 @@ public:
 
 
 
-		}
+		//}
+		*/
 
 
 
@@ -389,6 +391,8 @@ public:
 	u_int64_t _progress_nbDistancesComputed;
 	//string _progress_text;
 
+	size_t _start_i, _start_j;
+	size_t _n_i, _n_j;
 
 	SimkaMinDistanceAlgorithm(IProperties* options):
 		Algorithm("simkaMinDistanceAlgorithm", -1, options)
@@ -423,6 +427,12 @@ public:
 		_inputFilename1 = _options->getStr(STR_SIMKA_URI_INPUT_1);
 		_inputFilename2 = _options->getStr(STR_SIMKA_URI_INPUT_2);
 		_outputDir = _options->getStr(STR_URI_OUTPUT);
+
+		_start_i = _options->getInt("-start-i");
+		_start_j = _options->getInt("-start-j");
+		_n_i = _options->getInt("-n-i");
+		_n_j = _options->getInt("-n-j");
+
 		//_kmerSize = _options->getInt(STR_KMER_SIZE);
 
 
@@ -451,6 +461,14 @@ public:
 		if(sketchSize1 != sketchSize2){
 			cout << "WARNING: both spectrums have different sizes (" << sketchSize1 << " and " << sketchSize2 << "), will use " << _sketchSize  << " k-mers" << endl;
 		}
+
+		if(_n_i == 0){
+			_n_i = _nbDataset1;
+		}
+		if(_n_j == 0){
+			_n_j = _nbDataset2;
+		}
+		//_nbdatasetsToProcess = min(_nbdatasetsToProcess, )
 		//cout << _nbDataset1 << " " << _nbDataset2 << endl;
 		//cout << _sketchSize << endl;
 		//cout << _seed << endl;
@@ -490,12 +508,17 @@ public:
 
 	void distance(){
 
-
-		_distanceMatrixJaccard.open((_outputDir + "/mat_presenceAbsence_jaccard.bin").c_str(), ios::binary);
-		_distanceMatrixBrayCurtis.open((_outputDir + "/mat_abundance_braycurtis.bin").c_str(), ios::binary);
+		if(System::file().doesExist(_outputDir + "/mat_presenceAbsence_jaccard.bin")){
+			_distanceMatrixJaccard.open((_outputDir + "/mat_presenceAbsence_jaccard.bin").c_str(), ios::binary | ios::in);
+			_distanceMatrixBrayCurtis.open((_outputDir + "/mat_abundance_braycurtis.bin").c_str(), ios::binary | ios::in);
+		}
+		else{
+			_distanceMatrixJaccard.open((_outputDir + "/mat_presenceAbsence_jaccard.bin").c_str(), ios::binary);
+			_distanceMatrixBrayCurtis.open((_outputDir + "/mat_abundance_braycurtis.bin").c_str(), ios::binary);
+		}
 
 		bool isSymmetrical = false;
-		if(_inputFilename1 == _inputFilename2){
+		if(_inputFilename1 == _inputFilename2 && _start_i == _start_j){
 			computeDistanceSymetrical();
 			isSymmetrical = true;
 		}
@@ -513,8 +536,9 @@ public:
 		_progress->finish();
 
 		//Fill diagonal with 0
+
 		if(isSymmetrical){
-			for(size_t i=0; i<_nbDataset1; i++){
+			for(size_t i=_start_i; i<_start_i+_n_i; i++){
 				size_t j=i;
 				u_int64_t pos = i*_nbDataset1*sizeof(DistanceValueType) + (j*sizeof(DistanceValueType));
 				_distanceMatrixJaccard.seekp(pos);
@@ -539,7 +563,7 @@ public:
 	void computeDistanceSymetrical(){
 		//cout << "compute symetrical distances" << endl;
 
-		u_int64_t nbDistancesToCompute = (_nbDataset1*(_nbDataset1-1)) / 2;
+		u_int64_t nbDistancesToCompute = (_n_i*(_n_i-1)) / 2;
 		//u_int64_t nbDistancesToCompute = _nbDataset1*_nbDataset1; //(_nbDataset1*(_nbDataset1-1)) / 2;
 		u_int64_t nbDistancePerThreads = nbDistancesToCompute / _nbCores;
 		u_int64_t nbDistancesRemaining = nbDistancesToCompute-(nbDistancePerThreads*_nbCores);
@@ -560,8 +584,9 @@ public:
 		u_int64_t nbDistances = 0;
 
 		size_t nbRunnedThreads = 0;
-		size_t i=0;
+		size_t i=_start_i;
 		size_t j=i+1;
+		size_t maxDatasets = _start_i+_n_i;//min((u_int64_t)_start_i+_nbdatasetsToProcess, (u_int64_t)_nbDataset1);
 
 
 		//_computeDistanceManagers.push_back();
@@ -571,11 +596,12 @@ public:
 
 		bool done = false;
 		nbRunnedThreads += 1;
-		for(; i<_nbDataset1; i++){
+
+		for(; i<maxDatasets; i++){
 
 			if(done) break;
 
-			for(j=i+1; j<_nbDataset1; j++){
+			for(j=i+1; j<maxDatasets; j++){
 
 				if(done) break;
 
@@ -652,7 +678,7 @@ public:
 		//cout << "compute rectangle distances" << endl;
 
 
-		u_int64_t nbDistancesToCompute = _nbDataset1*_nbDataset2;
+		u_int64_t nbDistancesToCompute = _n_i*_n_j;
 		//u_int64_t nbDistancesToCompute = _nbDataset1*_nbDataset1; //(_nbDataset1*(_nbDataset1-1)) / 2;
 		u_int64_t nbDistancePerThreads = nbDistancesToCompute / _nbCores;
 		u_int64_t nbDistancesRemaining = nbDistancesToCompute-(nbDistancePerThreads*_nbCores);
@@ -683,11 +709,14 @@ public:
 
 		bool done = false;
 		nbRunnedThreads += 1;
-		for(i=0; i<_nbDataset1; i++){
+
+		//size_t maxDatasetsI = min((u_int64_t)_start_i+_nbdatasetsToProcess, (u_int64_t)_nbDataset1);
+		for(i=_start_i; i<_start_i+_n_i; i++){
 
 			if(done) break;
 
-			for(j=0; j<_nbDataset2; j++){
+			//size_t maxDatasetsJ = min((u_int64_t)_start_j+_nbdatasetsToProcess, (u_int64_t)_nbDataset2);
+			for(j=_start_j; j<_start_j+_n_j; j++){
 
 				if(done) break;
 
@@ -726,7 +755,9 @@ public:
 		u_int64_t progress_nbComputedistances = 0;
 		u_int64_t nbComputedDistances = 0;
 
-		for(size_t j=sj; j<_nbDataset1; j++){
+
+		//size_t maxDatasetsI = min((u_int64_t)si+_nbdatasetsToProcess, (u_int64_t)_nbDataset1);
+		for(size_t j=sj; j<_start_i+_n_i; j++){
 			//cout << j << endl;
 			//cout << si << " " << j << endl;
 			computeDistanceManager.computeDistance_unsynch(si, j);
@@ -739,8 +770,8 @@ public:
 		if(nbComputedDistances < nbDistancesToCompute){
 
 			//cout << "lala2" << endl;
-			for(size_t i=si; i<_nbDataset1; i++){
-				for(size_t j=i+1; j<_nbDataset1; j++){
+			for(size_t i=si; i<_start_i+_n_i; i++){
+				for(size_t j=i+1; j<_start_i+_n_i; j++){
 					//cout << i << " " << j << endl;
 					computeDistanceManager.computeDistance_unsynch(i, j);
 					nbComputedDistances += 1;
@@ -781,7 +812,10 @@ public:
 		u_int64_t nbComputedDistances = 0;
 		u_int64_t progress_nbComputedistances = 0;
 
-		for(size_t j=sj; j<_nbDataset2; j++){
+
+		//size_t maxDatasetsI = min((u_int64_t)si+_nbdatasetsToProcess, (u_int64_t)_nbDataset1);
+		//size_t maxDatasetsJ = min((u_int64_t)sj+_nbdatasetsToProcess, (u_int64_t)_nbDataset2);
+		for(size_t j=sj; j<_start_j+_n_j; j++){
 			//cout << si << " " << j << endl;
 			computeDistanceManager.computeDistance_unsynch(si, j);
 			nbComputedDistances += 1;
@@ -792,8 +826,8 @@ public:
 
 		if(nbComputedDistances < nbDistancesToCompute){
 
-			for(size_t i=si; i<_nbDataset1; i++){
-				for(size_t j=0; j<_nbDataset2; j++){ // (0 instead of i+1)
+			for(size_t i=si; i<_start_i+_n_i; i++){
+				for(size_t j=0; j<_start_j+_n_j; j++){ // (0 instead of i+1)
 					//cout << i << " " << j << endl;
 					computeDistanceManager.computeDistance_unsynch(i, j);
 					nbComputedDistances += 1;
@@ -847,6 +881,11 @@ public:
 	    parser->push_front (new OptionOneParam (STR_URI_OUTPUT, "output dir for distance matrices", false, "./simkaMin_results"));
 	    parser->push_front (new OptionOneParam (STR_SIMKA_URI_INPUT_2, "filename to a sketch file to compare with -in1", true));
 	    parser->push_front (new OptionOneParam (STR_SIMKA_URI_INPUT_1, "filename to a sketch file to compare with -in2", true));
+
+	    parser->push_back (new OptionOneParam ("-start-i", "start i (row)", false, "0"));
+	    parser->push_back (new OptionOneParam ("-start-j", "start j (column)", false, "0"));
+	    parser->push_back (new OptionOneParam ("-n-i", "Nb datasets to process (row)", false, "0"));
+	    parser->push_back (new OptionOneParam ("-n-j", "Nb datasets to process (column)", false, "0"));
 
 	}
 

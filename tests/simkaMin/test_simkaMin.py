@@ -48,7 +48,7 @@ def create_truth():
 			for nb_reads in NB_READS:
 				for nb_kmers in NB_KMERS:
 					for nb_cores in NB_CORES:
-						command, outputDir = create_command("../../scripts/simkaMin/simkaMin_pipeline.py", "truth_simkaMin", k, filter, nb_reads, nb_kmers, nb_cores)
+						command, outputDir = create_command("../../scripts/simkaMin/simkaMin_pipeline.py", "truth_simkaMin", k, filter, nb_reads, nb_kmers, nb_cores, " ../../example/simka_input.txt ")
 						print command
 						ret = os.system(command)
 						if ret != 0: exit(1)
@@ -174,12 +174,14 @@ def test_append():
 
 		sketch_filename = os.path.join(out_dir, "sketch.bin")
 		command = "../../build/bin/simkaMin sketch -in " + filename_temp + " -out " + sketch_filename + " -nb-kmers 100 -kmer-size 21 -nb-cores 4"
+		print(command)
 		ret = os.system(command + suffix)
 		if ret != 0: exit(1)
 
 
 		if os.path.exists(merged_sketch_filename):
 			command = "../../build/bin/simkaMin append -in1 " + merged_sketch_filename + " -in2 " + sketch_filename
+			print(command)
 			ret = os.system(command + suffix)
 			if ret != 0: exit(1)
 			os.remove(sketch_filename)
@@ -189,15 +191,17 @@ def test_append():
 		os.remove(filename_temp)
 
 	command = "../../build/bin/simkaMin distance -in1 " +  merged_sketch_filename + " -in2 " + merged_sketch_filename + " -out " + dir + " -nb-cores 4 "
+	print(command)
 	ret = os.system(command + suffix)
 	if ret != 0: exit(1)
 
 	command = "../../build/bin/simkaMin export -in " + dir + " -in1 " +  merged_sketch_filename + " -in2 " + merged_sketch_filename + " -out " + dir
+	print(command)
 	ret = os.system(command + suffix)
 	if ret != 0: exit(1)
 
 
-	if(__test_matrices(dir, "truth_simkaMin/k21__0-100_n4")):
+	if(__test_matrices(dir, "truth_simkaMin/k21__0-100_n0")):
 		print("\tOK")
 	else:
 		print("\tFAILED")
@@ -228,18 +232,18 @@ def test_matrix_update():
 
 		if init:
 			command, outputDir = create_command_update("../../scripts/simkaMin/simkaMin_pipeline_update.py", out_dir, 21, "", 0, 100, 4, filename_temp)
-			#print(command)
+			print(command)
 			ret = os.system(command + suffix)
 			if ret != 0: exit(1)
 		else:
 			command, outputDir = create_command("../../scripts/simkaMin/simkaMin_pipeline.py", out_dir, 21, "", 0, 100, 4, filename_temp)
-			#print(command)
+			print(command)
 			ret = os.system(command + suffix)
 			if ret != 0: exit(1)
 			init= True
 
 
-	if(__test_matrices(out_dir + "/k21__0-100_n4", "truth_simkaMin/k21__0-100_n4" )):
+	if(__test_matrices(out_dir + "/k21__0-100_n4", "truth_simkaMin/k21__0-100_n0" )):
 		print("\tOK")
 	else:
 		print("\tFAILED")

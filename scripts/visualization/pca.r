@@ -20,6 +20,8 @@ if(format == "png"){
 
 
 distanceMatrix = as.matrix(read.table(file=distanceMatrixFilename, sep=";", header=TRUE, row.names=1))
+distanceMatrix[lower.tri(distanceMatrix)] <- t(distanceMatrix)[lower.tri(distanceMatrix)] #symmetrize matrix
+
 
 distance_name = basename(distanceMatrixFilename)
 distance_name = unlist(strsplit(distance_name, "[.]"))[1]

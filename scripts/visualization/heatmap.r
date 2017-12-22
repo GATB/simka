@@ -49,6 +49,8 @@ if(format == "png"){
 
 cr3 = as.matrix(read.table(file=args[1], sep=";", header=TRUE, row.names=1))  # can be symetric matrix
 cr3_norm = as.matrix(read.table(file=args[2], sep=";", header=TRUE, row.names=1))  # must be a symetric matrix
+cr3[lower.tri(cr3)] <- t(cr3)[lower.tri(cr3)] #symmetrize matrix
+cr3_norm[lower.tri(cr3_norm)] <- t(cr3_norm)[lower.tri(cr3_norm)] #symmetrize matrix
 
 
 distance_name = basename(args[1])

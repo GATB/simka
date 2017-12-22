@@ -10,6 +10,8 @@ distance_name = gsub("mat_", "", distance_name)
 
 
 distanceMatrix = as.matrix(read.table(file=distanceMatrixFilename, sep=";", header=TRUE, row.names=1))
+distanceMatrix[lower.tri(distanceMatrix)] <- t(distanceMatrix)[lower.tri(distanceMatrix)] #symmetrize matrix
+
 
 width = as.numeric(args[3])
 height = as.numeric(args[4])
