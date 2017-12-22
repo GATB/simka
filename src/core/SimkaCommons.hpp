@@ -29,13 +29,14 @@ public:
 	virtual ~SimkaCommons();
 
 
-	static void checkInputValidity(const string& outputDirTemp, const string& inputFilename){
+	static void checkInputValidity(const string& outputDirTemp, const string& inputFilename, u_int64_t& nbDatasets){
 
 		if(!System::file().doesExist(inputFilename)){
 			cout << "ERROR: Input does not exists (" + inputFilename + ")" << endl;
 			exit(1);
 		}
 
+		nbDatasets = 0;
 		bool error = false;
 
 		//string inputDir = _outputDirTemp; // + "/input/";
@@ -125,6 +126,7 @@ public:
 			try{
 				IBank* bank = Bank::open(subBankFilename);
 				LOCAL(bank);
+				nbDatasets += 1;
 			}
 			catch (Exception& e){
 				cerr << "ERROR: Can't open dataset: " << bankId << endl;

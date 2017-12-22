@@ -686,6 +686,12 @@ public:
 	//string _outputFilenameKmers;
 	//string _outputFilenameIds;
 
+
+	IteratorListener* _progress;
+	u_int64_t _progress_nbDatasetsToProcess;
+	u_int64_t _progress_nbDatasetsProcessed;
+	string _progress_text;
+
 	Simka2ComputeKmerSpectrumAlgorithm(IProperties* options):
 		Algorithm("simka", -1, options)
 	{
@@ -694,9 +700,19 @@ public:
 	void execute(){
 		//pthread_mutex_init(&_mutex, NULL);
 
+
 		parseArgs();
 		createDirs();
-		SimkaCommons::checkInputValidity(_outputDirTemp, _inputFilename);
+
+		cout << endl << "Checking input file validity..." << endl;
+		SimkaCommons::checkInputValidity(_outputDirTemp, _inputFilename, _progress_nbDatasetsToProcess);
+
+		_progress = this->createIteratorListener (_progress_nbDatasetsToProcess, ""); //new ProgressSynchro (
+			//this->createIteratorListener (_progress_nbDatasetsToProcess, ""),
+			//System::thread().newSynchronizer());
+	    _progress->setMessage (Stringify::format (_progress_text.c_str(), _progress_nbDatasetsProcessed, _progress_nbDatasetsToProcess));
+		_progress->init ();
+
 		countDatasets();
 
 
@@ -751,6 +767,9 @@ public:
 			std::cerr << "Error: output file already exist (" << _outputDir << ")" << std::endl;
 			exit(1);
 		}
+
+
+		_progress_text = "Sketching datasets (%d/%d)";
 		//_nbBankPerDataset = _options->getInt("-nb-dataset");
 
 		//_minKmerShannonIndex = _options->getDouble(STR_SIMKA_MIN_KMER_SHANNON_INDEX);
@@ -866,8 +885,8 @@ public:
 
 	void countDatasets(){
 
-		cout << endl << endl;
-		cout << "Sketching..." << endl;
+		//cout << endl << endl;
+		//cout << "Sketching..." << endl;
 
 
 		_outputFile.open(_outputDir, ios::binary);
@@ -999,6 +1018,7 @@ public:
 
 
 		joinThreads();
+		_progress->finish();
 
 		inputFile.close();
 
@@ -1096,9 +1116,9 @@ public:
 	void countKmersOfDataset(size_t datasetId, const string& inputFilename, size_t nbBankPerDataset){
 
 		//TODO lock probably not required
-		countKmersMutex.lock();
-		cout << "start: " << inputFilename << endl;
-		countKmersMutex.unlock();
+		//countKmersMutex.lock();
+		//cout << "start: " << inputFilename << endl;
+		//countKmersMutex.unlock();
 
 		IBank* bank = Bank::open(inputFilename);
 		LOCAL(bank);
@@ -1214,7 +1234,12 @@ public:
 
 		System::file().remove(inputFilename);
 
-		cout << "end: " << inputFilename << endl;
+
+		_progress_nbDatasetsProcessed += 1;
+	    _progress->setMessage (Stringify::format (_progress_text.c_str(), _progress_nbDatasetsProcessed, _progress_nbDatasetsToProcess));
+	    _progress->inc(1);
+
+		//cout << "end: " << inputFilename << endl;
 		_finishedThreads.push_back(datasetId);
 
 		countKmersMutex.unlock();

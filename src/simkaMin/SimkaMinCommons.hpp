@@ -43,7 +43,13 @@ struct PairwiseDistance{
 	u_int64_t _j;
 	DistanceValueType _distance;
 
-	PairwiseDistance(u_int64_t i, u_int64_t j, DistanceValueType distance){
+	PairwiseDistance(){
+		_i = -1;
+		_j = -1;
+		_distance = -1;
+	}
+
+	void set(u_int64_t i, u_int64_t j, DistanceValueType distance){
 		_i = i;
 		_j = j;
 		_distance = distance;
