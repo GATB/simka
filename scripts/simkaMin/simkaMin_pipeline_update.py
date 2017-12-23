@@ -5,94 +5,11 @@ from os import listdir
 from os.path import isfile, join, splitext
 import sys, argparse
 
+from simkaMin_utils import SimkaParser, ArgumentFormatterSimka, read_sketch_header
 #os.chdir(os.path.split(os.path.realpath(__file__))[0])
 
 
 
-
-#-------------------------------------------------------------------------------------------------------------
-# ArgumentFormatterSimka
-#-------------------------------------------------------------------------------------------------------------
-class SimkaParser(argparse.ArgumentParser):
-
-    def error(self, message):
-        print("")
-        sys.stderr.write('error: %s\n' % message)
-        print("")
-        self.print_help()
-        sys.exit(2)
-
-
-class ArgumentFormatterSimka(argparse.HelpFormatter):
-
-
-    #def _fill_text(self, text, width, indent):
-    #    return ''.join([indent + line for line in text.splitlines(True)])
-    def _split_lines(self, text, width):
-        return text.splitlines()
-
-    #remove default args layout
-    def _format_args(self, action, default_metavar):
-        result = ""
-        return result
-
-    #Remove "usage: ..." header
-    def _format_usage(self, usage, actions, groups, prefix):
-        return ""
-
-
-    #Changed layout of each item
-    def _get_help_string(self, action):
-
-        text = ""
-
-        if type(action) == argparse._StoreAction:
-            text =  "(1 arg) :    " + action.help
-        elif type(action) == argparse._StoreTrueAction:
-            text =  "(0 arg) :    " + action.help
-
-        if type(action) == argparse._StoreAction and action.default != None:
-            text += " [Default: " + str(action.default) + "]"
-        #print type(action), action
-        #print action
-        #return "-5-"
-        #return action.help
-        if text != "":
-            return text
-
-        return "__none__"
-
-    #Hack for removing useless "optional arguments:" section
-    def _join_parts(self, part_strings):
-        #print part_strings
-        return ''.join([part
-                        for part in part_strings
-                        if part and part is not argparse.SUPPRESS and not "optional arguments:" in part and not "__none__" in part and not "--help" in part])
-
-
-
-
-#-------------------------------------------------------------------------------------------------------------
-# Sketch reader
-#-------------------------------------------------------------------------------------------------------------
-def read_sketch_header(sketchFilename):
-    f = open(sketchFilename, mode='rb')
-    kmerSize = struct.unpack("B", f.read(1))[0] #B = unsigned char
-    sketchSize = struct.unpack("I", f.read(4))[0] #I = unsigned int
-    seed = struct.unpack("I", f.read(4))[0] #I = unsigned int
-    nbDatasets = struct.unpack("I", f.read(4))[0] #I = unsigned int
-    f.close()
-
-    #u_int8_t kmerSize_;
-    #file.read((char*)(&kmerSize_), sizeof(kmerSize_));
-    #u_int32_t sketchSize_;
-    #file.read((char*)(&sketchSize_), sizeof(sketchSize_));
-    #u_int32_t seed_;
-    #file.read((char*)(&seed_), sizeof(seed_));
-    #u_int32_t nbDatasets_;
-    #file.read((char*)(&nbDatasets_), sizeof(nbDatasets_));
-
-    return {"kmerSize": kmerSize, "sketchSize": sketchSize, "seed": seed, "nbDatasets": nbDatasets}
 
 
 #-------------------------------------------------------------------------------------------------------------

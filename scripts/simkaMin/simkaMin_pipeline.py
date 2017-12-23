@@ -1,74 +1,16 @@
 
 #python create_heatmaps.py matrixFolder simkaRscriptFolder
-import os, struct, math
+import os, math
 from os import listdir
 from os.path import isfile, join, splitext
 import sys, argparse
 
+from simkaMin_utils import SimkaParser, ArgumentFormatterSimka, read_sketch_header, ProgressBar
 
 #os.chdir(os.path.split(os.path.realpath(__file__))[0])
 
 
 
-
-#-------------------------------------------------------------------------------------------------------------
-# ArgumentFormatterSimka
-#-------------------------------------------------------------------------------------------------------------
-class SimkaParser(argparse.ArgumentParser):
-
-    def error(self, message):
-        print("")
-        sys.stderr.write('error: %s\n' % message)
-        print("")
-        self.print_help()
-        sys.exit(2)
-
-
-class ArgumentFormatterSimka(argparse.HelpFormatter):
-
-
-    #def _fill_text(self, text, width, indent):
-    #    return ''.join([indent + line for line in text.splitlines(True)])
-    def _split_lines(self, text, width):
-        return text.splitlines()
-
-    #remove default args layout
-    def _format_args(self, action, default_metavar):
-        result = ""
-        return result
-
-    #Remove "usage: ..." header
-    def _format_usage(self, usage, actions, groups, prefix):
-        return ""
-
-
-    #Changed layout of each item
-    def _get_help_string(self, action):
-
-        text = ""
-
-        if type(action) == argparse._StoreAction:
-            text =  "(1 arg) :    " + action.help
-        elif type(action) == argparse._StoreTrueAction:
-            text =  "(0 arg) :    " + action.help
-
-        if type(action) == argparse._StoreAction and action.default != None:
-            text += " [Default: " + str(action.default) + "]"
-        #print type(action), action
-        #print action
-        #return "-5-"
-        #return action.help
-        if text != "":
-            return text
-
-        return "__none__"
-
-    #Hack for removing useless "optional arguments:" section
-    def _join_parts(self, part_strings):
-        #print part_strings
-        return ''.join([part
-                        for part in part_strings
-                        if part and part is not argparse.SUPPRESS and not "optional arguments:" in part and not "__none__" in part and not "--help" in part])
 
 
 
@@ -109,27 +51,7 @@ parserCore.add_argument('-max-memory', action="store", dest="max_memory", help="
 args =  parser.parse_args()
 
 
-#-------------------------------------------------------------------------------------------------------------
-# Sketch reader
-#-------------------------------------------------------------------------------------------------------------
-def read_sketch_header(sketchFilename):
-    f = open(sketchFilename, mode='rb')
-    kmerSize = struct.unpack("B", f.read(1))[0] #B = unsigned char
-    sketchSize = struct.unpack("I", f.read(4))[0] #I = unsigned int
-    seed = struct.unpack("I", f.read(4))[0] #I = unsigned int
-    nbDatasets = struct.unpack("I", f.read(4))[0] #I = unsigned int
-    f.close()
 
-    #u_int8_t kmerSize_;
-    #file.read((char*)(&kmerSize_), sizeof(kmerSize_));
-    #u_int32_t sketchSize_;
-    #file.read((char*)(&sketchSize_), sizeof(sketchSize_));
-    #u_int32_t seed_;
-    #file.read((char*)(&seed_), sizeof(seed_));
-    #u_int32_t nbDatasets_;
-    #file.read((char*)(&nbDatasets_), sizeof(nbDatasets_));
-
-    return {"kmerSize": kmerSize, "sketchSize": sketchSize, "seed": seed, "nbDatasets": nbDatasets}
 
 
 #-------------------------------------------------------------------------------------------------------------
@@ -138,11 +60,15 @@ def read_sketch_header(sketchFilename):
 
 #Create some dirs and filenames
 if not os.path.exists(args.out): os.makedirs(args.out)
-sketchDir = os.path.join(args.out, "sketch")
+outDir = os.path.join(args.out, "simkamin")
+if not os.path.exists(outDir): os.makedirs(outDir)
+sketchDir = os.path.join(outDir, "sketch")
 if not os.path.exists(sketchDir): os.makedirs(sketchDir)
 sketchFilename = os.path.join(sketchDir, "sketch.bin")
-distanceOutputDir = os.path.join(args.out, "distance")
+distanceOutputDir = os.path.join(outDir, "distance")
 if not os.path.exists(distanceOutputDir): os.makedirs(distanceOutputDir)
+logsDir = os.path.join(outDir, "logs")
+if not os.path.exists(logsDir): os.makedirs(logsDir)
 
 #Create commands
 sketchCommand = args.bin + " sketch "
@@ -169,20 +95,37 @@ exportCommand += " -out " + args.out
 exportCommand += " -nb-cores " + args.nb_cores
 
 
-print("\n\n#-----------------------------")
-print("# Sketching")
-print("#-----------------------------\n")
+#print("\n\n#-----------------------------")
+#print("# Sketching")
+#print("#-----------------------------\n")
+print("\n\n")
 ret = os.system(sketchCommand)
 if ret != 0: print("ERROR"); exit(1)
 
-print("\n\n#-----------------------------")
-print("# Computing distances")
-print("#-----------------------------\n")
+
+
+
+
+
+
+
+
+
+
+#print("\n\n#-----------------------------")
+#print("# Computing distances")
+#print("#-----------------------------\n")
+print("\n\n")
+
+#Create binary matrix file (required in case the following distance commands are run in parallel
+if os.path.exists(distanceOutputDir + "/mat_presenceAbsence_jaccard.bin"): os.remove(distanceOutputDir + "/mat_presenceAbsence_jaccard.bin", "wb")
+if os.path.exists(distanceOutputDir + "/mat_abundance_braycurtis.bin"): os.remove(distanceOutputDir + "/mat_abundance_braycurtis.bin", "wb")
 open(distanceOutputDir + "/mat_presenceAbsence_jaccard.bin", "wb").close()
 open(distanceOutputDir + "/mat_abundance_braycurtis.bin", "wb").close()
+
 sketch_header = read_sketch_header(sketchFilename)
-MAX_DATASETS_PROCESS = 100
 nbDatasetToProcess = sketch_header["nbDatasets"]
+MAX_DATASETS_PROCESS = 100
 def create_distance_command(i, j, n1, n2):
     distanceCommand = args.bin + " distance "
     distanceCommand += " -in1 " + sketchFilename
@@ -193,24 +136,34 @@ def create_distance_command(i, j, n1, n2):
     distanceCommand += " -start-j " + str(j*MAX_DATASETS_PROCESS)
     distanceCommand += " -n-i " + str(n1)
     distanceCommand += " -n-j " + str(n2)
+    distanceCommand += " >> " + os.path.join(logsDir, "log_distance_" + str(i) + "-" + str(j)) + " 2>&1 "
     return distanceCommand
 
+
+
 step = int(math.ceil( float(nbDatasetToProcess) / float(MAX_DATASETS_PROCESS)))
+nbCommands = int(math.ceil( float(step * step) / float(2)))
+progressBar = ProgressBar("Computing distances", nbCommands)
+progressBar.start()
 done = False
 for i in range(0, step):
     n1 = min(MAX_DATASETS_PROCESS, nbDatasetToProcess-i*MAX_DATASETS_PROCESS)
     for j in range(i, step):
         n2 = min(MAX_DATASETS_PROCESS, nbDatasetToProcess-j*MAX_DATASETS_PROCESS)
         distanceCommand = create_distance_command(i, j, n1, n2)
-        print distanceCommand
+        #print distanceCommand
         ret = os.system(distanceCommand)
         if ret != 0: print("ERROR"); exit(1)
+        progressBar.step(1)
 
 
-print("\n\n#-----------------------------")
-print("# Exporting distances")
-print("#-----------------------------\n")
-#print exportCommand
+
+
+
+#print("\n\n#-----------------------------")
+#print("# Exporting distances")
+#print("#-----------------------------\n")
+print("\n\nExporting distance matrices in csv.gz format...")
 ret = os.system(exportCommand)
 if ret != 0: print("ERROR"); exit(1)
 
