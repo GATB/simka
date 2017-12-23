@@ -32,6 +32,9 @@ public:
 	u_int64_t _kmer;
 	KmerCountType _count;
 
+	KmerAndCountType(){
+	}
+
 	KmerAndCountType(u_int64_t kmer, KmerCountType count){
 		_kmer = kmer;
 		_count = count;
