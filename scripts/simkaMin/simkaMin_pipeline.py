@@ -181,7 +181,7 @@ print("#-----------------------------\n")
 open(distanceOutputDir + "/mat_presenceAbsence_jaccard.bin", "wb").close()
 open(distanceOutputDir + "/mat_abundance_braycurtis.bin", "wb").close()
 sketch_header = read_sketch_header(sketchFilename)
-MAX_DATASETS_PROCESS = 3
+MAX_DATASETS_PROCESS = 100
 nbDatasetToProcess = sketch_header["nbDatasets"]
 def create_distance_command(i, j, n1, n2):
     distanceCommand = args.bin + " distance "
