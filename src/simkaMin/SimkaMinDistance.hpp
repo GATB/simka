@@ -525,8 +525,10 @@ public:
 
 	void loadSketches(){
 
-		ifstream sketchFile_1 = ifstream(_inputFilename1.c_str(), ios::binary);
-		ifstream sketchFile_2 = ifstream(_inputFilename2.c_str(), ios::binary);
+		ifstream sketchFile_1;
+		sketchFile_1.open(_inputFilename1.c_str(), ios::binary);
+		ifstream sketchFile_2;
+		sketchFile_2.open(_inputFilename2.c_str(), ios::binary);
 
 		_kmercountSketches_i.resize(_n_i);
 		_kmercountSketches_j.resize(_n_j);
