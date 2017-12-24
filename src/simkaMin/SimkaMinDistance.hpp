@@ -116,6 +116,7 @@ public:
 	u_int64_t _jaccardDistances_nb;
 	mutex& _mutex;
 
+	//u_int64_t nbLala;
 
 	ComputeDistanceManager(const string& filename1, const string& filename2, size_t sketchSize, ofstream& distanceMatrixJaccard, ofstream& distanceMatrixBrayCurtis, bool isSymmetrical, size_t nbDatasets1, size_t nbDatasets2, mutex& mutex, size_t main_start_i, size_t main_start_j, size_t n_i, size_t n_j, vector<vector<KmerAndCountType> >& _kmercountSketches_i, vector<vector<KmerAndCountType> >& _kmercountSketches_j)
 	: _distanceMatrixJaccard(distanceMatrixJaccard), _distanceMatrixBrayCurtis(distanceMatrixBrayCurtis), _mutex(mutex)
@@ -130,6 +131,8 @@ public:
 		_jaccardDistances.resize(1000);
 		_braycurtisDistances.resize(1000);
 		_jaccardDistances_nb = 0;
+
+		//nbLala = 0;
 	}
 
 	~ComputeDistanceManager(){
@@ -165,10 +168,16 @@ public:
 
 			 */
 		}
+
+		//cout << nbLala << endl;
 	}
 
 	void computeDistance_unsynch(size_t i, size_t j){
 
+		//nbLala += 1;
+		//_mutex.lock();
+		//lala += 1;
+		//_mutex.unlock();
 
 		_nbDistinctSharedKmers = 0;
 		_nbDistinctKmers = 0;
@@ -752,6 +761,7 @@ public:
 		//cout << "NB CORES: " << _nbCores << endl;
 		//cout << "NB DISTANCES: " << nbDistancesToCompute << endl;
 		//cout << "NB DISTANCES PER CORE: " << nbDistancePerThreads << endl;
+		//cout << "NB DISTANCES REMAINING: " << nbDistancesRemaining << endl;
 
 		_progress = this->createIteratorListener (nbDistancesToCompute, "Computing distances");
 		_progress->init ();
@@ -763,10 +773,8 @@ public:
 		size_t j=_start_j;
 
 
-		//_computeDistanceManagers.push_back();
 		thread* t = new thread(&SimkaMinDistanceAlgorithm::computeDistances_rectanglular_unsynch, this, i, j, nbDistancePerThreads, nbRunnedThreads);
 		_threads.push_back(t);
-		//computeDistances_unsynch(i, j, nbDistancePerThreads, true);
 
 		bool done = false;
 		nbRunnedThreads += 1;
@@ -891,7 +899,7 @@ public:
 		if(nbComputedDistances < nbDistancesToCompute){
 
 			for(size_t i=si; i<_start_i+_n_i; i++){
-				for(size_t j=sj; j<_start_j+_n_j; j++){ // (0 instead of i+1)
+				for(size_t j=_start_j; j<_start_j+_n_j; j++){ // (0 instead of i+1)
 					//cout << i << " " << j << endl;
 					computeDistanceManager.computeDistance_unsynch(i, j);
 					nbComputedDistances += 1;
@@ -911,6 +919,7 @@ public:
 
 
 		_mutex.lock();
+		//cout << nbComputedDistances << " " << nbDistancesToCompute << endl;
 		_progress->inc(progress_nbComputedistances);
 		_mutex.unlock();
 

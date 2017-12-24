@@ -118,8 +118,8 @@ if ret != 0: print("ERROR"); exit(1)
 print("\n\n")
 
 #Create binary matrix file (required in case the following distance commands are run in parallel
-if os.path.exists(distanceOutputDir + "/mat_presenceAbsence_jaccard.bin"): os.remove(distanceOutputDir + "/mat_presenceAbsence_jaccard.bin", "wb")
-if os.path.exists(distanceOutputDir + "/mat_abundance_braycurtis.bin"): os.remove(distanceOutputDir + "/mat_abundance_braycurtis.bin", "wb")
+if os.path.exists(distanceOutputDir + "/mat_presenceAbsence_jaccard.bin"): os.remove(distanceOutputDir + "/mat_presenceAbsence_jaccard.bin")
+if os.path.exists(distanceOutputDir + "/mat_abundance_braycurtis.bin"): os.remove(distanceOutputDir + "/mat_abundance_braycurtis.bin")
 open(distanceOutputDir + "/mat_presenceAbsence_jaccard.bin", "wb").close()
 open(distanceOutputDir + "/mat_abundance_braycurtis.bin", "wb").close()
 
@@ -136,7 +136,7 @@ def create_distance_command(i, j, n1, n2):
     distanceCommand += " -start-j " + str(j*MAX_DATASETS_PROCESS)
     distanceCommand += " -n-i " + str(n1)
     distanceCommand += " -n-j " + str(n2)
-    distanceCommand += " >> " + os.path.join(logsDir, "log_distance_" + str(i) + "-" + str(j)) + " 2>&1 "
+    distanceCommand += " > " + os.path.join(logsDir, "log_distance_" + str(i) + "-" + str(j)) + " 2>&1 "
     return distanceCommand
 
 
