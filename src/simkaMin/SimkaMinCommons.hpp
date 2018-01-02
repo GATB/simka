@@ -22,7 +22,7 @@ const string STR_SIMKA_INPUT_IDS = "-in-ids";
 const string STR_SIMKA_ABUNDANCE_FILTER = "-filter";
 //const string STR_SIMKA2_DATASET_ID = "-id";
 
-typedef u_int16_t KmerCountType;
+typedef u_int32_t KmerCountType;
 typedef unordered_map<u_int64_t, KmerCountType> KmerCountDictionaryType;
 typedef float DistanceValueType;
 
