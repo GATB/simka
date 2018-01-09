@@ -1151,7 +1151,7 @@ public:
 		//unordered_map<u_int64_t, KmerCountType> kmerCounts;
 
 
-		vector<u_int64_t> kmers(_sketchSize); //TODO only used for reversing kmers not really optimized...
+		vector<u_int64_t> kmers(_sketchSize, 0); //TODO only used for reversing kmers not really optimized...
 		KmerCountDictionaryType _kmerCounts;
 
 		{
