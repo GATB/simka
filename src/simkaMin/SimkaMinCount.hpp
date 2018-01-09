@@ -1216,6 +1216,7 @@ public:
 
 			u_int64_t kmer = kmers[i];
 
+			//cout << kmer << endl;
 			KmerAndCountType kmerCount(kmer, _kmerCounts[kmer]);
 			//cout << kmer << endl;
 			//KmerCountType count = ;

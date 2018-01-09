@@ -26,7 +26,6 @@ public:
 
 	size_t _datasetId;
 	vector<vector<KmerAndCountType> >& _kmercountSketches;
-	vector<u_int64_t>& _sketchSizes;
 
 	size_t _nbDatasetOffset;
 	//u_int8_t* _buffer;
@@ -37,8 +36,8 @@ public:
 	//vector<vector<KmerAndCountType> > _buffers;
 	//vector<bool> _buffers_isInit;
 
-	KmerSpectrumIterator(const string& filename, vector<vector<KmerAndCountType> >& kmercountSketches, size_t nbDatasetOffset, vector<u_int64_t>& sketchSizes) :
-	_kmercountSketches(kmercountSketches), _sketchSizes(sketchSizes)
+	KmerSpectrumIterator(const string& filename, vector<vector<KmerAndCountType> >& kmercountSketches, size_t nbDatasetOffset) :
+	_kmercountSketches(kmercountSketches)
 	{
 
 		//_buffer = 0;
@@ -66,7 +65,7 @@ public:
 		//u_int64_t pos = KMER_SPECTRUM_HEADER_SIZE + (datasetId*_sketchSize*sizeof(KmerAndCountType));
 		//fseek(_is, pos, SEEK_SET);
 		_nbItems = 0;
-		_sketchSize =  _sketchSizes[_datasetId];
+		_sketchSize =  _kmercountSketches[_datasetId].size();
 		//cout << sizeof(KmerAndCountType) << endl;
 		//_kmerSpectrumFile.read((char*)_buffer, 10*_sketchSize);
 		//int res = fread(_buffer, sizeof(KmerAndCountType), _sketchSize, _is);
@@ -121,12 +120,12 @@ public:
 
 	//u_int64_t nbLala;
 
-	ComputeDistanceManager(const string& filename1, const string& filename2, ofstream& distanceMatrixJaccard, ofstream& distanceMatrixBrayCurtis, bool isSymmetrical, size_t nbDatasets1, size_t nbDatasets2, mutex& mutex, size_t main_start_i, size_t main_start_j, size_t n_i, size_t n_j, vector<vector<KmerAndCountType> >& _kmercountSketches_i, vector<vector<KmerAndCountType> >& _kmercountSketches_j, vector<u_int64_t>& sketchSizes_i, vector<u_int64_t>& sketchSizes_j)
+	ComputeDistanceManager(const string& filename1, const string& filename2, ofstream& distanceMatrixJaccard, ofstream& distanceMatrixBrayCurtis, bool isSymmetrical, size_t nbDatasets1, size_t nbDatasets2, mutex& mutex, size_t main_start_i, size_t main_start_j, size_t n_i, size_t n_j, vector<vector<KmerAndCountType> >& _kmercountSketches_i, vector<vector<KmerAndCountType> >& _kmercountSketches_j)
 	: _distanceMatrixJaccard(distanceMatrixJaccard), _distanceMatrixBrayCurtis(distanceMatrixBrayCurtis), _mutex(mutex)
 	{
 		//_sketchSize = sketchSize;
-		_kmerSpectrumiterator1 = new KmerSpectrumIterator(filename1, _kmercountSketches_i, main_start_i, sketchSizes_i);
-		_kmerSpectrumiterator2 = new KmerSpectrumIterator(filename2, _kmercountSketches_j, main_start_j, sketchSizes_j);
+		_kmerSpectrumiterator1 = new KmerSpectrumIterator(filename1, _kmercountSketches_i, main_start_i);
+		_kmerSpectrumiterator2 = new KmerSpectrumIterator(filename2, _kmercountSketches_j, main_start_j);
 		_isSymmetrical = isSymmetrical;
 		_nbDatasets1 = nbDatasets1;
 		_nbDatasets2 = nbDatasets2;
@@ -423,8 +422,6 @@ public:
 
 	vector<vector<KmerAndCountType> > _kmercountSketches_i;
 	vector<vector<KmerAndCountType> > _kmercountSketches_j;
-	vector<u_int64_t> _sketchSizes_i;
-	vector<u_int64_t> _sketchSizes_j;
 
 
 	SimkaMinDistanceAlgorithm(IProperties* options):
@@ -586,23 +583,23 @@ public:
 
 
 		for(size_t i=0; i<_kmercountSketches_i.size(); i++){
-			u_int64_t sketchSize = 0;
-			for(size_t j=0; j<_kmercountSketches_i[i].size(); j++){
-				if(j == 0) continue;
-				if(_kmercountSketches_i[i][j]._kmer == 0) break;
-				sketchSize += 1;
+			u_int64_t start = 0;
+			for(size_t j=0; j<_sketchSize_1; j++){
+				if(_kmercountSketches_i[i][j]._kmer == 0){
+					start += 1;
+				}
 			}
-			_sketchSizes_i.push_back(sketchSize);
+			_kmercountSketches_i[i].erase(_kmercountSketches_i[i].begin(), _kmercountSketches_i[i].begin()+start);
 		}
 
 		for(size_t i=0; i<_kmercountSketches_j.size(); i++){
-			u_int64_t sketchSize = 0;
+			u_int64_t start = 0;
 			for(size_t j=0; j<_kmercountSketches_j[i].size(); j++){
-				if(j == 0) continue;
-				if(_kmercountSketches_j[i][j]._kmer == 0) break;
-				sketchSize += 1;
+				if(_kmercountSketches_j[i][j]._kmer == 0){
+					start += 1;
+				}
 			}
-			_sketchSizes_j.push_back(sketchSize);
+			_kmercountSketches_j[i].erase(_kmercountSketches_j[i].begin(), _kmercountSketches_j[i].begin()+start);
 		}
 	}
 
@@ -851,7 +848,7 @@ public:
 
 	void computeDistances_unsynch(size_t si, size_t sj, size_t nbDistancesToCompute, size_t id){
 
-		ComputeDistanceManager computeDistanceManager(_inputFilename1, _inputFilename2, _distanceMatrixJaccard, _distanceMatrixBrayCurtis, true, _nbDataset1, _nbDataset2, _mutex, _start_i, _start_j, _n_i, _n_j, _kmercountSketches_i, _kmercountSketches_j, _sketchSizes_i, _sketchSizes_j);
+		ComputeDistanceManager computeDistanceManager(_inputFilename1, _inputFilename2, _distanceMatrixJaccard, _distanceMatrixBrayCurtis, true, _nbDataset1, _nbDataset2, _mutex, _start_i, _start_j, _n_i, _n_j, _kmercountSketches_i, _kmercountSketches_j);
 
 		//cout << "-------------------" << endl;
 		u_int64_t progress_nbComputedistances = 0;
@@ -905,7 +902,7 @@ public:
 	void computeDistances_rectanglular_unsynch(size_t si, size_t sj, size_t nbDistancesToCompute, size_t id){
 
 		//isSymetrical set to false
-		ComputeDistanceManager computeDistanceManager(_inputFilename1, _inputFilename2, _distanceMatrixJaccard, _distanceMatrixBrayCurtis, false, _nbDataset1, _nbDataset2, _mutex, _start_i, _start_j, _n_i, _n_j, _kmercountSketches_i, _kmercountSketches_j, _sketchSizes_i, _sketchSizes_j);
+		ComputeDistanceManager computeDistanceManager(_inputFilename1, _inputFilename2, _distanceMatrixJaccard, _distanceMatrixBrayCurtis, false, _nbDataset1, _nbDataset2, _mutex, _start_i, _start_j, _n_i, _n_j, _kmercountSketches_i, _kmercountSketches_j);
 
 		//_mutex.lock();
 		//cout << "------------------- " << si << " " << sj << endl;
