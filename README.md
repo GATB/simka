@@ -9,14 +9,15 @@
 
 Simka is a de novo comparative metagenomics tool. Simka represents each dataset as a k-mer spectrum and compute several classical ecological distances between them.
 
-Developper: Gaëtan Benoit.
-Contact: gaetan.benoit@inria.fr
+Developper: [Gaëtan Benoit](http://people.rennes.inria.fr/Gaetan.Benoit/), PhD, former member of the [Genscale](http://team.inria.fr/genscale/) team at Inria.
+
+Contact: claire dot lemaitre at inria dot fr
 
 # References
 	
 Benoit G, Peterlongo P, Mariadassou M, Drezen E, Schbath S, Lavenier D, Lemaitre C. (2016) [Multiple comparative metagenomics using multiset k-mer counting](https://doi.org/10.7717/peerj-cs.94). PeerJ Computer Science 2:e94 
 
-Benoit G, Peterlongo P, Lavenier D, Lemaitre C. (2015) [Simka: fast kmer-based method for estimating the similarity between numerous metagenomic datasets](https://hal.inria.fr/hal-01180603). Hal-Inria
+Benoit G (2017) [Large scale de novo comparative metagenomics (PhD thesis in french)](https://tel.archives-ouvertes.fr/tel-01659395v2/).
 
 # Install a binary release of simka
 
