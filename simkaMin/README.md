@@ -1,0 +1,142 @@
+# SimkaMin
+[![License](http://img.shields.io/:license-affero-blue.svg)](http://www.gnu.org/licenses/agpl-3.0.en.html)
+
+## What is SimkaMin?
+
+As in the case of Simka, SimkaMin is a de novo comparative metagenomics tool. The difference with Simka stands in the fact that SimkaMin uses sub-samples the kmers. With this strategy, with default parameters, SimkaMin is an order of magnitude faster, uses 10 times less memory and 70 times less disk than Simka. Biais in results quality due to sub-sampling is predictable. 
+
+Developper: [Gaëtan Benoit](http://people.rennes.inria.fr/Gaetan.Benoit/), PhD, former member of the [Genscale](http://team.inria.fr/genscale/) team at Inria.
+
+Contact: claire dot lemaitre at inria dot fr
+
+## References
+
+TODO: add SimkaMin bioArxiv link
+
+Benoit G, Peterlongo P, Mariadassou M, Drezen E, Schbath S, Lavenier D, Lemaitre C. (2016) [Multiple comparative metagenomics using multiset k-mer counting](https://doi.org/10.7717/peerj-cs.94). PeerJ Computer Science 2:e94 
+
+Benoit G (2017) [Large scale de novo comparative metagenomics (PhD thesis in french)](https://tel.archives-ouvertes.fr/tel-01659395v2/).
+
+## Install simkaMin
+
+SimkaMin comes with Simka installation. Refer to Simka install procedure. 
+
+## User manual
+
+### Description
+SimkaMin computes Bray-Curtis (abundance based) and Jaccard (presence/absence based) distances between N (metagenomic) read sets based on k-mer counts.
+
+Basically it takes as input the N metagenomic read sets and it outputs two matrices respectively providing the pairwise Bray-Curtis and the Jaccard distances between each dataset pairs. 
+
+### Input
+
+The input file (-in) lists the datasets. These datasets can be in fasta, fastq and in gzip compressed format (.gz).
+
+One dataset per line with the following syntax (you can put any number of spaces and/or tabs between syntax):
+
+    ID1: filename.fasta
+    ID2: filename.fasta
+    ID3: filename.fasta
+
+The dataset ID in the name that will appear in the headers of the distance matrices.
+
+You can find a simka input file in example directory: ./example/data/simka_input.txt
+
+If a given datset has been splitted in several parts, Simka can automatically concatenate them.
+
+    ID1: filename_part1.fasta , filename_part2.fasta , ...
+
+If you have paired files, you can list them separated by a ‘;’:
+
+    ID1: filename_pair1.fasta ; filename_pair2.fasta
+
+You can combine concatenated and paired operations:
+
+    ID1: filename_part1_pair1.fasta , filename_part2_pair1.fasta ; filename_part1_pair2.fasta , filename_part2_pair2.fasta
+
+Paired syntax is only usefull if the -max-reads option of SimkaMin is set.
+
+Example:
+
+If -max-reads is set to 100, then Simka will considered the 100 first reads of the first paired files and the 100 first reads of the second paired files…
+
+### Output
+
+SimkaMin results are  an abundance-based Bray-Curtis distance matrix `mat_presenceAbsence_jaccard.csv.gz` and a presence-absence-based Jaccard distance matrix `mat_abundance_braycurtis.csv.gz`. A distance matrix is a squared matrix of size N (where N is the number of input datasets). Each value in the matrix give you the distance between a pair of datasets. These values are usually in the range [0, 1]. A distance value of 0 means that the pair of dataset is perfectly similar. The higher the distance value is, the more dissimilar is the pair of datasets.
+
+SimkaMin results will be stored in the directory indicated by -out option.
+
+#### Visualize SimkaMin results
+
+SimkaMin results can be visualised through heatmaps, hierarchical clustering and PCA. This module is common with the Simka visualisation script `run-visualization.py`.
+
+Please refer to the documentation provided in the Simka Readme file. 	
+
+
+## Usage
+
+To see simka in-line help:
+
+```bash
+python simkaMin/simkaMin.py 
+```
+
+
+## Simka command examples
+
+Run the toy example:
+
+```bash
+python simkaMin/simkaMin.py -bin  build/bin/simkaMin -in example/simka_input.txt -out results 
+```
+
+Change the kmer size
+
+```bash
+./bin/simka … -kmer-size 31
+```
+
+Change the sub-sampling effort (default 1 million kmers are used per read set)
+
+```bash
+./bin/simka … -nb-kmers 10000
+```
+
+Filter kmers seen one time (potentially erroneous):
+
+```bash
+./bin/simka … -filter
+```
+
+Considers all the reads of each samples (set 0 to use all reads)
+
+```bash
+./bin/simka … -max-reads 0
+```
+
+Used only the first 1000 reads of each samples:
+
+```bash
+./bin/simka … -max-reads 1000
+```
+
+Allow more memory and cores improve the execution time:
+
+```bash
+./bin/simka … -max-memory 20000 -nb-cores 8
+```
+
+Filter low complexity reads
+
+```bash
+./bin/simka … -min-shannon-index 1
+```
+
+Filter small reads 
+
+```bash
+./bin/simka … -min-read-size 80
+```
+
+
+

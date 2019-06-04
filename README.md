@@ -14,7 +14,7 @@ Developper: [Gaëtan Benoit](http://people.rennes.inria.fr/Gaetan.Benoit/), PhD,
 Contact: claire dot lemaitre at inria dot fr
 
 # References
-	
+
 Benoit G, Peterlongo P, Mariadassou M, Drezen E, Schbath S, Lavenier D, Lemaitre C. (2016) [Multiple comparative metagenomics using multiset k-mer counting](https://doi.org/10.7717/peerj-cs.94). PeerJ Computer Science 2:e94 
 
 Benoit G (2017) [Large scale de novo comparative metagenomics (PhD thesis in french)](https://tel.archives-ouvertes.fr/tel-01659395v2/).
@@ -117,7 +117,7 @@ Simka computes several classical ecological distances between N (metagenomic) re
 Simka is implemented with the GATB library (http://gatb.inria.fr/).
 
 ## Input
-	
+
 The input file (-in) lists the datasets. These datasets can be in fasta, fastq and in gzip compressed format (.gz).
 
 One dataset per line with the following syntax (you can put any number of spaces and/or tabs between syntax):
@@ -133,7 +133,7 @@ You can find a simka input file in example directory: ./example/data/simka_input
 If a given datset has been splitted in several parts, Simka can automatically concatenate them.
 
     ID1: filename_part1.fasta , filename_part2.fasta , ...
-    
+
 If you have paired files, you can list them separated by a ‘;’:
 
     ID1: filename_pair1.fasta ; filename_pair2.fasta
@@ -190,18 +190,22 @@ Use the script run-visualization.py (located in "scripts/visualization" folder).
 
 Example: 
 
-    python run-visualization.py -in simka_results_dir -out output_figures_dir -pca -heatmap -tree
+```bash
+python run-visualization.py -in simka_results_dir -out output_figures_dir -pca -heatmap -tree
+```
 
 where simka_results_dir is the folder containing the distances matrices of Simka (-out)
 
 Figures can be annotated by providing a metadata data in standard csv format:
 
-	DATASET_ID;VARIABLE_NAME_1;VARIABLE_NAME_2
-	A;1;aquatic
-	B;1;human
-	C;2;human
-	D;2;soil
-	E;3;soil
+```bash
+DATASET_ID;VARIABLE_NAME_1;VARIABLE_NAME_2
+A;1;aquatic
+B;1;human
+C;2;human
+D;2;soil
+E;3;soil
+```
 
 An example of this table is given at ./example/dataset_metadata.csv
 
@@ -209,8 +213,10 @@ Dataset ID in the metadata table must match with the dataset ID in simka distanc
 
 Add the following options to activate annotations:
 
-	-metadata-in: filename to a metadata table
-	-metadata-variable: the name of the variable that you want to display in figures (the name of the column), for instance VARIABLE_NAME_1 in example above
+```bash
+-metadata-in: filename to a metadata table
+-metadata-variable: the name of the variable that you want to display in figures (the name of the column), for instance VARIABLE_NAME_1 in example above
+```
 
 Visualization example commands are given when running simka example (./example/simple_test.sh).
 
@@ -218,50 +224,70 @@ Visualization example commands are given when running simka example (./example/s
 
 To see simka in-line help:
 
-    ./bin/simka
+```bash
+./bin/simka
+```
 
 
 ## Simka command examples
 
 Run the toy example:
 
-    ./bin/simka -in example/simka_input.txt -out results -out-tmp temp_output
+```bash
+./bin/simka -in example/simka_input.txt -out results -out-tmp temp_output
+```
 
 Compute all the distances that Simka can provide (Bray-Curtis, Jensen-Shannon…):
 
-    ./bin/simka … -simple-dist -complex-dist
+```bash
+./bin/simka … -simple-dist -complex-dist
+```
 
 Change the kmer size
 
-    ./bin/simka … -kmer-size 31
+```bash
+./bin/simka … -kmer-size 31
+```
 
 Filter kmers seen one time (potentially erroneous) and very high abundance kmers (potentially contaminants):
 
-    ./bin/simka … -abundance-min 2 -abundance-max 200
+```bash
+./bin/simka … -abundance-min 2 -abundance-max 200
+```
 
 Filter over the sequences of the reads and k-mers:
 
 Minimum read size of 90. Discards low complexity reads and k-mers (shannon index < 1.5)
 
-    ./bin/simka … -min-read-size 90 -read-shannon-index 1.5 -kmer-shannon-index 1.5
+```bash
+./bin/simka … -min-read-size 90 -read-shannon-index 1.5 -kmer-shannon-index 1.5
+```
 
 Consider a subset of the reads of the input dataset (for dataset with non-uniform reads per sample):
 
 Considers all the reads of each samples (default)
 
-    ./bin/simka … -max-reads -1
+```bash
+./bin/simka … -max-reads -1
+```
 
 Let Simka compute automatically the maximum of read per samples (normalization)
 
-    ./bin/simka … -max-reads 0
+```bash
+./bin/simka … -max-reads 0
+```
 
 Used only the first 1000 reads of each samples:
 
-    ./bin/simka … -max-reads 1000
+```bash
+./bin/simka … -max-reads 1000
+```
 
 Allow more memory and cores improve the execution time:
 
-    ./bin/simka … -max-memory 20000 -nb-cores 8
+```bash
+./bin/simka … -max-memory 20000 -nb-cores 8
+```
 
 
 ## Computer cluster options
@@ -276,16 +302,20 @@ And you must provide a submission command for both job (-count-cmd -merge-cmd)
 
 Example for SGE:
 
-    -count-cmd ‘qsub  -pe make 8’ -merge-cmd qsub
+```bash
+-count-cmd ‘qsub  -pe make 8’ -merge-cmd qsub
+```
 
 The option -max-count and -max-merge controls the maximum of simultaneous jobs. They have to be fixed if you system have a maximum of jobs restriction.
 
 Command example:
 
-    ./bin/simka … -count-file example/potara_job/sge/job_count -merge-file example/potara_job/sge/job_merge \
-    -count-cmd qsub -pe make 34 -merge-cmd qsub \
-    -max-count 6 -max-merge 18 -nb-cores 200 -max-memory 500000
-    
+```bash
+./bin/simka … -count-file example/potara_job/sge/job_count -merge-file example/potara_job/sge/job_merge \
+-count-cmd qsub -pe make 34 -merge-cmd qsub \
+-max-count 6 -max-merge 18 -nb-cores 200 -max-memory 500000
+```
+
 Simka will run a maximum of 6 simultaneous counting jobs, each using 200/6 cores and 500000/6 MB of memory. Simka will run a maximum of 18 merging jobs. A merging job can not be ran on more than 1 core and use very low memory. By default Simka use -nb-cores/2 counting jobs simultaneously and -nb-cores merging jobs simultaneously.
 
 

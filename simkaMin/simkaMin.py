@@ -36,7 +36,7 @@ parserMain.add_argument('-out', action="store", dest="out", default="./simka_res
 parserMain.add_argument('-seed', action="store", dest="seed", default="100", help="seed used for random k-mer selection")
 
 parserKmer.add_argument('-kmer-size', action="store", dest="kmer_size", help="size of a kmer", default="21")
-parserKmer.add_argument('-nb-kmers', action="store", dest="nb_kmers", help="number of kmers used to compute distances", default="100000")
+parserKmer.add_argument('-nb-kmers', action="store", dest="nb_kmers", help="number of kmers used to compute distances", default="1000000")
 parserKmer.add_argument('-filter', action="store_true", dest="filter", help="filter out k-mer seen one time (potentially erroneous)")
 
 
@@ -95,9 +95,11 @@ exportCommand += " -out " + args.out
 exportCommand += " -nb-cores " + args.nb_cores
 
 
-#print("\n\n#-----------------------------")
-#print("# Sketching")
-#print("#-----------------------------\n")
+print("\n\n#-----------------------------")
+print("# Sketching")
+print(sketchCommand)
+print("#-----------------------------\n")
+
 print("\n\n")
 ret = os.system(sketchCommand)
 if ret != 0: print("ERROR"); exit(1)
@@ -112,9 +114,9 @@ if ret != 0: print("ERROR"); exit(1)
 
 
 
-#print("\n\n#-----------------------------")
-#print("# Computing distances")
-#print("#-----------------------------\n")
+print("\n\n#-----------------------------")
+print("# Computing distances")
+print("#-----------------------------\n")
 print("\n\n")
 
 #Create binary matrix file (required in case the following distance commands are run in parallel
