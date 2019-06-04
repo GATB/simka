@@ -1,9 +1,15 @@
-# Simka
+# Simka & SimkaMin
 | **Linux** | **Mac OSX** |
 |-----------|-------------|
 [![Build Status](https://ci.inria.fr/gatb-core/view/Simka/job/tool-simka-build-debian7-64bits-gcc-4.7/badge/icon)](https://ci.inria.fr/gatb-core/view/Simka/job/tool-simka-build-debian7-64bits-gcc-4.7/) | [![Build Status](https://ci.inria.fr/gatb-core/view/Simka/job/tool-simka-build-macos-10.9.5-gcc-4.2.1/badge/icon)](https://ci.inria.fr/gatb-core/view/Simka/job/tool-simka-build-macos-10.9.5-gcc-4.2.1/)
 
 [![License](http://img.shields.io/:license-affero-blue.svg)](http://www.gnu.org/licenses/agpl-3.0.en.html)
+
+
+
+This github directory stores Simka and SimkaMin. This readme focuses on Simka features. All information about SimkaMin are located in the `simkaMin` directory. 
+
+
 
 # What is Simka?
 
