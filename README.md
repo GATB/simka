@@ -93,8 +93,8 @@ For further instructions on using simka, see User Manual, below.
 
 # Changelog
 
-* version 1.5 Jun 07, 2019:
-        - simkaMin software: faster results by subsampling the kmer space
+* version 1.5 Jun 07, 2019:   
+    - simkaMin software: faster results by subsampling the kmer space
 * version 1.4 Jun 21, 2017:
 	- update gatb-core to version 1.2.2
 	- simka now provide gz compressed results
