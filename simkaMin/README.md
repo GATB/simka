@@ -3,7 +3,7 @@
 
 ## What is SimkaMin?
 
-As in the case of Simka, SimkaMin is a de novo comparative metagenomics tool. The difference with Simka stands in the fact that SimkaMin uses sub-samples the kmers. With this strategy, with default parameters, SimkaMin is an order of magnitude faster, uses 10 times less memory and 70 times less disk than Simka. Biais in results quality due to sub-sampling is predictable. 
+As in the case of Simka, SimkaMin is a *de novo* comparative metagenomics tool. The difference with Simka stands in the fact that SimkaMin output approximate (but very similar) results by subsampling the kmer space. With this strategy, and with default parameters, SimkaMin is an order of magnitude faster, uses 10 times less memory and 70 times less disk than Simka. 
 
 Developper: [Gaëtan Benoit](http://people.rennes.inria.fr/Gaetan.Benoit/), PhD, former member of the [Genscale](http://team.inria.fr/genscale/) team at Inria.
 
@@ -11,7 +11,7 @@ Contact: claire dot lemaitre at inria dot fr
 
 ## References
 
-TODO: add SimkaMin bioArxiv link
+Benoit G,  Mariadassou M, Robin S, Schbath S, Peterlongo P and Lemaitre C. (2019) SimkaMin: fast and resource frugal *de novo* comparative metagenomics. To appear in bioRxiv...
 
 Benoit G, Peterlongo P, Mariadassou M, Drezen E, Schbath S, Lavenier D, Lemaitre C. (2016) [Multiple comparative metagenomics using multiset k-mer counting](https://doi.org/10.7717/peerj-cs.94). PeerJ Computer Science 2:e94 
 
@@ -19,18 +19,18 @@ Benoit G (2017) [Large scale de novo comparative metagenomics (PhD thesis in fre
 
 ## Install simkaMin
 
-SimkaMin comes with Simka installation. Refer to Simka install procedure. 
+SimkaMin comes with Simka installation. Refer to [Simka install instructions](../README.md). 
 
 ## User manual
 
 ### Description
-SimkaMin computes Bray-Curtis (abundance based) and Jaccard (presence/absence based) distances between N (metagenomic) read sets based on k-mer counts.
+SimkaMin computes Bray-Curtis (abundance based) and Jaccard (presence/absence based) distances between N (metagenomic) read sets based on subsamples of k-mer counts.
 
 Basically it takes as input the N metagenomic read sets and it outputs two matrices respectively providing the pairwise Bray-Curtis and the Jaccard distances between each dataset pairs. 
 
 ### Input
 
-The input file (-in) lists the datasets. These datasets can be in fasta, fastq and in gzip compressed format (.gz).
+The input file (`-in`) lists the datasets. These datasets can be in fasta, fastq and in gzip compressed format (.gz).
 
 One dataset per line with the following syntax (you can put any number of spaces and/or tabs between syntax):
 
@@ -54,23 +54,23 @@ You can combine concatenated and paired operations:
 
     ID1: filename_part1_pair1.fasta , filename_part2_pair1.fasta ; filename_part1_pair2.fasta , filename_part2_pair2.fasta
 
-Paired syntax is only usefull if the -max-reads option of SimkaMin is set.
+Paired syntax is only usefull if the `-max-reads` option of SimkaMin is set.
 
 Example:
 
-If -max-reads is set to 100, then Simka will considered the 100 first reads of the first paired files and the 100 first reads of the second paired files…
+If `-max-reads` is set to 100, then Simka will considered the 100 first reads of the first paired files and the 100 first reads of the second paired files…
 
 ### Output
 
-SimkaMin results are  an abundance-based Bray-Curtis distance matrix `mat_presenceAbsence_jaccard.csv.gz` and a presence-absence-based Jaccard distance matrix `mat_abundance_braycurtis.csv.gz`. A distance matrix is a squared matrix of size N (where N is the number of input datasets). Each value in the matrix give you the distance between a pair of datasets. These values are usually in the range [0, 1]. A distance value of 0 means that the pair of dataset is perfectly similar. The higher the distance value is, the more dissimilar is the pair of datasets.
+SimkaMin results are an abundance-based Bray-Curtis distance matrix `mat_presenceAbsence_jaccard.csv.gz` and a presence-absence-based Jaccard distance matrix `mat_abundance_braycurtis.csv.gz`. A distance matrix is a squared matrix of size N (where N is the number of input datasets). Each value in the matrix gives the distance between a pair of datasets. These values are in the range [0, 1]. A distance value of 0 means that the pair of datasets is perfectly similar. The greater the distance value is, the more dissimilar is the pair of datasets.
 
-SimkaMin results will be stored in the directory indicated by -out option.
+SimkaMin results will be stored in the directory indicated by `-out` option.
 
 #### Visualize SimkaMin results
 
-SimkaMin results can be visualised through heatmaps, hierarchical clustering and PCA. This module is common with the Simka visualisation script `run-visualization.py`.
+SimkaMin results can be visualised through heatmaps, hierarchical clustering and PCA. This module is common with the Simka visualisation script `../scripts/visualization/run-visualization.py`.
 
-Please refer to the documentation provided in the Simka Readme file. 	
+Please refer to the documentation provided in the [Simka Readme file](../README.md). 	
 
 
 ## Usage

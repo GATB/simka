@@ -7,7 +7,7 @@
 
 
 
-This github directory stores Simka and SimkaMin. This readme focuses on Simka features. All information about SimkaMin are located in the `simkaMin` directory. 
+This github directory stores Simka and SimkaMin software. This readme focuses on Simka features. All information about SimkaMin is located in the [simkaMin](simkaMin/) directory. 
 
 
 
