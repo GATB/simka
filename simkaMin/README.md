@@ -108,19 +108,19 @@ Filter kmers seen one time (potentially erroneous):
 ./bin/simka … -filter
 ```
 
-Considers all the reads of each samples (set 0 to use all reads)
+Consider all the reads of each samples (set 0 to use all reads)
 
 ```bash
 ./bin/simka … -max-reads 0
 ```
 
-Used only the first 1000 reads of each samples:
+Use only the first 1000 reads of each sample:
 
 ```bash
 ./bin/simka … -max-reads 1000
 ```
 
-Allow more memory and cores improve the execution time:
+Allow more memory and cores to improve the execution time:
 
 ```bash
 ./bin/simka … -max-memory 20000 -nb-cores 8

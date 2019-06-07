@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 2.6)
 # The version number.
 ################################################################################
 SET (gatb-tool_VERSION_MAJOR 1)
-SET (gatb-tool_VERSION_MINOR 4)
+SET (gatb-tool_VERSION_MINOR 5)
 SET (gatb-tool_VERSION_PATCH 0)
 
 IF (DEFINED MAJOR)
@@ -122,6 +122,7 @@ SET (CPACK_SOURCE_IGNORE_FILES
 # For creating the BINARY package we include the files we want
 INSTALL (DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin       DESTINATION .)
 INSTALL (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/example   DESTINATION .)
+INSTALL (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/simkaMin   DESTINATION .)
 INSTALL (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/scripts   DESTINATION . FILES_MATCHING REGEX ".*\\.(py|r)$"  PATTERN "jenkins" EXCLUDE)
 INSTALL (FILES     ${CMAKE_CURRENT_SOURCE_DIR}/README.md DESTINATION .)
 INSTALL (FILES     ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE   DESTINATION .)
