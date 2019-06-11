@@ -3,7 +3,7 @@
 
 ## What is SimkaMin?
 
-As in the case of Simka, SimkaMin is a *de novo* comparative metagenomics tool. The difference with Simka stands in the fact that SimkaMin output approximate (but very similar) results by subsampling the kmer space. With this strategy, and with default parameters, SimkaMin is an order of magnitude faster, uses 10 times less memory and 70 times less disk than Simka. 
+As in the case of Simka, SimkaMin is a *de novo* comparative metagenomics tool. The difference with Simka stands in the fact that SimkaMin outputs approximate (but very similar) results by subsampling the kmer space. With this strategy, and with default parameters, SimkaMin is an order of magnitude faster, uses 10 times less memory and 70 times less disk than Simka. 
 
 Developper: [Gaëtan Benoit](http://people.rennes.inria.fr/Gaetan.Benoit/), PhD, former member of the [Genscale](http://team.inria.fr/genscale/) team at Inria.
 
