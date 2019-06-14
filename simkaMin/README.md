@@ -3,7 +3,7 @@
 
 ## What is SimkaMin?
 
-As in the case of Simka, SimkaMin is a *de novo* comparative metagenomics tool. The difference with Simka stands in the fact that SimkaMin output approximate (but very similar) results by subsampling the kmer space. With this strategy, and with default parameters, SimkaMin is an order of magnitude faster, uses 10 times less memory and 70 times less disk than Simka. 
+As in the case of Simka, SimkaMin is a *de novo* comparative metagenomics tool. The difference with Simka stands in the fact that SimkaMin outputs approximate (but very similar) results by subsampling the kmer space. With this strategy, and with default parameters, SimkaMin is an order of magnitude faster, uses 10 times less memory and 70 times less disk than Simka. 
 
 Developper: [Gaëtan Benoit](http://people.rennes.inria.fr/Gaetan.Benoit/), PhD, former member of the [Genscale](http://team.inria.fr/genscale/) team at Inria.
 
@@ -93,49 +93,49 @@ python simkaMin/simkaMin.py -bin  build/bin/simkaMin -in example/simka_input.txt
 Change the kmer size
 
 ```bash
-./bin/simka … -kmer-size 31
+python simkaMin/simkaMin.py … -kmer-size 31
 ```
 
 Change the sub-sampling effort (default 1 million kmers are used per read set)
 
 ```bash
-./bin/simka … -nb-kmers 10000
+python simkaMin/simkaMin.py … -nb-kmers 10000
 ```
 
 Filter kmers seen one time (potentially erroneous):
 
 ```bash
-./bin/simka … -filter
+python simkaMin/simkaMin.py … -filter
 ```
 
 Consider all the reads of each samples (set 0 to use all reads)
 
 ```bash
-./bin/simka … -max-reads 0
+python simkaMin/simkaMin.py … -max-reads 0
 ```
 
 Use only the first 1000 reads of each sample:
 
 ```bash
-./bin/simka … -max-reads 1000
+python simkaMin/simkaMin.py … -max-reads 1000
 ```
 
 Allow more memory and cores to improve the execution time:
 
 ```bash
-./bin/simka … -max-memory 20000 -nb-cores 8
+python simkaMin/simkaMin.py … -max-memory 20000 -nb-cores 8
 ```
 
 Filter low complexity reads
 
 ```bash
-./bin/simka … -min-shannon-index 1
+python simkaMin/simkaMin.py … -min-shannon-index 1
 ```
 
 Filter small reads 
 
 ```bash
-./bin/simka … -min-read-size 80
+python simkaMin/simkaMin.py … -min-read-size 80
 ```
 
 
