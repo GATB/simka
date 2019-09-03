@@ -28,7 +28,7 @@ SimkaMin computes Bray-Curtis (abundance based) and Jaccard (presence/absence ba
 
 Basically it takes as input the N metagenomic read sets and it outputs two matrices respectively providing the pairwise Bray-Curtis and the Jaccard distances between each dataset pairs. 
 
-## Command example
+### A simple command example
 
 Run the toy example:
 
