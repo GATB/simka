@@ -1,6 +1,32 @@
+#*****************************************************************************
+#   SimkaMin: Fast kmer-based method for estimating the similarity between numerous metagenomic datasets
+#   A tool from the GATB (Genome Assembly Tool Box)
+#   Copyright (C) 2019  INRIA
+#   Authors: G.Benoit, C.Lemaitre, P.Peterlongo
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU Affero General Public License as
+#  published by the Free Software Foundation, either version 3 of the
+#  License, or (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU Affero General Public License for more details.
+#
+#  You should have received a copy of the GNU Affero General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#*****************************************************************************
 
 
-import argparse, struct, time, datetime, sys
+import argparse, struct, time, datetime, sys, os, subprocess
+
+def is_executable(bin):
+    try:
+        subprocess.call([bin, "-h"],stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
+    except OSError as e:
+        return(0)
+    return(1)
 
 
 #-------------------------------------------------------------------------------------------------------------

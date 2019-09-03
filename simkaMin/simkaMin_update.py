@@ -1,14 +1,31 @@
+#!/usr/bin/env python
 
-#python create_heatmaps.py matrixFolder simkaRscriptFolder
+#*****************************************************************************
+#   SimkaMin: Fast kmer-based method for estimating the similarity between numerous metagenomic datasets
+#   A tool from the GATB (Genome Assembly Tool Box)
+#   Copyright (C) 2019  INRIA
+#   Authors: G.Benoit, C.Lemaitre, P.Peterlongo
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU Affero General Public License as
+#  published by the Free Software Foundation, either version 3 of the
+#  License, or (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU Affero General Public License for more details.
+#
+#  You should have received a copy of the GNU Affero General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#*****************************************************************************
+
 import os, struct, shutil
 from os import listdir
 from os.path import isfile, join, splitext
 import sys, argparse
 
-from simkaMin_utils import SimkaParser, ArgumentFormatterSimka, read_sketch_header
-#os.chdir(os.path.split(os.path.realpath(__file__))[0])
-
-
+from simkaMin_utils import SimkaParser, ArgumentFormatterSimka, read_sketch_header, is_executable
 
 
 
@@ -27,12 +44,8 @@ parserDev = parser.add_argument_group("[advanced (developer) options]")
 
 parserMain.add_argument('-in', action="store", dest="input_filename", help="input file of datasets (datasets to add to existing simka results", required=True)
 parserMain.add_argument('-in-to-update', action="store", dest="input_existingResults", help="path to existing simka results to update (existing results will be overwritten)", required=True)
-parserMain.add_argument('-bin', action="store", dest="bin", help="path to simkaMin program (should be at build/bin/simkaMin)", required=True)
-#parserMain.add_argument('-out', action="store", dest="out", default="./simka_results", help="output directory for result files (distance matrices)")
-#parserMain.add_argument('-seed', action="store", dest="seed", default="100", help="seed used for random k-mer selection")
+parserMain.add_argument('-bin', action="store", dest="bin", help="path to simkaMinCore program (to be specified if not in PATH, or not in standard installation directory <simkaDir>/build/bin/simkaMinCore)")
 
-#parserKmer.add_argument('-kmer-size', action="store", dest="kmer_size", help="size of a kmer", default="21")
-#parserKmer.add_argument('-nb-kmers', action="store", dest="nb_kmers", help="number of kmers used to compute distances", default="100000")
 parserKmer.add_argument('-filter', action="store_true", dest="filter", help="filter out k-mer seen one time (potentially erroneous)")
 
 
@@ -45,6 +58,27 @@ parserCore.add_argument('-max-memory', action="store", dest="max_memory", help="
 
 
 args =  parser.parse_args()
+
+
+# Check SimkaMinCore executable
+# -----------------------------
+
+simkaMinCoreBin=args.bin
+if args.bin is not None:
+    # given by the user
+    if not is_executable(simkaMinCoreBin):
+        print("Error: "+simkaMinCoreBin+" not found or not executable, should be <SimkaDirectory>/build/bin/simkaMinCore")
+        exit(1)
+else:
+    # Check if is in the PATH
+    simkaMinCoreBin="simkaMinCore"
+    if not is_executable(simkaMinCoreBin):
+        # not in PATH, checking "../build/bin/simkaMinCore"
+        simkaMinCoreBin=os.path.join(os.path.split(os.path.realpath(__file__))[0],"../build/bin/simkaMinCore")
+        if not is_executable(simkaMinCoreBin):
+            print("Error: simkaMinCore executable not found, please give the executable path with option -bin (should be <SimkaDirectory>/build/bin/simkaMinCore)")
+            exit(1)
+
 
 
 #-------------------------------------------------------------------------------------------------------------
@@ -82,7 +116,7 @@ print(existing_sketch_header)
 
 
 #Sketch new datasets
-command_sketchNewDatasets = args.bin + " sketch "
+command_sketchNewDatasets = simkaMinCoreBin + " sketch "
 command_sketchNewDatasets += " -in " + args.input_filename
 command_sketchNewDatasets += " -out " + sketchFilename_new
 command_sketchNewDatasets += " -seed " + str(existing_sketch_header["seed"])
@@ -96,7 +130,7 @@ command_sketchNewDatasets += " -nb-cores " + args.nb_cores
 command_sketchNewDatasets += " -max-memory " + args.max_memory
 
 #Compute distance between existing datasets and new datasets
-command_distance_existingVsNew = args.bin + " distance "
+command_distance_existingVsNew = simkaMinCoreBin + " distance "
 command_distance_existingVsNew += " -in1 " + sketchFilename_existing
 command_distance_existingVsNew += " -in2 " + sketchFilename_new
 command_distance_existingVsNew += " -out " + distanceDir_existingVsNew
@@ -105,25 +139,25 @@ command_distance_existingVsNew += " -nb-cores " + args.nb_cores
 
 
 #Compute distance between new datasets and new datasets
-command_distance_newVsNew = args.bin + " distance "
+command_distance_newVsNew = simkaMinCoreBin + " distance "
 command_distance_newVsNew += " -in1 " + sketchFilename_new
 command_distance_newVsNew += " -in2 " + sketchFilename_new
 command_distance_newVsNew += " -out " + distanceDir_newVsNew
 command_distance_newVsNew += " -nb-cores " + args.nb_cores
 
 #Update existing distance matrix
-command_distanceMatrix_update = args.bin + " matrix-update "
+command_distanceMatrix_update = simkaMinCoreBin + " matrix-update "
 command_distanceMatrix_update += " -in " + distanceOutputDir
 command_distanceMatrix_update += " -in1 " + sketchFilename_existing
 command_distanceMatrix_update += " -in2 " + sketchFilename_new
 
 #Append new sketch to existing sketch
-command_sketch_append = args.bin + " append "
+command_sketch_append = simkaMinCoreBin + " append "
 command_sketch_append += " -in1 " + sketchFilename_existing
 command_sketch_append += " -in2 " + sketchFilename_new
 
 
-exportCommand = args.bin + " export "
+exportCommand = simkaMinCoreBin + " export "
 exportCommand += " -in " + distanceOutputDir
 exportCommand += " -in1 " + sketchFilename_existing
 exportCommand += " -in2 " + sketchFilename_existing

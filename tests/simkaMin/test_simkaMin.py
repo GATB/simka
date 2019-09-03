@@ -23,7 +23,7 @@ def create_command(scriptFilename, outputPrefix, k, filter, nb_reads, nb_kmers, 
     command += " -max-memory 100 "
     command += " -kmer-size " + str(k)
     command += " -nb-kmers " + str(nb_kmers)
-    command += " -bin ../../build/bin/simkaMin "
+    command += " -bin ../../build/bin/simkaMinCore "
     command += " -max-reads " + str(nb_reads)
     command += " " + filter + " "
     return command, outputDir
@@ -37,7 +37,7 @@ def create_command_update(scriptFilename, outputPrefix, k, filter, nb_reads, nb_
     command += " -max-memory 100 "
     #command += " -kmer-size " + str(k)
     #command += " -nb-kmers " + str(nb_kmers)
-    command += " -bin ../../build/bin/simkaMin "
+    command += " -bin ../../build/bin/simkaMinCore "
     command += " -max-reads " + str(nb_reads)
     command += " " + filter + " "
     return command, outputDir
@@ -179,14 +179,14 @@ def test_append():
         f.close()
 
         sketch_filename = os.path.join(out_dir, "sketch.bin")
-        command = "../../build/bin/simkaMin sketch -in " + filename_temp + " -out " + sketch_filename + " -nb-kmers 100 -kmer-size 21 -nb-cores 4"
+        command = "../../build/bin/simkaMinCore sketch -in " + filename_temp + " -out " + sketch_filename + " -nb-kmers 100 -kmer-size 21 -nb-cores 4"
         print(command)
         ret = os.system(command + suffix)
         if ret != 0: exit(1)
 
 
         if os.path.exists(merged_sketch_filename):
-            command = "../../build/bin/simkaMin append -in1 " + merged_sketch_filename + " -in2 " + sketch_filename
+            command = "../../build/bin/simkaMinCore append -in1 " + merged_sketch_filename + " -in2 " + sketch_filename
             print(command)
             ret = os.system(command + suffix)
             if ret != 0: exit(1)
@@ -196,12 +196,12 @@ def test_append():
 
         os.remove(filename_temp)
 
-    command = "../../build/bin/simkaMin distance -in1 " +  merged_sketch_filename + " -in2 " + merged_sketch_filename + " -out " + dir + " -nb-cores 4 "
+    command = "../../build/bin/simkaMinCore distance -in1 " +  merged_sketch_filename + " -in2 " + merged_sketch_filename + " -out " + dir + " -nb-cores 4 "
     print(command)
     ret = os.system(command + suffix)
     if ret != 0: exit(1)
 
-    command = "../../build/bin/simkaMin export -in " + dir + " -in1 " +  merged_sketch_filename + " -in2 " + merged_sketch_filename + " -out " + dir
+    command = "../../build/bin/simkaMinCore export -in " + dir + " -in1 " +  merged_sketch_filename + " -in2 " + merged_sketch_filename + " -out " + dir
     print(command)
     ret = os.system(command + suffix)
     if ret != 0: exit(1)

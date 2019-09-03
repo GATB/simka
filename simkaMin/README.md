@@ -11,7 +11,7 @@ Contact: claire dot lemaitre at inria dot fr
 
 ## References
 
-Benoit G,  Mariadassou M, Robin S, Schbath S, Peterlongo P and Lemaitre C. (2019) SimkaMin: fast and resource frugal *de novo* comparative metagenomics. To appear in bioRxiv...
+Benoit G,  Mariadassou M, Robin S, Schbath S, Peterlongo P and Lemaitre C. (2019) [SimkaMin: fast and resource frugal *de novo* comparative metagenomics](https://doi.org/10.1093/bioinformatics/btz685). Bioinformatics
 
 Benoit G, Peterlongo P, Mariadassou M, Drezen E, Schbath S, Lavenier D, Lemaitre C. (2016) [Multiple comparative metagenomics using multiset k-mer counting](https://doi.org/10.7717/peerj-cs.94). PeerJ Computer Science 2:e94 
 
@@ -27,6 +27,15 @@ SimkaMin comes with Simka installation. Refer to [Simka install instructions](..
 SimkaMin computes Bray-Curtis (abundance based) and Jaccard (presence/absence based) distances between N (metagenomic) read sets based on subsamples of k-mer counts.
 
 Basically it takes as input the N metagenomic read sets and it outputs two matrices respectively providing the pairwise Bray-Curtis and the Jaccard distances between each dataset pairs. 
+
+## Command example
+
+Run the toy example:
+
+```bash
+./simkaMin/simkaMin.py -in example/simka_input.txt -out results 
+```
+
 
 ### Input
 
@@ -78,7 +87,7 @@ Please refer to the documentation provided in the [Simka Readme file](../README.
 To see simka in-line help:
 
 ```bash
-python simkaMin/simkaMin.py 
+./simkaMin/simkaMin.py 
 ```
 
 
@@ -87,55 +96,62 @@ python simkaMin/simkaMin.py
 Run the toy example:
 
 ```bash
-python simkaMin/simkaMin.py -bin  build/bin/simkaMin -in example/simka_input.txt -out results 
+./simkaMin/simkaMin.py -in example/simka_input.txt -out results 
 ```
 
 Change the kmer size
 
 ```bash
-python simkaMin/simkaMin.py … -kmer-size 31
+./simkaMin/simkaMin.py … -kmer-size 31
 ```
 
 Change the sub-sampling effort (default 1 million kmers are used per read set)
 
 ```bash
-python simkaMin/simkaMin.py … -nb-kmers 10000
+./simkaMin/simkaMin.py … -nb-kmers 10000
 ```
 
 Filter kmers seen one time (potentially erroneous):
 
 ```bash
-python simkaMin/simkaMin.py … -filter
+./simkaMin/simkaMin.py … -filter
 ```
 
 Consider all the reads of each samples (set 0 to use all reads)
 
 ```bash
-python simkaMin/simkaMin.py … -max-reads 0
+./simkaMin/simkaMin.py … -max-reads 0
 ```
 
 Use only the first 1000 reads of each sample:
 
 ```bash
-python simkaMin/simkaMin.py … -max-reads 1000
+./simkaMin/simkaMin.py … -max-reads 1000
 ```
 
 Allow more memory and cores to improve the execution time:
 
 ```bash
-python simkaMin/simkaMin.py … -max-memory 20000 -nb-cores 8
+./simkaMin/simkaMin.py … -max-memory 20000 -nb-cores 8
 ```
 
 Filter low complexity reads
 
 ```bash
-python simkaMin/simkaMin.py … -min-shannon-index 1
+./simkaMin/simkaMin.py … -min-shannon-index 1
 ```
 
 Filter small reads 
 
 ```bash
-python simkaMin/simkaMin.py … -min-read-size 80
+./simkaMin/simkaMin.py … -min-read-size 80
+```
+
+Update existing results with additional datasets
+
+```bash
+./simkaMin/simkaMin_update.py -in another_simka_input.txt -in-to-update results/simkamin
+# updated matrices will be in dir results/simkamin/
 ```
 
 
