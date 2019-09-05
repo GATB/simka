@@ -93,6 +93,8 @@ For further instructions on using simka, see User Manual, below.
 
 # Changelog
 
+* version 1.5.1 Sept 05, 2019:   
+    - simkaMin: easier usage of simkaMin, usefull for conda packaging 
 * version 1.5 Jun 07, 2019:   
     - simkaMin software: faster results by subsampling the kmer space
 * version 1.4 Jun 21, 2017:
