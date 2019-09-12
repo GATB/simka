@@ -21,9 +21,15 @@ Contact: claire dot lemaitre at inria dot fr
 
 # References
 
-Benoit G, Peterlongo P, Mariadassou M, Drezen E, Schbath S, Lavenier D, Lemaitre C. (2016) [Multiple comparative metagenomics using multiset k-mer counting](https://doi.org/10.7717/peerj-cs.94). PeerJ Computer Science 2:e94 
+* Simka: 
+  Benoit G, Peterlongo P, Mariadassou M, Drezen E, Schbath S, Lavenier D, Lemaitre C. (2016) [Multiple comparative metagenomics using multiset k-mer counting](https://doi.org/10.7717/peerj-cs.94). PeerJ Computer Science 2:e94 
 
-Benoit G (2017) [Large scale de novo comparative metagenomics (PhD thesis in french)](https://tel.archives-ouvertes.fr/tel-01659395v2/).
+* SimkaMin:
+
+  Gaetan Benoit, Mahendra Mariadassou, Stéphane Robin, Sophie Schbath, Pierre Peterlongo, Claire Lemaitre [SimkaMin: fast and resource frugal de novo comparative metagenomics](https://academic.oup.com/bioinformatics/advance-article/doi/10.1093/bioinformatics/btz685/5559271)
+  Bioinformatics, https://doi.org/10.1093/bioinformatics/btz685
+
+* Benoit G (2017) [Large scale de novo comparative metagenomics (PhD thesis in french)](https://tel.archives-ouvertes.fr/tel-01659395v2/).
 
 # Install a binary release of simka
 
