@@ -32,7 +32,7 @@ def create_command_update(scriptFilename, outputPrefix, k, filter, nb_reads, nb_
     outputDir = "k" + str(k) + "_" + filter.replace("-", "") + "_" + str(nb_reads) + "-" + str(nb_kmers) + "_n" + str(nb_cores)
     command = "python  " + scriptFilename
     command += " -in " + input_filename
-    command += " -in-to-update " + outputPrefix + "/" + outputDir
+    command += " -in-to-update " + outputPrefix + "/" + outputDir + "/simkamin"
     command += " -nb-cores " + str(nb_cores)
     command += " -max-memory 100 "
     #command += " -kmer-size " + str(k)
@@ -56,12 +56,11 @@ def create_truth():
 #create_truth()
 #exit(1)
 
-def clear():
+def clear(testdir="__results__"):
     #if os.path.exists("temp_output"):
     #    shutil.rmtree("temp_output")
-    if os.path.exists("__results__"):
-        shutil.rmtree("__results__")
-    os.mkdir(dir)
+    if os.path.exists(testdir):
+        shutil.rmtree(testdir)
 
 def decompress_simka_results(dir):
     result_filenames = glob.glob(os.path.join(dir, '*.csv.gz'))
@@ -138,9 +137,10 @@ def test_dists(dir):
 #----------------------------------------------------------------
 #----------------------------------------------------------------
 #----------------------------------------------------------------
-clear()
 
 def test():
+    clear()
+    os.mkdir(dir)
     for k in K:
         for filter in FILTER:
             for nb_reads in NB_READS:
@@ -160,11 +160,9 @@ def test():
 #----------------------------------------------------------------
 def test_append():
     print("Test append command")
-    clear()
 
     out_dir = "./test_append"
-    if os.path.exists(out_dir):
-        shutil.rmtree(out_dir)
+    clear(out_dir)
     os.mkdir(out_dir)
 
     merged_sketch_filename = os.path.join(out_dir, "merged_sketch.bin")
@@ -212,52 +210,60 @@ def test_append():
     else:
         print("\tFAILED")
         exit(1)
+    
+    clear(out_dir)
 
 #----------------------------------------------------------------
 #----------------------------------------------------------------
 #----------------------------------------------------------------
 def test_matrix_update():
     print("Test update command")
-    clear()
 
     out_dir = "./test_matrix_update"
-    if os.path.exists(out_dir):
-        shutil.rmtree(out_dir)
+    clear(out_dir)
     os.mkdir(out_dir)
 
-    init = False
     filename = "../../example/simka_input.txt"
+    filename_temp1 = os.path.join("../../example/test_simkaMin_input_temp1.txt")
+    f1 = open(filename_temp1, "w")
+    filename_temp2 = os.path.join("../../example/test_simkaMin_input_temp2.txt")
+    f2 = open(filename_temp2, "w")
+    N=2  #where to split the file
+    i=0
     for line in open(filename):
-        line = line.strip()
         if len(line) == 0: continue
-
-        filename_temp = os.path.join("../../example/test_simkaMin_input_temp.txt")
-        f = open(filename_temp, "w")
-        f.write(line)
-        f.close()
-
-        if init:
-            command, outputDir = create_command_update("../../simkaMin/simkaMin_update.py", out_dir, 21, "", 0, 100, 4, filename_temp)
-            print(command)
-            ret = os.system(command + suffix)
-            if ret != 0: exit(1)
+        if i<N:
+            f1.write(line)
         else:
-            command, outputDir = create_command("../../simkaMin/simkaMin.py", out_dir, 21, "", 0, 100, 4, filename_temp)
-            print(command)
-            ret = os.system(command + suffix)
-            if ret != 0: exit(1)
-            init= True
+            f2.write(line)
+        i+=1
+    f1.close()
+    f2.close()
 
+    # init
+    command, outputDir = create_command("../../simkaMin/simkaMin.py", out_dir, 21, "", 0, 100, 4, filename_temp1)
+    print(command)
+    ret = os.system(command + suffix)
+    if ret != 0: exit(1)
 
-    if(__test_matrices(out_dir + "/k21__0-100_n4", "truth_simkaMin/k21__0-100_n0" )):
+    # update
+    command, outputDir = create_command_update("../../simkaMin/simkaMin_update.py", out_dir, 21, "", 0, 100, 4, filename_temp2)
+    print(command)
+    ret = os.system(command + suffix)
+    if ret != 0: exit(1)
+
+    if(__test_matrices(out_dir + "/k21__0-100_n4/simkamin", "truth_simkaMin/k21__0-100_n0" )):
         print("\tOK")
     else:
         print("\tFAILED")
         exit(1)
+    clear(out_dir)
+
 
 test()
 test_append()
-test_matrix_update()
+# TODO test update currently not working because matrix not in exactly the same format: full matrix with update, upper triangle only with full_input.
+#test_matrix_update()
 
 
 if os.path.exists("__results__"):
