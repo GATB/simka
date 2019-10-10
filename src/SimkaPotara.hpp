@@ -902,7 +902,8 @@ public:
 					}
 					else{
 						//sleep(1);
-						nanosleep((const struct timespec[]){{0, 100000000L}}, NULL);
+						const struct timespec t[] {{ 0, 1000000000L}};
+                        nanosleep(t, NULL);
 					}
 
 					if(i >= this->_bankNames.size()) break;
