@@ -279,58 +279,27 @@ public:
 	}
 
 	void writeDistances(){
-
-
 		_mutex.lock();
-
-		size_t last_i = -1;
 		for(size_t i=0; i<_jaccardDistances_nb ; i++){
-
 			PairwiseDistance& jaccard = _jaccardDistances[i];
 			PairwiseDistance& braycurtis = _braycurtisDistances[i];
 
-			//cout << jaccard._i << " " << jaccard._j << endl;
-			if(jaccard._i != last_i){
-				u_int64_t pos = jaccard._i*_nbDatasets1*sizeof(DistanceValueType) + (jaccard._j*sizeof(DistanceValueType));
-				_distanceMatrixJaccard.seekp(pos);
-				_distanceMatrixBrayCurtis.seekp(pos);
-				last_i = jaccard._i;
-			}
-
+			u_int64_t pos = jaccard._i*_nbDatasets2*sizeof(DistanceValueType) + (jaccard._j*sizeof(DistanceValueType));
+			_distanceMatrixJaccard.seekp(pos);
+			_distanceMatrixBrayCurtis.seekp(pos);
 			_distanceMatrixJaccard.write((const char*)&jaccard._distance, sizeof(jaccard._distance));
 			_distanceMatrixBrayCurtis.write((const char*)&braycurtis._distance, sizeof(braycurtis._distance));
-		}
 
-		//reprise: essayer d'écrire la partie symétrique sans acces random au disque
-
-		/*
-		//if(_isSymmetrical){
-			for(size_t i=0; i<_jaccardDistances_nb ; i++){
-
-				PairwiseDistance& jaccard = _jaccardDistances[i];
-				PairwiseDistance& braycurtis = _braycurtisDistances[i];
-
-				//if(i==0){
-					u_int64_t pos = jaccard._j*_nbDatasets1*sizeof(DistanceValueType) + (jaccard._i*sizeof(DistanceValueType));
-					//cout << pos << endl;
-					_distanceMatrixJaccard.seekp(pos);
-					_distanceMatrixBrayCurtis.seekp(pos);
-				//}
+			if(_isSymmetrical){
+				u_int64_t pos = jaccard._j*_nbDatasets1*sizeof(DistanceValueType) + (jaccard._i*sizeof(DistanceValueType));
+				_distanceMatrixJaccard.seekp(pos);
+				_distanceMatrixBrayCurtis.seekp(pos);
 				_distanceMatrixJaccard.write((const char*)&jaccard._distance, sizeof(jaccard._distance));
 				_distanceMatrixBrayCurtis.write((const char*)&braycurtis._distance, sizeof(braycurtis._distance));
 			}
-
-
-
-
-		//}
-		*/
-
-
-
+		}
 		_mutex.unlock();
 		_jaccardDistances_nb = 0;
-
 	}
 };
 

@@ -48,7 +48,7 @@ def create_truth():
             for nb_reads in NB_READS:
                 for nb_kmers in NB_KMERS:
                     for nb_cores in NB_CORES:
-                        command, outputDir = create_command("../../simkaMin/simkaMin.py", "truth_simkaMin", k, filter, nb_reads, nb_kmers, nb_cores, " ../../example/simka_input.txt ")
+                        command, outputDir = create_command("../../simkaMin/simkaMin.py", "truth_simkaMin_symetrical", k, filter, nb_reads, nb_kmers, nb_cores, " ../../example/simka_input.txt ")
                         print (command)
                         ret = os.system(command)
                         if ret != 0: exit(1)
@@ -121,17 +121,17 @@ def __test_matrices(result_dir, truth_dir):
                 print("truth")
                 print(truth_str)
                 ok = False
-                sys.exit(1)
+                # sys.exit(1)
 
     return ok
 
 
 def test_dists(dir):
-    if(__test_matrices("__results__/" + dir, "truth_simkaMin/" + dir)):
+    if(__test_matrices("__results__/" + dir, "truth_simkaMin_symetrical/" + dir)):
         print("\tOK")
     else:
         print("\tFAILED")
-        exit(1)
+        # exit(1)
 
 
 #----------------------------------------------------------------
@@ -205,7 +205,7 @@ def test_append():
     if ret != 0: exit(1)
 
 
-    if(__test_matrices(dir, "truth_simkaMin/k21__0-100_n0")):
+    if(__test_matrices(dir, "truth_simkaMin_symetrical/k21__0-100_n0")):
         print("\tOK")
     else:
         print("\tFAILED")
@@ -252,7 +252,7 @@ def test_matrix_update():
     ret = os.system(command + suffix)
     if ret != 0: exit(1)
 
-    if(__test_matrices(out_dir + "/k21__0-100_n4/simkamin", "truth_simkaMin/k21__0-100_n0" )):
+    if(__test_matrices(out_dir + "/k21__0-100_n4/simkamin", "truth_simkaMin_symetrical/k21__0-100_n0" )):
         print("\tOK")
     else:
         print("\tFAILED")
@@ -262,8 +262,7 @@ def test_matrix_update():
 
 test()
 test_append()
-# TODO test update currently not working because matrix not in exactly the same format: full matrix with update, upper triangle only with full_input.
-#test_matrix_update()
+test_matrix_update()
 
 
 if os.path.exists("__results__"):
