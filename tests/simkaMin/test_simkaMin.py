@@ -121,7 +121,7 @@ def __test_matrices(result_dir, truth_dir):
                 print("truth")
                 print(truth_str)
                 ok = False
-                # sys.exit(1)
+                sys.exit(1)
 
     return ok
 
@@ -131,7 +131,7 @@ def test_dists(dir):
         print("\tOK")
     else:
         print("\tFAILED")
-        # exit(1)
+        exit(1)
 
 
 #----------------------------------------------------------------
