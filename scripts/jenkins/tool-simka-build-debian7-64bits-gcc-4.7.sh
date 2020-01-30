@@ -85,6 +85,9 @@ cp -R $GIT_DIR/example/ ..
 if [ -d "$GIT_DIR/tests" ]; then
   cp -R $GIT_DIR/tests/ ..
 fi
+if [ -d "$GIT_DIR/simkaMin" ]; then
+  cp -R $GIT_DIR/simkaMin/ ..
+fi
 # run tests
 cd ../example
 ./simple_test.sh || error_code
