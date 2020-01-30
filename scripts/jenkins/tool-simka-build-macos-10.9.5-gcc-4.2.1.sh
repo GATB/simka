@@ -91,7 +91,7 @@ cd ../example
 if [ -d "../tests" ]; then
   cd ../tests
   python simple_test.py || error_code
-  cd ../simkaMin
+  cd ./simkaMin
   python test_simkaMin.py || error_code
 fi
 cd ../build
