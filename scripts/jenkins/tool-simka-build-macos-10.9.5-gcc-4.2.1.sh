@@ -94,7 +94,7 @@ if [ -d "../tests" ]; then
   cd ./simkaMin
   python test_simkaMin.py || error_code
 fi
-cd ../build
+cd ../../build
 
 
 ################################################################

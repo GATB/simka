@@ -98,7 +98,7 @@ if [ -d "../tests" ]; then
   python test_simkaMin.py || error_code
 fi
 # cleanup disk space
-cd ..
+cd ../..
 rm -rf example
 if [ -d "tests" ]; then
   rm -rf tests
