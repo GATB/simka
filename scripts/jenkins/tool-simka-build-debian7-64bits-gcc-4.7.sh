@@ -91,6 +91,8 @@ cd ../example
 if [ -d "../tests" ]; then
   cd ../tests
   python simple_test.py || error_code
+  cd ../simkaMin
+  python test_simkaMin.py || error_code
 fi
 # cleanup disk space
 cd ..
@@ -106,10 +108,12 @@ cd build
 #                       PACKAGING                              #
 ################################################################
 
+# TODO: Update to conform with GitLab
+
 # Upload bin bundle to the forge
-if [ $? -eq 0 ] && [ "$INRIA_FORGE_LOGIN" != none ] && [ "$DO_NOT_STOP_AT_ERROR" != true ]; then
-	make package
-    scp ${ARCHIVE_NAME}-${BRANCH_TO_BUILD}-bin-Linux.tar.gz ${INRIA_FORGE_LOGIN}@scm.gforge.inria.fr:/home/groups/gatb-tools/htdocs/ci-inria
-    # source package is handled by the osx task
-fi
+# if [ $? -eq 0 ] && [ "$INRIA_FORGE_LOGIN" != none ] && [ "$DO_NOT_STOP_AT_ERROR" != true ]; then
+# 	make package
+#     scp ${ARCHIVE_NAME}-${BRANCH_TO_BUILD}-bin-Linux.tar.gz ${INRIA_FORGE_LOGIN}@scm.gforge.inria.fr:/home/groups/gatb-tools/htdocs/ci-inria
+#     # source package is handled by the osx task
+# fi
 
