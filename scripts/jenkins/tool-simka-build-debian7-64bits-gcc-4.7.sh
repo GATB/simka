@@ -112,9 +112,9 @@ cd build
 ################################################################
 
 
-# Upload bin bundle as a build artifact
-# -> bin bundle *-bin-Linux.tar.gz will be archived as a build artifact
-# -> source package is handled by the osx task
+#-- Upload bin bundle as a build artifact
+#   -> bin bundle *-bin-Linux.tar.gz will be archived as a build artifact
+#   -> source package is handled by the osx task
     
 if [ $? -eq 0 ] && [ "$INRIA_FORGE_LOGIN" != none ] && [ "$DO_NOT_STOP_AT_ERROR" != true ]; then
   make package
@@ -123,3 +123,8 @@ if [ $? -eq 0 ] && [ "$INRIA_FORGE_LOGIN" != none ] && [ "$DO_NOT_STOP_AT_ERROR"
   # scp ${ARCHIVE_NAME}-${BRANCH_TO_BUILD}-bin-Linux.tar.gz ${INRIA_FORGE_LOGIN}@scm.gforge.inria.fr:/home/groups/gatb-tools/htdocs/ci-inria
 fi
 
+#-- Move the generated bin bundle to the workspace (so that it can be uploaded as a Jenkins job artifact)
+#   NB: raw command sample
+#   mv /scratchdir/tool-simka-build-debian7-64bits-gcc-4.7/gatb-simka/build/simka-master-bin-Linux.tar.gz \
+#      /scratchdir/builds/workspace/gatb-simka/build/
+mv ${BUILD_DIR}/${ARCHIVE_NAME}-${BRANCH_TO_BUILD}-bin-Linux.tar.gz $GIT_DIR/build/
