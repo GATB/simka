@@ -101,14 +101,17 @@ cd ../../build
 #                       PACKAGING                              #
 ################################################################
 
-# TODO: Update to conform with GitLab
 
-# Prepare and upload bin and source bundle to the forge
-# if [ $? -eq 0 ] && [ "$INRIA_FORGE_LOGIN" != none ] && [ "$DO_NOT_STOP_AT_ERROR" != true ]; then
-# 	make package
-#     make package_source
-#     scp ${ARCHIVE_NAME}-${BRANCH_TO_BUILD}-bin-Darwin.tar.gz ${INRIA_FORGE_LOGIN}@scm.gforge.inria.fr:/home/groups/gatb-tools/htdocs/ci-inria
-#     scp ${ARCHIVE_NAME}-${BRANCH_TO_BUILD}-Source.tar.gz ${INRIA_FORGE_LOGIN}@scm.gforge.inria.fr:/home/groups/gatb-tools/htdocs/ci-inria
-# fi
+#--Prepare and upload bin and source bundle to the forge
+if [ $? -eq 0 ] && [ "$INRIA_FORGE_LOGIN" != none ] && [ "$DO_NOT_STOP_AT_ERROR" != true ]; then
+    make package
+    make package_source
+    pwd
+    ls -atlhrsF
+    # scp ${ARCHIVE_NAME}-${BRANCH_TO_BUILD}-bin-Darwin.tar.gz ${INRIA_FORGE_LOGIN}@scm.gforge.inria.fr:/home/groups/gatb-tools/htdocs/ci-inria
+    # scp ${ARCHIVE_NAME}-${BRANCH_TO_BUILD}-Source.tar.gz     ${INRIA_FORGE_LOGIN}@scm.gforge.inria.fr:/home/groups/gatb-tools/htdocs/ci-inria
+fi
 
-
+#-- Move the generated bundles, bin and sources, to the workspace (so that it can be uploaded as a Jenkins job artifact)
+mv ${BUILD_DIR}/${ARCHIVE_NAME}-${BRANCH_TO_BUILD}-bin-Darwin.tar.gz $GIT_DIR/build/
+mv ${BUILD_DIR}/${ARCHIVE_NAME}-${BRANCH_TO_BUILD}-Source.tar.gz     $GIT_DIR/build/
