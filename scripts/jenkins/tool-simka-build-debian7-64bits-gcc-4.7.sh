@@ -55,7 +55,8 @@ g++ --version
 [ `gcc -dumpversion` = 4.7 ] && { echo "GCC 4.7"; } || { echo "GCC version is not 4.7, we exit"; exit 1; }
 
 JENKINS_TASK=tool-${TOOL_NAME}-build-debian7-64bits-gcc-4.7
-GIT_DIR=/scratchdir/builds/workspace/gatb-${TOOL_NAME}
+JENKINS_WORKSPACE=/scratchdir/builds/workspace
+GIT_DIR=$JENKINS_WORKSPACE/gatb-${TOOL_NAME}
 BUILD_DIR=/scratchdir/$JENKINS_TASK/gatb-${TOOL_NAME}/build
 
 rm -rf $BUILD_DIR
@@ -127,4 +128,4 @@ fi
 #   NB: raw command sample
 #   mv /scratchdir/tool-simka-build-debian7-64bits-gcc-4.7/gatb-simka/build/simka-master-bin-Linux.tar.gz \
 #      /scratchdir/builds/workspace/gatb-simka/build/
-mv ${BUILD_DIR}/${ARCHIVE_NAME}-${BRANCH_TO_BUILD}-bin-Linux.tar.gz $GIT_DIR/build/
+mv ${BUILD_DIR}/${ARCHIVE_NAME}-${BRANCH_TO_BUILD}-bin-Linux.tar.gz $JENKINS_WORKSPACE/gatb-${TOOL_NAME}/build
