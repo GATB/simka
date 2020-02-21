@@ -57,7 +57,7 @@ g++ --version
 [ `gcc -dumpversion` = 4.2.1 ] && { echo "GCC 4.2.1"; } || { echo "GCC version is not 4.2.1, we exit"; exit 1; }
 
 
-JENKINS_TASK=tool-${TOOL_NAME}-build-macos-10.9.5-gcc-4.2.1
+JENKINS_TASK=tool-${TOOL_NAME}-build-macos-10.9.5-gcc-4.2.1-gitlab
 JENKINS_WORKSPACE=/builds/workspace/$JENKINS_TASK
 GIT_DIR=$JENKINS_WORKSPACE/gatb-${TOOL_NAME}
 
@@ -118,5 +118,5 @@ fi
 #-- Move the generated bundles, bin and sources, to the workspace (so that it can be uploaded as a Jenkins job artifact)
 #   Not necessary in this macos script, since BUILD_DIR is in the workspace (cf. above)
 
-mv ${BUILD_DIR}/${ARCHIVE_NAME}-${BRANCH_TO_BUILD}-bin-Darwin.tar.gz $JENKINS_WORKSPACE/gatb-${TOOL_NAME}/build
-mv ${BUILD_DIR}/${ARCHIVE_NAME}-${BRANCH_TO_BUILD}-Source.tar.gz     $JENKINS_WORKSPACE/gatb-${TOOL_NAME}/build
+#mv ${BUILD_DIR}/${ARCHIVE_NAME}-${BRANCH_TO_BUILD}-bin-Darwin.tar.gz $JENKINS_WORKSPACE/gatb-${TOOL_NAME}/build
+#mv ${BUILD_DIR}/${ARCHIVE_NAME}-${BRANCH_TO_BUILD}-Source.tar.gz     $JENKINS_WORKSPACE/gatb-${TOOL_NAME}/build
