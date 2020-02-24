@@ -87,9 +87,9 @@ fi
 cd $BUILD_DIR
 git clone https://github.com/pgdurand/github-release-api.git
 
-################################################################
-#                       RETRIEVE ARCHIVES FROM INRIA FORGE     #
-################################################################
+#####################################################################
+#                       RETRIEVE ARTIFACTS FROM DEPENDENT TASKS     #
+#####################################################################
 
 CI_URL=https://ci.inria.fr/gatb-core/view/Simka/job
 JENKINS_TASK_DEB=tool-simka-build-debian7-64bits-gcc-4.7-gitlab
