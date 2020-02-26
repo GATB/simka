@@ -364,7 +364,18 @@ public:
 			_isClusterMode = false;
 		}
 
+        if (this->_options->getInt(STR_MAX_MEMORY) < 2000)
+        {
+            std::cout << "WARNING: running Simka with low memory is risky. Simka may hang because of that. Consider running with -max-memory X where X > 2000" << std::endl;
+        }
 
+
+
+		if (this->_options->getInt(STR_MAX_MEMORY) < 500)
+        {
+            std::cout << "Please run Simka with higher memory usage than 500 MB" << std::endl;
+            exit(1);
+        }
 
 
 		//_isClusterMode = true;
