@@ -1,5 +1,5 @@
-
 stages:
+  - update_simka_sq_image
   - analysis
   - aggregate
   - deploy
@@ -48,7 +48,7 @@ sonar:aggregate:
 ##################################################################################################################################################################################################################
 # Ref. https://gitlab.inria.fr/help/ci/docker/using_docker_build.md#making-docker-in-docker-builds-faster-with-docker-layer-caching
 update_simka_sq_image:
-  stage: deploy
+  stage: update_simka_sq_image
   image: docker
   tags:
     - simka-igrida  
