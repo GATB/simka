@@ -13,7 +13,7 @@ sonar:analysis:
   image: $CI_REGISTRY_IMAGE/simka_sq:latest
   script:
     - echo "Launching sonar:analysis diagnostics..."
-    - tools/analysis.sh &> analysis.log
+    -  scripts/sonarqube_diags/analysis.sh &> analysis.log
   tags:
     - simka-igrida
   artifacts:
@@ -59,7 +59,7 @@ update_simka_sq_image:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker pull $CI_REGISTRY_IMAGE/simka_sq:latest || true
     - docker --version
-    - cd tools
+    - cd scripts/sonarqube_diags
     - docker build -f Dockerfile.sq --cache-from $CI_REGISTRY_IMAGE/simka_sq:latest --tag $CI_REGISTRY_IMAGE/simka_sq:latest .
     - docker push $CI_REGISTRY_IMAGE/simka_sq:latest
     - docker image ls
