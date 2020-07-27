@@ -1,0 +1,67 @@
+stages:
+  - update_simka_sq_image
+  - analysis
+  - aggregate
+  - deploy
+
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+  
+#########################################################################################################
+sonar:analysis:
+  stage: analysis
+  image: $CI_REGISTRY_IMAGE/simka_sq:latest
+  script:
+    - echo "Launching sonar:analysis diagnostics..."
+    -  scripts/sonarqube_diags/analysis.sh &> analysis.log
+  tags:
+    - simka-igrida
+  artifacts:
+    paths:
+      - build
+      - analyzer_reports
+      - simka-scan-build-cmake.log
+      - simka-scan-build-make.log
+      - gcov.xml
+      - simka-clang-tidy-report.log
+      - compile_commands.json 
+      - simka-cppcheck.xml
+      - simka-rats.xml 
+      - analysis.log
+
+#########################################################################################################
+sonar:aggregate:
+  stage: aggregate
+  image: $CI_REGISTRY_IMAGE/simka_sq:latest
+  script:
+    - echo "Launching sonar:aggregate task..."
+    - echo "====================="; pwd; ls -atlhrsF; echo "====================="
+    - ls analyzer_reports/*/*.plist
+    - sonar-scanner -X -Dsonar.login=$SONARQUBE_LOGIN -Dsonar.verbose=true &> sonar-scanner.log
+  tags:
+    - simka-igrida
+  artifacts:
+    paths:
+      - sonar-scanner.log
+    expire_in: 5 days
+    
+##################################################################################################################################################################################################################
+# Ref. https://gitlab.inria.fr/help/ci/docker/using_docker_build.md#making-docker-in-docker-builds-faster-with-docker-layer-caching
+update_simka_sq_image:
+  stage: update_simka_sq_image
+  image: docker
+  tags:
+    - simka-igrida  
+  services:
+    - docker:19.03.12-dind
+  script: 
+    - echo "Launching update_ci_image job..."
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker pull $CI_REGISTRY_IMAGE/simka_sq:latest || true
+    - docker --version
+    - cd scripts/sonarqube_diags
+    - docker build -f Dockerfile.sq --cache-from $CI_REGISTRY_IMAGE/simka_sq:latest --tag $CI_REGISTRY_IMAGE/simka_sq:latest .
+    - docker push $CI_REGISTRY_IMAGE/simka_sq:latest
+    - docker image ls
+  when: manual
+
