@@ -92,6 +92,13 @@ add_executable        (simkaMinCore  src/simkaMin/SimkaMin.cpp ${SimkaMinFiles})
 target_link_libraries (simkaMinCore  ${gatb-core-libraries})
 
 ################################################################################
+#  DOCUMENTATION GENERATION 
+################################################################################
+IF (EXISTS "${PROJECT_SOURCE_DIR}/doc")
+    ADD_SUBDIRECTORY(doc EXCLUDE_FROM_ALL)
+ENDIF()
+
+################################################################################
 #  PACKAGING
 ################################################################################
 

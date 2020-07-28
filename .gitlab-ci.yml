@@ -1,4 +1,5 @@
 stages:
+  - gitlab_pages
   - update_simka_sq_image
   - analysis
   - aggregate
@@ -65,3 +66,18 @@ update_simka_sq_image:
     - docker image ls
   when: manual
 
+  pages:
+    image: debian:latest
+    stage: gitlab_pages
+    script:
+      - apt-get install -y doxygen graphviz build-essential
+      - mkdir -p public/doc
+      - mkdir build
+      - cd build
+      - cmake ..
+      - make doc-gatb-simka
+      - mv doc/html ../public/doc/
+    artifacts:
+      paths:
+        - public
+  

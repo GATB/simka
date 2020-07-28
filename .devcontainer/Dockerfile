@@ -21,7 +21,7 @@ RUN apt-get update \
     && apt-get -y install build-essential cmake cppcheck valgrind \
     #
     # Additions for GATB and Simka
-    && apt-get -y install zlib1g-dev doxygen vim \
+    && apt-get -y install zlib1g-dev doxygen graphviz ack vim \
     #
     # [Optional] Update UID/GID if needed
     && if [ "$USER_GID" != "1000" ] || [ "$USER_UID" != "1000" ]; then \
