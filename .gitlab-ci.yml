@@ -70,7 +70,7 @@ pages:
   image: debian:latest
   stage: gitlab_pages
   script:
-    - apt-get install -y doxygen graphviz build-essential
+    - apt-get update && apt-get install -y doxygen graphviz build-essential
     - mkdir -p public/doc
     - mkdir build
     - cd build
