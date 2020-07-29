@@ -21,7 +21,8 @@ RUN apt-get update
 RUN apt install -y \
     make autoconf wget unzip \
     zlib1g-dev libcppunit-dev \
-	git build-essential cmake clang clang-tidy gcovr lcov cppcheck valgrind python-pip pylint sudo vim tree
+	git build-essential cmake clang clang-tidy gcovr lcov cppcheck valgrind python-pip pylint sudo vim tree \
+	doxygen graphviz  # for doxygen doc generation
 
 RUN pip install --upgrade pip
 RUN python -m pip install pytest pytest-cov setuptools scan-build
