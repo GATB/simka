@@ -67,10 +67,9 @@ update_simka_sq_image:
   when: manual
 
 pages:
-  image: debian:10
+  image: $CI_REGISTRY_IMAGE/simka_sq:latest
   stage: gitlab_pages
   script:
-    - apt-get update && apt-get install -y build-essential doxygen graphviz cmake
     - mkdir -p public/doc
     - mkdir build
     - cd build
