@@ -1,6 +1,6 @@
 stages:
-  - gitlab_pages
   - update_simka_sq_image
+  - gitlab_pages
   - analysis
   - aggregate
   - deploy
