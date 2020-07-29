@@ -70,7 +70,7 @@ pages:
   image: $CI_REGISTRY_IMAGE/simka_sq:latest
   stage: gitlab_pages
   script:
-    - mkdir -p public/doc/doxygen
+    - mkdir -p public/doc
     - mkdir build
     - cd build
     - cmake --target doc-gatb-simka ..
