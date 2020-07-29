@@ -52,7 +52,7 @@ update_simka_sq_image:
   stage: update_simka_sq_image
   image: docker
   tags:
-    - simka-igrida  
+    #- simka-igrida  
   services:
     - docker:19.03.12-dind
   script: 
