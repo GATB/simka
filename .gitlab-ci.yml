@@ -14,7 +14,7 @@ sonar:analysis:
   image: $CI_REGISTRY_IMAGE/simka_sq:latest
   script:
     - echo "Launching sonar:analysis diagnostics..."
-    - scripts/sonarqube_diags/analysis.sh # &> analysis.log
+    - scripts/sonarqube_diags/analysis.sh > analysis.log
   tags:
     #- simka-igrida
   artifacts:
