@@ -16,7 +16,7 @@ sonar:analysis:
     - echo "Launching sonar:analysis diagnostics..."
     -  scripts/sonarqube_diags/analysis.sh &> analysis.log
   tags:
-    - simka-igrida
+    #- simka-igrida
   artifacts:
     paths:
       - build
@@ -40,7 +40,7 @@ sonar:aggregate:
     - ls analyzer_reports/*/*.plist
     - sonar-scanner -X -Dsonar.login=$SONARQUBE_LOGIN -Dsonar.verbose=true &> sonar-scanner.log
   tags:
-    - simka-igrida
+    #- simka-igrida
   artifacts:
     paths:
       - sonar-scanner.log
