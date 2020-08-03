@@ -44,8 +44,8 @@ scan-build -v -plist --intercept-first --analyze-headers -o analyzer_reports \
 # launch make
 echo_stderr "===> Launching make with scan-build..." 
 time scan-build -v -plist --intercept-first --analyze-headers -o analyzer_reports \
-#   make -j 4 &> simka-scan-build-make.log
-    make -j 4
+    make -j 4 &> simka-scan-build-make.log
+ #  make -j 4
 
 [[ -x "bin/simka" ]] || { echo "Error, simka executable not generated"; exit 111; }
 
