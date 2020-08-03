@@ -17,6 +17,7 @@ sonar:analysis:
     - scripts/sonarqube_diags/analysis.sh > analysis.log
   tags:
     #- simka-igrida
+    - large
   artifacts:
     paths:
       - build
@@ -54,6 +55,7 @@ update_simka_sq_image:
   image: docker
   tags:
     #- simka-igrida  
+    - large
   services:
     - docker:19.03.12-dind
   script: 
