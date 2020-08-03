@@ -49,7 +49,8 @@ time scan-build -v -plist --intercept-first --analyze-headers -o analyzer_report
 
 [[ -x "bin/simka" ]] || { echo "Error, simka executable not generated"; exit 111; }
 
-mv simka-scan-build.log  ..
+mv simka-scan-build-cmake.log  ..
+mv simka-scan-build-make.log  ..
 mv analyzer_reports ..
 
 ####################################################################################################
