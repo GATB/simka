@@ -29,6 +29,7 @@ sonar:analysis:
       - simka-cppcheck.xml
       - simka-rats.xml 
       - analysis.log
+    when: always      # useful to debug
 
 #########################################################################################################
 sonar:aggregate:
