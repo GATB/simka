@@ -18,6 +18,7 @@ sonar:analysis:
   tags:
     #- simka-igrida
     - large
+  cache: {}
   artifacts:
     paths:
       - build
