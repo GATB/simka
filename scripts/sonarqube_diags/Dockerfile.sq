@@ -10,7 +10,7 @@
 # References:
 #    see eg https://sed-bso.gitlabpages.inria.fr/sonarqube/#sec-2-5
 
-FROM debian:9
+FROM debian:10
 
 ENV FORCE_UNSAFE_CONFIGURE=1
 ENV DEBIAN_FRONTEND noninteractive
