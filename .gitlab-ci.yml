@@ -14,9 +14,11 @@ sonar:analysis:
   image: $CI_REGISTRY_IMAGE/simka_sq:latest
   script:
     - echo "Launching sonar:analysis diagnostics..."
-    -  scripts/sonarqube_diags/analysis.sh &> analysis.log
+    - scripts/sonarqube_diags/analysis.sh > analysis.log
   tags:
-    - simka-igrida
+    #- simka-igrida
+    - large
+  cache: {}
   artifacts:
     paths:
       - build
@@ -29,6 +31,7 @@ sonar:analysis:
       - simka-cppcheck.xml
       - simka-rats.xml 
       - analysis.log
+    when: always      # useful to debug
 
 #########################################################################################################
 sonar:aggregate:
@@ -40,7 +43,7 @@ sonar:aggregate:
     - ls analyzer_reports/*/*.plist
     - sonar-scanner -X -Dsonar.login=$SONARQUBE_LOGIN -Dsonar.verbose=true &> sonar-scanner.log
   tags:
-    - simka-igrida
+    #- simka-igrida
   artifacts:
     paths:
       - sonar-scanner.log
@@ -53,6 +56,7 @@ update_simka_sq_image:
   image: docker
   tags:
     #- simka-igrida  
+    - large
   services:
     - docker:19.03.12-dind
   script: 
