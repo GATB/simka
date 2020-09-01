@@ -26,6 +26,7 @@ sonar:analysis:
       - simka-scan-build-cmake.log
       - simka-scan-build-make.log
       - gcov.xml
+      - coverage-html
       - simka-clang-tidy-report.log
       - compile_commands.json 
       - simka-cppcheck.xml
