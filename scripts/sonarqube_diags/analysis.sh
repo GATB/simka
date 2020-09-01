@@ -9,8 +9,18 @@ echo_stderr "===> Launching analysis script (to prepare SonarQube diagnostics)..
 ####################################################################################################
 # CppCheck and RATS analysis
 ####################################################################################################
+
 echo_stderr "===> Launching CppCheck analysis..."
-cppcheck -j2 -f --enable=all --suppress=missingIncludeSystem --xml-version=2 src/ &> simka-cppcheck.xml
+# see e.g. https://sonarqube.inria.fr/pages/documentation.html#org4575413
+
+export CPPCHECK_INCLUDES="-Icore -Iminikc -IsimkaMin"
+export SOURCES_TO_ANALYZE="src"
+export SOURCES_TO_EXCLUDE=     # ex. "-isrc/beta"
+export DEFINITIONS=            # -D
+
+cppcheck -v -f --language=c++ --platform=unix64 --enable=all --suppress=missingIncludeSystem --xml --xml-version=2 \
+    ${DEFINITIONS} ${CPPCHECK_INCLUDES} ${SOURCES_TO_EXCLUDE} ${SOURCES_TO_ANALYZE} \
+    2> simka-cppcheck.xml
 
 echo_stderr "===> Launching RATS analysis..."
 rats -w 3 --xml src > simka-rats.xml
