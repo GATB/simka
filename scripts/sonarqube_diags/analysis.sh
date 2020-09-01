@@ -23,7 +23,8 @@ cppcheck -v -f --language=c++ --platform=unix64 --enable=all --suppress=missingI
     2> simka-cppcheck.xml
 
 echo_stderr "===> Launching RATS analysis..."
-rats -w 3 --xml src > simka-rats.xml
+export SOURCES_TO_ANALYZE="src"
+rats -w 3 --xml ${SOURCES_TO_ANALYZE} > simka-rats.xml
 
 ####################################################################################################
 # Compile the code
