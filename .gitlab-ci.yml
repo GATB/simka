@@ -32,6 +32,9 @@ sonar:analysis:
       - simka-rats.xml 
       - analysis.log
     when: always      # useful to debug
+    expire_in: 5 days
+
+
 
 #########################################################################################################
 sonar:aggregate:
