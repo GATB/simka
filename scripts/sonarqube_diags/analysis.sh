@@ -98,7 +98,7 @@ lcov --add-tracefile simka_coverage_base.info \
     --output-file simka_coverage_total.info
 
 # extract useful data
-lcov --extract simka_coverage_total.info '/home/gitlab/simka/src/*' \
+lcov --extract simka_coverage_total.info '*/simka/src/*' \
     --output-file simka_coverage_total_filtered.info
 
 # generate the html lcov page that can be published
