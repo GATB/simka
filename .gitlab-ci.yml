@@ -80,7 +80,6 @@ pages:
   stage: deploy
   script:
     - mkdir -p public/doc
-    - mkdir build
     - cd build
     - cmake --target doc-gatb-simka ..
     - make doc-gatb-simka
