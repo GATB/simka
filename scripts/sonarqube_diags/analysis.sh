@@ -86,7 +86,7 @@ lcov --capture --initial --directory . --output-file simka_coverage_base.info
 
 # run tests
 echo_stderr "===> Launching a simple test run..."
-../example/simple_test.sh
+../example/simple_test.sh -max-count 2 -max-merge 4 -nb-cores 4 -max-memory 3000
 
 # run lcov again after tests complete
 echo_stderr "===> Launching lcov (after test completion)..."
