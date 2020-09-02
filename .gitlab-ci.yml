@@ -15,7 +15,7 @@ sonar:analysis:
     - echo "Launching sonar:analysis diagnostics..."
     - scripts/sonarqube_diags/analysis.sh > analysis.log
     - mkdir -p public/doc
-    - mv coverage-html public/doc/lcov
+    - mv coverage-html public/doc/lcov # for gitlabpages publication
   tags:
     #- simka-igrida
     - large
@@ -80,6 +80,7 @@ pages:
   stage: deploy
   script:
     - mkdir -p public/doc
+    - test -d build || mkdir build
     - cd build
     - cmake --target doc-gatb-simka ..
     - make doc-gatb-simka
