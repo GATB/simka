@@ -1,4 +1,5 @@
 #!/bin/bash
+ADDITIONAL_SIMKA_OPTIONS=$*
 #simple test with real data
 
 # look for simka binary. In devel mode, it's in ../build/bin directory.
@@ -15,7 +16,7 @@ else
 fi
 
 # run simka
-command="$bindir/simka -in ../example/simka_input.txt -out ./simka_results/ -out-tmp ./simka_temp_output"
+command="$bindir/simka -in ../example/simka_input.txt -out ./simka_results/ -out-tmp ./simka_temp_output $ADDITIONAL_SIMKA_OPTIONS"
 #printf "$command\n\n"
 
 # DO NOT add lines between '$command' exec and 'var...' !

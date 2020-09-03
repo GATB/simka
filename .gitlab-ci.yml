@@ -1,6 +1,5 @@
 stages:
   - update_simka_sq_image
-  - gitlab_pages
   - analysis
   - aggregate
   - deploy
@@ -15,14 +14,16 @@ sonar:analysis:
   script:
     - echo "Launching sonar:analysis diagnostics..."
     - scripts/sonarqube_diags/analysis.sh > analysis.log
+    - mkdir -p public/doc
+    - mv coverage-html public/doc/lcov # for gitlabpages publication
   tags:
     #- simka-igrida
     - large
   cache: {}
   artifacts:
     paths:
-      - build
-      - analyzer_reports
+      - build/
+      - analyzer_reports/
       - simka-scan-build-cmake.log
       - simka-scan-build-make.log
       - gcov.xml
@@ -31,7 +32,11 @@ sonar:analysis:
       - simka-cppcheck.xml
       - simka-rats.xml 
       - analysis.log
+      - public/
     when: always      # useful to debug
+    expire_in: 5 days
+
+
 
 #########################################################################################################
 sonar:aggregate:
@@ -72,10 +77,10 @@ update_simka_sq_image:
 
 pages:
   image: $CI_REGISTRY_IMAGE/simka_sq:latest
-  stage: gitlab_pages
+  stage: deploy
   script:
     - mkdir -p public/doc
-    - mkdir build
+    - test -d build || mkdir build
     - cd build
     - cmake --target doc-gatb-simka ..
     - make doc-gatb-simka
