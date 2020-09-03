@@ -68,11 +68,12 @@ mv analyzer_reports ..
 ####################################################################################################
 # Clang-tidy analysis
 ####################################################################################################
-echo_stderr "===> Launching run-clang-tidy..."
+echo_stderr "===> Launching clang-tidy..."
 test -f compile_commands.json || echo "Warning, compilation database missing"
-run-clang-tidy-3.8.py -checks='*'  -p . -j4 > simka-clang-tidy-report.log
-
-mv simka-clang-tidy-report.log ..
+cd ..
+#clang-tidy  -p build/  $(find src/ -name *.cpp) -checks='*' > simka-clang-tidy-report.log
+clang-tidy  -p build/  $(find src/ -name *.cpp) -checks=-*,clang-analyzer-*,cppcoreguidelines-* > simka-clang-tidy-report.log
+cd -    # back in build/ again
 mv compile_commands.json ..
 
 ####################################################################################################
@@ -108,7 +109,7 @@ mv coverage-html ..
 
 # convert the lcov report to an xml format convertible with SonarQube
 echo_stderr "===> Generating coverage report for SonarQube..."
-lcov_cobertura.py simka_coverage_total_filtered.info --output gcov.xml
-mv gcov.xml ..
+cd ..
+lcov_cobertura.py build/simka_coverage_total_filtered.info --output gcov.xml --base-dir src/
 
 echo_stderr "===> Done..."
