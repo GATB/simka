@@ -1,10 +1,19 @@
+
+<details>
+  <summary markdown="span">Table of contents</summary>
+
+  [[_TOC_]]
+</details>
+
 # Simka & SimkaMin       
 
 [![License](http://img.shields.io/:license-affero-blue.svg)](http://www.gnu.org/licenses/agpl-3.0.en.html)
 
-This directory stores Simka and SimkaMin software. This readme focuses on Simka features. All information about SimkaMin is located in the [simkaMin](simkaMin/) directory. 
 
-## Continuous integration status (master branch)
+> This directory stores Simka and SimkaMin software. This readme focuses on Simka features. All information about SimkaMin is located in the [simkaMin](simkaMin/) directory. 
+
+
+# Continuous integration status (master branch)
 
 ### Build status
 | **Linux** | **Mac OSX** |
@@ -29,7 +38,6 @@ This directory stores Simka and SimkaMin software. This readme focuses on Simka 
   [![New Vulnerabilities](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=new_vulnerabilities)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=new_vulnerabilities)
   [![New Code Smells](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=new_code_smells)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=new_code_smells)
 </details>
-
 
 # What is Simka?
 
