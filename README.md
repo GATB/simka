@@ -12,8 +12,10 @@
 ### SonarQube metrics
 
 [![Lines of code](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=ncloc)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=ncloc)
-[![Comment line density](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=comment_lines_density)](https://sonarqube.inria.fr/sonarqube/component_measures?id=sedbso%3Aheat%3Agitlab%3Amaster&metric=comment_lines_density)
-[![Coverage](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=coverage)](https://sonarqube.inria.fr/sonarqube/component_measures?id=sedbso%3Aheat%3Agitlab%3Amaster&metric=coverage)
+
+[![Comment line density](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=comment_lines_density)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=comment_lines_density)
+
+[![Coverage](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=coverage)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=coverage)
 
 [![Bugs](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master=bugs)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=bugs)
 
