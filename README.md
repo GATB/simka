@@ -11,21 +11,24 @@ This directory stores Simka and SimkaMin software. This readme focuses on Simka 
 |-----------|-------------|
 [![Build Status](https://ci.inria.fr/gatb-core/view/Simka/job/tool-simka-build-debian7-64bits-gcc-4.7-gitlab/badge/icon)](https://ci.inria.fr/gatb-core/view/Simka/job/tool-simka-build-debian7-64bits-gcc-4.7-gitlab/) | [![Build Status](https://ci.inria.fr/gatb-core/view/Simka/job/tool-simka-build-macos-10.9.5-gcc-4.2.1-gitlab/badge/icon)](https://ci.inria.fr/gatb-core/view/Simka/job/tool-simka-build-macos-10.9.5-gcc-4.2.1-gitlab/)
 
-[![License](http://img.shields.io/:license-affero-blue.svg)](http://www.gnu.org/licenses/agpl-3.0.en.html)
 
 ### SonarQube metrics
 
-[![Lines of code](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=ncloc)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=ncloc)
-[![Comment line density](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=comment_lines_density)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=comment_lines_density)
-[![Coverage](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=coverage)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=coverage)
+<details>
+  <summary markdown="span">Click me to expand</summary>
 
-[![Bugs](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=bugs)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=bugs)
-[![Vulnerabilities](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=vulnerabilities)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=vulnerabilities)
-[![Code Smells](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=code_smells)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=code_smells)
+  [![Lines of code](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=ncloc)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=ncloc)
+  [![Comment line density](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=comment_lines_density)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=comment_lines_density)
+  [![Coverage](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=coverage)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=coverage)
 
-[![New Bugs](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=new_bugs)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=new_bugs)
-[![New Vulnerabilities](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=new_vulnerabilities)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=new_vulnerabilities)
-[![New Code Smells](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=new_code_smells)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=new_code_smells)
+  [![Bugs](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=bugs)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=bugs)
+  [![Vulnerabilities](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=vulnerabilities)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=vulnerabilities)
+  [![Code Smells](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=code_smells)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=code_smells)
+
+  [![New Bugs](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=new_bugs)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=new_bugs)
+  [![New Vulnerabilities](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=new_vulnerabilities)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=new_vulnerabilities)
+  [![New Code Smells](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=new_code_smells)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=new_code_smells)
+</details>
 
 
 # What is Simka?
