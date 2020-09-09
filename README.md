@@ -11,6 +11,10 @@
 
 ### SonarQube metrics
 
+[![Lines of code](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=ncloc)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=ncloc)
+
+
+
 This github directory stores Simka and SimkaMin software. This readme focuses on Simka features. All information about SimkaMin is located in the [simkaMin](simkaMin/) directory. 
 
 
