@@ -11,7 +11,7 @@
 
 ### SonarQube metrics
 
-[![Lines of code](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=ncloc)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=ncloc)
+[![Lines of code](https://sonarqube.inria.fr/sonarqube/api/badges/measure?key=genscale:gatb:tools:simka:gitlab:master&metric=ncloc)](https://sonarqube.inria.fr/sonarqube/component_measures?id=genscale%3Agatb%3Atools%3Asimka%3Agitlab%3Amaster&metric=ncloc)
 
 
 
