@@ -18,7 +18,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-
+ 
 #ifndef TOOLS_SIMKA_SRC_SIMKAFUSION_HPP_
 #define TOOLS_SIMKA_SRC_SIMKAFUSION_HPP_
 
@@ -214,9 +214,18 @@ public:
 
 		//cout << "lala" << endl;
 		//cout << _execDir << endl;
-
-		_execDir = System::file().getRealPath(execFilename);
-		_execDir = System::file().getDirectory(_execDir) + "/";
+       
+		if (execFilename == "simka") // i.e. simka binary is found in $PATH
+		{
+			//cout << endl << "Debug info : execFilename = simka (i.e. simka binary is found in $PATH)" << endl;
+			_execDir = "";
+		}
+		else
+		{
+			//cout << endl << "Debug info : execFilename = " << execFilename << endl;
+			_execDir = System::file().getRealPath(execFilename);
+			_execDir = System::file().getDirectory(_execDir) + "/";
+		}
 
 		//_options = options;
 
@@ -828,7 +837,7 @@ public:
 
 			string tempDir = this->_outputDirTemp + "/temp/" + this->_bankNames[i];
 
-			string command = "nohup " + _execDir + "/simkaCountProcess " + _execDir + "/simkaCount ";
+			string command = "nohup " + _execDir + "simkaCountProcess " + _execDir + "simkaCount ";
 			command += " " + string(STR_KMER_SIZE) + " " + SimkaAlgorithm<>::toString(this->_kmerSize);
 			command += " " + string("-out-tmp-simka") + " " + this->_outputDirTemp;
 			command += " " + string("-out-tmp") + " " + tempDir;
@@ -994,7 +1003,7 @@ public:
 
 				filenameQueue.push_back(datasetId);
 
-				string command = "nohup " + _execDir + "/simkaMerge ";
+				string command = "nohup " + _execDir + "simkaMerge ";
 				command += " " + string(STR_KMER_SIZE) + " " + SimkaAlgorithm<>::toString(this->_kmerSize);
 				command += " " + string(STR_URI_INPUT) + " " + this->_inputFilename;
 				command += " " + string("-out-tmp-simka") + " " + this->_outputDirTemp;
