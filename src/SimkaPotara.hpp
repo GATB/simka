@@ -621,6 +621,13 @@ public:
     		IBank* bank = Bank::open(inputDir + this->_bankNames[i]);
     		LOCAL(bank);
 
+            // Check that data files are not empty
+            int64_t nbItems = bank->estimateNbItems();
+            if (nbItems==0) {
+                cerr << "ERROR: Dataset is empty: " << this->_bankNames[i] << endl;
+                exit(1);
+            }
+
     		//size_t nbBank_ = bank->getCompositionNb();
     		SimkaBankTemp* simkaBank = new SimkaBankTemp(bank, this->_maxNbReads*this->_nbBankPerDataset[i]);
     		//banksToDelete.push_back(simkaBank);
