@@ -61,7 +61,7 @@ RUN cd /root/apps && \
     chmod +x /root/apps/sonar-cxx/cxx-sensors/src/tools/vera++Report2checkstyleReport.perl && \
     ln -s /root/apps/sonar-cxx/cxx-sensors/src/tools/vera++Report2checkstyleReport.perl /usr/local/bin/vera++Report2checkstyleReport.perl
 
-ENV version_sonar 4.2.0.1873
+ENV version_sonar 4.5.0.2216
 RUN cd /root/apps && \
     wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${version_sonar}-linux.zip && \
     unzip sonar-scanner-cli-${version_sonar}-linux.zip && \
