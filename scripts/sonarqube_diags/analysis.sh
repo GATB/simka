@@ -1,6 +1,7 @@
+#!/bin/bash
 # This script launches several diagnostics, whose results will be uploaded to the
 # SonarQube server.
-#!/bin/bash
+
 set -xv 
 
 echo_stderr() { echo "$@" 1>&2; }
