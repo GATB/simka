@@ -18,7 +18,7 @@
 ### Build status
 | **Linux** | **Mac OSX** |
 |-----------|-------------|
-[![Build Status](https://ci.inria.fr/gatb-core/view/Simka/job/tool-simka-build-debian7-64bits-gcc-4.7-gitlab/badge/icon)](https://ci.inria.fr/gatb-core/view/Simka/job/tool-simka-build-debian7-64bits-gcc-4.7-gitlab/) | [![Build Status](https://ci.inria.fr/gatb-core/view/Simka/job/tool-simka-build-macos-10.9.5-gcc-4.2.1-gitlab/badge/icon)](https://ci.inria.fr/gatb-core/view/Simka/job/tool-simka-build-macos-10.9.5-gcc-4.2.1-gitlab/)
+[![Build Status](https://ci.inria.fr/gatb-core/view/Simka-gitlab/job/tool-simka-build-debian7-64bits-gcc-4.7-gitlab/badge/icon)](https://ci.inria.fr/gatb-core/view/Simka/job/tool-simka-build-debian7-64bits-gcc-4.7-gitlab/) | [![Build Status](https://ci.inria.fr/gatb-core/view/Simka-gitlab/job/tool-simka-build-macos-10.9.5-gcc-4.2.1-gitlab/badge/icon)](https://ci.inria.fr/gatb-core/view/Simka/job/tool-simka-build-macos-10.9.5-gcc-4.2.1-gitlab/)
 
 
 ### SonarQube metrics
